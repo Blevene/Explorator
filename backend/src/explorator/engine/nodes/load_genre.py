@@ -2,6 +2,7 @@
 
 import contextlib
 import json
+from typing import Any
 
 from neo4j import AsyncDriver
 
@@ -9,7 +10,7 @@ from explorator.domain.style.service import StyleService
 from explorator.engine.state import ExplorationState
 
 
-async def load_genre(state: ExplorationState, *, driver: AsyncDriver) -> dict:
+async def load_genre(state: ExplorationState, *, driver: AsyncDriver) -> dict[str, Any]:
     """Load genre profile, grammar, and rules from Neo4j."""
     callback = state.get("on_progress")
     if callback:

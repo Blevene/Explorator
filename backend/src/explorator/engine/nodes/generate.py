@@ -1,11 +1,13 @@
 """Generate node — produce progression candidates using Gemini Pro."""
 
+from typing import Any
+
 from explorator.adapters.gemini import GeminiClient
 from explorator.domain.harmony.generator import HarmonyGenerator
 from explorator.engine.state import ExplorationState
 
 
-async def generate(state: ExplorationState, *, gemini: GeminiClient) -> dict:
+async def generate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, Any]:
     """Generate N progression candidates."""
     callback = state.get("on_progress")
     if callback:

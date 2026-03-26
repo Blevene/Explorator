@@ -1,5 +1,7 @@
 """Evaluate progressions node — hybrid theory scoring."""
 
+from typing import Any
+
 from explorator.adapters.gemini import GeminiClient
 from explorator.domain.evaluation.theory import TheoryEvaluator
 from explorator.engine.state import ExplorationState
@@ -8,7 +10,7 @@ from explorator.models.harmony import ProgressionCandidate
 
 async def evaluate_progressions(
     state: ExplorationState, *, gemini: GeminiClient
-) -> dict:
+) -> dict[str, Any]:
     """Score all progression candidates on theory dimensions."""
     callback = state.get("on_progress")
     if callback:

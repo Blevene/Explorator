@@ -12,8 +12,6 @@ from explorator.domain.style.loader import (
     load_rules_from_yaml,
 )
 from explorator.graph.style_repo import StyleRepository
-from explorator.models.style import GenreProfile, HarmonicGrammar
-
 
 STYLE_DIR = Path(__file__).parent
 

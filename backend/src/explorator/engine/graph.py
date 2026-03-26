@@ -5,6 +5,7 @@ M1 flow: parse_intent → load_genre → generate → evaluate_progressions
 """
 
 from functools import partial
+from typing import Any
 
 from langgraph.graph import END, StateGraph
 from neo4j import AsyncDriver
@@ -19,7 +20,7 @@ from explorator.engine.nodes.select_top_progressions import select_top_progressi
 from explorator.engine.state import ExplorationState
 
 
-def build_m1_graph(gemini: GeminiClient, driver: AsyncDriver):
+def build_m1_graph(gemini: GeminiClient, driver: AsyncDriver) -> Any:
     """Build and compile the M1 LangGraph exploration flow."""
     graph = StateGraph(ExplorationState)
 

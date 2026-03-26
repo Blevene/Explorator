@@ -1,6 +1,7 @@
 """Persist round node — save results to Neo4j."""
 
 import contextlib
+from typing import Any
 
 from neo4j import AsyncDriver
 
@@ -12,7 +13,7 @@ class ProgressionCandidateRepo(BaseRepository):
     label = "ProgressionCandidate"
 
 
-async def persist_round(state: ExplorationState, *, driver: AsyncDriver) -> dict:
+async def persist_round(state: ExplorationState, *, driver: AsyncDriver) -> dict[str, Any]:
     """Save all candidates and evaluations to Neo4j."""
     callback = state.get("on_progress")
     if callback:

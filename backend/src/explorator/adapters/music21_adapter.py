@@ -5,6 +5,7 @@ No music21 types leak outside this module.
 """
 
 import logging
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -95,17 +96,17 @@ def analyze_roman_numerals(
     return results
 
 
-def _symbol_to_chord(symbol: str):
+def _symbol_to_chord(symbol: str) -> Any:
     """Convert a chord symbol string to a music21 Chord object."""
     from music21 import harmony
 
     return harmony.ChordSymbol(symbol)
 
 
-def _quality_suffix(rn) -> str:
+def _quality_suffix(rn: Any) -> str:
     """Extract quality suffix from a Roman numeral object."""
-    figure = rn.figure
-    numeral = rn.romanNumeralAlone
+    figure: str = rn.figure
+    numeral: str = rn.romanNumeralAlone
     # Return everything after the numeral (e.g., "7", "maj7", "m7")
     if figure.startswith(numeral):
         return figure[len(numeral):]

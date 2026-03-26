@@ -1,11 +1,13 @@
 """Select top progressions node — filter by score + diversity."""
 
+from typing import Any
+
 from explorator.domain.evaluation.ranking import select_top_k
 from explorator.engine.state import ExplorationState
 from explorator.models.evaluation import AggregateScorecard
 
 
-async def select_top_progressions(state: ExplorationState) -> dict:
+async def select_top_progressions(state: ExplorationState) -> dict[str, Any]:
     """Select top K progressions by score."""
     callback = state.get("on_progress")
     if callback:
