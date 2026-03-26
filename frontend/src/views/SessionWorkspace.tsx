@@ -45,32 +45,25 @@ export default function SessionWorkspace() {
       await readSSEStream(
         response,
         (event) => {
+          const node = event.data.node as string | undefined;
           switch (event.type) {
-            case 'node_started': {
-              const node = event.data.node as string | undefined;
-              setProgress(`Running: ${node ?? '…'}`);
+            case 'node_started':
+              setProgress(node ?? 'starting');
               break;
-            }
-            case 'node_completed': {
-              const node = event.data.node as string | undefined;
-              setProgress(`Completed: ${node ?? '…'}`);
+            case 'node_completed':
+              setProgress(node ?? 'completed');
               break;
-            }
-            case 'candidates_preview': {
-              setProgress('Previewing candidates…');
+            case 'candidates_preview':
+              setProgress('generate');  // generation done
               break;
-            }
-            case 'round_completed': {
-              setProgress('Round complete. Loading results…');
+            case 'round_completed':
+              setProgress('persist_round');  // final step
               break;
-            }
-            case 'round_error': {
-              const msg = event.data.error as string | undefined;
-              setError(msg ?? 'An error occurred during the round.');
+            case 'round_error':
+              setError((event.data.error as string) ?? 'An error occurred.');
               setLoading(false);
               setProgress(null);
               break;
-            }
           }
         },
         async () => {

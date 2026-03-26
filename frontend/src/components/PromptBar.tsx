@@ -14,6 +14,24 @@ const MODES = [
   { value: 'exploratory', label: 'Exploratory' },
 ];
 
+const PIPELINE_STEPS = [
+  { key: 'parse_intent', label: 'Parsing intent' },
+  { key: 'load_genre', label: 'Loading genre' },
+  { key: 'generate', label: 'Generating progressions' },
+  { key: 'evaluate_progressions', label: 'Evaluating' },
+  { key: 'select_top_progressions', label: 'Selecting top candidates' },
+  { key: 'persist_round', label: 'Saving results' },
+];
+
+function getStepIndex(progress: string | null): number {
+  if (!progress) return -1;
+  // Match against node names in the progress string
+  for (let i = PIPELINE_STEPS.length - 1; i >= 0; i--) {
+    if (progress.includes(PIPELINE_STEPS[i].key)) return i;
+  }
+  return -1;
+}
+
 export default function PromptBar({
   prompt,
   onPromptChange,
@@ -28,6 +46,11 @@ export default function PromptBar({
       onGenerate();
     }
   };
+
+  const currentStep = getStepIndex(progress);
+  const pct = loading
+    ? Math.max(5, Math.round(((currentStep + 1) / PIPELINE_STEPS.length) * 100))
+    : 0;
 
   return (
     <div className="flex flex-col gap-2">
@@ -47,7 +70,7 @@ export default function PromptBar({
           disabled={loading || !prompt.trim()}
           className="bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
         >
-          {loading ? 'Running…' : 'Generate'}
+          {loading ? 'Running...' : 'Generate'}
         </button>
       </div>
 
@@ -72,9 +95,38 @@ export default function PromptBar({
         </div>
       </div>
 
-      {/* Progress indicator */}
-      {loading && progress && (
-        <p className="text-xs text-purple-400 animate-pulse">{progress}</p>
+      {/* Pipeline progress bar */}
+      {loading && (
+        <div className="flex flex-col gap-1.5 mt-1">
+          {/* Bar */}
+          <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-purple-500 rounded-full transition-all duration-700 ease-out"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          {/* Step labels */}
+          <div className="flex gap-1 flex-wrap">
+            {PIPELINE_STEPS.map((step, i) => {
+              const isDone = i < currentStep;
+              const isActive = i === currentStep;
+              return (
+                <span
+                  key={step.key}
+                  className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+                    isDone
+                      ? 'bg-purple-900/40 text-purple-300'
+                      : isActive
+                        ? 'bg-purple-600 text-white animate-pulse'
+                        : 'bg-gray-800 text-gray-600'
+                  }`}
+                >
+                  {isDone ? '\u2713' : isActive ? '\u25B6' : '\u25CB'} {step.label}
+                </span>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );
