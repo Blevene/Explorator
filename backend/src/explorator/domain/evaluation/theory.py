@@ -15,17 +15,61 @@ from explorator.utils import utc_now
 
 
 def check_loopability(chord_symbols: list[str]) -> float:
-    """Score how well a progression loops (0-10). Same start/end = high score."""
+    """Score how well a progression loops back to the start (0-10).
+
+    Considers: exact match, same root, common loop resolutions (V→I, IV→I,
+    vi→I, bVII→I patterns).
+    """
     if not chord_symbols:
         return 5.0
-    if chord_symbols[0] == chord_symbols[-1]:
-        return 9.0
-    # Check if roots are the same even with different extensions
+
     first = parse_chord_symbol(chord_symbols[0])
     last = parse_chord_symbol(chord_symbols[-1])
+
+    if first.root == "unknown" or last.root == "unknown":
+        return 5.0
+
+    # Exact same chord — perfect loop
+    if chord_symbols[0] == chord_symbols[-1]:
+        return 9.5
+
+    # Same root, different extension (e.g., Am7 → Am) — great loop
     if first.root == last.root:
-        return 8.0
-    return 5.5
+        return 8.5
+
+    # Check if last chord resolves naturally to first via common intervals
+    # Semitone interval from last root to first root
+    from music21 import pitch
+
+    try:
+        first_midi = pitch.Pitch(first.root).midi
+        last_midi = pitch.Pitch(last.root).midi
+        interval = (first_midi - last_midi) % 12
+
+        # Perfect fifth up (V→I): interval = 7 semitones from last to first
+        if interval == 7:
+            return 8.0
+
+        # Perfect fourth up (IV→I): interval = 5
+        if interval == 5:
+            return 7.5
+
+        # Whole step up (bVII→I): interval = 2
+        if interval == 2:
+            return 7.0
+
+        # Minor third down (vi→I in relative major): interval = 3
+        if interval == 3:
+            return 7.0
+
+        # Half step up (bII→I, Neapolitan): interval = 1
+        if interval == 1:
+            return 6.5
+
+        # Any other interval — weaker but not terrible
+        return 6.0
+    except Exception:
+        return 5.5
 
 
 def check_cadence_quality(

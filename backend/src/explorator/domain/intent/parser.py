@@ -34,6 +34,19 @@ KEY_PATTERN = re.compile(
 BARS_PATTERN = re.compile(r"(\d+)\s*[-\s]?bars?", re.IGNORECASE)
 
 
+# Genre-specific default phrase lengths (when not specified in prompt)
+_GENRE_DEFAULT_BARS: dict[str, int] = {
+    "dream_pop": 4,       # Dream pop loops are typically short
+    "synthwave": 4,       # Synthwave runs on 4-bar loops
+    "cinematic": 8,       # Cinematic phrases need more room
+}
+
+
+def _default_bars_for_genre(genre: str) -> int:
+    """Return the default phrase length for a genre, or 8 as global fallback."""
+    return _GENRE_DEFAULT_BARS.get(genre, 8)
+
+
 class SoftPreferences(BaseModel):
     """LLM-extracted soft preferences from a prompt."""
 
@@ -102,7 +115,10 @@ class IntentParser:
             genre=constraints.get("genre", "dream_pop"),
             key_center=constraints.get("key_center"),
             mode=constraints.get("mode", "major"),
-            phrase_length_bars=constraints.get("phrase_length_bars", 8),
+            phrase_length_bars=constraints.get(
+                "phrase_length_bars",
+                _default_bars_for_genre(constraints.get("genre", "dream_pop")),
+            ),
             mood_targets=soft.mood_targets,
             energy_level=soft.energy_level,
             complexity_target=soft.complexity_target,

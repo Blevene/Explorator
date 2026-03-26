@@ -52,14 +52,15 @@ Genre harmonic vocabulary: {', '.join(harmonic_vocabulary)}
 Common devices: {', '.join(common_devices)}
 Cadence archetypes: {', '.join(cadence_archetypes)}
 
-Return multiple distinct progressions. Each progression should:
-- Use chord symbols (e.g., Cmaj7, Am7, Fmaj7, G7)
-- Be {bars} chords long (one per bar)
+IMPORTANT constraints:
+- Each progression must be exactly {bars} chords (one per bar)
+- Use standard chord symbols (e.g., Cmaj7, Am7, Fmaj7, G7, Bbmaj7, Dm9)
+- Progressions should LOOP well — the last chord should resolve naturally back to the first chord. This is critical for production use.
 - Fit the genre and mood
-- Include a rationale explaining the harmonic choices
-- Include intent_tags (short descriptive words)
+- Include a rationale explaining the harmonic choices and why it loops well
+- Include intent_tags (short descriptive words like "loopable", "dark", "ethereal")
 
-Make each progression meaningfully different from the others."""
+Return multiple DISTINCT progressions. Vary the harmonic approach — don't just transpose the same idea."""
 
 
 class HarmonyGenerator:

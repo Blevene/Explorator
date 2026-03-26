@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { listCandidates, triggerRoundSSE, getSession } from '../services/api';
+import { listCandidates, getSession } from '../services/api';
 import type { SessionSummary } from '../services/api';
-import { readSSEStream } from '../services/sse';
 import { useCandidateStore } from '../stores/candidateStore';
 import CandidateCard from '../components/CandidateCard';
 import PromptBar from '../components/PromptBar';
+
+const API_BASE = '/v1';
 
 export default function SessionWorkspace() {
   const { id } = useParams<{ id: string }>();
@@ -13,9 +14,10 @@ export default function SessionWorkspace() {
   const [prompt, setPrompt] = useState('');
   const [generationMode, setGenerationMode] = useState('balanced');
   const [currentNode, setCurrentNode] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const { candidates, loading, error, setCandidates, setLoading, setError } =
-    useCandidateStore();
+  const { candidates, setCandidates } = useCandidateStore();
 
   // Load session info and existing candidates on mount
   useEffect(() => {
@@ -33,7 +35,7 @@ export default function SessionWorkspace() {
       .catch(() => {});
   }, [id, setCandidates]);
 
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async () => {
     if (!id || !prompt.trim() || loading) return;
 
     setLoading(true);
@@ -41,50 +43,89 @@ export default function SessionWorkspace() {
     setError(null);
 
     try {
-      const response = await triggerRoundSSE(id, prompt.trim(), generationMode);
+      // POST to trigger the round
+      const response = await fetch(`${API_BASE}/sessions/${id}/rounds`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt.trim(), generation_mode: generationMode }),
+      });
 
-      await readSSEStream(
-        response,
-        (event) => {
-          const node = (event.data.node as string) ?? null;
-          switch (event.type) {
-            case 'node_started':
-              if (node) setCurrentNode(node);
-              break;
-            case 'node_completed':
-              // Keep showing the completed node until next starts
-              break;
-            case 'candidates_preview':
-              setCurrentNode('generate');
-              break;
-            case 'round_completed':
-              setCurrentNode('persist_round');
-              break;
-            case 'round_error':
-              setError((event.data.error as string) ?? 'An error occurred.');
-              setLoading(false);
-              setCurrentNode(null);
-              break;
+      if (!response.ok) {
+        throw new Error(`Round failed: ${response.status}`);
+      }
+
+      if (!response.body) {
+        throw new Error('No response body');
+      }
+
+      // Read SSE stream manually with explicit state updates
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() ?? '';
+
+        for (const part of parts) {
+          if (!part.trim()) continue;
+
+          let eventType = '';
+          let dataStr = '';
+
+          for (const line of part.split('\n')) {
+            if (line.startsWith('event: ')) eventType = line.slice(7).trim();
+            else if (line.startsWith('data: ')) dataStr = line.slice(6).trim();
           }
-        },
-        async () => {
-          // Stream finished — reload candidates
+
+          if (!eventType || !dataStr) continue;
+
+          let data: Record<string, unknown> = {};
           try {
-            const res = await listCandidates(id);
-            setCandidates(res.items);
+            data = JSON.parse(dataStr);
           } catch {
-            // Ignore reload errors
+            continue;
           }
-          setLoading(false);
-          setCurrentNode(null);
-        },
-      );
+
+          const node = data.node as string | undefined;
+
+          // Use setTimeout to ensure React processes each state update
+          if (eventType === 'node_started' && node) {
+            setCurrentNode(node);
+          } else if (eventType === 'candidates_preview') {
+            setCurrentNode('generate');
+          } else if (eventType === 'round_completed') {
+            setCurrentNode('persist_round');
+          } else if (eventType === 'round_error') {
+            setError((data.error as string) ?? 'An error occurred.');
+            setLoading(false);
+            setCurrentNode(null);
+            reader.releaseLock();
+            return;
+          }
+        }
+      }
+
+      reader.releaseLock();
+
+      // Round complete — reload candidates
+      try {
+        const res = await listCandidates(id);
+        setCandidates(res.items);
+      } catch {
+        // Ignore reload errors
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to trigger round.');
+    } finally {
       setLoading(false);
       setCurrentNode(null);
     }
-  };
+  }, [id, prompt, generationMode, loading, setCandidates]);
 
   return (
     <div className="max-w-6xl mx-auto p-8 flex flex-col gap-6">
