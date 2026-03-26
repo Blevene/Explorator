@@ -1,0 +1,1 @@
+"""Harmony generation domain service."""

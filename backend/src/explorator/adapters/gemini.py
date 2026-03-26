@@ -1,9 +1,17 @@
 """Gemini API client with Pro/Flash model routing."""
 
+import json
+import logging
 from enum import StrEnum
 from typing import TypeVar
 
+from google import genai
+from google.genai import types
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class ModelTier(StrEnum):
@@ -13,15 +21,8 @@ class ModelTier(StrEnum):
     FLASH = "flash"
 
 
-T = TypeVar("T", bound=BaseModel)
-
-
 class GeminiClient:
-    """Client for Google Gemini API with tiered model routing.
-
-    Uses Pro for creative/nuanced tasks, Flash for structured extraction
-    and high-volume scoring.
-    """
+    """Client for Google Gemini API with tiered model routing."""
 
     def __init__(
         self,
@@ -34,6 +35,7 @@ class GeminiClient:
         self.pro_model = pro_model
         self.flash_model = flash_model
         self.timeout_seconds = timeout_seconds
+        self._client = genai.Client(api_key=api_key)
 
     def get_model_name(self, tier: ModelTier) -> str:
         """Get the model name for a given tier."""
@@ -48,16 +50,28 @@ class GeminiClient:
         tier: ModelTier = ModelTier.FLASH,
         system_prompt: str | None = None,
     ) -> T:
-        """Generate a structured response using Gemini.
-
-        This is a placeholder that will be fully implemented in M1
-        when we need actual LLM calls. For M0, this establishes
-        the interface contract.
-        """
-        raise NotImplementedError(
-            "Gemini structured generation will be implemented in M1. "
-            f"Would use model: {self.get_model_name(tier)}"
+        """Generate a structured response validated against a Pydantic model."""
+        model_name = self.get_model_name(tier)
+        contents = prompt
+        config = types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=response_model,
+            system_instruction=system_prompt,
         )
+
+        response = await self._client.aio.models.generate_content(
+            model=model_name,
+            contents=contents,
+            config=config,
+        )
+
+        raw_text = response.text
+        if raw_text is None:
+            msg = f"Gemini returned empty response for model={model_name}"
+            raise ValueError(msg)
+
+        parsed = json.loads(raw_text)
+        return response_model.model_validate(parsed)
 
     async def generate_text(
         self,
@@ -65,11 +79,20 @@ class GeminiClient:
         tier: ModelTier = ModelTier.FLASH,
         system_prompt: str | None = None,
     ) -> str:
-        """Generate a text response using Gemini.
-
-        Placeholder for M1 implementation.
-        """
-        raise NotImplementedError(
-            "Gemini text generation will be implemented in M1. "
-            f"Would use model: {self.get_model_name(tier)}"
+        """Generate a plain text response."""
+        model_name = self.get_model_name(tier)
+        config = types.GenerateContentConfig(
+            system_instruction=system_prompt,
         )
+
+        response = await self._client.aio.models.generate_content(
+            model=model_name,
+            contents=prompt,
+            config=config,
+        )
+
+        if response.text is None:
+            msg = f"Gemini returned empty response for model={model_name}"
+            raise ValueError(msg)
+
+        return response.text
