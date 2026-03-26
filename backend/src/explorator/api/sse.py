@@ -23,10 +23,17 @@ class SSEChannel:
         """Signal end of stream."""
         await self._queue.put(None)
 
-    async def stream(self) -> AsyncGenerator[str, None]:
-        """Yield SSE-formatted strings."""
+    async def stream(self) -> AsyncGenerator[dict[str, str], None]:
+        """Yield dicts formatted for sse-starlette's EventSourceResponse.
+
+        EventSourceResponse expects dicts with 'event' and 'data' keys.
+        It handles the SSE wire format (event: / data: / newlines) itself.
+        """
         while True:
             event = await self._queue.get()
             if event is None:
                 break
-            yield f"event: {event['event']}\ndata: {json.dumps(event['data'])}\n\n"
+            yield {
+                "event": event["event"],
+                "data": json.dumps(event["data"]),
+            }
