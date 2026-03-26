@@ -1,0 +1,49 @@
+genre: cinematic
+display_name: Cinematic
+version: 1
+
+harmonic_vocabulary:
+  - maj7
+  - m7
+  - sus2
+  - sus4
+  - add9
+  - dim7
+  - aug
+  - modal_interchange
+  - borrowed_chords
+
+harmonic_tendencies:
+  functional_strength: medium_high
+  chromaticism_level: moderate_high
+  borrowed_chord_tolerance: high
+  cadence_closure_preference: varies
+
+voicing_tendencies:
+  spacing: wide
+  register_bias: full_range
+  extension_density: medium_high
+  top_voice_continuity_importance: high
+
+bass_tendencies:
+  root_emphasis: medium_high
+  pedal_tone_tolerance: high
+  rhythmic_activity: low
+
+groove_tendencies:
+  comp_density: sparse_to_dense
+  articulation_style: sustained_swells
+  syncopation_level: minimal
+
+common_devices:
+  - pedal tones under moving harmony
+  - deceptive cadences
+  - modal interchange (bVI, bVII)
+  - chromatic mediants
+  - suspended resolutions over long durations
+  - crescendo through harmonic density
+
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.75
+  voicing_deviation_tolerance: 0.70
+  groove_deviation_tolerance: 0.50

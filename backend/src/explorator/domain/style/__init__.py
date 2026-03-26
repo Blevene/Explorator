@@ -1,0 +1,1 @@
+"""Genre/style domain service."""
