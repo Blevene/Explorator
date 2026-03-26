@@ -1,0 +1,45 @@
+genre: synthwave
+display_name: Synthwave
+version: 1
+
+harmonic_vocabulary:
+  - minor
+  - m7
+  - maj7
+  - sus4
+  - power_chords
+  - add9
+
+harmonic_tendencies:
+  functional_strength: medium
+  chromaticism_level: low_medium
+  borrowed_chord_tolerance: moderate
+  cadence_closure_preference: medium
+
+voicing_tendencies:
+  spacing: mid_spread
+  register_bias: mid
+  extension_density: low_medium
+  top_voice_continuity_importance: medium
+
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: medium
+  rhythmic_activity: medium_high
+
+groove_tendencies:
+  comp_density: medium
+  articulation_style: arpeggiated_pulse
+  syncopation_level: low
+
+common_devices:
+  - minor key center
+  - octave bass movement
+  - arpeggiated synth patterns
+  - vi-IV-I-V progressions in minor
+  - suspended fourths resolving
+
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.45
+  voicing_deviation_tolerance: 0.55
+  groove_deviation_tolerance: 0.35

@@ -1,0 +1,33 @@
+rules:
+  - name: Prefer open voicings
+    type: voicing_preference
+    weight: 0.88
+    description: Spread voicings across mid-high register with air between voices.
+    applicability:
+      instruments: [electric_piano, pad, guitar]
+
+  - name: Soft cadential closure
+    type: harmonic_preference
+    weight: 0.82
+    description: Avoid strong V-I resolutions. Prefer plagal, deceptive, or open-loop returns.
+
+  - name: Slow harmonic rhythm
+    type: harmonic_preference
+    weight: 0.75
+    description: Prefer one chord per bar or slower. Avoid rapid chord changes.
+
+anti_patterns:
+  - name: Hard bop dominant chains
+    scope: harmony
+    severity: 0.85
+    description: Extended ii-V-I sequences break the floating quality.
+
+  - name: Aggressively walking bass
+    scope: bass_line
+    severity: 0.79
+    description: Continuous quarter-note walking bass pulls toward jazz.
+
+  - name: Dense bebop inner motion
+    scope: voicing
+    severity: 0.72
+    description: Rapid chromatic inner voice movement is too busy for dream pop.

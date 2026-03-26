@@ -1,0 +1,26 @@
+rules:
+  - name: Strong rhythmic pulse
+    type: groove_preference
+    weight: 0.90
+    description: Maintain steady eighth or sixteenth note pulse in accompaniment.
+
+  - name: Root-heavy bass
+    type: bass_preference
+    weight: 0.85
+    description: Bass should emphasize root notes with octave movement.
+
+  - name: Minor key center
+    type: harmonic_preference
+    weight: 0.78
+    description: Prefer minor keys for authentic synthwave feel.
+
+anti_patterns:
+  - name: Jazz extensions on every chord
+    scope: harmony
+    severity: 0.80
+    description: Dense 9ths, 11ths, 13ths sound too sophisticated for synthwave.
+
+  - name: Rubato or free time
+    scope: groove
+    severity: 0.88
+    description: Synthwave requires metronomic pulse.

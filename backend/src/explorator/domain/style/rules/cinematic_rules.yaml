@@ -1,0 +1,26 @@
+rules:
+  - name: Dynamic range through harmony
+    type: harmonic_preference
+    weight: 0.85
+    description: Build tension through harmonic density and release through simplification.
+
+  - name: Pedal tone foundation
+    type: bass_preference
+    weight: 0.80
+    description: Use sustained pedal tones to anchor moving upper harmony.
+
+  - name: Wide voicing spread
+    type: voicing_preference
+    weight: 0.82
+    description: Use full register for orchestral depth.
+
+anti_patterns:
+  - name: Repetitive pop loops
+    scope: harmony
+    severity: 0.70
+    description: Simple 4-bar loops feel too static for cinematic contexts.
+
+  - name: Thin single-instrument texture
+    scope: voicing
+    severity: 0.65
+    description: Cinematic needs layered texture, not sparse single-voice lines.

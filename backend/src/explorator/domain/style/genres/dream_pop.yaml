@@ -1,0 +1,45 @@
+genre: dream_pop
+display_name: Dream Pop
+version: 1
+
+harmonic_vocabulary:
+  - maj7
+  - add9
+  - sus2
+  - m7
+  - borrowed_iv
+  - modal_mixture
+
+harmonic_tendencies:
+  functional_strength: low_medium
+  chromaticism_level: moderate
+  borrowed_chord_tolerance: moderate_high
+  cadence_closure_preference: soft
+
+voicing_tendencies:
+  spacing: open
+  register_bias: mid_high
+  extension_density: medium
+  top_voice_continuity_importance: high
+
+bass_tendencies:
+  root_emphasis: medium
+  pedal_tone_tolerance: high
+  rhythmic_activity: low_medium
+
+groove_tendencies:
+  comp_density: sparse
+  articulation_style: floating_pulse
+  syncopation_level: light
+
+common_devices:
+  - borrowed minor iv
+  - shimmering add9 voicings
+  - slow harmonic rhythm
+  - suspended resolutions
+  - major 7th color
+
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.65
+  voicing_deviation_tolerance: 0.80
+  groove_deviation_tolerance: 0.40
