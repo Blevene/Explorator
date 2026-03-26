@@ -4,6 +4,14 @@
 # Firebase
 firebase-debug.log
 
+# Secrets — never commit .env files (except .env.example)
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
 # Python
 __pycache__/
 *.py[cod]
@@ -11,7 +19,7 @@ __pycache__/
 dist/
 build/
 .venv/
-.env
+*.lock
 
 # Node
 node_modules/
