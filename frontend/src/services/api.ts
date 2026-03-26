@@ -48,3 +48,41 @@ export async function listGenres(): Promise<GenreListResponse> {
   if (!res.ok) throw new Error(`Failed to list genres: ${res.status}`);
   return res.json();
 }
+
+export interface CandidateSummary {
+  candidate_id: string;
+  type: string;
+  status: string;
+  key_center: string;
+  mode: string;
+  chord_symbols: string[];
+  roman_numerals: string[];
+  rationale: string;
+  intent_tags: string[];
+  weighted_total: number;
+  scores: Record<string, number>;
+}
+
+export interface CandidateListResponse {
+  items: CandidateSummary[];
+}
+
+export async function listCandidates(sessionId: string): Promise<CandidateListResponse> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/candidates`);
+  if (!res.ok) throw new Error(`Failed to list candidates: ${res.status}`);
+  return res.json();
+}
+
+export async function triggerRoundSSE(
+  sessionId: string,
+  prompt: string,
+  generationMode: string,
+): Promise<Response> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/rounds`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, generation_mode: generationMode }),
+  });
+  if (!res.ok) throw new Error(`Failed to trigger round: ${res.status}`);
+  return res;
+}
