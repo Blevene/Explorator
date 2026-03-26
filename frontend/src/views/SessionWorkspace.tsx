@@ -66,7 +66,8 @@ export default function SessionWorkspace() {
         }
 
         buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split('\n\n');
+        // SSE messages are separated by blank lines — handle both \r\n\r\n and \n\n
+        const parts = buffer.split(/\r?\n\r?\n/);
         buffer = parts.pop() ?? '';
 
         for (const part of parts) {
@@ -75,7 +76,7 @@ export default function SessionWorkspace() {
           let eventType = '';
           let dataStr = '';
 
-          for (const line of part.split('\n')) {
+          for (const line of part.split(/\r?\n/)) {
             if (line.startsWith('event: ')) eventType = line.slice(7).trim();
             else if (line.startsWith('data: ')) dataStr = line.slice(6).trim();
           }
