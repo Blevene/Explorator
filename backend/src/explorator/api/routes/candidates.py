@@ -81,6 +81,21 @@ async def list_candidates(
         rna_events = rna.get("analysis_events", []) if isinstance(rna, dict) else []
         roman_numerals = [e.get("symbol", "?") for e in rna_events if isinstance(e, dict)]
 
+        # Extract scores from metadata (persisted by persist_round)
+        scores_data: dict[str, float] = {}
+        weighted = 0.0
+        if isinstance(metadata, dict):
+            scores_raw = metadata.get("scores", {})
+            if isinstance(scores_raw, str):
+                try:
+                    scores_data = json.loads(scores_raw)
+                except (json.JSONDecodeError, TypeError):
+                    scores_data = {}
+            elif isinstance(scores_raw, dict):
+                scores_data = {k: float(v) for k, v in scores_raw.items()}
+            wt = metadata.get("weighted_total", 0.0)
+            weighted = float(wt) if wt else 0.0
+
         items.append(
             CandidateSummary(
                 candidate_id=c.get("id", ""),
@@ -92,7 +107,8 @@ async def list_candidates(
                 roman_numerals=roman_numerals,
                 rationale=c.get("rationale", ""),
                 intent_tags=_parse_json_field(c.get("intent_tags")),
-                weighted_total=0.0,  # Will come from scorecard in future
+                weighted_total=weighted,
+                scores=scores_data,
             )
         )
 

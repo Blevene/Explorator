@@ -140,8 +140,13 @@ export default function SessionWorkspace() {
             {candidates.length} candidate{candidates.length !== 1 ? 's' : ''}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {candidates.map((c) => (
-              <CandidateCard key={c.candidate_id} candidate={c} />
+            {candidates.map((c, i) => (
+              <CandidateCard
+                key={c.candidate_id}
+                candidate={c}
+                index={i}
+                onClick={() => console.log('Selected:', c.candidate_id)}
+              />
             ))}
           </div>
         </div>

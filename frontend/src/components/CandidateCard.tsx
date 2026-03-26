@@ -2,29 +2,40 @@ import type { CandidateSummary } from '../services/api';
 
 interface CandidateCardProps {
   candidate: CandidateSummary;
+  index: number;
+  onClick?: () => void;
 }
 
-export default function CandidateCard({ candidate }: CandidateCardProps) {
-  const shortId = candidate.candidate_id.slice(0, 8);
+const LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+
+function scoreColor(score: number): string {
+  if (score >= 8.0) return 'text-green-400 bg-green-900/30';
+  if (score >= 6.0) return 'text-yellow-400 bg-yellow-900/30';
+  return 'text-red-400 bg-red-900/30';
+}
+
+export default function CandidateCard({ candidate, index, onClick }: CandidateCardProps) {
+  const label = LABELS[index] || `#${index + 1}`;
   const score = candidate.weighted_total;
-  const scoreColor =
-    score >= 0.75 ? 'text-green-400' : score >= 0.5 ? 'text-yellow-400' : 'text-red-400';
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 flex flex-col gap-3 hover:border-gray-700 transition-colors">
-      {/* Header: ID + score */}
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-purple-400 font-mono text-xs truncate" title={candidate.candidate_id}>
-          #{shortId}
+    <div
+      onClick={onClick}
+      className="bg-gray-900 border border-gray-800 rounded-lg p-4 flex flex-col gap-3 hover:border-purple-500/50 transition-colors cursor-pointer"
+    >
+      {/* Header: label + score */}
+      <div className="flex items-center justify-between">
+        <span className="text-purple-400 font-bold text-sm">
+          Candidate {label}
         </span>
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-800 ${scoreColor}`}>
-          {(score * 100).toFixed(0)}%
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${scoreColor(score)}`}>
+          {score.toFixed(1)}
         </span>
       </div>
 
       {/* Chord symbols */}
       <div>
-        <p className="font-mono text-sm text-white tracking-wide">
+        <p className="font-mono text-sm text-white tracking-wide leading-relaxed">
           {candidate.chord_symbols.join(' → ')}
         </p>
         {candidate.roman_numerals.length > 0 && (
@@ -35,26 +46,20 @@ export default function CandidateCard({ candidate }: CandidateCardProps) {
       </div>
 
       {/* Key / mode badge */}
-      <div>
+      <div className="flex gap-2">
         <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded">
           {candidate.key_center} {candidate.mode}
         </span>
+        {candidate.intent_tags.map((tag) => (
+          <span key={tag} className="text-xs bg-gray-800 text-gray-500 px-2 py-0.5 rounded">
+            {tag}
+          </span>
+        ))}
       </div>
 
-      {/* Rationale */}
+      {/* Rationale — full text, no truncation */}
       {candidate.rationale && (
-        <p className="text-gray-400 text-xs leading-relaxed line-clamp-2">{candidate.rationale}</p>
-      )}
-
-      {/* Tags */}
-      {candidate.intent_tags.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {candidate.intent_tags.map((tag) => (
-            <span key={tag} className="text-xs bg-gray-800 text-gray-500 px-2 py-0.5 rounded">
-              {tag}
-            </span>
-          ))}
-        </div>
+        <p className="text-gray-400 text-xs leading-relaxed">{candidate.rationale}</p>
       )}
 
       {/* Score breakdown */}
@@ -63,7 +68,7 @@ export default function CandidateCard({ candidate }: CandidateCardProps) {
           {Object.entries(candidate.scores).map(([key, val]) => (
             <div key={key} className="flex justify-between text-xs">
               <span className="text-gray-600 capitalize">{key.replace(/_/g, ' ')}</span>
-              <span className="text-gray-400">{(val * 100).toFixed(0)}</span>
+              <span className="text-gray-400">{val.toFixed(1)}</span>
             </div>
           ))}
         </div>

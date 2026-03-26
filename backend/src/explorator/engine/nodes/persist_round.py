@@ -1,6 +1,7 @@
 """Persist round node — save results to Neo4j."""
 
 import contextlib
+import json
 from typing import Any
 
 from neo4j import AsyncDriver
@@ -23,17 +24,30 @@ async def persist_round(state: ExplorationState, *, driver: AsyncDriver) -> dict
 
     repo = ProgressionCandidateRepo(driver)
 
+    # Build a lookup of candidate_id → scorecard
+    scorecard_lookup: dict[str, dict[str, Any]] = {}
+    for sc in state.get("scorecards", []):
+        cid = sc.get("candidate_id", "")
+        if cid:
+            scorecard_lookup[cid] = sc
+
     for candidate_data in state.get("top_progressions", []):
         candidate = ProgressionCandidate.model_validate(candidate_data)
+
+        # Attach scorecard data to candidate metadata so it persists
+        sc = scorecard_lookup.get(candidate.id, {})
+        candidate.metadata["weighted_total"] = sc.get("weighted_total", 0.0)
+        candidate.metadata["scores"] = sc.get("scores", {})
+
         with contextlib.suppress(Exception):
             await repo.create(candidate)
 
     if callback:
         top_count = len(state.get("top_progressions", []))
-        top_score = 0.0
-        for s in state.get("scorecards", []):
-            if s.get("weighted_total", 0) > top_score:
-                top_score = s["weighted_total"]
+        top_score = max(
+            (s.get("weighted_total", 0.0) for s in state.get("scorecards", [])),
+            default=0.0,
+        )
 
         await callback(
             "round_completed",
