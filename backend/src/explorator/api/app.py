@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from explorator.api.middleware import AuthStubMiddleware
-from explorator.api.routes import genres, sessions
+from explorator.api.routes import candidates, genres, rounds, sessions
 from explorator.graph.connection import close_driver, get_driver
 from explorator.graph.schema import init_schema
 
@@ -52,5 +52,7 @@ def create_app() -> FastAPI:
 
     app.include_router(sessions.router, prefix="/v1")
     app.include_router(genres.router, prefix="/v1")
+    app.include_router(rounds.router, prefix="/v1")
+    app.include_router(candidates.router, prefix="/v1")
 
     return app
