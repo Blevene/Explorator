@@ -6,7 +6,7 @@ from explorator.graph.session_repo import SessionRepository
 from explorator.models.session import Session
 
 
-async def test_create_and_read_session(neo4j_driver: AsyncDriver):
+async def test_create_and_read_session(neo4j_driver: AsyncDriver) -> None:
     repo = SessionRepository(neo4j_driver)
     session = Session(
         id="sess_test_01",
@@ -22,7 +22,7 @@ async def test_create_and_read_session(neo4j_driver: AsyncDriver):
     assert result["mode"] == "full_exploration"
 
 
-async def test_list_sessions(neo4j_driver: AsyncDriver):
+async def test_list_sessions(neo4j_driver: AsyncDriver) -> None:
     repo = SessionRepository(neo4j_driver)
     for i in range(3):
         session = Session(
@@ -36,7 +36,7 @@ async def test_list_sessions(neo4j_driver: AsyncDriver):
     assert len(results) == 3
 
 
-async def test_update_session_status(neo4j_driver: AsyncDriver):
+async def test_update_session_status(neo4j_driver: AsyncDriver) -> None:
     repo = SessionRepository(neo4j_driver)
     session = Session(
         id="sess_update_01",

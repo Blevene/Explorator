@@ -1,11 +1,12 @@
 """Base Neo4j repository with generic CRUD operations."""
 
 import json
-from datetime import UTC, datetime
 from typing import Any
 
 from neo4j import AsyncDriver
 from pydantic import BaseModel
+
+from explorator.utils import utc_now
 
 
 def _neo4j_safe(data: dict[str, Any]) -> dict[str, Any]:
@@ -54,6 +55,14 @@ class BaseRepository:
                 return None
             return dict(record["props"])
 
+    async def query_by_property(self, prop: str, value: Any) -> list[dict[str, Any]]:
+        """Generic property query — returns all matching nodes."""
+        query = f"MATCH (n:{self.label} {{{prop}: $value}}) RETURN properties(n) AS props"
+        async with self.driver.session() as session:
+            result = await session.run(query, value=value)
+            records = await result.data()
+            return [dict(r["props"]) for r in records]
+
     async def update_status(self, entity_id: str, status: str) -> None:
         """Update a node's status."""
         query = f"""
@@ -65,5 +74,5 @@ class BaseRepository:
                 query,
                 id=entity_id,
                 status=status,
-                now=datetime.now(UTC).isoformat(),
+                now=utc_now().isoformat(),
             )

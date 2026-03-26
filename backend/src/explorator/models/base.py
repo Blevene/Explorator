@@ -1,14 +1,11 @@
 """Shared base interfaces for all domain entities."""
 
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
 
-
-def utc_now() -> datetime:
-    """Return current UTC datetime."""
-    return datetime.now(UTC)
+from explorator.utils import utc_now
 
 
 class BaseEntity(BaseModel):

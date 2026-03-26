@@ -1,7 +1,6 @@
 """Evaluation, scoring, and objective weight models."""
 
-
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from explorator.models.base import BaseEntity, EvaluationBase
 
@@ -89,3 +88,12 @@ class ObjectiveWeights(BaseEntity):
 
     profile_name: str = "default"
     weights: dict[str, float] = Field(default_factory=dict)
+
+    @field_validator("weights")
+    @classmethod
+    def validate_weights_sum(cls, v: dict[str, float]) -> dict[str, float]:
+        """Weights must sum to approximately 1.0 when non-empty."""
+        if v and abs(sum(v.values()) - 1.0) > 0.01:
+            msg = f"Weights must sum to ~1.0, got {sum(v.values()):.3f}"
+            raise ValueError(msg)
+        return v

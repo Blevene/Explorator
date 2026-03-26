@@ -3,7 +3,7 @@
 from explorator.models.style import AntiPattern, GenreProfile, GenreRule, HarmonicGrammar
 
 
-def test_genre_profile_creation():
+def test_genre_profile_creation() -> None:
     profile = GenreProfile(
         id="genre_dream_pop_01",
         type="genre_profile",
@@ -29,7 +29,7 @@ def test_genre_profile_creation():
     assert "maj7" in profile.harmonic_vocabulary
 
 
-def test_genre_rule_creation():
+def test_genre_rule_creation() -> None:
     rule = GenreRule(
         id="rule_01",
         type="genre_rule",
@@ -44,7 +44,7 @@ def test_genre_rule_creation():
     assert not rule.anti_rule
 
 
-def test_anti_pattern_creation():
+def test_anti_pattern_creation() -> None:
     ap = AntiPattern(
         id="anti_01",
         type="anti_pattern",
@@ -59,7 +59,7 @@ def test_anti_pattern_creation():
     assert ap.scope == "harmony"
 
 
-def test_harmonic_grammar_creation():
+def test_harmonic_grammar_creation() -> None:
     grammar = HarmonicGrammar(
         id="grammar_01",
         type="harmonic_grammar",

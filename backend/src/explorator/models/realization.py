@@ -1,5 +1,7 @@
 """Realization models: voicings, bass, arrangements."""
 
+from typing import Any
+
 from pydantic import Field
 
 from explorator.models.base import BaseEntity, CandidateBase
@@ -13,7 +15,7 @@ class VoicingPlan(BaseEntity):
     global_strategy: str = ""
     density_level: str = "medium"
     register_profile: str = "mid_high"
-    voicing_events_json: list[dict] = Field(default_factory=list)  # type: ignore[type-arg]
+    voicing_events: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class BassLine(BaseEntity):
@@ -24,7 +26,7 @@ class BassLine(BaseEntity):
     contour_type: str = "mostly_stepwise"
     rhythmic_density: str = "low"
     relationship_to_harmony: str = "stabilizing"
-    note_events_json: list[dict] = Field(default_factory=list)  # type: ignore[type-arg]
+    note_events: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ArrangementCandidate(CandidateBase):

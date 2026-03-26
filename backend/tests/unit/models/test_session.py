@@ -3,7 +3,7 @@
 from explorator.models.session import CreativeBrief, Session, SessionContext
 
 
-def test_session_creation():
+def test_session_creation() -> None:
     session = Session(
         id="sess_01",
         type="session",
@@ -16,7 +16,7 @@ def test_session_creation():
     assert session.progression_candidate_ids == []
 
 
-def test_creative_brief_creation():
+def test_creative_brief_creation() -> None:
     brief = CreativeBrief(
         id="brief_01",
         type="creative_brief",
@@ -38,7 +38,7 @@ def test_creative_brief_creation():
     assert brief.seed_melody_id is None
 
 
-def test_session_context_creation():
+def test_session_context_creation() -> None:
     ctx = SessionContext(
         id="ctx_01",
         type="session_context",

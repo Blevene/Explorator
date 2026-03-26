@@ -12,7 +12,7 @@ class Melody(BaseEntity):
 
     session_id: str
     source_type: str = "user_supplied"
-    note_events_json: list[dict[str, Any]] = Field(default_factory=list)
+    note_events: list[dict[str, Any]] = Field(default_factory=list)
     range_low: str | None = None
     range_high: str | None = None
 

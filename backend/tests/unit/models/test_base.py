@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from explorator.models.base import BaseEntity, CandidateBase, EvaluationBase
 
 
-def test_base_entity_creation():
+def test_base_entity_creation() -> None:
     entity = BaseEntity(
         id="test_01",
         type="test",
@@ -20,7 +20,7 @@ def test_base_entity_creation():
     assert entity.status == "active"
 
 
-def test_base_entity_requires_id():
+def test_base_entity_requires_id() -> None:
     try:
         BaseEntity(
             type="test",
@@ -33,7 +33,7 @@ def test_base_entity_requires_id():
         pass
 
 
-def test_candidate_base_extends_base_entity():
+def test_candidate_base_extends_base_entity() -> None:
     candidate = CandidateBase(
         id="prog_01",
         type="progression_candidate",
@@ -50,7 +50,7 @@ def test_candidate_base_extends_base_entity():
     assert candidate.warnings == []
 
 
-def test_evaluation_base_extends_base_entity():
+def test_evaluation_base_extends_base_entity() -> None:
     evaluation = EvaluationBase(
         id="eval_01",
         type="theory_evaluation",
