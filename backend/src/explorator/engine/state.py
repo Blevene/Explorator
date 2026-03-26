@@ -1,0 +1,40 @@
+"""LangGraph exploration state definition."""
+
+from typing import Any, TypedDict
+
+
+class ExplorationState(TypedDict, total=False):
+    """Shared state passed through all LangGraph nodes.
+
+    Uses total=False so nodes can incrementally populate fields.
+    """
+
+    # Session context
+    session_id: str
+    prompt: str
+    genre: str
+    generation_mode: str
+
+    # Parsed intent
+    creative_brief: dict[str, Any]
+
+    # Genre data (loaded from Neo4j)
+    genre_profile: dict[str, Any]
+    harmonic_grammar: dict[str, Any]
+    genre_rules: list[dict[str, Any]]
+
+    # Generation outputs
+    progression_candidates: list[dict[str, Any]]
+    top_progressions: list[dict[str, Any]]
+
+    # Evaluation outputs
+    evaluations: list[dict[str, Any]]
+    scorecards: list[dict[str, Any]]
+
+    # Search control
+    round_number: int
+    n_candidates: int
+    k_selection: int
+
+    # Progress callback
+    on_progress: Any  # Callable for SSE events
