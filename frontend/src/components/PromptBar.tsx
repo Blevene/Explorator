@@ -5,7 +5,7 @@ interface PromptBarProps {
   onModeChange: (mode: string) => void;
   onGenerate: () => void;
   loading: boolean;
-  progress: string | null;
+  currentNode: string | null;
 }
 
 const MODES = [
@@ -17,20 +17,11 @@ const MODES = [
 const PIPELINE_STEPS = [
   { key: 'parse_intent', label: 'Parsing intent' },
   { key: 'load_genre', label: 'Loading genre' },
-  { key: 'generate', label: 'Generating progressions' },
+  { key: 'generate', label: 'Generating' },
   { key: 'evaluate_progressions', label: 'Evaluating' },
-  { key: 'select_top_progressions', label: 'Selecting top candidates' },
-  { key: 'persist_round', label: 'Saving results' },
+  { key: 'select_top_progressions', label: 'Selecting' },
+  { key: 'persist_round', label: 'Saving' },
 ];
-
-function getStepIndex(progress: string | null): number {
-  if (!progress) return -1;
-  // Match against node names in the progress string
-  for (let i = PIPELINE_STEPS.length - 1; i >= 0; i--) {
-    if (progress.includes(PIPELINE_STEPS[i].key)) return i;
-  }
-  return -1;
-}
 
 export default function PromptBar({
   prompt,
@@ -39,7 +30,7 @@ export default function PromptBar({
   onModeChange,
   onGenerate,
   loading,
-  progress,
+  currentNode,
 }: PromptBarProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !loading) {
@@ -47,10 +38,14 @@ export default function PromptBar({
     }
   };
 
-  const currentStep = getStepIndex(progress);
-  const pct = loading
-    ? Math.max(5, Math.round(((currentStep + 1) / PIPELINE_STEPS.length) * 100))
-    : 0;
+  // Find which step index matches the current node
+  const stepIndex = currentNode
+    ? PIPELINE_STEPS.findIndex((s) => s.key === currentNode)
+    : -1;
+
+  const pct = loading && stepIndex >= 0
+    ? Math.round(((stepIndex + 1) / PIPELINE_STEPS.length) * 100)
+    : loading ? 5 : 0;
 
   return (
     <div className="flex flex-col gap-2">
@@ -101,27 +96,27 @@ export default function PromptBar({
           {/* Bar */}
           <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
             <div
-              className="h-full bg-purple-500 rounded-full transition-all duration-700 ease-out"
+              className="h-full bg-purple-500 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${pct}%` }}
             />
           </div>
-          {/* Step labels */}
+          {/* Step pills */}
           <div className="flex gap-1 flex-wrap">
             {PIPELINE_STEPS.map((step, i) => {
-              const isDone = i < currentStep;
-              const isActive = i === currentStep;
+              const isDone = stepIndex > i;
+              const isActive = stepIndex === i;
               return (
                 <span
                   key={step.key}
-                  className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+                  className={`text-[10px] px-2 py-0.5 rounded transition-all duration-300 ${
                     isDone
-                      ? 'bg-purple-900/40 text-purple-300'
+                      ? 'bg-purple-900/50 text-purple-300'
                       : isActive
-                        ? 'bg-purple-600 text-white animate-pulse'
+                        ? 'bg-purple-600 text-white'
                         : 'bg-gray-800 text-gray-600'
                   }`}
                 >
-                  {isDone ? '\u2713' : isActive ? '\u25B6' : '\u25CB'} {step.label}
+                  {isDone ? '✓' : isActive ? '▸' : '○'} {step.label}
                 </span>
               );
             })}

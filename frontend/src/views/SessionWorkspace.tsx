@@ -12,8 +12,9 @@ export default function SessionWorkspace() {
   const [session, setSession] = useState<SessionSummary | null>(null);
   const [prompt, setPrompt] = useState('');
   const [generationMode, setGenerationMode] = useState('balanced');
+  const [currentNode, setCurrentNode] = useState<string | null>(null);
 
-  const { candidates, loading, progress, error, setCandidates, setLoading, setProgress, setError } =
+  const { candidates, loading, error, setCandidates, setLoading, setError } =
     useCandidateStore();
 
   // Load session info and existing candidates on mount
@@ -36,7 +37,7 @@ export default function SessionWorkspace() {
     if (!id || !prompt.trim() || loading) return;
 
     setLoading(true);
-    setProgress('Starting round…');
+    setCurrentNode(null);
     setError(null);
 
     try {
@@ -45,24 +46,24 @@ export default function SessionWorkspace() {
       await readSSEStream(
         response,
         (event) => {
-          const node = event.data.node as string | undefined;
+          const node = (event.data.node as string) ?? null;
           switch (event.type) {
             case 'node_started':
-              setProgress(node ?? 'starting');
+              if (node) setCurrentNode(node);
               break;
             case 'node_completed':
-              setProgress(node ?? 'completed');
+              // Keep showing the completed node until next starts
               break;
             case 'candidates_preview':
-              setProgress('generate');  // generation done
+              setCurrentNode('generate');
               break;
             case 'round_completed':
-              setProgress('persist_round');  // final step
+              setCurrentNode('persist_round');
               break;
             case 'round_error':
               setError((event.data.error as string) ?? 'An error occurred.');
               setLoading(false);
-              setProgress(null);
+              setCurrentNode(null);
               break;
           }
         },
@@ -75,13 +76,13 @@ export default function SessionWorkspace() {
             // Ignore reload errors
           }
           setLoading(false);
-          setProgress(null);
+          setCurrentNode(null);
         },
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to trigger round.');
       setLoading(false);
-      setProgress(null);
+      setCurrentNode(null);
     }
   };
 
@@ -115,7 +116,7 @@ export default function SessionWorkspace() {
           onModeChange={setGenerationMode}
           onGenerate={handleGenerate}
           loading={loading}
-          progress={progress}
+          currentNode={currentNode}
         />
       </div>
 
