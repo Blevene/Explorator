@@ -5,39 +5,40 @@ Genre-aware musical exploration engine. A creative copilot that helps producers 
 ## What It Does
 
 - Translate high-level creative prompts ("dream pop in A major, wistful and haunted") into structured musical constraints
-- Generate multiple candidate chord progressions for a target genre
-- Realize progressions into voicings, bass lines, and arrangements
-- Evaluate candidates across multi-dimensional music criteria
-- Iteratively refine through mutation and human feedback
-- Export as MIDI for use in DAWs like Ableton
+- Generate multiple candidate chord progressions for a target genre using Gemini Pro
+- Evaluate candidates with hybrid scoring (deterministic music theory + Gemini Flash)
+- Display ranked results with Roman numeral analysis and per-dimension scores
+- Real-time progress tracking via SSE as the LangGraph engine runs
+- Export as MIDI for use in DAWs like Ableton (M4)
 
-## Current Status: M0 Foundations Complete
+## Current Status: M1 Harmonic MVP Complete
 
-The foundation layer is built and working:
+The system generates and evaluates genre-specific chord progressions end-to-end:
 
-- **Backend:** FastAPI + Pydantic v2 with 46 domain models
-- **Database:** Neo4j graph persistence with 30 constraints
-- **Genre System:** 3 curated profiles (Dream Pop, Synthwave, Cinematic) as YAML
-- **API:** Session CRUD + genre list endpoints
-- **Frontend:** React + Vite + Tailwind with Dashboard and session creation
-- **Tests:** 124 passing (113 unit + 11 integration)
+- **LangGraph Engine:** 6-node flow (parse intent → load genre → generate → evaluate → select → persist)
+- **Gemini Integration:** Pro for creative generation, Flash for intent parsing + evaluation scoring
+- **music21 Adapter:** Roman numeral analysis with flat/sharp normalization
+- **Hybrid Evaluation:** Deterministic loopability/cadence/coherence checks + Gemini genre fit/novelty/emotional fit
+- **Genre System:** 3 curated profiles auto-synced to Neo4j on startup
+- **Frontend:** Candidate card grid with scores, prompt bar with generation mode toggle, real-time pipeline progress bar
+- **Tests:** 147 passing (136 unit + 11 integration)
 
 ### Roadmap
 
 | Milestone | Status | What It Adds |
 |-----------|--------|-------------|
 | M0 — Foundations | Done | Project scaffold, models, Neo4j, API, frontend shell |
-| M1 — Harmonic MVP | Next | LangGraph engine, Gemini-powered progression generation, Roman numeral analysis |
-| M2 — Realization MVP | Planned | Voicing + bass generation, piano roll, Tone.js playback |
+| M1 — Harmonic MVP | Done | LangGraph engine, Gemini progression generation, theory evaluation, candidate cards |
+| M2 — Realization MVP | Next | Voicing + bass generation, piano roll, Tone.js playback |
 | M3 — Guided Search | Planned | Multi-round mutation, feedback loop, Pareto ranking |
 | M4 — Export | Planned | MIDI export, candidate explanations, comparison views |
 | M5 — Expanded Surface | Planned | Melodic complements, groove patterns, genre research agent |
 
 ## Tech Stack
 
-**Backend:** Python 3.12, FastAPI, Pydantic v2, LangGraph, Neo4j, music21, Gemini API
+**Backend:** Python 3.12, FastAPI, Pydantic v2, LangGraph, Neo4j, music21, Gemini API (google-genai)
 
-**Frontend:** React 18, TypeScript, Vite, Tailwind CSS, Zustand, TanStack Query, Tone.js
+**Frontend:** React 18, TypeScript, Vite, Tailwind CSS, Zustand, TanStack Query
 
 **Tooling:** uv, ruff, mypy (strict), pytest, Docker Compose
 
@@ -54,7 +55,7 @@ The foundation layer is built and working:
 
 ```bash
 # Clone and enter the project
-git clone <repo-url>
+git clone git@github.com:Blevene/Explorator.git
 cd Explorator
 
 # Copy env and add your Gemini API key
@@ -77,19 +78,42 @@ cd frontend && npm install && cd ..
 # Terminal 1: Backend (port 8001)
 cd backend && uv run uvicorn explorator.api.app:create_app --factory --host 0.0.0.0 --port 8001 --reload
 
-# Terminal 2: Frontend (port 5173, proxies API to backend)
+# Terminal 2: Frontend (port 5173/5174, proxies API to backend)
 make frontend
 
-# Open http://localhost:5173
+# Open http://localhost:5173 (or whichever port Vite assigns)
 ```
+
+### Generate Progressions
+
+1. Open the frontend in your browser
+2. Create a new session with a prompt like "Dream pop in A major, wistful and haunted"
+3. In the workspace, click **Generate** (or adjust the mode: conservative/balanced/exploratory)
+4. Watch the pipeline progress bar as it runs through 6 stages
+5. See candidate cards with chord symbols, Roman numerals, scores, and rationale
 
 ### Test
 
 ```bash
-make test        # Full suite (124 tests, requires Neo4j)
+make test        # Full suite (147 tests, requires Neo4j)
 make test-unit   # Unit tests only (no Neo4j needed)
 make lint        # ruff + mypy
 ```
+
+## Architecture
+
+```
+User Prompt
+  → Intent Parser (regex + Gemini Flash)
+  → Genre Profile (YAML → Neo4j)
+  → Harmony Generator (Gemini Pro)
+  → Theory Evaluator (deterministic + Gemini Flash)
+  → Ranking (weighted top-K selection)
+  → Persist to Neo4j
+  → Candidate Cards in UI
+```
+
+The LangGraph engine orchestrates this as a stateful graph flow. FastAPI owns HTTP/sessions. Domain services are pure Python. Neo4j stores all candidates and lineage.
 
 ## Project Structure
 
@@ -97,18 +121,19 @@ make lint        # ruff + mypy
 explorator/
 ├── backend/
 │   └── src/explorator/
-│       ├── api/          # FastAPI routes, middleware
+│       ├── api/          # FastAPI routes (sessions, rounds, candidates, genres)
 │       ├── adapters/     # Gemini client, music21 adapter
-│       ├── domain/       # Genre profiles, harmony, realization, evaluation
-│       ├── engine/       # LangGraph workflow (M1+)
+│       ├── domain/       # Intent parsing, harmony generation, evaluation, genre system
+│       ├── engine/       # LangGraph state, nodes, graph definition
 │       ├── graph/        # Neo4j repositories
-│       ├── models/       # Pydantic v2 domain models
+│       ├── models/       # Pydantic v2 domain models (46 classes)
 │       └── export/       # MIDI generation (M4+)
 ├── frontend/
 │   └── src/
 │       ├── views/        # Dashboard, SessionWorkspace
+│       ├── components/   # CandidateCard, PromptBar
 │       ├── stores/       # Zustand state
-│       └── services/     # API client
+│       └── services/     # API client, SSE
 ├── product_documents/    # PRD, specs, architecture docs
 ├── docs/                 # Design specs, implementation plans
 ├── docker-compose.yml    # Neo4j
@@ -116,8 +141,6 @@ explorator/
 ```
 
 ## Configuration
-
-Neo4j runs on non-default ports to avoid conflicts:
 
 | Service | Port | Purpose |
 |---------|------|---------|
@@ -128,10 +151,23 @@ Neo4j runs on non-default ports to avoid conflicts:
 
 ## Genre Profiles
 
-Three curated genres ship with the system:
+Three curated genres ship with the system, each with harmonic vocabulary, rules, anti-patterns, and grammars:
 
-- **Dream Pop** — Open voicings, borrowed minor iv, slow harmonic rhythm, soft cadences
-- **Synthwave** — Minor key, arpeggiated patterns, root-heavy bass, steady pulse
-- **Cinematic** — Wide register, pedal tones, chromatic mediants, dynamic density
+- **Dream Pop** — Open voicings, borrowed minor iv, slow harmonic rhythm, soft cadences (default 4 bars)
+- **Synthwave** — Minor key, arpeggiated patterns, root-heavy bass, steady pulse (default 4 bars)
+- **Cinematic** — Wide register, pedal tones, chromatic mediants, dynamic density (default 8 bars)
 
 Genre profiles are YAML files in `backend/src/explorator/domain/style/genres/`. New genres can be added manually or via the genre research agent (M5).
+
+## Evaluation Dimensions
+
+Each candidate is scored on 6 dimensions:
+
+| Dimension | Source | What It Measures |
+|-----------|--------|-----------------|
+| Genre Fit | Gemini Flash | How authentically the progression represents the target genre |
+| Emotional Fit | Gemini Flash | How well it matches the target mood |
+| Novelty | Gemini Flash | How creative/unexpected for the genre |
+| Theoretical Coherence | Deterministic | Diatonic fit via Roman numeral analysis |
+| Cadence Quality | Deterministic | Strength of the ending cadence (V→I, IV→I, etc.) |
+| Loopability | Deterministic | How well the progression loops back to the start |
