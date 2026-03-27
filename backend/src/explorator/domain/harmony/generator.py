@@ -5,7 +5,13 @@ from ulid import ULID
 
 from explorator.adapters.gemini import GeminiClient, ModelTier
 from explorator.adapters.music21_adapter import analyze_roman_numerals
-from explorator.models.harmony import ChordEvent, ProgressionCandidate, RomanNumeralAnalysis
+from explorator.models.harmony import (
+    ChordEvent,
+    ProgressionCandidate,
+    RomanNumeralAnalysis,
+)
+from explorator.prompts.generation import progression_generation_prompt
+from explorator.utils import utc_now
 
 
 class GeneratedProgression(BaseModel):
@@ -20,47 +26,6 @@ class GeneratedProgressionSet(BaseModel):
     """Multiple progressions from a single generation call."""
 
     progressions: list[GeneratedProgression]
-
-
-def build_generation_prompt(
-    genre: str,
-    key_center: str,
-    mode: str,
-    bars: int,
-    generation_mode: str,
-    harmonic_vocabulary: list[str],
-    common_devices: list[str],
-    cadence_archetypes: list[str],
-    mood_targets: list[str],
-) -> str:
-    """Build the prompt for Gemini Pro progression generation."""
-    mode_instruction = {
-        "conservative": "Stay close to genre archetypes. Prioritize genre fit and familiarity.",
-        "balanced": "Mix archetypal progressions with moderately adventurous options.",
-        "exploratory": "Push toward the edges of the genre's boundaries. Prioritize novelty.",
-    }.get(generation_mode, "Mix archetypal and adventurous options.")
-
-    return f"""Generate chord progressions for the following creative brief:
-
-Genre: {genre.replace('_', ' ')}
-Key: {key_center} {mode}
-Length: {bars} bars (one chord per bar unless otherwise noted)
-Mood: {', '.join(mood_targets) if mood_targets else 'not specified'}
-Generation mode: {generation_mode} — {mode_instruction}
-
-Genre harmonic vocabulary: {', '.join(harmonic_vocabulary)}
-Common devices: {', '.join(common_devices)}
-Cadence archetypes: {', '.join(cadence_archetypes)}
-
-IMPORTANT constraints:
-- Each progression must be exactly {bars} chords (one per bar)
-- Use standard chord symbols (e.g., Cmaj7, Am7, Fmaj7, G7, Bbmaj7, Dm9)
-- Progressions should LOOP well — the last chord should resolve naturally back to the first chord. This is critical for production use.
-- Fit the genre and mood
-- Include a rationale explaining the harmonic choices and why it loops well
-- Include intent_tags (short descriptive words like "loopable", "dark", "ethereal")
-
-Return multiple DISTINCT progressions. Vary the harmonic approach — don't just transpose the same idea."""
 
 
 class HarmonyGenerator:
@@ -84,22 +49,17 @@ class HarmonyGenerator:
         mood_targets: list[str],
     ) -> list[ProgressionCandidate]:
         """Generate N progression candidates using Gemini Pro."""
-        prompt = build_generation_prompt(
+        prompt, system_prompt = progression_generation_prompt(
             genre=genre,
             key_center=key_center or "C",
             mode=mode or "major",
             bars=bars,
             generation_mode=generation_mode,
+            n_candidates=n_candidates,
             harmonic_vocabulary=harmonic_vocabulary,
             common_devices=common_devices,
             cadence_archetypes=cadence_archetypes,
             mood_targets=mood_targets,
-        )
-
-        system_prompt = (
-            f"You are a music theory expert specializing in {genre.replace('_', ' ')}. "
-            f"Generate exactly {n_candidates} distinct chord progressions. "
-            "Return valid JSON matching the schema."
         )
 
         result = await self.gemini.generate_structured(
@@ -113,7 +73,6 @@ class HarmonyGenerator:
         for prog in result.progressions[:n_candidates]:
             candidate_id = f"prog_{ULID()}"
 
-            # Build chord events
             chord_events = [
                 ChordEvent(
                     bar=i + 1,
@@ -124,7 +83,6 @@ class HarmonyGenerator:
                 for i, symbol in enumerate(prog.chord_symbols[:bars])
             ]
 
-            # Analyze Roman numerals via music21
             rna_id = f"rna_{ULID()}"
             rn_results = analyze_roman_numerals(
                 key=key_center or "C",
@@ -137,15 +95,22 @@ class HarmonyGenerator:
                 status="completed",
                 progression_candidate_id=candidate_id,
                 analysis_events=[
-                    {"bar": i + 1, "symbol": r.roman_numeral, "confidence": r.confidence}
+                    {
+                        "bar": i + 1,
+                        "symbol": r.roman_numeral,
+                        "confidence": r.confidence,
+                    }
                     for i, r in enumerate(rn_results)
                 ],
             )
 
+            now = utc_now()
             candidate = ProgressionCandidate(
                 id=candidate_id,
                 type="progression_candidate",
                 status="candidate",
+                created_at=now,
+                updated_at=now,
                 session_id=session_id,
                 rationale=prog.rationale,
                 intent_tags=prog.intent_tags,
@@ -158,8 +123,9 @@ class HarmonyGenerator:
                 source_type="generated",
             )
 
-            # Attach RNA as metadata for now (persisted in persist_round)
-            candidate.metadata["roman_numeral_analysis"] = rna.model_dump(mode="json")
+            candidate.metadata["roman_numeral_analysis"] = rna.model_dump(
+                mode="json"
+            )
             candidates.append(candidate)
 
         return candidates

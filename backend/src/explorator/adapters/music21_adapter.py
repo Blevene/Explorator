@@ -98,9 +98,8 @@ def analyze_roman_numerals(
     Uses music21 for scale degree identification, then applies clean
     quality suffixes instead of figured bass notation.
     """
-    from music21 import harmony
+    from music21 import harmony, roman
     from music21 import key as m21_key
-    from music21 import roman
 
     try:
         analysis_key = m21_key.Key(key, "minor") if mode == "minor" else m21_key.Key(key, "major")

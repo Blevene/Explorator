@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from explorator.api.deps import get_neo4j_driver
 from explorator.graph.repository import BaseRepository
+from explorator.utils import parse_json_or_dict
 
 router = APIRouter(tags=["candidates"])
 
@@ -69,32 +70,21 @@ async def list_candidates(
         chord_events = _parse_json_field(c.get("chord_events"))
         chord_symbols = [e.get("symbol", "") for e in chord_events if isinstance(e, dict)]
 
-        # Try to get Roman numeral analysis from metadata
-        metadata = c.get("metadata", "{}")
-        if isinstance(metadata, str):
-            try:
-                metadata = json.loads(metadata)
-            except (json.JSONDecodeError, TypeError):
-                metadata = {}
+        # Parse metadata (may be JSON string from Neo4j)
+        metadata = parse_json_or_dict(c.get("metadata"))
 
-        rna = metadata.get("roman_numeral_analysis", {}) if isinstance(metadata, dict) else {}
-        rna_events = rna.get("analysis_events", []) if isinstance(rna, dict) else []
+        # Extract Roman numeral analysis
+        rna = parse_json_or_dict(metadata.get("roman_numeral_analysis"))
+        rna_events = rna.get("analysis_events", [])
         roman_numerals = [e.get("symbol", "?") for e in rna_events if isinstance(e, dict)]
 
-        # Extract scores from metadata (persisted by persist_round)
-        scores_data: dict[str, float] = {}
-        weighted = 0.0
-        if isinstance(metadata, dict):
-            scores_raw = metadata.get("scores", {})
-            if isinstance(scores_raw, str):
-                try:
-                    scores_data = json.loads(scores_raw)
-                except (json.JSONDecodeError, TypeError):
-                    scores_data = {}
-            elif isinstance(scores_raw, dict):
-                scores_data = {k: float(v) for k, v in scores_raw.items()}
-            wt = metadata.get("weighted_total", 0.0)
-            weighted = float(wt) if wt else 0.0
+        # Extract scores (persisted by persist_round)
+        scores_raw = metadata.get("scores", {})
+        scores_data = parse_json_or_dict(scores_raw) if isinstance(scores_raw, str) else (
+            {k: float(v) for k, v in scores_raw.items()} if isinstance(scores_raw, dict) else {}
+        )
+        wt = metadata.get("weighted_total", 0.0)
+        weighted = float(wt) if wt else 0.0
 
         items.append(
             CandidateSummary(

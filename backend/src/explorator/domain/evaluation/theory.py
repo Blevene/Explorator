@@ -4,6 +4,8 @@ Deterministic checks run first. Gemini Flash scores softer dimensions.
 LLM is never the sole scoring authority.
 """
 
+import logging
+
 from pydantic import BaseModel, Field
 from ulid import ULID
 
@@ -11,7 +13,10 @@ from explorator.adapters.gemini import GeminiClient, ModelTier
 from explorator.adapters.music21_adapter import analyze_roman_numerals, parse_chord_symbol
 from explorator.models.evaluation import AggregateScorecard, TheoryEvaluation
 from explorator.models.harmony import ProgressionCandidate
+from explorator.prompts.evaluation import theory_evaluation_prompt
 from explorator.utils import utc_now
+
+logger = logging.getLogger(__name__)
 
 
 def _root_interval(root_a: str, root_b: str) -> int | None:
@@ -19,7 +24,8 @@ def _root_interval(root_a: str, root_b: str) -> int | None:
     try:
         from music21 import pitch
 
-        return (pitch.Pitch(root_b).midi - pitch.Pitch(root_a).midi) % 12
+        result: int = (pitch.Pitch(root_b).midi - pitch.Pitch(root_a).midi) % 12
+        return result
     except Exception:
         return None
 
@@ -146,9 +152,8 @@ def check_theoretical_coherence(
     if total == 0:
         return 5.0
 
-    # Count: fully analyzed, low confidence, and failed
+    # Count: fully analyzed and failed
     analyzed = sum(1 for r in rna if r.confidence >= 0.8)
-    partial = sum(1 for r in rna if 0.0 < r.confidence < 0.8)
     failed = sum(1 for r in rna if r.roman_numeral == "?")
 
     # Check for borrowed/chromatic chords (have b or # prefix)
@@ -163,8 +168,13 @@ def check_theoretical_coherence(
     # Failed analysis: stronger penalty
     base -= (failed / total) * 2.0
 
-    # Bonus for variety: using more than 2 distinct chord qualities
-    distinct_roots = len({parse_chord_symbol(s).root for s in chord_symbols if parse_chord_symbol(s).root != "unknown"})
+    # Bonus for variety: using more than 2 distinct chord roots
+    roots = {
+        parse_chord_symbol(s).root
+        for s in chord_symbols
+        if parse_chord_symbol(s).root != "unknown"
+    }
+    distinct_roots = len(roots)
     if distinct_roots >= 3:
         base += 0.5
 
@@ -204,12 +214,19 @@ class TheoryEvaluator:
         )
 
         # Gemini-assisted scores
-        gemini_scores = await self._gemini_evaluate(
+        gemini_scores, gemini_failed = await self._gemini_evaluate(
             chord_symbols, genre, mood_targets, candidate.key_center, candidate.mode
         )
 
         eval_id = f"eval_{ULID()}"
         now = utc_now()
+
+        warnings: list[str] = []
+        if gemini_failed:
+            warnings.append(
+                "Gemini scoring failed — using fallback defaults"
+                " for genre_fit, emotional_fit, novelty"
+            )
 
         theory_eval = TheoryEvaluation(
             id=eval_id,
@@ -225,6 +242,7 @@ class TheoryEvaluator:
             cadence_quality=cadence,
             novelty=gemini_scores.novelty,
             loopability=loopability,
+            notes=warnings,
         )
 
         # Build aggregate scorecard
@@ -259,30 +277,35 @@ class TheoryEvaluator:
         mood_targets: list[str],
         key: str,
         mode: str,
-    ) -> GeminiScores:
-        """Get Gemini Flash scores for soft dimensions."""
+    ) -> tuple[GeminiScores, bool]:
+        """Get Gemini Flash scores for soft dimensions.
+
+        Returns (scores, failed) where failed=True means fallback defaults were used.
+        """
         rna = analyze_roman_numerals(key, mode, chord_symbols)
         rn_display = " → ".join(r.roman_numeral for r in rna)
 
-        prompt = f"""Rate this chord progression on a 0-10 scale. Be critical and precise — avoid giving everything high scores. Differentiate between progressions.
-
-Progression: {' → '.join(chord_symbols)}
-Roman numerals: {rn_display}
-Key: {key} {mode}
-Target genre: {genre.replace('_', ' ')}
-Target mood: {', '.join(mood_targets) if mood_targets else 'not specified'}
-
-Score these dimensions (use the FULL 0-10 range, most scores should be 5-8):
-- genre_fit: How authentically does this progression represent the target genre? Consider typical harmonic vocabulary, cadence patterns, and emotional quality. A generic progression that works in many genres should score 5-6, not 8+.
-- emotional_fit: How well does it match the target mood? Consider the harmonic color, tension/release, and brightness/darkness.
-- novelty: How creative or unexpected is this for the genre? Standard patterns = 3-4. Interesting twists = 6-7. Genuinely surprising but coherent = 8+."""
+        prompt, system = theory_evaluation_prompt(
+            chord_symbols=chord_symbols,
+            roman_numerals=rn_display,
+            key=key,
+            mode=mode,
+            genre=genre,
+            mood_targets=mood_targets,
+        )
 
         try:
-            return await self.gemini.generate_structured(
+            scores = await self.gemini.generate_structured(
                 prompt=prompt,
                 response_model=GeminiScores,
                 tier=ModelTier.FLASH,
-                system_prompt="You are a professional music theory critic. Score honestly using the full range. Most progressions should score 5-7, not 8-10. Be discriminating.",
+                system_prompt=system,
             )
+            return scores, False
         except Exception:
-            return GeminiScores(genre_fit=6.0, emotional_fit=6.0, novelty=5.0)
+            logger.warning(
+                "Gemini evaluation failed for %s in %s %s — using fallback scores",
+                " → ".join(chord_symbols), key, mode,
+                exc_info=True,
+            )
+            return GeminiScores(genre_fit=6.0, emotional_fit=6.0, novelty=5.0), True

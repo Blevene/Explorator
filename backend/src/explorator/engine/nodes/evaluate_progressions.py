@@ -1,12 +1,15 @@
 """Evaluate progressions node — hybrid theory scoring with parallel execution."""
 
 import asyncio
+import logging
 from typing import Any
 
 from explorator.adapters.gemini import GeminiClient
 from explorator.domain.evaluation.theory import TheoryEvaluator
 from explorator.engine.state import ExplorationState
 from explorator.models.harmony import ProgressionCandidate
+
+logger = logging.getLogger(__name__)
 
 
 async def evaluate_progressions(
@@ -39,18 +42,37 @@ async def evaluate_progressions(
 
     evaluations = []
     scorecards = []
-    for result in results:
+    failed = 0
+    for i, result in enumerate(results):
         if isinstance(result, BaseException):
-            continue  # Skip failed evaluations
+            logger.error(
+                "Evaluation failed for candidate %s: %s",
+                candidates[i].id if i < len(candidates) else "unknown",
+                result,
+                exc_info=result,
+            )
+            failed += 1
+            continue
         theory_eval, scorecard = result
         evaluations.append(theory_eval.model_dump(mode="json"))
         scorecards.append(scorecard.model_dump(mode="json"))
+
+    if failed > 0:
+        logger.warning(
+            "Evaluated %d/%d candidates (%d failed)",
+            len(scorecards), len(candidates), failed,
+        )
 
     if callback:
         top_score = max((s["weighted_total"] for s in scorecards), default=0)
         await callback(
             "node_completed",
-            {"node": "evaluate_progressions", "evaluated": len(scorecards), "top_score": top_score},
+            {
+                "node": "evaluate_progressions",
+                "evaluated": len(scorecards),
+                "failed": failed,
+                "top_score": top_score,
+            },
         )
 
     return {"evaluations": evaluations, "scorecards": scorecards}

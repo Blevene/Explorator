@@ -1,7 +1,7 @@
 """Round triggering and SSE progress endpoints."""
 
 import asyncio
-import json
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from neo4j import AsyncDriver
@@ -13,6 +13,9 @@ from explorator.api.deps import get_gemini_client, get_neo4j_driver
 from explorator.api.sse import SSEChannel
 from explorator.engine.graph import build_m1_graph
 from explorator.graph.session_repo import SessionRepository
+from explorator.utils import parse_json_or_dict
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["rounds"])
 
@@ -49,13 +52,8 @@ async def trigger_round(
         raise HTTPException(status_code=404, detail="Session not found")
 
     # Resolve prompt: use request prompt or fall back to session's stored prompt
-    metadata = session.get("metadata", {})
-    if isinstance(metadata, str):
-        try:
-            metadata = json.loads(metadata)
-        except (json.JSONDecodeError, TypeError):
-            metadata = {}
-    session_prompt = metadata.get("prompt", "") if isinstance(metadata, dict) else ""
+    metadata = parse_json_or_dict(session.get("metadata"))
+    session_prompt = metadata.get("prompt", "")
     prompt = request.prompt or session_prompt
 
     channel = SSEChannel()
@@ -77,6 +75,7 @@ async def trigger_round(
         try:
             await graph.ainvoke(initial_state)
         except Exception as e:
+            logger.exception("Round failed for session %s", session_id)
             await channel.send("round_error", {"error": str(e)})
         finally:
             await channel.close()

@@ -1,7 +1,6 @@
 """Session CRUD endpoints."""
 
 import datetime
-import json
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -10,6 +9,7 @@ from ulid import ULID
 from explorator.api.deps import get_session_repo
 from explorator.graph.session_repo import SessionRepository
 from explorator.models.session import Session
+from explorator.utils import parse_json_or_dict
 
 router = APIRouter(tags=["sessions"])
 
@@ -96,16 +96,11 @@ async def get_session(
     session = await repo.get_by_id(session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
-    metadata = session.get("metadata", {})
-    if isinstance(metadata, str):
-        try:
-            metadata = json.loads(metadata)
-        except (json.JSONDecodeError, TypeError):
-            metadata = {}
+    metadata = parse_json_or_dict(session.get("metadata"))
     return SessionResponse(
         session_id=session["id"],
         status=session.get("status", "unknown"),
         mode=session.get("mode", "unknown"),
         created_at=session.get("created_at", ""),
-        prompt=metadata.get("prompt", "") if isinstance(metadata, dict) else "",
+        prompt=metadata.get("prompt", ""),
     )

@@ -51,64 +51,68 @@ export default function SessionWorkspace() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      const TIMEOUT_MS = 120_000; // 2 minute max round time
 
-      const processChunk = async (): Promise<void> => {
-        const { done, value } = await reader.read();
-        if (done) {
-          // Stream ended — reload candidates
-          try {
-            const res = await listCandidates(id);
-            setCandidates(res.items);
-          } catch { /* ignore */ }
-          setLoading(false);
-          setCurrentNode(null);
-          return;
-        }
+      try {
+        const deadline = Date.now() + TIMEOUT_MS;
 
-        buffer += decoder.decode(value, { stream: true });
-        // SSE messages are separated by blank lines — handle both \r\n\r\n and \n\n
-        const parts = buffer.split(/\r?\n\r?\n/);
-        buffer = parts.pop() ?? '';
-
-        for (const part of parts) {
-          if (!part.trim()) continue;
-
-          let eventType = '';
-          let dataStr = '';
-
-          for (const line of part.split(/\r?\n/)) {
-            if (line.startsWith('event: ')) eventType = line.slice(7).trim();
-            else if (line.startsWith('data: ')) dataStr = line.slice(6).trim();
+        while (true) {
+          if (Date.now() > deadline) {
+            setError('Round timed out after 2 minutes.');
+            break;
           }
 
-          if (!eventType || !dataStr) continue;
+          const { done, value } = await reader.read();
+          if (done) break;
 
-          let data: Record<string, unknown>;
-          try { data = JSON.parse(dataStr); } catch { continue; }
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split(/\r?\n\r?\n/);
+          buffer = parts.pop() ?? '';
 
-          const node = data.node as string | undefined;
+          for (const part of parts) {
+            if (!part.trim()) continue;
 
-          if (eventType === 'node_started' && node) {
-            nodeRef.current = node;
-            setCurrentNode(node);
-          } else if (eventType === 'round_completed') {
-            nodeRef.current = 'persist_round';
-            setCurrentNode('persist_round');
-          } else if (eventType === 'round_error') {
-            setError((data.error as string) ?? 'Error');
-            setLoading(false);
-            setCurrentNode(null);
-            reader.releaseLock();
-            return;
+            let eventType = '';
+            let dataStr = '';
+
+            for (const line of part.split(/\r?\n/)) {
+              if (line.startsWith('event: ')) eventType = line.slice(7).trim();
+              else if (line.startsWith('data: ')) dataStr = line.slice(6).trim();
+            }
+
+            if (!eventType || !dataStr) continue;
+
+            let data: Record<string, unknown>;
+            try { data = JSON.parse(dataStr); } catch { continue; }
+
+            const node = data.node as string | undefined;
+
+            if (eventType === 'node_started' && node) {
+              nodeRef.current = node;
+              setCurrentNode(node);
+            } else if (eventType === 'round_completed') {
+              nodeRef.current = 'persist_round';
+              setCurrentNode('persist_round');
+            } else if (eventType === 'round_error') {
+              setError((data.error as string) ?? 'Error');
+              break;
+            }
           }
+
+          // Yield to React render loop
+          await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
         }
+      } finally {
+        reader.releaseLock();
+      }
 
-        // Use requestAnimationFrame to yield to React rendering before next chunk
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-        return processChunk();
-      };
-
-      await processChunk();
+      // Reload candidates after stream ends
+      try {
+        const res = await listCandidates(id);
+        setCandidates(res.items);
+      } catch {
+        setError('Failed to reload candidates after round.');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to trigger round.');
       setLoading(false);

@@ -5,6 +5,7 @@ Uses hybrid approach:
 - Gemini Flash for soft preferences (mood, complexity, aesthetic interpretation)
 """
 
+import logging
 import re
 from typing import Any
 
@@ -12,7 +13,10 @@ from pydantic import BaseModel, Field
 
 from explorator.adapters.gemini import GeminiClient, ModelTier
 from explorator.models.session import CreativeBrief
+from explorator.prompts.intent import soft_preference_prompt
 from explorator.utils import utc_now
+
+logger = logging.getLogger(__name__)
 
 # Known genres (normalized to snake_case)
 KNOWN_GENRES = {
@@ -129,21 +133,18 @@ class IntentParser:
 
     async def _extract_soft_preferences(self, prompt: str) -> SoftPreferences:
         """Use Gemini Flash to extract mood, complexity, and aesthetic preferences."""
-        system = (
-            "You are a music analysis assistant. Extract soft preferences from "
-            "the user's creative prompt. Return structured JSON with mood_targets "
-            "(list of mood words), energy_level (low/low_medium/medium/medium_high/high), "
-            "complexity_target (low/medium/medium_high/high), novelty_target "
-            "(low/moderate/moderate_high/high), instrumentation_targets (list of "
-            "instrument names), and user_language_notes (notable phrases from the prompt)."
-        )
+        user_prompt, system = soft_preference_prompt(prompt)
         try:
             return await self.gemini.generate_structured(
-                prompt=f"Extract preferences from this music prompt: {prompt}",
+                prompt=user_prompt,
                 response_model=SoftPreferences,
                 tier=ModelTier.FLASH,
                 system_prompt=system,
             )
         except Exception:
-            # Fallback: return minimal defaults if Gemini fails
+            logger.warning(
+                "Gemini soft preference extraction failed for prompt: %s",
+                prompt[:100],
+                exc_info=True,
+            )
             return SoftPreferences(user_language_notes=[prompt])
