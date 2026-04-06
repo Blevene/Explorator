@@ -1,5 +1,6 @@
 import pytest
-from explorator.adapters.music21_adapter import realize_voicing
+from explorator.adapters.music21_adapter import realize_voicing, check_voice_leading
+from explorator.models.realization import VoiceLeadingCheck
 
 
 class TestRealizeVoicingClose:
@@ -73,3 +74,33 @@ class TestRealizeVoicingRegisters:
         for p in pitches:
             midi = m21pitch.Pitch(p).midi
             assert 72 <= midi <= 108
+
+
+class TestCheckVoiceLeading:
+    def test_identical_voicings(self):
+        result = check_voice_leading(["C4", "E4", "G4", "B4"], ["C4", "E4", "G4", "B4"])
+        assert isinstance(result, VoiceLeadingCheck)
+        assert result.common_tones == 4
+        assert result.total_semitone_distance == 0
+        assert result.max_leap == 0
+
+    def test_smooth_voice_leading(self):
+        # Cmaj7 → Am7: C stays, E stays, G stays, B→A (2 semitones)
+        result = check_voice_leading(["C4", "E4", "G4", "B4"], ["C4", "E4", "G4", "A4"])
+        assert result.common_tones == 3
+        assert result.total_semitone_distance == 2
+        assert result.max_leap == 2
+
+    def test_parallel_fifths_detected(self):
+        # Voice 1: C4→D4, Voice 2: G4→A4 — parallel fifths
+        result = check_voice_leading(["C4", "G4"], ["D4", "A4"])
+        assert result.has_parallel_fifths is True
+
+    def test_no_parallel_fifths(self):
+        result = check_voice_leading(["C4", "E4", "G4"], ["C4", "F4", "A4"])
+        assert result.has_parallel_fifths is False
+
+    def test_parallel_octaves_detected(self):
+        # Voice 1: C3→D3, Voice 2: C4→D4 — parallel octaves
+        result = check_voice_leading(["C3", "C4"], ["D3", "D4"])
+        assert result.has_parallel_octaves is True

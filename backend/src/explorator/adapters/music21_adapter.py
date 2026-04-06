@@ -343,6 +343,69 @@ def _shift_voicing_to_register(midi_notes: list[int], low: int, high: int) -> li
     return midi_notes
 
 
+def check_voice_leading(prev_pitches: list[str], next_pitches: list[str]) -> "VoiceLeadingCheck":
+    """Check voice leading quality between two adjacent voicings.
+
+    Assumes voices are paired by index (sorted low to high).
+    """
+    from music21 import pitch as m21pitch
+    from explorator.models.realization import VoiceLeadingCheck
+
+    def parse_sorted(pitches: list[str]) -> list[int]:
+        return sorted(m21pitch.Pitch(p).midi for p in pitches)
+
+    prev_midi = parse_sorted(prev_pitches)
+    next_midi = parse_sorted(next_pitches)
+
+    n = min(len(prev_midi), len(next_midi))
+
+    common_tones = 0
+    total_distance = 0
+    max_leap = 0
+
+    for i in range(n):
+        dist = abs(next_midi[i] - prev_midi[i])
+        if dist == 0:
+            common_tones += 1
+        total_distance += dist
+        if dist > max_leap:
+            max_leap = dist
+
+    # Check for parallel fifths and parallel octaves
+    # For each pair of voices (i, j) where i < j, check if both form the same
+    # interval type before and after, and both move in the same direction.
+    has_parallel_fifths = False
+    has_parallel_octaves = False
+
+    for i in range(n):
+        for j in range(i + 1, n):
+            # Interval before (mod 12)
+            interval_before = (prev_midi[j] - prev_midi[i]) % 12
+            # Interval after (mod 12)
+            interval_after = (next_midi[j] - next_midi[i]) % 12
+
+            # Both voices must actually move
+            move_i = next_midi[i] - prev_midi[i]
+            move_j = next_midi[j] - prev_midi[j]
+
+            both_move = (move_i != 0) and (move_j != 0)
+            same_direction = (move_i > 0) == (move_j > 0)
+
+            if both_move and same_direction:
+                if interval_before == 7 and interval_after == 7:
+                    has_parallel_fifths = True
+                if interval_before == 0 and interval_after == 0:
+                    has_parallel_octaves = True
+
+    return VoiceLeadingCheck(
+        common_tones=common_tones,
+        total_semitone_distance=total_distance,
+        max_leap=max_leap,
+        has_parallel_fifths=has_parallel_fifths,
+        has_parallel_octaves=has_parallel_octaves,
+    )
+
+
 def _fallback_roman_numeral(symbol: str, analysis_key: Any) -> str:
     """Compute Roman numeral manually when music21 fails."""
     try:
