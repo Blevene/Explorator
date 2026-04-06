@@ -88,14 +88,19 @@ class BassPreferences(BaseModel):
 
 
 class ChordVoicingInstruction(BaseModel):
-    """Detailed voicing specification for a single chord."""
+    """Per-chord voicing instruction from the LLM strategy."""
 
     chord_symbol: str
-    bar: int
     voicing_type: VoicingType
-    register: RegisterLabel
-    density: DensityLevel
-    pitches: list[str]
+    # target_register: new API used by VoicingGenerator
+    target_register: RegisterLabel = "mid_high"
+    # register: legacy field kept for backward compatibility
+    register: RegisterLabel = "mid"
+    extensions_to_include: list[str] = Field(default_factory=list)
+    # Optional fields kept for legacy / richer payloads
+    bar: int = 0
+    density: DensityLevel = "medium"
+    pitches: list[str] = Field(default_factory=list)
     voice_leading_check: VoiceLeadingCheck | None = None
 
 
@@ -104,16 +109,19 @@ class VoicingStrategyResponse(BaseModel):
 
     global_strategy: str
     density_level: str
-    register_profile: str
-    voicing_instructions: list[ChordVoicingInstruction]
+    voice_count: int = 4
+    per_chord: list[ChordVoicingInstruction] = Field(default_factory=list)
+    # Optional legacy / extended fields
+    register_profile: str = "mid_high"
+    voicing_instructions: list[ChordVoicingInstruction] = Field(default_factory=list)
     rationale: str = ""
 
 
 class VariantConfig(BaseModel):
     """Configuration for a single arrangement variant."""
 
-    label: str
     voicing_type: VoicingType | None = None
+    label: str = ""
     density: DensityLevel | None = None
     register: RegisterLabel | None = None
     description: str = ""
