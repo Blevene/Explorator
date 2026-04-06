@@ -11,7 +11,7 @@ async def assemble_arrangements(state: RealizationState) -> dict[str, Any]:
     """Group voicing plans and bass lines by progression candidate, then assemble families."""
     callback = state.get("on_progress")
     if callback:
-        await callback("node_started", {"node": "assemble_arrangements"})
+        await callback("node_started", {"node": "assemble"})
 
     session_id = state.get("session_id", "")
     creative_brief = state.get("creative_brief", {})

@@ -104,3 +104,12 @@ class TestCheckVoiceLeading:
         # Voice 1: C3→D3, Voice 2: C4→D4 — parallel octaves
         result = check_voice_leading(["C3", "C4"], ["D3", "D4"])
         assert result.has_parallel_octaves is True
+
+    def test_unequal_voice_counts(self):
+        """When voice counts differ, analyzes min(len) voices."""
+        result = check_voice_leading(
+            ["C4", "E4", "G4", "B4"],  # 4 voices
+            ["C4", "E4", "G4"],         # 3 voices
+        )
+        assert result.common_tones == 3  # first 3 match
+        assert result.total_semitone_distance == 0

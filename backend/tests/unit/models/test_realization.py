@@ -199,14 +199,12 @@ def test_chord_voicing_instruction_minimal() -> None:
         chord_symbol="Cmaj7",
         bar=1,
         voicing_type="open",
-        register="mid",
         density="medium",
         pitches=["C3", "E4", "G4", "B4"],
     )
     assert instr.chord_symbol == "Cmaj7"
     assert instr.bar == 1
     assert instr.voicing_type == "open"
-    assert instr.register == "mid"
     assert instr.density == "medium"
     assert len(instr.pitches) == 4
     assert instr.voice_leading_check is None
@@ -224,7 +222,6 @@ def test_chord_voicing_instruction_with_vl_check() -> None:
         chord_symbol="G7",
         bar=4,
         voicing_type="drop2",
-        register="mid_high",
         density="full",
         pitches=["G2", "B3", "D4", "F4"],
         voice_leading_check=vl,
@@ -243,7 +240,6 @@ def test_voicing_strategy_response_minimal() -> None:
         chord_symbol="Am7",
         bar=2,
         voicing_type="close",
-        register="mid",
         density="medium",
         pitches=["A3", "C4", "E4", "G4"],
     )
@@ -280,7 +276,6 @@ def test_variant_config_minimal() -> None:
     assert cfg.label == "dense"
     assert cfg.voicing_type is None
     assert cfg.density is None
-    assert cfg.register is None
     assert cfg.description == ""
 
 
@@ -289,13 +284,11 @@ def test_variant_config_full() -> None:
         label="sparse_high",
         voicing_type="drop3",
         density="thin",
-        register="high",
         description="High register sparse variant",
     )
     assert cfg.label == "sparse_high"
     assert cfg.voicing_type == "drop3"
     assert cfg.density == "thin"
-    assert cfg.register == "high"
     assert cfg.description == "High register sparse variant"
 
 

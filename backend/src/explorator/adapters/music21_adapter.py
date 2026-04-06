@@ -358,6 +358,10 @@ def check_voice_leading(prev_pitches: list[str], next_pitches: list[str]) -> "Vo
     next_midi = parse_sorted(next_pitches)
 
     n = min(len(prev_midi), len(next_midi))
+    # Note: When voice counts differ, only the first min(len(prev), len(next)) voices
+    # are analyzed. Extra voices in the larger voicing are ignored. This is acceptable
+    # for M2a where voice count is fixed per variant, but should be revisited if
+    # variable voice counts are introduced.
 
     common_tones = 0
     total_distance = 0

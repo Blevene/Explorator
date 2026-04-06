@@ -92,10 +92,7 @@ class ChordVoicingInstruction(BaseModel):
 
     chord_symbol: str
     voicing_type: VoicingType
-    # target_register: new API used by VoicingGenerator
     target_register: RegisterLabel = "mid_high"
-    # register: legacy field kept for backward compatibility
-    register: RegisterLabel = "mid"
     extensions_to_include: list[str] = Field(default_factory=list)
     # Optional fields kept for legacy / richer payloads
     bar: int = 0
@@ -123,7 +120,6 @@ class VariantConfig(BaseModel):
     voicing_type: VoicingType | None = None
     label: str = ""
     density: DensityLevel | None = None
-    register: RegisterLabel | None = None
     description: str = ""
 
 
