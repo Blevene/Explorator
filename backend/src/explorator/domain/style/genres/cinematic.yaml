@@ -47,3 +47,20 @@ experimentation_envelope:
   harmonic_deviation_tolerance: 0.75
   voicing_deviation_tolerance: 0.70
   groove_deviation_tolerance: 0.50
+
+voicing_preferences:
+  default_voicing_type: open
+  default_register: mid
+  default_density: full
+  default_voice_count: 4
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+    - open
+    - drop3
+    - drop2
+
+bass_preferences:
+  default_bass_mode: pedal
+  default_register: low
+  rhythmic_density: sparse
