@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import Field
 
 from explorator.models.base import BaseEntity
+from explorator.models.realization import BassPreferences, VoicingPreferences
 
 
 class GenreProfile(BaseEntity):
@@ -21,6 +22,8 @@ class GenreProfile(BaseEntity):
     common_devices: list[str] = Field(default_factory=list)
     anti_patterns: list[str] = Field(default_factory=list)
     experimentation_envelope: dict[str, float] = Field(default_factory=dict)
+    voicing_preferences: VoicingPreferences = Field(default_factory=VoicingPreferences)
+    bass_preferences: BassPreferences = Field(default_factory=BassPreferences)
 
 
 class GenreRule(BaseEntity):

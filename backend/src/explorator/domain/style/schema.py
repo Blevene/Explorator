@@ -1,5 +1,7 @@
 """Pydantic models for validating genre YAML files."""
 
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -17,6 +19,8 @@ class GenreProfileYAML(BaseModel):
     groove_tendencies: dict[str, str] = Field(default_factory=dict)
     common_devices: list[str] = Field(default_factory=list)
     experimentation_envelope: dict[str, float] = Field(default_factory=dict)
+    voicing_preferences: dict[str, Any] = Field(default_factory=dict)
+    bass_preferences: dict[str, Any] = Field(default_factory=dict)
 
 
 class RuleEntryYAML(BaseModel):

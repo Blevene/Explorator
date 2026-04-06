@@ -7,11 +7,307 @@ from explorator.models.realization import (
     ArrangementCandidate,
     ArrangementFamily,
     BassLine,
+    BassNoteEvent,
+    BassPreferences,
+    ChordVoicingInstruction,
+    VariantConfig,
+    VoiceLeadingCheck,
+    VoicingEvent,
     VoicingPlan,
+    VoicingPreferences,
+    VoicingStrategyResponse,
 )
 
 # ---------------------------------------------------------------------------
-# VoicingPlan
+# VoicingEvent
+# ---------------------------------------------------------------------------
+
+
+def test_voicing_event_minimal() -> None:
+    evt = VoicingEvent(bar=1, pitches=["C4", "E4", "G4"], chord_symbol="C")
+    assert evt.bar == 1
+    assert evt.beat == 1.0
+    assert evt.duration_beats == 4.0
+    assert evt.pitches == ["C4", "E4", "G4"]
+    assert evt.chord_symbol == "C"
+
+
+def test_voicing_event_full() -> None:
+    evt = VoicingEvent(
+        bar=3,
+        beat=2.5,
+        duration_beats=2.0,
+        pitches=["F3", "A3", "C4", "E4"],
+        chord_symbol="Fmaj7",
+    )
+    assert evt.bar == 3
+    assert evt.beat == 2.5
+    assert evt.duration_beats == 2.0
+    assert len(evt.pitches) == 4
+    assert evt.chord_symbol == "Fmaj7"
+
+
+def test_voicing_event_requires_bar_pitches_chord() -> None:
+    with pytest.raises(ValidationError):
+        VoicingEvent(pitches=["C4"], chord_symbol="C")  # type: ignore[call-arg]
+    with pytest.raises(ValidationError):
+        VoicingEvent(bar=1, chord_symbol="C")  # type: ignore[call-arg]
+    with pytest.raises(ValidationError):
+        VoicingEvent(bar=1, pitches=["C4"])  # type: ignore[call-arg]
+
+
+# ---------------------------------------------------------------------------
+# BassNoteEvent
+# ---------------------------------------------------------------------------
+
+
+def test_bass_note_event_minimal() -> None:
+    evt = BassNoteEvent(bar=1, pitch="C2")
+    assert evt.bar == 1
+    assert evt.beat == 1.0
+    assert evt.duration_beats == 1.0
+    assert evt.pitch == "C2"
+    assert evt.velocity == 80
+
+
+def test_bass_note_event_full() -> None:
+    evt = BassNoteEvent(
+        bar=2,
+        beat=3.0,
+        duration_beats=0.5,
+        pitch="G2",
+        velocity=95,
+    )
+    assert evt.bar == 2
+    assert evt.beat == 3.0
+    assert evt.duration_beats == 0.5
+    assert evt.pitch == "G2"
+    assert evt.velocity == 95
+
+
+def test_bass_note_event_requires_bar_and_pitch() -> None:
+    with pytest.raises(ValidationError):
+        BassNoteEvent(pitch="C2")  # type: ignore[call-arg]
+    with pytest.raises(ValidationError):
+        BassNoteEvent(bar=1)  # type: ignore[call-arg]
+
+
+# ---------------------------------------------------------------------------
+# VoiceLeadingCheck
+# ---------------------------------------------------------------------------
+
+
+def test_voice_leading_check_defaults() -> None:
+    check = VoiceLeadingCheck(
+        common_tones=2,
+        total_semitone_distance=4,
+        max_leap=5,
+        has_parallel_fifths=False,
+        has_parallel_octaves=False,
+    )
+    assert check.common_tones == 2
+    assert check.total_semitone_distance == 4
+    assert check.max_leap == 5
+    assert check.has_parallel_fifths is False
+    assert check.has_parallel_octaves is False
+
+
+def test_voice_leading_check_requires_all_fields() -> None:
+    with pytest.raises(ValidationError):
+        VoiceLeadingCheck(  # type: ignore[call-arg]
+            total_semitone_distance=4,
+            max_leap=5,
+            has_parallel_fifths=False,
+            has_parallel_octaves=False,
+        )
+
+
+# ---------------------------------------------------------------------------
+# VoicingPreferences
+# ---------------------------------------------------------------------------
+
+
+def test_voicing_preferences_defaults() -> None:
+    prefs = VoicingPreferences()
+    assert prefs.default_voicing_type == "open"
+    assert prefs.default_register == "mid"
+    assert prefs.default_density == "medium"
+    assert prefs.default_voice_count == 4
+    assert prefs.favor_extensions is False
+    assert prefs.top_voice_continuity == "medium"
+    assert prefs.variant_voicing_types == ["open", "drop2", "close"]
+
+
+def test_voicing_preferences_custom() -> None:
+    prefs = VoicingPreferences(
+        default_voicing_type="drop2",
+        default_register="high",
+        default_density="thin",
+        default_voice_count=3,
+        favor_extensions=True,
+        top_voice_continuity="high",
+        variant_voicing_types=["drop2", "drop3"],
+    )
+    assert prefs.default_voicing_type == "drop2"
+    assert prefs.default_register == "high"
+    assert prefs.default_density == "thin"
+    assert prefs.default_voice_count == 3
+    assert prefs.favor_extensions is True
+    assert prefs.top_voice_continuity == "high"
+    assert prefs.variant_voicing_types == ["drop2", "drop3"]
+
+
+def test_voicing_preferences_invalid_literal() -> None:
+    with pytest.raises(ValidationError):
+        VoicingPreferences(default_voicing_type="invalid")  # type: ignore[arg-type]
+    with pytest.raises(ValidationError):
+        VoicingPreferences(default_register="ultra_high")  # type: ignore[arg-type]
+    with pytest.raises(ValidationError):
+        VoicingPreferences(default_density="sparse")  # type: ignore[arg-type]
+
+
+# ---------------------------------------------------------------------------
+# BassPreferences
+# ---------------------------------------------------------------------------
+
+
+def test_bass_preferences_defaults() -> None:
+    prefs = BassPreferences()
+    assert prefs.default_bass_mode == "supportive"
+    assert prefs.default_register == "low"
+    assert prefs.rhythmic_density == "moderate"
+
+
+def test_bass_preferences_custom() -> None:
+    prefs = BassPreferences(
+        default_bass_mode="walking",
+        default_register="mid",
+        rhythmic_density="dense",
+    )
+    assert prefs.default_bass_mode == "walking"
+    assert prefs.default_register == "mid"
+    assert prefs.rhythmic_density == "dense"
+
+
+# ---------------------------------------------------------------------------
+# ChordVoicingInstruction
+# ---------------------------------------------------------------------------
+
+
+def test_chord_voicing_instruction_minimal() -> None:
+    instr = ChordVoicingInstruction(
+        chord_symbol="Cmaj7",
+        bar=1,
+        voicing_type="open",
+        register="mid",
+        density="medium",
+        pitches=["C3", "E4", "G4", "B4"],
+    )
+    assert instr.chord_symbol == "Cmaj7"
+    assert instr.bar == 1
+    assert instr.voicing_type == "open"
+    assert instr.register == "mid"
+    assert instr.density == "medium"
+    assert len(instr.pitches) == 4
+    assert instr.voice_leading_check is None
+
+
+def test_chord_voicing_instruction_with_vl_check() -> None:
+    vl = VoiceLeadingCheck(
+        common_tones=1,
+        total_semitone_distance=3,
+        max_leap=4,
+        has_parallel_fifths=False,
+        has_parallel_octaves=False,
+    )
+    instr = ChordVoicingInstruction(
+        chord_symbol="G7",
+        bar=4,
+        voicing_type="drop2",
+        register="mid_high",
+        density="full",
+        pitches=["G2", "B3", "D4", "F4"],
+        voice_leading_check=vl,
+    )
+    assert instr.voice_leading_check is not None
+    assert instr.voice_leading_check.common_tones == 1
+
+
+# ---------------------------------------------------------------------------
+# VoicingStrategyResponse
+# ---------------------------------------------------------------------------
+
+
+def test_voicing_strategy_response_minimal() -> None:
+    instr = ChordVoicingInstruction(
+        chord_symbol="Am7",
+        bar=2,
+        voicing_type="close",
+        register="mid",
+        density="medium",
+        pitches=["A3", "C4", "E4", "G4"],
+    )
+    resp = VoicingStrategyResponse(
+        global_strategy="mid-register close voicings",
+        density_level="medium",
+        register_profile="mid",
+        voicing_instructions=[instr],
+    )
+    assert resp.global_strategy == "mid-register close voicings"
+    assert resp.density_level == "medium"
+    assert len(resp.voicing_instructions) == 1
+    assert resp.rationale == ""
+
+
+def test_voicing_strategy_response_with_rationale() -> None:
+    resp = VoicingStrategyResponse(
+        global_strategy="open voicings",
+        density_level="thin",
+        register_profile="high",
+        voicing_instructions=[],
+        rationale="Sparse arrangement to leave room for melody",
+    )
+    assert resp.rationale == "Sparse arrangement to leave room for melody"
+
+
+# ---------------------------------------------------------------------------
+# VariantConfig
+# ---------------------------------------------------------------------------
+
+
+def test_variant_config_minimal() -> None:
+    cfg = VariantConfig(label="dense")
+    assert cfg.label == "dense"
+    assert cfg.voicing_type is None
+    assert cfg.density is None
+    assert cfg.register is None
+    assert cfg.description == ""
+
+
+def test_variant_config_full() -> None:
+    cfg = VariantConfig(
+        label="sparse_high",
+        voicing_type="drop3",
+        density="thin",
+        register="high",
+        description="High register sparse variant",
+    )
+    assert cfg.label == "sparse_high"
+    assert cfg.voicing_type == "drop3"
+    assert cfg.density == "thin"
+    assert cfg.register == "high"
+    assert cfg.description == "High register sparse variant"
+
+
+def test_variant_config_invalid_literal() -> None:
+    with pytest.raises(ValidationError):
+        VariantConfig(label="x", voicing_type="invalid")  # type: ignore[arg-type]
+    with pytest.raises(ValidationError):
+        VariantConfig(label="x", density="ultra_dense")  # type: ignore[arg-type]
+
+
+# ---------------------------------------------------------------------------
+# VoicingPlan — now uses list[VoicingEvent]
 # ---------------------------------------------------------------------------
 
 
@@ -45,7 +341,10 @@ def test_voicing_plan_with_progression() -> None:
 
 
 def test_voicing_plan_with_events() -> None:
-    events = [{"bar": 1, "notes": [60, 64, 67, 71]}, {"bar": 2, "notes": [57, 60, 64, 67]}]
+    events = [
+        VoicingEvent(bar=1, pitches=["C3", "E4", "G4", "B4"], chord_symbol="Cmaj7"),
+        VoicingEvent(bar=2, pitches=["A2", "C4", "E4", "G4"], chord_symbol="Am7"),
+    ]
     plan = VoicingPlan(
         id="vp_03",
         type="voicing_plan",
@@ -53,6 +352,19 @@ def test_voicing_plan_with_events() -> None:
         voicing_events=events,
     )
     assert len(plan.voicing_events) == 2
+    assert plan.voicing_events[0].chord_symbol == "Cmaj7"
+    assert plan.voicing_events[1].bar == 2
+
+
+def test_voicing_plan_rejects_raw_dicts() -> None:
+    """Raw dict events should fail validation since we now require VoicingEvent."""
+    with pytest.raises(ValidationError):
+        VoicingPlan(
+            id="vp_04",
+            type="voicing_plan",
+            status="active",
+            voicing_events=[{"bar": 1, "notes": [60, 64, 67, 71]}],
+        )
 
 
 def test_voicing_plan_requires_id() -> None:
@@ -61,7 +373,7 @@ def test_voicing_plan_requires_id() -> None:
 
 
 # ---------------------------------------------------------------------------
-# BassLine
+# BassLine — now uses list[BassNoteEvent]
 # ---------------------------------------------------------------------------
 
 
@@ -89,11 +401,23 @@ def test_bass_line_full() -> None:
         contour_type="arpeggiated",
         rhythmic_density="high",
         relationship_to_harmony="complementing",
-        note_events=[{"bar": 1, "beat": 1.0, "pitch": 36}],
+        note_events=[BassNoteEvent(bar=1, beat=1.0, pitch="C2")],
     )
     assert bass.style_mode == "walking"
     assert bass.rhythmic_density == "high"
     assert len(bass.note_events) == 1
+    assert bass.note_events[0].pitch == "C2"
+
+
+def test_bass_line_rejects_raw_dicts() -> None:
+    """Raw dict events should fail since we now require BassNoteEvent."""
+    with pytest.raises(ValidationError):
+        BassLine(
+            id="bl_03",
+            type="bass_line",
+            status="active",
+            note_events=[{"bar": 1, "beat": 1.0, "pitch": 36}],
+        )
 
 
 def test_bass_line_requires_id() -> None:
