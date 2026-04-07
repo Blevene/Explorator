@@ -76,6 +76,10 @@ class BassLineGenerator:
                 events.extend(
                     self._pedal_events(bar_idx, root, octave, density)
                 )
+            elif mode == "syncopated":
+                events.extend(
+                    self._syncopated_events(root, octave, bar_idx)
+                )
             else:
                 # "supportive" (default) and everything else
                 events.extend(
@@ -168,3 +172,11 @@ class BassLineGenerator:
                     BassNoteEvent(bar=bar, beat=float(b), duration_beats=1.0, pitch=note_pitch)
                 )
             return events
+
+    def _syncopated_events(self, root: str, octave: int, bar: int) -> list[BassNoteEvent]:
+        """Syncopated: root on beat 1, root on 'and' of beat 3. Density-independent."""
+        pitch = f"{root}{octave}"
+        return [
+            BassNoteEvent(bar=bar, beat=1.0, duration_beats=1.0, pitch=pitch),
+            BassNoteEvent(bar=bar, beat=3.5, duration_beats=0.5, pitch=pitch),
+        ]

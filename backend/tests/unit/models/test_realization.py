@@ -520,3 +520,18 @@ def test_arrangement_family_requires_root_id() -> None:
             status="active",
             session_id="sess_01",
         )  # type: ignore[call-arg]
+
+
+# ---------------------------------------------------------------------------
+# BassPreferences — variant_bass_modes
+# ---------------------------------------------------------------------------
+
+
+class TestBassPreferencesVariantModes:
+    def test_default_variant_bass_modes(self):
+        bp = BassPreferences()
+        assert bp.variant_bass_modes == ["supportive"]
+
+    def test_custom_variant_bass_modes(self):
+        bp = BassPreferences(variant_bass_modes=["supportive", "pedal"])
+        assert len(bp.variant_bass_modes) == 2

@@ -59,3 +59,6 @@ bass_preferences:
   default_bass_mode: supportive
   default_register: low
   rhythmic_density: sparse
+  variant_bass_modes:
+    - supportive
+    - pedal

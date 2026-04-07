@@ -60,3 +60,6 @@ bass_preferences:
   default_bass_mode: supportive
   default_register: low
   rhythmic_density: moderate
+  variant_bass_modes:
+    - supportive
+    - syncopated

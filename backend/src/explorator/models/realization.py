@@ -80,6 +80,7 @@ class BassPreferences(BaseModel):
     default_bass_mode: str = "supportive"
     default_register: str = "low"
     rhythmic_density: str = "moderate"
+    variant_bass_modes: list[str] = Field(default_factory=lambda: ["supportive"])
 
 
 # ---------------------------------------------------------------------------
