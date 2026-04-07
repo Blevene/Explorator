@@ -53,6 +53,19 @@ def test_realization_graph_compiles(mock_gemini, mock_driver):
 
 
 @pytest.mark.integration
+def test_realization_graph_has_evaluation_nodes(mock_gemini, mock_driver):
+    """Graph should include evaluate_arrangements and rank_and_select."""
+    from explorator.engine.realization_graph import build_realization_graph
+    graph = build_realization_graph(mock_gemini, mock_driver)
+    node_names = set(graph.nodes.keys())
+    expected = {
+        "load_context", "plan_voicings", "generate_bass", "assemble",
+        "evaluate_arrangements", "rank_and_select", "persist_realization",
+    }
+    assert expected.issubset(node_names), f"Missing nodes: {expected - node_names}"
+
+
+@pytest.mark.integration
 def test_realization_state_type():
     """Verify RealizationState has all required fields."""
     from explorator.engine.realization_state import RealizationState

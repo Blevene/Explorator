@@ -30,6 +30,10 @@ class ArrangementCandidateRepo(BaseRepository):
     label = "ArrangementCandidate"
 
 
+class ScorecardRepo(BaseRepository):
+    label = "AggregateScorecard"
+
+
 @router.post("/sessions/{session_id}/realization-rounds")
 async def trigger_realization(
     session_id: str,
@@ -73,7 +77,17 @@ async def trigger_realization(
 async def list_arrangements(candidate_id: str, driver=Depends(get_neo4j_driver)) -> list[dict[str, Any]]:  # noqa: B008
     """List arrangement candidates for a progression candidate."""
     repo = ArrangementCandidateRepo(driver)
-    return await repo.query_by_property("progression_candidate_id", candidate_id)
+    results = await repo.query_by_property("progression_candidate_id", candidate_id)
+
+    sc_repo = ScorecardRepo(driver)
+    for r in results:
+        scorecards = await sc_repo.query_by_property("candidate_id", r.get("id"))
+        if scorecards:
+            sc = scorecards[0]
+            r["weighted_total"] = sc.get("weighted_total", 0.0)
+            r["rank_within_round"] = sc.get("rank_within_round", 0)
+
+    return results
 
 
 @router.get("/arrangements/{arrangement_id}")
@@ -93,5 +107,10 @@ async def get_arrangement(arrangement_id: str, driver=Depends(get_neo4j_driver))
         arrangement["voicing_plan"] = await VoicingPlanRepo(driver).get_by_id(vp_id)
     if bl_id:
         arrangement["bass_line"] = await BassLineRepo(driver).get_by_id(bl_id)
+
+    sc_repo = ScorecardRepo(driver)
+    scorecards = await sc_repo.query_by_property("candidate_id", arrangement_id)
+    if scorecards:
+        arrangement["scorecard"] = scorecards[0]
 
     return arrangement
