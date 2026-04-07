@@ -11,6 +11,7 @@ from explorator.graph.arrangement_candidate_repo import ArrangementCandidateRepo
 from explorator.graph.arrangement_family_repo import ArrangementFamilyRepo
 from explorator.graph.bass_line_repo import BassLineRepo
 from explorator.graph.voicing_plan_repo import VoicingPlanRepo
+from explorator.models.evaluation import AggregateScorecard
 from explorator.models.realization import (
     ArrangementCandidate,
     ArrangementFamily,
@@ -136,6 +137,85 @@ async def persist_realization(state: RealizationState, *, driver: AsyncDriver) -
             logger.error("Failed to persist ArrangementFamily %s: %s", fam.id, e)
         except Exception:
             logger.exception("Unexpected error persisting ArrangementFamily %s", fam.id)
+
+    # 5. Persist evaluation entities
+    for ev_data in state.get("evaluations", []):
+        arrangement_id = ev_data.get("arrangement_candidate_id", "")
+        for eval_type in ("voice_leading", "register_density", "playability"):
+            eval_entry = ev_data.get(eval_type, {})
+            eval_node = eval_entry.get("evaluation")
+            if not eval_node:
+                continue
+            eval_id = eval_node.get("id", "")
+            if not eval_id:
+                continue
+            label = {
+                "voice_leading": "VoiceLeadingEvaluation",
+                "register_density": "RegisterDensityEvaluation",
+                "playability": "PlayabilityEvaluation",
+            }[eval_type]
+            query = (
+                f"MERGE (e:{label} {{id: $id}}) "
+                "SET e += $props"
+            )
+            props = {k: v for k, v in eval_node.items() if k != "id"}
+            try:
+                async with driver.session() as session:
+                    await session.run(query, id=eval_id, props=props)
+                # Link arrangement → evaluation
+                await _create_relationship(
+                    driver,
+                    "ArrangementCandidate",
+                    arrangement_id,
+                    "HAS_EVALUATION",
+                    label,
+                    eval_id,
+                )
+            except Neo4jError as e:
+                logger.error("Failed to persist %s %s: %s", label, eval_id, e)
+            except Exception:
+                logger.exception("Unexpected error persisting %s %s", label, eval_id)
+
+    # 6. Persist AggregateScorecard nodes + relationships
+    for sc_data in state.get("scorecards", []):
+        sc = AggregateScorecard.model_validate(sc_data)
+        query = (
+            "MERGE (s:AggregateScorecard {id: $id}) "
+            "SET s += $props"
+        )
+        props = {k: v for k, v in sc.model_dump(mode="json").items() if k != "id"}
+        try:
+            async with driver.session() as session:
+                await session.run(query, id=sc.id, props=props)
+            await _create_relationship(
+                driver,
+                "ArrangementCandidate",
+                sc.candidate_id,
+                "HAS_SCORECARD",
+                "AggregateScorecard",
+                sc.id,
+            )
+        except Neo4jError as e:
+            logger.error("Failed to persist AggregateScorecard %s: %s", sc.id, e)
+        except Exception:
+            logger.exception("Unexpected error persisting AggregateScorecard %s", sc.id)
+
+    # 7. Update ArrangementCandidate statuses (selected / rejected)
+    for arr_data in state.get("arrangement_candidates", []):
+        arr_id = arr_data.get("id", "")
+        new_status = arr_data.get("status", "")
+        if arr_id and new_status in ("selected", "rejected"):
+            update_query = (
+                "MATCH (a:ArrangementCandidate {id: $id}) "
+                "SET a.status = $status"
+            )
+            try:
+                async with driver.session() as session:
+                    await session.run(update_query, id=arr_id, status=new_status)
+            except Neo4jError as e:
+                logger.error("Failed to update status for ArrangementCandidate %s: %s", arr_id, e)
+            except Exception:
+                logger.exception("Unexpected error updating status for %s", arr_id)
 
     if callback:
         await callback(

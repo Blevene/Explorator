@@ -13,4 +13,7 @@ class RealizationState(TypedDict, total=False):
     bass_lines: list[dict[str, Any]]
     arrangement_candidates: list[dict[str, Any]]
     arrangement_families: list[dict[str, Any]]
+    evaluations: list[dict[str, Any]]
+    scorecards: list[dict[str, Any]]
+    selected_arrangements: list[dict[str, Any]]
     on_progress: Any
