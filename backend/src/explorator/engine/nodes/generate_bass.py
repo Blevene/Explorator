@@ -43,6 +43,8 @@ async def generate_bass(state: RealizationState) -> dict[str, Any]:
     prefs = _build_bass_prefs(genre_profile)
     genre = genre_profile.get("genre", creative_brief.get("genre", "dream_pop"))
 
+    variant_modes = prefs.variant_bass_modes
+
     bass_generator = BassLineGenerator()
     bass_lines: list[dict[str, Any]] = []
 
@@ -50,8 +52,14 @@ async def generate_bass(state: RealizationState) -> dict[str, Any]:
         candidate = ProgressionCandidate.model_validate(candidate_data)
         chord_symbols = [e.symbol for e in candidate.chord_events]
 
-        bass_line = bass_generator.generate(chord_symbols, prefs, genre=genre)
-        bass_line.progression_candidate_id = candidate.id
-        bass_lines.append(bass_line.model_dump(mode="json"))
+        for mode in variant_modes:
+            mode_prefs = BassPreferences(
+                default_bass_mode=mode,
+                default_register=prefs.default_register,
+                rhythmic_density=prefs.rhythmic_density,
+            )
+            bass_line = bass_generator.generate(chord_symbols, mode_prefs, genre=genre)
+            bass_line.progression_candidate_id = candidate.id
+            bass_lines.append(bass_line.model_dump(mode="json"))
 
     return {"bass_lines": bass_lines}

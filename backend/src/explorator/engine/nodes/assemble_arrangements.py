@@ -2,13 +2,21 @@
 
 from typing import Any
 
+from ulid import ULID
+
 from explorator.domain.realization.assembly import ArrangementAssembler
 from explorator.engine.realization_state import RealizationState
-from explorator.models.realization import BassLine, VoicingPlan
+from explorator.models.realization import ArrangementFamily, BassLine, VoicingPlan
+from explorator.utils import utc_now
 
 
 async def assemble_arrangements(state: RealizationState) -> dict[str, Any]:
-    """Group voicing plans and bass lines by progression candidate, then assemble families."""
+    """Group voicing plans and bass lines by progression candidate, then assemble families.
+
+    M2b: each progression may have multiple bass lines (one per variant mode).  The
+    assembly creates one ArrangementCandidate for every (VoicingPlan × BassLine)
+    combination and collects them all into a single ArrangementFamily per progression.
+    """
     callback = state.get("on_progress")
     if callback:
         await callback("node_started", {"node": "assemble"})
@@ -22,37 +30,57 @@ async def assemble_arrangements(state: RealizationState) -> dict[str, Any]:
     intent_tags: list[str] = creative_brief.get("mood_targets", [])
 
     # Group voicing plans by progression_candidate_id
-    plans_by_candidate: dict[str, list[VoicingPlan]] = {}
+    vp_by_prog: dict[str, list[VoicingPlan]] = {}
     for vp_data in voicing_plans_raw:
         vp = VoicingPlan.model_validate(vp_data)
         cid = vp.progression_candidate_id or ""
-        plans_by_candidate.setdefault(cid, []).append(vp)
+        vp_by_prog.setdefault(cid, []).append(vp)
 
-    # Map bass lines by progression_candidate_id (one per candidate)
-    bass_by_candidate: dict[str, BassLine] = {}
+    # Group bass lines by progression_candidate_id (multiple per candidate in M2b)
+    bls_by_prog: dict[str, list[BassLine]] = {}
     for bl_data in bass_lines_raw:
         bl = BassLine.model_validate(bl_data)
-        cid = bl.progression_candidate_id or ""
-        bass_by_candidate[cid] = bl
+        pid = bl.progression_candidate_id or ""
+        bls_by_prog.setdefault(pid, []).append(bl)
 
     assembler = ArrangementAssembler()
     all_candidates: list[dict[str, Any]] = []
     all_families: list[dict[str, Any]] = []
 
-    for candidate_id, voicing_plans in plans_by_candidate.items():
-        bass_line = bass_by_candidate.get(candidate_id)
-        if bass_line is None or not voicing_plans:
+    # Iterate over all known progression IDs from voicing plans
+    for candidate_id, plans in vp_by_prog.items():
+        bass_lines = bls_by_prog.get(candidate_id, [])
+
+        if not plans or not bass_lines:
             continue
 
-        family, candidates = assembler.assemble_family(
-            progression_candidate_id=candidate_id,
+        # Cross-product: one ArrangementCandidate per (voicing_plan, bass_line) pair
+        family_candidates = []
+        for vp in plans:
+            for bl in bass_lines:
+                ac = assembler.assemble_one(
+                    progression_candidate_id=candidate_id,
+                    session_id=session_id,
+                    voicing_plan=vp,
+                    bass_line=bl,
+                    intent_tags=intent_tags,
+                    rationale=f"{vp.global_strategy} + {bl.style_mode} bass",
+                )
+                family_candidates.append(ac)
+
+        now = utc_now()
+        family = ArrangementFamily(
+            id=f"fam_{ULID()}",
+            type="arrangement_family",
+            status="active",
+            created_at=now,
+            updated_at=now,
             session_id=session_id,
-            voicing_plans=voicing_plans,
-            bass_line=bass_line,
-            intent_tags=intent_tags,
+            root_arrangement_candidate_id=family_candidates[0].id,
+            member_arrangement_candidate_ids=[c.id for c in family_candidates],
         )
         all_families.append(family.model_dump(mode="json"))
-        all_candidates.extend(c.model_dump(mode="json") for c in candidates)
+        all_candidates.extend(c.model_dump(mode="json") for c in family_candidates)
 
     return {
         "arrangement_candidates": all_candidates,
