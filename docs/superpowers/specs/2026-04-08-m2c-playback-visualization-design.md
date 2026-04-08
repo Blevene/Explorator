@@ -51,7 +51,7 @@ See `docs/DESIGN.md` for the full studio monitor aesthetic: dark foundation, amb
 | Store | State |
 |---|---|
 | `arrangementStore.ts` | arrangements, families, selectedArrangementId, loading, error |
-| `audioStore.ts` | playing, paused, tempo, loop, mutedTracks, volume, currentBar |
+| `audioStore.ts` | playing, paused, tempo, loop, mutedTracks, volume, currentPosition (0-based float: 0.0=bar 1 start, 1.5=bar 2 beat 3) |
 
 ### New Services
 
@@ -85,6 +85,8 @@ User clicks Play
   → audioStore.currentBar updates via requestAnimationFrame
   → PianoRoll playback cursor sweeps in sync
 ```
+
+**Frontend grouping:** The backend returns a flat list of arrangements. The frontend groups them by `progression_candidate_id` to form visual families. No `ArrangementFamily` object is needed from the API — the grouping key is the progression ID.
 
 **No new backend endpoints needed.** M2a + M2b already provide all required API surface:
 - `POST /v1/sessions/{id}/realization-rounds` — trigger realization (SSE)
@@ -122,8 +124,15 @@ Handles flats: `B-4` (music21 format) → `Bb4` → MIDI 70.
 ### Playback Cursor
 
 - Thin vertical line (2px, genre accent color) sweeping left-to-right.
-- Position synced to `Tone.Transport.position` via `requestAnimationFrame` → `audioStore.currentBar`.
+- Position synced to `Tone.Transport.seconds` via `requestAnimationFrame`. Converted to a bar position: `audioStore.currentPosition: number` — a 0-based float where 0.0 = start of bar 1, 1.0 = start of bar 2, 1.5 = beat 3 of bar 2. X pixel = `currentPosition * barWidth`.
 - Only visible during playback.
+
+### Scroll Behavior
+
+- **Pitch labels (Y axis)**: fixed on left edge, do not scroll horizontally.
+- **Grid content**: horizontally scrollable when progression exceeds viewport width.
+- **Auto-scroll during playback**: canvas auto-scrolls to keep the playback cursor visible (within the center 60% of the viewport). No scroll during pause.
+- **Initial scroll position**: always bar 1 (left edge).
 
 ### Load Animation
 
@@ -164,6 +173,10 @@ Default bass: Tone.MonoSynth
    - Bass: `monoSynth.triggerAttackRelease(pitch, duration, time)`
    - Time = beat position converted to seconds at current BPM
 5. Loop: `Tone.Transport.loop = true`, `loopEnd` = total bars in beats notation
+
+### Genre Preset Merging
+
+Genre presets are deep-merged into defaults. If a genre preset only specifies `attack` and `release`, all other synth parameters (oscillator type, volume, etc.) inherit from the PolySynth/MonoSynth defaults. This prevents broken synths from partial preset definitions. Merge order: `defaults → genre override`.
 
 ### Muting
 
@@ -329,7 +342,19 @@ interface BassNoteEvent {
 - **Arrangement list**: Static after load. No real-time updates needed.
 - **Audio context**: Lazy init on first play. No overhead on page load.
 
-## 12. Risks and Mitigations
+## 12. Edge Cases
+
+| Scenario | Behavior |
+|---|---|
+| Arrangement has no voicing events | Piano roll shows bass-only (cyan notes). Voicing mute button disabled. |
+| Arrangement has no bass events | Piano roll shows voicing-only (amber notes). Bass mute button disabled. |
+| Empty arrangement (no events at all) | Piano roll shows empty grid with centered message: "No events to display" |
+| Single-bar progression | Piano roll renders one bar, no scroll needed. Loop plays the same bar. |
+| Very long progression (16+ bars) | Horizontal scroll enabled. barWidth stays fixed (no compression). |
+| Browser doesn't support Web Audio | Play button shows tooltip: "Audio not supported in this browser" |
+| `duration_beats = 0` on an event | Skip the event during rendering and scheduling (treat as invalid) |
+
+## 13. Risks and Mitigations
 
 | Risk | Impact | Mitigation |
 |---|---|---|
