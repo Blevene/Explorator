@@ -86,3 +86,73 @@ export async function triggerRoundSSE(
   if (!res.ok) throw new Error(`Failed to trigger round: ${res.status}`);
   return res;
 }
+
+// --- M2c Arrangement Types ---
+
+export interface VoicingEvent {
+  bar: number
+  beat: number
+  duration_beats: number
+  pitches: string[]
+  chord_symbol: string
+}
+
+export interface BassNoteEvent {
+  bar: number
+  beat: number
+  duration_beats: number
+  pitch: string
+  velocity: number
+}
+
+export interface ArrangementSummary {
+  id: string
+  status: "draft" | "selected" | "rejected"
+  progression_candidate_id: string
+  voicing_plan_id: string
+  bass_line_id: string
+  weighted_total: number
+  rank_within_round: number
+  rationale: string
+}
+
+export interface ArrangementDetail extends ArrangementSummary {
+  voicing_plan: {
+    global_strategy: string
+    density_level: string
+    register_profile: string
+    voicing_events: VoicingEvent[]
+  } | null
+  bass_line: {
+    style_mode: string
+    note_events: BassNoteEvent[]
+  } | null
+  scorecard?: {
+    scores: Record<string, number>
+    weighted_total: number
+    rank_within_round: number
+  }
+}
+
+export async function listArrangements(candidateId: string): Promise<ArrangementSummary[]> {
+  const res = await fetch(`${API_BASE}/candidates/${candidateId}/arrangements`)
+  if (!res.ok) throw new Error(`Failed to list arrangements: ${res.status}`)
+  return res.json()
+}
+
+export async function getArrangement(arrangementId: string): Promise<ArrangementDetail> {
+  const res = await fetch(`${API_BASE}/arrangements/${arrangementId}`)
+  if (!res.ok) throw new Error(`Failed to get arrangement: ${res.status}`)
+  return res.json()
+}
+
+export async function triggerRealizationSSE(
+  sessionId: string,
+  progressionCandidateIds: string[],
+): Promise<Response> {
+  return fetch(`${API_BASE}/sessions/${sessionId}/realization-rounds`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ progression_candidate_ids: progressionCandidateIds }),
+  })
+}
