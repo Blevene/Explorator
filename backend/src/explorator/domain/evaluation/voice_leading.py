@@ -81,14 +81,6 @@ class VoiceLeadingEvaluator:
         avg_common_tones = total_common_tones / n_transitions
         avg_semitone_distance = total_semitone_distance / n_transitions
 
-        # Overall score
-        score = 10.0
-        score -= parallel_violations * 1.5
-        score -= large_distance_transitions * 0.5
-        smooth_bonus = min(2.0, smooth_transitions * 0.5)
-        score += smooth_bonus
-        overall = max(0.0, min(10.0, score))
-
         # Individual field normalization
         smoothness = max(0.0, 10.0 - (avg_semitone_distance / 2.0))
         common_tone_retention = min(10.0, avg_common_tones * 3.3)

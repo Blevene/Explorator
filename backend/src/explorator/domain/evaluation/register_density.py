@@ -6,17 +6,10 @@ bass-voicing separation per bar. Fully deterministic, no LLM calls.
 
 from ulid import ULID
 
+from explorator.adapters.music21_adapter import _REGISTER_BOUNDS
 from explorator.models.evaluation import RegisterDensityEvaluation
 from explorator.models.realization import BassLine, VoicingPlan
 from explorator.utils import utc_now
-
-# Register bounds: (midi_low, midi_high)
-_REGISTER_BOUNDS: dict[str, tuple[int, int]] = {
-    "low":      (36, 60),
-    "mid":      (48, 72),
-    "mid_high": (60, 84),
-    "high":     (72, 96),
-}
 
 _MUD_ZONE_LOW = 36
 _MUD_ZONE_HIGH = 52
@@ -64,7 +57,7 @@ class RegisterDensityEvaluator:
             )
 
         register_bounds = _REGISTER_BOUNDS.get(preferred_register, _REGISTER_BOUNDS["mid_high"])
-        reg_low, reg_high = register_bounds
+        reg_low, reg_high = register_bounds[0], register_bounds[1]
 
         mud_bars = 0
         imbalance_bars = 0

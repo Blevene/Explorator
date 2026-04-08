@@ -63,9 +63,7 @@ def _rank_family(
         gate_fail = any(
             scores.get(dim, 5.0) < min_threshold for dim in _M2B_GATE_DIMENSIONS
         )
-        if gate_fail:
-            cand = {**cand, "gate_rejected": True}
-        else:
+        if not gate_fail:
             passed.append(cand)
 
     # Rank passed by weighted total descending
@@ -105,9 +103,6 @@ async def rank_and_select(state: RealizationState) -> dict[str, Any]:
         raw_scores = pc_data.get("metadata", {}).get("scores", {})
         if isinstance(raw_scores, dict):
             m1_scores_lookup[pc_id] = raw_scores
-
-    # Build arrangement lookup by id
-    arr_by_id: dict[str, dict[str, Any]] = {a["id"]: a for a in arrangement_candidates_raw}
 
     # Group arrangement_candidate_ids by progression_candidate_id
     by_prog: dict[str, list[str]] = {}
