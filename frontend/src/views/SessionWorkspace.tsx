@@ -21,7 +21,7 @@ export default function SessionWorkspace() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'generation' | 'realization'>('generation');
-  const [_realizingCandidateId, setRealizingCandidateId] = useState<string | null>(null);
+  const [, setRealizingCandidateId] = useState<string | null>(null);
   const nodeRef = useRef<string | null>(null);
 
   const { candidates, setCandidates } = useCandidateStore();
