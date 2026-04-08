@@ -4,6 +4,7 @@ interface CandidateCardProps {
   candidate: CandidateSummary;
   index: number;
   onClick?: () => void;
+  onRealize?: (candidateId: string) => void;
 }
 
 const LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
@@ -14,7 +15,7 @@ function scoreColor(score: number): string {
   return 'text-red-400 bg-red-900/30';
 }
 
-export default function CandidateCard({ candidate, index, onClick }: CandidateCardProps) {
+export default function CandidateCard({ candidate, index, onClick, onRealize }: CandidateCardProps) {
   const label = LABELS[index] || `#${index + 1}`;
   const score = candidate.weighted_total;
 
@@ -72,6 +73,15 @@ export default function CandidateCard({ candidate, index, onClick }: CandidateCa
             </div>
           ))}
         </div>
+      )}
+
+      {onRealize && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onRealize(candidate.candidate_id) }}
+          className="mt-3 w-full py-1.5 text-xs font-medium rounded bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors"
+        >
+          Realize
+        </button>
       )}
     </div>
   );
