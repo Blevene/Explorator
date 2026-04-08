@@ -6,6 +6,7 @@ export interface SessionSummary {
   mode: string;
   created_at: string;
   prompt: string;
+  genre?: string;
 }
 
 export interface SessionListResponse {
