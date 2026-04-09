@@ -77,6 +77,7 @@ class VoicingGenerator:
             global_strategy=strategy.global_strategy,
             density_level=strategy.density_level,
             voicing_events=events,
+            metadata={"voicing_type": voicing_type},
         )
 
     def _optimize_voice_leading(

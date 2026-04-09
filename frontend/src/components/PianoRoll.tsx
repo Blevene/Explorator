@@ -8,7 +8,7 @@ interface PianoRollProps {
   genre: string
 }
 
-const BAR_WIDTH = 120 // Reduced from 200 to fit 8-bar progressions without scroll
+const BAR_WIDTH = 90 // Fit 8-bar progressions in ~720px + labels
 const ROW_HEIGHT = 8
 const LABEL_WIDTH = 48
 const HEADER_HEIGHT = 24

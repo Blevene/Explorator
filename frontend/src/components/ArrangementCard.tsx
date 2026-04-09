@@ -66,10 +66,10 @@ export default function ArrangementCard({
       {/* Badges */}
       {badges ? (
         <div className="flex flex-wrap gap-1">
-          <span className="text-xs bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">
+          <span className="text-xs bg-amber-400/10 text-amber-400 px-1.5 py-0.5 rounded font-mono">
             {badges.voicing}
           </span>
-          <span className="text-xs bg-slate-700 text-slate-400 px-1.5 py-0.5 rounded">
+          <span className="text-xs bg-cyan-400/10 text-cyan-400 px-1.5 py-0.5 rounded font-mono">
             {badges.bass}
           </span>
         </div>
