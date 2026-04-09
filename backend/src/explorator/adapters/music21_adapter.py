@@ -261,6 +261,11 @@ def realize_voicing(
     selected = pitch_priority[:voice_count]
     selected_pcs = [pc for _, pc in selected]
 
+    # If we have fewer pitch classes than voice_count, double the root at an octave
+    # to fill the voicing (common practice: root doubling in triads for 4-voice textures)
+    while len(selected_pcs) < voice_count:
+        selected_pcs.append(root_pc)  # root doubling (placed at different octave in step 4)
+
     # --- 4. Build close-position voicing near register center ---
     # Sort selected pitch classes by ascending interval from root so that
     # close position is always root → 3rd → 5th → 7th (not shuffled by priority tie-breaks).
@@ -329,10 +334,10 @@ def _nearest_midi(pitch_class: int, target_midi: int) -> int:
 
 
 def _next_midi_above(pitch_class: int, above_midi: int) -> int:
-    """Return the nearest MIDI value for pitch_class that is >= above_midi."""
+    """Return the nearest MIDI value for pitch_class that is > above_midi."""
     octave = above_midi // 12 - 1
     candidate = (octave + 1) * 12 + pitch_class
-    if candidate < above_midi:
+    if candidate <= above_midi:
         candidate += 12
     return candidate
 
