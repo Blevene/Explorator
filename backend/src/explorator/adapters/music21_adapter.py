@@ -39,14 +39,39 @@ _KIND_TO_SUFFIX: dict[str, str] = {
 def _normalize_chord_symbol(symbol: str) -> str:
     """Normalize chord symbols for music21 compatibility.
 
-    music21 uses '-' for flats (e.g., 'B-' not 'Bb'), so we convert
-    common flat notation. Handles: Bb, Eb, Ab, Db, Gb.
+    music21 uses '-' for flats and has a limited set of chord abbreviations.
+    This function converts common notations into forms music21 can parse.
     """
     import re
 
-    # Replace 'Xb' with 'X-' only at the start (root note), not in quality like 'b5'
-    # Match: capital letter + 'b' + (uppercase, digit, or end) — that's a flat root
-    return re.sub(r'^([A-G])b(?=[A-Za-z0-9]|$)', r'\1-', symbol)
+    s = symbol.strip()
+
+    # 1. Flatten root: 'Bb' → 'B-', 'Eb' → 'E-' (only at the start)
+    s = re.sub(r'^([A-G])b(?=[A-Za-z0-9]|$)', r'\1-', s)
+
+    # 2. Remove parentheses: 'Dm(maj7)' → 'Dmmaj7'
+    s = s.replace("(", "").replace(")", "")
+
+    # 3. Normalize extended chords music21 doesn't support directly
+    #    Strip extensions beyond 7th — music21 handles up to 7th chords.
+    #    maj9 → maj7, maj11 → maj7, maj13 → maj7 (extensions handled separately)
+    s = re.sub(r'maj(9|11|13)\b', 'maj7', s)
+    #    m9 → m7, m11 → m7, m13 → m7
+    s = re.sub(r'm(9|11|13)\b', 'm7', s)
+    #    9 → 7 (dominant 9th → dominant 7th), 11 → 7, 13 → 7
+    s = re.sub(r'(?<=[A-G\-#])(?:dom)?(9|11|13)\b', '7', s)
+
+    # 4. Normalize augmented: '7aug' → '7#5', 'aug7' → '7#5', 'aug' → 'aug' (keep as-is, music21 supports 'augmented-seventh')
+    s = re.sub(r'7aug\b', '7#5', s)
+    s = re.sub(r'aug7\b', '7#5', s)
+
+    # 5. Normalize 6/9 → 6 (music21 doesn't support 6/9)
+    s = re.sub(r'6/9\b', '6', s)
+
+    # 6. Normalize minor-major 7th: 'mmaj7' → 'mM7' (music21 format)
+    s = re.sub(r'mmaj7\b', 'mM7', s, flags=re.IGNORECASE)
+
+    return s
 
 
 class ChordInfo(BaseModel):
