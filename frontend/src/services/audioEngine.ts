@@ -92,11 +92,19 @@ let isInitialised = false
 
 async function ensureTone(): Promise<ToneModule> {
   if (!Tone) {
-    Tone = (await import("tone")) as ToneModule
+    try {
+      Tone = (await import("tone")) as ToneModule
+    } catch {
+      throw new Error("Failed to load audio library. Your browser may not support Web Audio.")
+    }
   }
   if (!isInitialised) {
-    await Tone.start()
-    isInitialised = true
+    try {
+      await Tone.start()
+      isInitialised = true
+    } catch {
+      throw new Error("Audio context blocked. Click the page first to enable audio playback.")
+    }
   }
   return Tone
 }

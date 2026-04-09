@@ -21,7 +21,6 @@ export default function SessionWorkspace() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'generation' | 'realization'>('generation');
-  const [, setRealizingCandidateId] = useState<string | null>(null);
   const nodeRef = useRef<string | null>(null);
 
   const { candidates, setCandidates } = useCandidateStore();
@@ -142,7 +141,7 @@ export default function SessionWorkspace() {
 
   const handleRealize = async (candidateId: string) => {
     if (!sessionId) return;
-    setRealizingCandidateId(candidateId);
+
     setCurrentNode('load_context');
     setLoading(true);
     setError(null);
@@ -189,7 +188,6 @@ export default function SessionWorkspace() {
     } finally {
       setLoading(false);
       setCurrentNode(null);
-      setRealizingCandidateId(null);
     }
   };
 

@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { useAudioStore } from "../stores/audioStore"
 import * as audioEngine from "../services/audioEngine"
 import type { ArrangementDetail } from "../services/api"
@@ -26,14 +27,22 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
   const { playing, paused, tempo, loop, mutedTracks, volume } = useAudioStore()
   const accent = getAccent(genre)
 
-  function handlePlayPause() {
+  const [audioError, setAudioError] = useState<string | null>(null)
+
+  async function handlePlayPause() {
     if (!arrangement) return
-    if (playing) {
-      audioEngine.pause()
-    } else if (paused) {
-      audioEngine.resume()
-    } else {
-      audioEngine.play(arrangement, tempo, genre)
+    setAudioError(null)
+    try {
+      if (playing) {
+        audioEngine.pause()
+      } else if (paused) {
+        audioEngine.resume()
+      } else {
+        await audioEngine.play(arrangement, tempo, genre)
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Audio playback failed"
+      setAudioError(msg)
     }
   }
 
@@ -183,6 +192,13 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
         />
         <span className="text-slate-300 text-xs font-mono w-10 text-right">{volume} dB</span>
       </div>
+
+      {/* Audio error */}
+      {audioError && (
+        <span className="text-rose-400 text-xs ml-2 truncate" title={audioError}>
+          Audio: {audioError}
+        </span>
+      )}
 
     </div>
   )
