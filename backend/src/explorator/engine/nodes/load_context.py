@@ -68,6 +68,15 @@ async def load_context(state: RealizationState, *, driver: AsyncDriver) -> dict[
     genre = ""
     if session_data:
         genre = session_data.get("genre", "")
+    # Fallback: genre may not be on Session — check candidate metadata or default
+    if not genre:
+        for c in candidates:
+            meta = c.get("metadata", {})
+            if isinstance(meta, dict) and meta.get("genre"):
+                genre = meta["genre"]
+                break
+    if not genre:
+        genre = "dream_pop"  # safe default until genre is stored on Session
 
     # Fetch genre profile
     genre_profile: dict[str, Any] = {}

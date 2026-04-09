@@ -42,6 +42,7 @@ async def generate_bass(state: RealizationState) -> dict[str, Any]:
 
     prefs = _build_bass_prefs(genre_profile)
     genre = genre_profile.get("genre", creative_brief.get("genre", "dream_pop"))
+    logger.warning("generate_bass: genre_profile bass_preferences=%s, type=%s", genre_profile.get("bass_preferences"), type(genre_profile.get("bass_preferences")).__name__)
 
     variant_modes = prefs.variant_bass_modes
 
