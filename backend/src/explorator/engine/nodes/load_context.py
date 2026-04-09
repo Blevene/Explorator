@@ -63,12 +63,16 @@ async def load_context(state: RealizationState, *, driver: AsyncDriver) -> dict[
         raise ValueError("No progression candidate IDs provided")
     session_id = candidates[0].get("session_id", "")
 
-    # Fetch session to get genre name
+    # Fetch session to get genre name (persisted by M1 persist_round)
     session_data = await session_repo.get_by_id(session_id)
     genre = ""
     if session_data:
         genre = session_data.get("genre", "")
-    # Fallback: genre may not be on Session — check candidate metadata or default
+    # Fallback chain: creative brief → candidate metadata → default
+    if not genre:
+        brief_data = await brief_repo.get_by_session_id(session_id)
+        if brief_data:
+            genre = brief_data.get("genre", "")
     if not genre:
         for c in candidates:
             meta = c.get("metadata", {})
@@ -76,7 +80,8 @@ async def load_context(state: RealizationState, *, driver: AsyncDriver) -> dict[
                 genre = meta["genre"]
                 break
     if not genre:
-        genre = "dream_pop"  # safe default until genre is stored on Session
+        logger.warning("No genre found for session %s — defaulting to dream_pop", session_id)
+        genre = "dream_pop"
 
     # Fetch genre profile
     genre_profile: dict[str, Any] = {}

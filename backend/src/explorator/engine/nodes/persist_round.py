@@ -26,6 +26,20 @@ async def persist_round(state: ExplorationState, *, driver: AsyncDriver) -> dict
 
     repo = ProgressionCandidateRepo(driver)
 
+    # Persist genre on Session so M2 realization can load the correct genre profile
+    session_id = state.get("session_id", "")
+    genre = state.get("genre", "")
+    if session_id and genre:
+        try:
+            async with driver.session() as neo_session:
+                await neo_session.run(
+                    "MATCH (s:Session {id: $id}) SET s.genre = $genre",
+                    id=session_id,
+                    genre=genre,
+                )
+        except Exception:
+            logger.exception("Failed to persist genre on Session %s", session_id)
+
     # Build a lookup of candidate_id → scorecard
     scorecard_lookup: dict[str, dict[str, Any]] = {}
     for sc in state.get("scorecards", []):
