@@ -90,17 +90,15 @@ class RegisterDensityEvaluator:
             if mud_count > 2:
                 mud_bars += 1
 
-            # 2. Spacing balance: check adjacent interval gaps
+            # 2. Spacing balance: flag only when BOTH a wide gap (>19) AND a tight gap (<3)
+            #    exist in the same bar — that's genuine imbalance, not intentional open voicing
             if all_voicing_midi:
                 sorted_midi = sorted(all_voicing_midi)
-                if len(sorted_midi) >= 2:
-                    has_imbalance = False
-                    for i in range(len(sorted_midi) - 1):
-                        gap = sorted_midi[i + 1] - sorted_midi[i]
-                        if gap > 19 or gap < 3:
-                            has_imbalance = True
-                            break
-                    if has_imbalance:
+                if len(sorted_midi) >= 3:
+                    gaps = [sorted_midi[i + 1] - sorted_midi[i] for i in range(len(sorted_midi) - 1)]
+                    has_wide = any(g > 19 for g in gaps)
+                    has_tight = any(g < 3 for g in gaps)
+                    if has_wide and has_tight:
                         imbalance_bars += 1
 
             # 3. Register alignment: voicing centroid vs preferred register

@@ -81,11 +81,19 @@ class VoiceLeadingEvaluator:
         avg_common_tones = total_common_tones / n_transitions
         avg_semitone_distance = total_semitone_distance / n_transitions
 
-        # Individual field normalization
-        smoothness = max(0.0, 10.0 - (avg_semitone_distance / 2.0))
-        common_tone_retention = min(10.0, avg_common_tones * 3.3)
-        leap_penalty = max(0.0, 10.0 - (max_leap_anywhere / 2.4))
-        resolution = max(0.0, 10.0 - (parallel_violations * 1.5))
+        # Estimate average voice count for per-voice normalization
+        avg_voices = sum(len(e.pitches) for e in events) / len(events) if events else 4
+        avg_distance_per_voice = avg_semitone_distance / max(avg_voices, 1)
+
+        # Individual field normalization (calibrated for real-world voicings)
+        # Per-voice movement: 0 = perfect, 3 = good, 6 = mediocre, 12+ = bad
+        smoothness = max(0.0, min(10.0, 10.0 - (avg_distance_per_voice * 1.2)))
+        # Common tones: 0 = none, 1 = decent, 2+ = excellent for 4-voice chords
+        common_tone_retention = min(10.0, avg_common_tones * 5.0)
+        # Max leap: <7 = step/3rd (great), 12 = octave (ok for drop voicings), 19+ = bad
+        leap_penalty = max(0.0, min(10.0, 10.0 - max(0, max_leap_anywhere - 7) * 0.5))
+        # Parallel violations: 0 = perfect, 1 = minor, 3+ = serious
+        resolution = max(0.0, 10.0 - (parallel_violations * 2.0))
 
         return VoiceLeadingEvaluation(
             id=eval_id,

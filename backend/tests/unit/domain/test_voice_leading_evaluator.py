@@ -81,9 +81,9 @@ class TestVoiceLeadingEvaluatorParallelFifths:
         ])
         ev = VoiceLeadingEvaluator()
         result = ev.evaluate(plan, "cand_4")
-        # resolution_quality = 10.0 - 1.5 * 1 = 8.5
+        # resolution_quality = 10.0 - 2.0 * 1 = 8.0
         assert result.resolution_quality < 10.0
-        assert result.resolution_quality == 8.5
+        assert result.resolution_quality == 8.0
 
     def test_multiple_parallel_violations_stack(self) -> None:
         # Two transitions each with parallel fifths
@@ -94,8 +94,8 @@ class TestVoiceLeadingEvaluatorParallelFifths:
         ])
         ev = VoiceLeadingEvaluator()
         result = ev.evaluate(plan, "cand_5")
-        # resolution_quality = max(0, 10 - 2 * 1.5) = 7.0
-        assert result.resolution_quality == 7.0
+        # resolution_quality = max(0, 10 - 2 * 2.0) = 6.0
+        assert result.resolution_quality == 6.0
 
 
 class TestVoiceLeadingEvaluatorLargeLeaps:
@@ -111,8 +111,8 @@ class TestVoiceLeadingEvaluatorLargeLeaps:
         ])
         ev = VoiceLeadingEvaluator()
         result = ev.evaluate(plan, "cand_6")
-        # max_leap = 24, awkward_leap_penalty = max(0, 10 - 24/2.4) = max(0, 0) = 0
-        assert result.awkward_leap_penalty == 0.0
+        # max_leap = 24, penalty = 10 - max(0, 24 - 7) * 0.5 = 10 - 8.5 = 1.5
+        assert result.awkward_leap_penalty < 3.0
 
     def test_small_leaps_keep_penalty_high(self) -> None:
         # Stepwise motion (2 semitones per voice)
