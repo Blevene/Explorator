@@ -59,7 +59,7 @@ export default function ArrangementCard({
           #{arrangement.rank_within_round}
         </span>
         <span className={`text-sm font-bold font-mono ${scoreColor(arrangement.weighted_total)}`}>
-          {arrangement.weighted_total.toFixed(2)}
+          {(arrangement.weighted_total ?? 0).toFixed(2)}
         </span>
       </div>
 

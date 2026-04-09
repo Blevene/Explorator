@@ -30,6 +30,28 @@ def _neo4j_safe(data: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+def _neo4j_deserialize(data: dict[str, Any]) -> dict[str, Any]:
+    """Reverse _neo4j_safe: parse JSON strings back into dicts/lists.
+
+    Attempts json.loads on every string value. If it parses to a dict or list,
+    use the parsed value. Otherwise keep the original string.
+    """
+    result: dict[str, Any] = {}
+    for key, value in data.items():
+        if isinstance(value, str):
+            try:
+                parsed = json.loads(value)
+                if isinstance(parsed, (dict, list)):
+                    result[key] = parsed
+                else:
+                    result[key] = value
+            except (json.JSONDecodeError, ValueError):
+                result[key] = value
+        else:
+            result[key] = value
+    return result
+
+
 class BaseRepository:
     """Generic Neo4j node CRUD. Subclasses set `label`."""
 
@@ -53,7 +75,7 @@ class BaseRepository:
             record = await result.single()
             if record is None:
                 return None
-            return dict(record["props"])
+            return _neo4j_deserialize(dict(record["props"]))
 
     async def query_by_property(self, prop: str, value: Any) -> list[dict[str, Any]]:
         """Generic property query — returns all matching nodes."""
@@ -61,7 +83,7 @@ class BaseRepository:
         async with self.driver.session() as session:
             result = await session.run(query, value=value)
             records = await result.data()
-            return [dict(r["props"]) for r in records]
+            return [_neo4j_deserialize(dict(r["props"])) for r in records]
 
     async def update_status(self, entity_id: str, status: str) -> None:
         """Update a node's status."""
