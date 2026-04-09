@@ -161,7 +161,21 @@ function stopPositionTracking(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Pitch normalization — music21 uses "-" for flat (e.g. "E-3"), Tone.js expects "b" (e.g. "Eb3")
+// ---------------------------------------------------------------------------
+
+function normalizePitch(pitch: string): string {
+  return pitch.replace("-", "b")
+}
+
+function normalizePitches(pitches: string[]): string[] {
+  return pitches.map(normalizePitch)
+}
+
+// ---------------------------------------------------------------------------
 // Scheduling helpers
+// Bars are 0-indexed from the backend, which maps directly to Tone.js
+// transport notation (0:0:0 = first bar, first beat).
 // ---------------------------------------------------------------------------
 
 function scheduleVoicing(
@@ -172,13 +186,14 @@ function scheduleVoicing(
   const transport = T.getTransport()
 
   for (const ev of arrangement.voicing_plan.voicing_events) {
-    const time = `${ev.bar - 1}:${ev.beat - 1}:0`
+    const time = `${ev.bar}:${ev.beat - 1}:0`
     const dur = `0:${ev.duration_beats}:0`
+    const pitches = normalizePitches(ev.pitches)
 
     transport.schedule((t: number) => {
       const { mutedTracks } = useAudioStore.getState()
       if (mutedTracks.voicing) return
-      polySynth?.triggerAttackRelease(ev.pitches, dur, t)
+      polySynth?.triggerAttackRelease(pitches, dur, t)
     }, time)
   }
 }
@@ -191,14 +206,15 @@ function scheduleBass(
   const transport = T.getTransport()
 
   for (const ev of arrangement.bass_line.note_events) {
-    const time = `${ev.bar - 1}:${ev.beat - 1}:0`
+    const time = `${ev.bar}:${ev.beat - 1}:0`
     const dur = `0:${ev.duration_beats}:0`
     const vel = ev.velocity / 127
+    const pitch = normalizePitch(ev.pitch)
 
     transport.schedule((t: number) => {
       const { mutedTracks } = useAudioStore.getState()
       if (mutedTracks.bass) return
-      monoSynth?.triggerAttackRelease(ev.pitch, dur, t, vel)
+      monoSynth?.triggerAttackRelease(pitch, dur, t, vel)
     }, time)
   }
 }
