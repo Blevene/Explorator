@@ -139,6 +139,7 @@ async def persist_realization(state: RealizationState, *, driver: AsyncDriver) -
             logger.exception("Unexpected error persisting ArrangementFamily %s", fam.id)
 
     # 5. Persist evaluation entities
+    from explorator.graph.repository import _neo4j_safe
     for ev_data in state.get("evaluations", []):
         arrangement_id = ev_data.get("arrangement_candidate_id", "")
         for eval_type in ("voice_leading", "register_density", "playability"):
@@ -158,7 +159,7 @@ async def persist_realization(state: RealizationState, *, driver: AsyncDriver) -
                 f"MERGE (e:{label} {{id: $id}}) "
                 "SET e += $props"
             )
-            props = {k: v for k, v in eval_node.items() if k != "id"}
+            props = _neo4j_safe({k: v for k, v in eval_node.items() if k != "id"})
             try:
                 async with driver.session() as session:
                     await session.run(query, id=eval_id, props=props)
@@ -183,7 +184,7 @@ async def persist_realization(state: RealizationState, *, driver: AsyncDriver) -
             "MERGE (s:AggregateScorecard {id: $id}) "
             "SET s += $props"
         )
-        props = {k: v for k, v in sc.model_dump(mode="json").items() if k != "id"}
+        props = _neo4j_safe({k: v for k, v in sc.model_dump(mode="json").items() if k != "id"})
         try:
             async with driver.session() as session:
                 await session.run(query, id=sc.id, props=props)

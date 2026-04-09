@@ -142,7 +142,7 @@ export default function PianoRoll({ arrangement, genre }: PianoRollProps) {
     const voicingOpacity = mutedTracks.voicing ? 0.2 : 1.0
     ctx.globalAlpha = voicingOpacity
     for (const ev of voicingEvents) {
-      const x = LABEL_WIDTH + ((ev.bar - 1) + (ev.beat - 1) / 4) * BAR_WIDTH
+      const x = LABEL_WIDTH + (ev.bar + (ev.beat - 1) / 4) * BAR_WIDTH
       const noteWidth = Math.max(4, (ev.duration_beats / 4) * BAR_WIDTH - 2)
 
       for (const pitch of ev.pitches) {
@@ -164,7 +164,7 @@ export default function PianoRoll({ arrangement, genre }: PianoRollProps) {
     for (const ev of bassEvents) {
       const midi = pitchToMidi(ev.pitch)
       if (midi < minMidi || midi > maxMidi) continue
-      const x = LABEL_WIDTH + ((ev.bar - 1) + (ev.beat - 1) / 4) * BAR_WIDTH
+      const x = LABEL_WIDTH + (ev.bar + (ev.beat - 1) / 4) * BAR_WIDTH
       const y = HEADER_HEIGHT + (maxMidi - midi) * ROW_HEIGHT + 1
       const noteWidth = Math.max(4, (ev.duration_beats / 4) * BAR_WIDTH - 2)
 

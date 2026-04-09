@@ -142,6 +142,7 @@ export default function SessionWorkspace() {
   const handleRealize = async (candidateId: string) => {
     if (!sessionId) return;
 
+    arrangementStore.reset();
     setCurrentNode('load_context');
     setLoading(true);
     setError(null);
