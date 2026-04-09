@@ -102,7 +102,6 @@ class VoicingGenerator:
         bounds = _REGISTER_BOUNDS.get(register, _REGISTER_BOUNDS["mid"])
         midi_low, midi_high, _ = bounds
 
-        # Convert pitches to MIDI, sorted low-to-high
         def to_midi(pitches: list[str]) -> list[int]:
             return sorted(m21pitch.Pitch(p).midi for p in pitches)
 
@@ -114,20 +113,31 @@ class VoicingGenerator:
                 result.append(p.nameWithOctave)
             return result
 
+        def shift_to_register(midi: list[int]) -> list[int]:
+            """Shift entire voicing by octaves until centroid is within register."""
+            if not midi:
+                return midi
+            centroid = sum(midi) / len(midi)
+            target = (midi_low + midi_high) / 2
+            shift = round((target - centroid) / 12) * 12
+            return sorted(m + shift for m in midi)
+
         base_midi = to_midi(current_pitches)
         n = len(base_midi)
 
-        # Generate inversion candidates:
-        # inversion k = move bottom k notes up one octave each
+        # Generate inversion candidates by rotating bottom notes up an octave,
+        # then shift the whole voicing to fit the register (preserving intervals).
         candidates: list[list[int]] = []
-        for k in range(min(n, 4)):  # 0=root position, 1=1st inv, 2=2nd inv, 3=3rd inv
+        for k in range(min(n, 4)):
             midi = list(base_midi)
             for i in range(k):
                 midi[i] += 12
-            # Clamp each note to register bounds by octave transposition
-            midi = [_clamp_to_register(m, midi_low, midi_high) for m in midi]
-            midi.sort()
+            midi = shift_to_register(midi)
             candidates.append(midi)
+
+        # Also try shifting the original voicing up/down one octave for more options
+        candidates.append(shift_to_register([m + 12 for m in base_midi]))
+        candidates.append(shift_to_register([m - 12 for m in base_midi]))
 
         # Score each candidate against previous chord
         best_pitches = current_pitches

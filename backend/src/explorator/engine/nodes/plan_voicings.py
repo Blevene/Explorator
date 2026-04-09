@@ -9,7 +9,7 @@ from explorator.adapters.gemini import GeminiClient, ModelTier
 from explorator.domain.realization.voicing import VoicingGenerator
 from explorator.engine.realization_state import RealizationState
 from explorator.models.harmony import ProgressionCandidate
-from explorator.models.realization import VoicingPreferences, VoicingStrategyResponse
+from explorator.models.realization import ChordVoicingInstruction, VoicingPreferences, VoicingStrategyResponse
 from explorator.prompts.voicing import voicing_strategy_prompt
 
 logger = logging.getLogger(__name__)
@@ -32,12 +32,34 @@ def _build_voicing_prefs(genre_profile: dict[str, Any]) -> VoicingPreferences:
     return VoicingPreferences()
 
 
-def _default_strategy(prefs: VoicingPreferences) -> VoicingStrategyResponse:
-    """Build a default voicing strategy from genre preferences when Gemini fails."""
+def _default_strategy(
+    prefs: VoicingPreferences,
+    chord_symbols: list[str] | None = None,
+) -> VoicingStrategyResponse:
+    """Build a default voicing strategy from genre preferences when Gemini fails.
+
+    When chord_symbols are provided, generates per-chord instructions with
+    genre-appropriate extensions (7th for triads) to avoid wasting voices.
+    """
+    per_chord = []
+    if chord_symbols:
+        for symbol in chord_symbols:
+            # If the chord symbol doesn't already contain '7', '9', '11', '13',
+            # suggest adding a 7th to fill the voice count
+            has_extension = any(ext in symbol for ext in ("7", "9", "11", "13"))
+            extensions = [] if has_extension else ["7"]
+            per_chord.append(ChordVoicingInstruction(
+                chord_symbol=symbol,
+                voicing_type=prefs.default_voicing_type,
+                target_register=prefs.default_register,
+                extensions_to_include=extensions,
+            ))
+
     return VoicingStrategyResponse(
         global_strategy=f"{prefs.default_voicing_type} voicing, {prefs.default_register} register",
         density_level=prefs.default_density,
         voice_count=prefs.default_voice_count,
+        per_chord=per_chord,
     )
 
 
@@ -88,7 +110,7 @@ async def plan_voicings(state: RealizationState, *, gemini: GeminiClient) -> dic
                 "Voicing strategy LLM call failed for candidate %s — using default",
                 candidate.id,
             )
-            strategy = _default_strategy(prefs)
+            strategy = _default_strategy(prefs, chord_symbols)
 
         strategy_dict = strategy.model_dump(mode="json")
         strategy_dict["progression_candidate_id"] = candidate.id
