@@ -47,7 +47,7 @@ function ScoreDimension({ name, value }: { name: string; value: number }) {
         />
       </div>
       <span className={`text-xs font-mono w-8 text-right ${labelColor(value)}`}>
-        {value.toFixed(1)}
+        {(value ?? 0).toFixed(1)}
       </span>
     </div>
   )
@@ -83,8 +83,8 @@ export default function ScorePanel({ scores, weightedTotal }: ScorePanelProps) {
       <div className="flex items-center justify-between px-4 py-2">
         <div className="flex items-center gap-3">
           <span className="text-slate-400 text-xs uppercase tracking-wider">Scores</span>
-          <span className={`text-base font-bold font-mono ${totalColor(weightedTotal)}`}>
-            {weightedTotal.toFixed(2)}
+          <span className={`text-base font-bold font-mono ${totalColor(weightedTotal ?? 0)}`}>
+            {(weightedTotal ?? 0).toFixed(2)}
           </span>
         </div>
         <button
