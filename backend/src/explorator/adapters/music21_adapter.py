@@ -266,14 +266,14 @@ def realize_voicing(
                 midi_notes[i] -= 12
 
     elif voicing_type == "drop2":
-        # Drop the second voice from bottom down one octave
-        if len(midi_notes) >= 2:
-            midi_notes[1] -= 12
+        # Drop the second voice from TOP down one octave
+        if len(midi_notes) >= 3:
+            midi_notes[-2] -= 12
 
     elif voicing_type == "drop3":
-        # Drop the third voice from bottom down one octave
-        if len(midi_notes) >= 3:
-            midi_notes[2] -= 12
+        # Drop the third voice from TOP down one octave
+        if len(midi_notes) >= 4:
+            midi_notes[-3] -= 12
 
     # --- 6. Clamp to register bounds ---
     # Shift the whole voicing by octaves until the centroid falls within bounds.

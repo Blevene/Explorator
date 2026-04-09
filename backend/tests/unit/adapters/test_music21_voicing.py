@@ -35,11 +35,11 @@ class TestRealizeVoicingOpen:
 
 class TestRealizeVoicingDrop2:
     def test_maj7_drop2(self):
+        """Drop-2 drops the 2nd voice from top down an octave — should differ from close."""
         pitches = realize_voicing("Cmaj7", "drop2", "mid_high", voice_count=4, extensions=[])
         assert len(pitches) == 4
-        from music21 import pitch as m21pitch
-        midi_vals = sorted([m21pitch.Pitch(p).midi for p in pitches])
-        assert midi_vals[1] - midi_vals[0] >= 8
+        close_pitches = realize_voicing("Cmaj7", "close", "mid_high", voice_count=4, extensions=[])
+        assert pitches != close_pitches  # must produce different voicing
 
 
 class TestRealizeVoicingDrop3:
