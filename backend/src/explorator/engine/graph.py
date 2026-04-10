@@ -22,6 +22,7 @@ from explorator.engine.nodes.generate import generate
 from explorator.engine.nodes.generate_bass import generate_bass
 from explorator.engine.nodes.load_context import load_context
 from explorator.engine.nodes.load_genre import load_genre
+from explorator.engine.nodes.load_memory import load_memory
 from explorator.engine.nodes.mutate import mutate
 from explorator.engine.nodes.parse_intent import parse_intent
 from explorator.engine.nodes.persist_realization import persist_realization
@@ -86,6 +87,9 @@ def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver) -> Any:
     graph.add_node("evaluate_progressions", partial(evaluate_progressions, gemini=gemini))
     graph.add_node("select_top_progressions", select_top_progressions)
 
+    # M3b: memory/feedback node
+    graph.add_node("load_memory", partial(load_memory, driver=driver))
+
     # M2 nodes (shared registration)
     _add_m2_nodes(graph, gemini, driver)
 
@@ -95,7 +99,8 @@ def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver) -> Any:
     # Linear flow: M1 → M2 → persist
     graph.set_entry_point("parse_intent")
     graph.add_edge("parse_intent", "load_genre")
-    graph.add_edge("load_genre", "generate")
+    graph.add_edge("load_genre", "load_memory")
+    graph.add_edge("load_memory", "generate")
     graph.add_edge("generate", "evaluate_progressions")
     graph.add_edge("evaluate_progressions", "select_top_progressions")
     graph.add_edge("select_top_progressions", "load_context")
