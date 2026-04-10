@@ -18,6 +18,24 @@ DEFAULT_THEORY_WEIGHTS = ObjectiveWeights(
     },
 )
 
+CANONICAL_DEFAULT_WEIGHTS = ObjectiveWeights(
+    id="weights_canonical",
+    type="objective_weights",
+    status="active",
+    profile_name="canonical_default",
+    weights={
+        "genre_fit": 0.15,
+        "emotional_fit": 0.10,
+        "theoretical_coherence": 0.12,
+        "cadence_quality": 0.10,
+        "novelty": 0.10,
+        "loopability": 0.13,
+        "voice_leading": 0.12,
+        "register_density": 0.09,
+        "playability": 0.09,
+    },
+)
+
 
 def weighted_score(
     scorecard: AggregateScorecard,
