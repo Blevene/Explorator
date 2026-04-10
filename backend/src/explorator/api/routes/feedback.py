@@ -21,6 +21,8 @@ from explorator.utils import utc_now
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["feedback"])
 
+_busy_sessions: set[str] = set()
+
 
 class SubmitFeedbackRequest(BaseModel):
     candidate_id: str
@@ -48,86 +50,83 @@ async def submit_feedback(
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # Load current weights
-    ow_repo = ObjectiveWeightsRepo(driver)
-    latest = await ow_repo.get_latest_for_session(session_id)
-    current_weights = (
-        latest["weights"]
-        if latest and "weights" in latest
-        else dict(CANONICAL_DEFAULT_WEIGHTS.weights)
-    )
+    if session_id in _busy_sessions:
+        raise HTTPException(status_code=409, detail="Feedback submission already in-flight for this session")
+    _busy_sessions.add(session_id)
 
-    # Get candidate scores for context
-    fb_repo = FeedbackEventRepo(driver)
-    candidate_scores: dict[str, float] = {}  # Best-effort; scores may not be on candidate node
-
-    # Interpret feedback via Gemini Flash
-    interpreter = FeedbackInterpreter(gemini)
-    interpretation = await interpreter.interpret(
-        feedback_text=request.content,
-        current_weights=current_weights,
-        candidate_scores=candidate_scores,
-        genre=session.get("genre", ""),
-    )
-
-    # Apply weight deltas
-    adjusted_weights = apply_weight_deltas(current_weights, interpretation.weight_deltas)
-
-    # Merge satisfaction into interpreted_adjustments for persistence (spec 4.8)
-    adjustments_with_satisfaction = dict(interpretation.interpreted_adjustments)
-    adjustments_with_satisfaction["satisfaction"] = interpretation.satisfaction
-
-    # Persist UserFeedbackEvent
-    now = utc_now()
-    feedback_id = f"fb_{ULID()}"
-    event = UserFeedbackEvent(
-        id=feedback_id,
-        type="user_feedback_event",
-        status="active",
-        created_at=now,
-        updated_at=now,
-        session_id=session_id,
-        candidate_id=request.candidate_id,
-        feedback_type=request.feedback_type,
-        content=request.content,
-        interpreted_adjustments=adjustments_with_satisfaction,
-        weight_deltas=dict(interpretation.weight_deltas),
-    )
-    await fb_repo.create(event)
-
-    # Persist new ObjectiveWeights
-    existing_feedback = await fb_repo.list_by_session(session_id)
-    round_n = len(existing_feedback)
-
-    weights_id = f"ow_{ULID()}"
-    weights_entity = ObjectiveWeights(
-        id=weights_id,
-        type="objective_weights",
-        status="active",
-        created_at=now,
-        updated_at=now,
-        profile_name=f"session_{session_id}_round_{round_n}",
-        weights=adjusted_weights,
-    )
-    await ow_repo.create(weights_entity)
-
-    # Create Neo4j relationships (spec 4.6)
-    async with driver.session() as neo_session:
-        await neo_session.run(
-            "MATCH (fb:UserFeedbackEvent {id: $fb_id}), (c {id: $cand_id}) "
-            "CREATE (fb)-[:ABOUT]->(c)",
-            fb_id=feedback_id, cand_id=request.candidate_id,
+    try:
+        # Load current weights
+        ow_repo = ObjectiveWeightsRepo(driver)
+        latest = await ow_repo.get_latest_for_session(session_id)
+        current_weights = (
+            latest["weights"]
+            if latest and "weights" in latest
+            else dict(CANONICAL_DEFAULT_WEIGHTS.weights)
         )
-        await neo_session.run(
-            "MATCH (fb:UserFeedbackEvent {id: $fb_id}), (ow:ObjectiveWeights {id: $ow_id}) "
-            "CREATE (fb)-[:UPDATES]->(ow)",
-            fb_id=feedback_id, ow_id=weights_id,
+
+        # Get candidate scores for context
+        fb_repo = FeedbackEventRepo(driver)
+        candidate_scores: dict[str, float] = {}  # Best-effort; scores may not be on candidate node
+
+        # Count existing feedback BEFORE creating the new one
+        existing_feedback = await fb_repo.list_by_session(session_id)
+        round_n = len(existing_feedback)
+
+        # Interpret feedback via Gemini Flash
+        interpreter = FeedbackInterpreter(gemini)
+        interpretation = await interpreter.interpret(
+            feedback_text=request.content,
+            current_weights=current_weights,
+            candidate_scores=candidate_scores,
+            genre=session.get("genre", ""),
         )
-        await neo_session.run(
-            "MATCH (s:Session {id: $sess_id}), (fb:UserFeedbackEvent {id: $fb_id}) "
-            "CREATE (s)-[:HAS_FEEDBACK]->(fb)",
-            sess_id=session_id, fb_id=feedback_id,
+
+        # Apply weight deltas
+        adjusted_weights = apply_weight_deltas(current_weights, interpretation.weight_deltas)
+
+        # Merge satisfaction into interpreted_adjustments for persistence (spec 4.8)
+        adjustments_with_satisfaction = dict(interpretation.interpreted_adjustments)
+        adjustments_with_satisfaction["satisfaction"] = interpretation.satisfaction
+
+        # Persist UserFeedbackEvent
+        now = utc_now()
+        feedback_id = f"fb_{ULID()}"
+        event = UserFeedbackEvent(
+            id=feedback_id,
+            type="user_feedback_event",
+            status="active",
+            created_at=now,
+            updated_at=now,
+            session_id=session_id,
+            candidate_id=request.candidate_id,
+            feedback_type=request.feedback_type,
+            content=request.content,
+            interpreted_adjustments=adjustments_with_satisfaction,
+            weight_deltas=dict(interpretation.weight_deltas),
         )
+
+        # Persist new ObjectiveWeights (must exist before relationship is created)
+        weights_id = f"ow_{ULID()}"
+        weights_entity = ObjectiveWeights(
+            id=weights_id,
+            type="objective_weights",
+            status="active",
+            created_at=now,
+            updated_at=now,
+            profile_name=f"session_{session_id}_round_{round_n}",
+            weights=adjusted_weights,
+        )
+        await ow_repo.create(weights_entity)
+
+        # Create feedback node and all relationships in a single transaction
+        await fb_repo.create_with_relationships(
+            event=event,
+            weights_id=weights_id,
+            session_id=session_id,
+        )
+
+    finally:
+        _busy_sessions.discard(session_id)
 
     return FeedbackResponse(
         id=feedback_id,
