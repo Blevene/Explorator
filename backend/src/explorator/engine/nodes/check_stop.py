@@ -15,6 +15,7 @@ async def check_stop(state: ExplorationState) -> dict[str, Any]:
     1. Quality: top candidate weighted_total >= target_score
     2. Diversity: >= 3 pairwise-diverse candidates on Pareto front
     3. Budget: round_number >= max_rounds
+    4. User satisfaction: feedback_history contains positive satisfaction
     """
     callback = state.get("on_progress")
     if callback:
@@ -47,6 +48,14 @@ async def check_stop(state: ExplorationState) -> dict[str, Any]:
     if round_number >= max_rounds:
         logger.info("Stop: budget exhausted (round %d >= %d)", round_number, max_rounds)
         return {"stop_condition_met": True, "stop_reason": "budget"}
+
+    # Condition 4: User satisfaction (M3b)
+    feedback_history = state.get("feedback_history", [])
+    for fb in feedback_history:
+        adjustments = fb.get("interpreted_adjustments", {})
+        if adjustments.get("satisfaction") == "positive":
+            logger.info("Stop: user expressed satisfaction in feedback %s", fb.get("id", "?"))
+            return {"stop_condition_met": True, "stop_reason": "satisfaction"}
 
     logger.info("Continue: no stop condition met (round %d, top=%.2f)",
                 round_number, max(

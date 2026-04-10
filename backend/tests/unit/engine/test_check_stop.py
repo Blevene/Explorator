@@ -75,3 +75,36 @@ async def test_quality_checked_before_budget() -> None:
     )
     result = await check_stop(state)
     assert result["stop_reason"] == "quality"
+
+
+async def test_stop_on_user_satisfaction() -> None:
+    """Stop when recent feedback indicates positive satisfaction."""
+    state = _make_state(
+        scorecards=[{"weighted_total": 6.0, "candidate_id": "a"}],
+    )
+    state["feedback_history"] = [
+        {
+            "id": "fb_1",
+            "candidate_id": "a",
+            "interpreted_adjustments": {"satisfaction": "positive"},
+        },
+    ]
+    result = await check_stop(state)
+    assert result["stop_condition_met"] is True
+    assert result["stop_reason"] == "satisfaction"
+
+
+async def test_no_stop_on_neutral_feedback() -> None:
+    """Neutral feedback does not trigger satisfaction stop."""
+    state = _make_state(
+        scorecards=[{"weighted_total": 6.0, "candidate_id": "a"}],
+    )
+    state["feedback_history"] = [
+        {
+            "id": "fb_1",
+            "candidate_id": "a",
+            "interpreted_adjustments": {"satisfaction": "neutral"},
+        },
+    ]
+    result = await check_stop(state)
+    assert result["stop_condition_met"] is False
