@@ -58,5 +58,10 @@ class ExplorationState(TypedDict, total=False):
     n_candidates: int
     k_selection: int
 
+    # --- M3b: Feedback & Memory ---
+    feedback_history: list[dict[str, Any]]
+    objective_weights: dict[str, Any]
+    user_preference_profile: dict[str, Any]
+
     # Progress callback
     on_progress: ProgressCallback

@@ -62,3 +62,17 @@ def test_exploration_state_includes_m3a_fields() -> None:
     }
     assert state["stop_condition_met"] is False
     assert state["search_plan"]["max_rounds"] == 4
+
+
+def test_feedback_fields_in_state() -> None:
+    """M3b state fields are valid keys."""
+    from explorator.engine.state import ExplorationState
+
+    state: ExplorationState = {
+        "feedback_history": [{"id": "fb_1", "content": "too busy"}],
+        "objective_weights": {"genre_fit": 0.15, "novelty": 0.10},
+        "user_preference_profile": {},
+    }
+    assert state["feedback_history"][0]["content"] == "too busy"
+    assert state["objective_weights"]["genre_fit"] == 0.15
+    assert state["user_preference_profile"] == {}
