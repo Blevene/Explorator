@@ -108,3 +108,25 @@ async def test_no_stop_on_neutral_feedback() -> None:
     ]
     result = await check_stop(state)
     assert result["stop_condition_met"] is False
+
+
+async def test_old_positive_overridden_by_new_negative() -> None:
+    """Later negative feedback overrides earlier positive satisfaction."""
+    state = _make_state(
+        scorecards=[{"weighted_total": 6.0, "candidate_id": "a"}],
+    )
+    state["feedback_history"] = [
+        {
+            "id": "fb_1",
+            "candidate_id": "a",
+            "interpreted_adjustments": {"satisfaction": "positive"},
+        },
+        {
+            "id": "fb_2",
+            "candidate_id": "a",
+            "interpreted_adjustments": {"satisfaction": "negative"},
+        },
+    ]
+    result = await check_stop(state)
+    assert result["stop_condition_met"] is False
+    assert result["stop_reason"] == ""

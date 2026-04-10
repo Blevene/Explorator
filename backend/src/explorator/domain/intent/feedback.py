@@ -1,5 +1,6 @@
 """Feedback interpretation — Gemini Flash translates user text to weight deltas."""
 
+import asyncio
 import logging
 
 from pydantic import BaseModel, Field
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 # Clamp bounds for any single weight dimension
 _WEIGHT_MIN = 0.02
 _WEIGHT_MAX = 0.50
+_INTERPRET_TIMEOUT_SECONDS = 15
 
 
 class FeedbackInterpretation(BaseModel):
@@ -35,6 +37,8 @@ def apply_weight_deltas(
     for dim, delta in deltas.items():
         if dim in result:
             result[dim] = result[dim] + delta
+        else:
+            logger.warning("apply_weight_deltas: unknown dimension %r — delta ignored", dim)
 
     # Iterative clamp + renorm until stable (bounds survive renormalization)
     for _ in range(50):
@@ -80,11 +84,14 @@ class FeedbackInterpreter:
             genre=genre,
         )
 
-        result = await self.gemini.generate_structured(
-            prompt=user_prompt,
-            response_model=FeedbackInterpretation,
-            tier=ModelTier.FLASH,
-            system_prompt=system_prompt,
+        result = await asyncio.wait_for(
+            self.gemini.generate_structured(
+                prompt=user_prompt,
+                response_model=FeedbackInterpretation,
+                tier=ModelTier.FLASH,
+                system_prompt=system_prompt,
+            ),
+            timeout=_INTERPRET_TIMEOUT_SECONDS,
         )
 
         return result

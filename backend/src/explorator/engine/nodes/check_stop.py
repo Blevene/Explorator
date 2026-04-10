@@ -49,12 +49,13 @@ async def check_stop(state: ExplorationState) -> dict[str, Any]:
         logger.info("Stop: budget exhausted (round %d >= %d)", round_number, max_rounds)
         return {"stop_condition_met": True, "stop_reason": "budget"}
 
-    # Condition 4: User satisfaction (M3b)
+    # Condition 4: User satisfaction (M3b) — only the most recent feedback counts
     feedback_history = state.get("feedback_history", [])
-    for fb in feedback_history:
-        adjustments = fb.get("interpreted_adjustments", {})
+    if feedback_history:
+        latest_fb = feedback_history[-1]
+        adjustments = latest_fb.get("interpreted_adjustments", {})
         if adjustments.get("satisfaction") == "positive":
-            logger.info("Stop: user expressed satisfaction in feedback %s", fb.get("id", "?"))
+            logger.info("Stop: user expressed satisfaction in feedback %s", latest_fb.get("id", "?"))
             return {"stop_condition_met": True, "stop_reason": "satisfaction"}
 
     logger.info("Continue: no stop condition met (round %d, top=%.2f)",

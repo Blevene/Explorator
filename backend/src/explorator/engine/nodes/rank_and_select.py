@@ -6,23 +6,15 @@ from typing import Any
 from ulid import ULID
 
 from explorator.domain.evaluation.pareto import compute_pareto_front
+from explorator.domain.evaluation.ranking import CANONICAL_DEFAULT_WEIGHTS
 from explorator.engine.state import ExplorationState
 from explorator.models.evaluation import AggregateScorecard
 from explorator.utils import utc_now
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_WEIGHTS: dict[str, float] = {
-    "voice_leading": 0.15,
-    "register_density": 0.12,
-    "playability": 0.12,
-    "genre_fit": 0.10,
-    "emotional_fit": 0.10,
-    "theoretical_coherence": 0.10,
-    "cadence_quality": 0.10,
-    "novelty": 0.10,
-    "loopability": 0.11,
-}
+# Single source of truth for default weights — imported from ranking module
+DEFAULT_WEIGHTS: dict[str, float] = dict(CANONICAL_DEFAULT_WEIGHTS.weights)
 
 # Dimensions whose absence triggers a 5.0 fallback (M1 scores)
 _M1_DIMENSIONS = {"genre_fit", "emotional_fit", "theoretical_coherence", "cadence_quality", "novelty", "loopability"}

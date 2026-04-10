@@ -20,8 +20,9 @@ const DIMENSION_LABELS: Record<string, string> = {
   playability: 'Playability',
 };
 
-function WeightBar({ dimension, weight }: { dimension: string; weight: number }) {
+function WeightBar({ dimension, weight, maxWeight }: { dimension: string; weight: number; maxWeight: number }) {
   const pct = Math.round(weight * 100);
+  const barPct = maxWeight > 0 ? Math.round((weight / maxWeight) * 100) : 0;
   const label = DIMENSION_LABELS[dimension] || dimension;
   return (
     <div className="flex items-center gap-2 text-xs">
@@ -29,7 +30,7 @@ function WeightBar({ dimension, weight }: { dimension: string; weight: number })
       <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
         <div
           className="h-full bg-purple-500 rounded-full transition-all duration-300"
-          style={{ width: `${pct * 2}%` }}
+          style={{ width: `${barPct}%` }}
         />
       </div>
       <span className="w-10 text-right text-gray-400">{pct}%</span>
@@ -100,14 +101,17 @@ export default function FeedbackSidebar({ sessionId, candidateId }: FeedbackSide
       </div>
 
       {/* Weight visualization */}
-      {currentWeights && (
-        <div className="px-4 py-3 border-b border-gray-800 space-y-1.5">
-          <h4 className="text-xs font-medium text-gray-500 mb-2">Current Weights</h4>
-          {Object.entries(currentWeights).map(([dim, weight]) => (
-            <WeightBar key={dim} dimension={dim} weight={weight} />
-          ))}
-        </div>
-      )}
+      {currentWeights && (() => {
+        const maxW = Math.max(...Object.values(currentWeights));
+        return (
+          <div className="px-4 py-3 border-b border-gray-800 space-y-1.5">
+            <h4 className="text-xs font-medium text-gray-500 mb-2">Current Weights</h4>
+            {Object.entries(currentWeights).map(([dim, weight]) => (
+              <WeightBar key={dim} dimension={dim} weight={weight} maxWeight={maxW} />
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Chat thread */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
