@@ -5,7 +5,7 @@ from typing import Any
 
 from ulid import ULID
 
-from explorator.engine.realization_state import RealizationState
+from explorator.engine.state import ExplorationState
 from explorator.models.evaluation import AggregateScorecard
 from explorator.utils import utc_now
 
@@ -75,7 +75,7 @@ def _rank_family(
     return passed[:top_n]
 
 
-async def rank_and_select(state: RealizationState) -> dict[str, Any]:
+async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
     """Merge M1+M2b scores, rank per progression family, select top arrangements."""
     callback = state.get("on_progress")
     if callback:

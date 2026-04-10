@@ -6,7 +6,7 @@ from typing import Any
 from neo4j import AsyncDriver
 from neo4j.exceptions import Neo4jError
 
-from explorator.engine.realization_state import RealizationState
+from explorator.engine.state import ExplorationState
 from explorator.graph.arrangement_candidate_repo import ArrangementCandidateRepo
 from explorator.graph.arrangement_family_repo import ArrangementFamilyRepo
 from explorator.graph.bass_line_repo import BassLineRepo
@@ -40,7 +40,7 @@ async def _create_relationship(
         await session.run(query, from_id=from_id, to_id=to_id)
 
 
-async def persist_realization(state: RealizationState, *, driver: AsyncDriver) -> dict[str, Any]:
+async def persist_realization(state: ExplorationState, *, driver: AsyncDriver) -> dict[str, Any]:
     """Persist all realization artifacts to Neo4j in dependency order."""
     callback = state.get("on_progress")
     if callback:

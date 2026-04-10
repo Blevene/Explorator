@@ -6,13 +6,13 @@ from typing import Any
 from explorator.domain.evaluation.playability import PlayabilityEvaluator
 from explorator.domain.evaluation.register_density import RegisterDensityEvaluator
 from explorator.domain.evaluation.voice_leading import VoiceLeadingEvaluator
-from explorator.engine.realization_state import RealizationState
+from explorator.engine.state import ExplorationState
 from explorator.models.realization import BassLine, VoicingPlan
 
 logger = logging.getLogger(__name__)
 
 
-async def evaluate_arrangements(state: RealizationState) -> dict[str, Any]:
+async def evaluate_arrangements(state: ExplorationState) -> dict[str, Any]:
     """Run VoiceLeading, RegisterDensity, and Playability evaluators on each arrangement."""
     callback = state.get("on_progress")
     if callback:
