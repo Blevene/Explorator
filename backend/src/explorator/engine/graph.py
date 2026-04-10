@@ -1,9 +1,10 @@
-"""LangGraph unified exploration graph — M1 + M2 pipeline.
+"""LangGraph unified exploration graph — M1 + M2 + M3a pipeline.
 
 Full flow: parse_intent → load_genre → generate → evaluate_progressions
   → select_top_progressions → load_context → plan_voicings
   → generate_bass → assemble → evaluate_arrangements
-  → rank_and_select → persist_realization → persist_round → END
+  → rank_and_select → check_stop → (persist_realization | mutate)
+  → persist_realization → persist_round → END
 """
 
 from functools import partial
@@ -14,12 +15,14 @@ from neo4j import AsyncDriver
 
 from explorator.adapters.gemini import GeminiClient
 from explorator.engine.nodes.assemble_arrangements import assemble_arrangements
+from explorator.engine.nodes.check_stop import check_stop
 from explorator.engine.nodes.evaluate_arrangements import evaluate_arrangements
 from explorator.engine.nodes.evaluate_progressions import evaluate_progressions
 from explorator.engine.nodes.generate import generate
 from explorator.engine.nodes.generate_bass import generate_bass
 from explorator.engine.nodes.load_context import load_context
 from explorator.engine.nodes.load_genre import load_genre
+from explorator.engine.nodes.mutate import mutate
 from explorator.engine.nodes.parse_intent import parse_intent
 from explorator.engine.nodes.persist_realization import persist_realization
 from explorator.engine.nodes.persist_round import persist_round
@@ -45,13 +48,31 @@ def _add_m2_nodes(
 
 
 def _add_m2_edges(graph: StateGraph) -> None:
-    """Wire M2 realization edges. Shared by full and sub-graph builders."""
+    """Wire M2 realization edges up to rank_and_select. Shared by full and sub-graph builders.
+
+    Note: the edge FROM rank_and_select is intentionally omitted here — callers wire it
+    differently (full graph uses conditional routing; subgraph goes straight to persist).
+    """
     graph.add_edge("load_context", "plan_voicings")
     graph.add_edge("plan_voicings", "generate_bass")
     graph.add_edge("generate_bass", "assemble")
     graph.add_edge("assemble", "evaluate_arrangements")
     graph.add_edge("evaluate_arrangements", "rank_and_select")
-    graph.add_edge("rank_and_select", "persist_realization")
+
+
+def _route_after_stop(state: ExplorationState) -> str:
+    """Route based on stop condition: persist or mutate."""
+    if state.get("stop_condition_met", False):
+        return "persist_realization"
+    return "mutate"
+
+
+def _route_after_mutate(state: ExplorationState) -> str:
+    """Route based on mutation scope: harmonic (full re-pipeline) or arrangement."""
+    records = state.get("mutation_records", [])
+    if any(r.get("mutation_scope") == "harmonic" for r in records):
+        return "evaluate_progressions"
+    return "evaluate_arrangements"
 
 
 def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver) -> Any:
@@ -79,6 +100,25 @@ def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver) -> Any:
     graph.add_edge("evaluate_progressions", "select_top_progressions")
     graph.add_edge("select_top_progressions", "load_context")
     _add_m2_edges(graph)
+
+    # M3a: mutation loop
+    graph.add_node("check_stop", check_stop)
+    graph.add_node("mutate", partial(mutate, gemini=gemini))
+
+    graph.add_edge("rank_and_select", "check_stop")
+
+    # Conditional: stop → persist, continue → mutate
+    graph.add_conditional_edges("check_stop", _route_after_stop, {
+        "persist_realization": "persist_realization",
+        "mutate": "mutate",
+    })
+
+    # Conditional: harmonic → evaluate_progressions, arrangement → evaluate_arrangements
+    graph.add_conditional_edges("mutate", _route_after_mutate, {
+        "evaluate_progressions": "evaluate_progressions",
+        "evaluate_arrangements": "evaluate_arrangements",
+    })
+
     graph.add_edge("persist_realization", "persist_round")
     graph.add_edge("persist_round", END)
 
@@ -93,6 +133,7 @@ def build_realization_subgraph(gemini: GeminiClient, driver: AsyncDriver) -> Any
 
     graph.set_entry_point("load_context")
     _add_m2_edges(graph)
+    graph.add_edge("rank_and_select", "persist_realization")
     graph.add_edge("persist_realization", END)
 
     return graph.compile()

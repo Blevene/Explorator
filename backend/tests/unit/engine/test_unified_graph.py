@@ -64,3 +64,17 @@ def test_realization_subgraph_has_m2_nodes() -> None:
     # Should NOT contain M1 nodes
     assert "parse_intent" not in node_names
     assert "generate" not in node_names
+
+
+def test_exploration_graph_has_mutation_nodes() -> None:
+    """Graph includes check_stop and mutate nodes."""
+    graph = build_exploration_graph(MagicMock(), MagicMock())
+    node_names = set(graph.nodes.keys())
+    assert "check_stop" in node_names
+    assert "mutate" in node_names
+
+
+def test_exploration_graph_has_conditional_edges() -> None:
+    """Graph compiles successfully with conditional routing."""
+    graph = build_exploration_graph(MagicMock(), MagicMock())
+    assert graph is not None
