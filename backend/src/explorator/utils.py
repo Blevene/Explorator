@@ -10,6 +10,20 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
+def parse_json_field(data: dict[str, Any], field: str) -> Any:
+    """Parse a JSON string field if stored as a string; return as-is otherwise.
+
+    Used for Neo4j properties that may be serialized as JSON strings.
+    """
+    value = data.get(field)
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            pass
+    return value
+
+
 def parse_json_or_dict(value: Any) -> dict[str, Any]:
     """Parse a value that may be a JSON string, dict, or None into a dict.
 

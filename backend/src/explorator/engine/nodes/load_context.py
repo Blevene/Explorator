@@ -7,16 +7,13 @@ from neo4j import AsyncDriver
 
 from explorator.engine.state import ExplorationState
 from explorator.graph.repository import BaseRepository
+from explorator.graph.session_repo import SessionRepository
 
 logger = logging.getLogger(__name__)
 
 
 class ProgressionCandidateRepo(BaseRepository):
     label = "ProgressionCandidate"
-
-
-class SessionRepo(BaseRepository):
-    label = "Session"
 
 
 class GenreProfileRepo(BaseRepository):
@@ -43,15 +40,16 @@ async def load_context(state: ExplorationState, *, driver: AsyncDriver) -> dict[
     if callback:
         await callback("node_started", {"node": "load_context"})
 
-    # In unified graph, state may already have these fields from M1 pipeline.
-    # Skip Neo4j fetch when data is already present (e.g., during mutation loop re-entry).
-    if state.get("progression_candidates") and state.get("genre_profile"):
+    # In unified graph, M1 nodes already populated these fields.
+    # Skip Neo4j fetch when progression_candidates is present — if M1 ran,
+    # genre_profile and creative_brief are guaranteed to be in state too.
+    if state.get("progression_candidates"):
         return {}
 
     candidate_ids = state.get("progression_candidate_ids", [])
 
     candidate_repo = ProgressionCandidateRepo(driver)
-    session_repo = SessionRepo(driver)
+    session_repo = SessionRepository(driver)
     genre_profile_repo = GenreProfileRepo(driver)
     brief_repo = CreativeBriefRepo(driver)
 

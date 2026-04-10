@@ -1,30 +1,20 @@
 """Generate bass node — deterministic bass line generation per progression candidate."""
 
-import contextlib
-import json
 import logging
 from typing import Any
 
 from explorator.domain.realization.bass import BassLineGenerator
 from explorator.engine.state import ExplorationState
+from explorator.utils import parse_json_field
 from explorator.models.harmony import ProgressionCandidate
 from explorator.models.realization import BassPreferences
 
 logger = logging.getLogger(__name__)
 
 
-def _parse_json_field(data: dict[str, Any], field: str) -> Any:
-    """Parse a JSON string field if stored as a string; return as-is otherwise."""
-    value = data.get(field)
-    if isinstance(value, str):
-        with contextlib.suppress(json.JSONDecodeError, TypeError):
-            return json.loads(value)
-    return value
-
-
 def _build_bass_prefs(genre_profile: dict[str, Any]) -> BassPreferences:
     """Extract BassPreferences from a genre profile dict."""
-    raw = _parse_json_field(genre_profile, "bass_preferences")
+    raw = parse_json_field(genre_profile, "bass_preferences")
     if isinstance(raw, dict):
         return BassPreferences.model_validate(raw)
     return BassPreferences()

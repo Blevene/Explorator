@@ -29,6 +29,31 @@ from explorator.engine.nodes.select_top_progressions import select_top_progressi
 from explorator.engine.state import ExplorationState
 
 
+def _add_m2_nodes(
+    graph: StateGraph,
+    gemini: GeminiClient,
+    driver: AsyncDriver,
+) -> None:
+    """Register M2 realization nodes on a graph. Shared by full and sub-graph builders."""
+    graph.add_node("load_context", partial(load_context, driver=driver))
+    graph.add_node("plan_voicings", partial(plan_voicings, gemini=gemini))
+    graph.add_node("generate_bass", generate_bass)
+    graph.add_node("assemble", assemble_arrangements)
+    graph.add_node("evaluate_arrangements", evaluate_arrangements)
+    graph.add_node("rank_and_select", rank_and_select)
+    graph.add_node("persist_realization", partial(persist_realization, driver=driver))
+
+
+def _add_m2_edges(graph: StateGraph) -> None:
+    """Wire M2 realization edges. Shared by full and sub-graph builders."""
+    graph.add_edge("load_context", "plan_voicings")
+    graph.add_edge("plan_voicings", "generate_bass")
+    graph.add_edge("generate_bass", "assemble")
+    graph.add_edge("assemble", "evaluate_arrangements")
+    graph.add_edge("evaluate_arrangements", "rank_and_select")
+    graph.add_edge("rank_and_select", "persist_realization")
+
+
 def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver) -> Any:
     """Build and compile the unified M1+M2 LangGraph exploration flow."""
     graph = StateGraph(ExplorationState)
@@ -40,14 +65,8 @@ def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver) -> Any:
     graph.add_node("evaluate_progressions", partial(evaluate_progressions, gemini=gemini))
     graph.add_node("select_top_progressions", select_top_progressions)
 
-    # M2 nodes
-    graph.add_node("load_context", partial(load_context, driver=driver))
-    graph.add_node("plan_voicings", partial(plan_voicings, gemini=gemini))
-    graph.add_node("generate_bass", generate_bass)
-    graph.add_node("assemble", assemble_arrangements)
-    graph.add_node("evaluate_arrangements", evaluate_arrangements)
-    graph.add_node("rank_and_select", rank_and_select)
-    graph.add_node("persist_realization", partial(persist_realization, driver=driver))
+    # M2 nodes (shared registration)
+    _add_m2_nodes(graph, gemini, driver)
 
     # Persistence
     graph.add_node("persist_round", partial(persist_round, driver=driver))
@@ -59,12 +78,7 @@ def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver) -> Any:
     graph.add_edge("generate", "evaluate_progressions")
     graph.add_edge("evaluate_progressions", "select_top_progressions")
     graph.add_edge("select_top_progressions", "load_context")
-    graph.add_edge("load_context", "plan_voicings")
-    graph.add_edge("plan_voicings", "generate_bass")
-    graph.add_edge("generate_bass", "assemble")
-    graph.add_edge("assemble", "evaluate_arrangements")
-    graph.add_edge("evaluate_arrangements", "rank_and_select")
-    graph.add_edge("rank_and_select", "persist_realization")
+    _add_m2_edges(graph)
     graph.add_edge("persist_realization", "persist_round")
     graph.add_edge("persist_round", END)
 
@@ -75,21 +89,10 @@ def build_realization_subgraph(gemini: GeminiClient, driver: AsyncDriver) -> Any
     """Build M2-only subgraph for independent realization (used by realization endpoint)."""
     graph = StateGraph(ExplorationState)
 
-    graph.add_node("load_context", partial(load_context, driver=driver))
-    graph.add_node("plan_voicings", partial(plan_voicings, gemini=gemini))
-    graph.add_node("generate_bass", generate_bass)
-    graph.add_node("assemble", assemble_arrangements)
-    graph.add_node("evaluate_arrangements", evaluate_arrangements)
-    graph.add_node("rank_and_select", rank_and_select)
-    graph.add_node("persist_realization", partial(persist_realization, driver=driver))
+    _add_m2_nodes(graph, gemini, driver)
 
     graph.set_entry_point("load_context")
-    graph.add_edge("load_context", "plan_voicings")
-    graph.add_edge("plan_voicings", "generate_bass")
-    graph.add_edge("generate_bass", "assemble")
-    graph.add_edge("assemble", "evaluate_arrangements")
-    graph.add_edge("evaluate_arrangements", "rank_and_select")
-    graph.add_edge("rank_and_select", "persist_realization")
+    _add_m2_edges(graph)
     graph.add_edge("persist_realization", END)
 
     return graph.compile()

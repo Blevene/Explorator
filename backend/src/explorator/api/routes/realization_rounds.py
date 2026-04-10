@@ -5,6 +5,7 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
+from neo4j import AsyncDriver
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
@@ -13,6 +14,7 @@ from explorator.api.deps import get_gemini_client, get_neo4j_driver
 from explorator.api.sse import SSEChannel
 from explorator.engine.graph import build_realization_subgraph
 from explorator.graph.repository import BaseRepository
+from explorator.graph.session_repo import SessionRepository
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["realization"])
@@ -20,10 +22,6 @@ router = APIRouter(tags=["realization"])
 
 class TriggerRealizationRequest(BaseModel):
     progression_candidate_ids: list[str]
-
-
-class SessionRepo(BaseRepository):
-    label = "Session"
 
 
 class ArrangementCandidateRepo(BaseRepository):
@@ -39,10 +37,10 @@ async def trigger_realization(
     session_id: str,
     request: TriggerRealizationRequest,
     gemini: GeminiClient = Depends(get_gemini_client),  # noqa: B008
-    driver=Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
 ) -> EventSourceResponse:
     """Trigger a realization round and stream progress via SSE."""
-    repo = SessionRepo(driver)
+    repo = SessionRepository(driver)
     session = await repo.get_by_id(session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -74,7 +72,7 @@ async def trigger_realization(
 
 
 @router.get("/candidates/{candidate_id}/arrangements")
-async def list_arrangements(candidate_id: str, driver=Depends(get_neo4j_driver)) -> list[dict[str, Any]]:  # noqa: B008
+async def list_arrangements(candidate_id: str, driver: AsyncDriver = Depends(get_neo4j_driver)) -> list[dict[str, Any]]:  # noqa: B008
     """List arrangement candidates for a progression candidate."""
     repo = ArrangementCandidateRepo(driver)
     results = await repo.query_by_property("progression_candidate_id", candidate_id)
@@ -91,7 +89,7 @@ async def list_arrangements(candidate_id: str, driver=Depends(get_neo4j_driver))
 
 
 @router.get("/arrangements/{arrangement_id}")
-async def get_arrangement(arrangement_id: str, driver=Depends(get_neo4j_driver)) -> dict[str, Any]:  # noqa: B008
+async def get_arrangement(arrangement_id: str, driver: AsyncDriver = Depends(get_neo4j_driver)) -> dict[str, Any]:  # noqa: B008
     """Get a single arrangement with its voicing plan and bass line."""
     from explorator.graph.voicing_plan_repo import VoicingPlanRepo
     from explorator.graph.bass_line_repo import BassLineRepo

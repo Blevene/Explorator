@@ -1,6 +1,10 @@
 """LangGraph exploration state definition."""
 
+from collections.abc import Awaitable, Callable
 from typing import Any, TypedDict
+
+# async callback: (event_type, data) -> None
+ProgressCallback = Callable[[str, dict[str, Any]], Awaitable[None]]
 
 
 class ExplorationState(TypedDict, total=False):
@@ -46,4 +50,4 @@ class ExplorationState(TypedDict, total=False):
     k_selection: int
 
     # Progress callback
-    on_progress: Any  # Callable for SSE events
+    on_progress: ProgressCallback

@@ -1,13 +1,12 @@
 """Plan voicings node — generate voicing strategies and plans using Gemini Flash."""
 
-import contextlib
-import json
 import logging
 from typing import Any
 
 from explorator.adapters.gemini import GeminiClient, ModelTier
 from explorator.domain.realization.voicing import VoicingGenerator
 from explorator.engine.state import ExplorationState
+from explorator.utils import parse_json_field
 from explorator.models.harmony import ProgressionCandidate
 from explorator.models.realization import ChordVoicingInstruction, VoicingPreferences, VoicingStrategyResponse
 from explorator.prompts.voicing import voicing_strategy_prompt
@@ -15,18 +14,9 @@ from explorator.prompts.voicing import voicing_strategy_prompt
 logger = logging.getLogger(__name__)
 
 
-def _parse_json_field(data: dict[str, Any], field: str) -> Any:
-    """Parse a JSON string field if stored as a string; return as-is otherwise."""
-    value = data.get(field)
-    if isinstance(value, str):
-        with contextlib.suppress(json.JSONDecodeError, TypeError):
-            return json.loads(value)
-    return value
-
-
 def _build_voicing_prefs(genre_profile: dict[str, Any]) -> VoicingPreferences:
     """Extract VoicingPreferences from a genre profile dict."""
-    raw = _parse_json_field(genre_profile, "voicing_preferences")
+    raw = parse_json_field(genre_profile, "voicing_preferences")
     if isinstance(raw, dict):
         return VoicingPreferences.model_validate(raw)
     return VoicingPreferences()
@@ -74,7 +64,7 @@ async def plan_voicings(state: ExplorationState, *, gemini: GeminiClient) -> dic
     candidates_raw = state.get("progression_candidates", [])
 
     prefs = _build_voicing_prefs(genre_profile)
-    voicing_tendencies: dict[str, str] = _parse_json_field(genre_profile, "voicing_tendencies") or {}
+    voicing_tendencies: dict[str, str] = parse_json_field(genre_profile, "voicing_tendencies") or {}
     genre = genre_profile.get("genre", creative_brief.get("genre", "dream_pop"))
     key_center = creative_brief.get("key_center") or "C"
     mode = creative_brief.get("mode") or "major"
