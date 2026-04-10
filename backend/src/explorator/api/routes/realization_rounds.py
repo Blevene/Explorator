@@ -11,7 +11,7 @@ from sse_starlette.sse import EventSourceResponse
 from explorator.adapters.gemini import GeminiClient
 from explorator.api.deps import get_gemini_client, get_neo4j_driver
 from explorator.api.sse import SSEChannel
-from explorator.engine.realization_graph import build_realization_graph
+from explorator.engine.graph import build_realization_subgraph
 from explorator.graph.repository import BaseRepository
 
 logger = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ async def trigger_realization(
         raise HTTPException(status_code=422, detail="At least one progression_candidate_id required")
 
     channel = SSEChannel()
-    graph = build_realization_graph(gemini, driver)
+    graph = build_realization_subgraph(gemini, driver)
 
     initial_state = {
         "session_id": session_id,
@@ -60,7 +60,7 @@ async def trigger_realization(
 
     async def run_and_close() -> None:
         try:
-            await graph.ainvoke(initial_state)
+            await graph.ainvoke(initial_state, {"recursion_limit": 100})
         except ValueError as e:
             await channel.send("realization_error", {"error": str(e)})
         except Exception as e:
