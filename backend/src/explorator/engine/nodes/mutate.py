@@ -136,7 +136,14 @@ async def mutate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, 
             "result_candidate_id": new_id,
             "result_candidate_type": "progression",
             "mutation_scope": "harmonic",
-            "changes": [m.model_dump() for m in response.mutations],
+            "changes": [
+                {
+                    "field": f"chord_symbols[{m.position}]" if m.position >= 0 else "progression",
+                    "operation": m.operation,
+                    "description": m.description or f"{m.original_value} → {m.new_value}" if m.original_value else m.reason,
+                }
+                for m in response.mutations
+            ],
             "reason": "; ".join(m.reason for m in response.mutations),
             "predicted_effects": [s for m in response.mutations for s in m.predicted_score_changes],
             "actual_score_delta": {},
