@@ -1,6 +1,7 @@
 """Integration test for the M2a realization pipeline."""
 
 import os
+import typing
 from unittest.mock import MagicMock
 
 import pytest
@@ -39,11 +40,11 @@ async def driver():
 
 
 @pytest.mark.integration
-def test_realization_graph_compiles(mock_gemini, mock_driver):
-    """Test the realization graph compiles with all expected nodes."""
-    from explorator.engine.realization_graph import build_realization_graph
+def test_realization_subgraph_compiles(mock_gemini, mock_driver):
+    """Test the realization subgraph compiles with all expected nodes."""
+    from explorator.engine.graph import build_realization_subgraph
 
-    graph = build_realization_graph(mock_gemini, mock_driver)
+    graph = build_realization_subgraph(mock_gemini, mock_driver)
     assert graph is not None
 
     # Verify graph has all expected nodes
@@ -53,10 +54,10 @@ def test_realization_graph_compiles(mock_gemini, mock_driver):
 
 
 @pytest.mark.integration
-def test_realization_graph_has_evaluation_nodes(mock_gemini, mock_driver):
-    """Graph should include evaluate_arrangements and rank_and_select."""
-    from explorator.engine.realization_graph import build_realization_graph
-    graph = build_realization_graph(mock_gemini, mock_driver)
+def test_realization_subgraph_has_evaluation_nodes(mock_gemini, mock_driver):
+    """Subgraph should include evaluate_arrangements and rank_and_select."""
+    from explorator.engine.graph import build_realization_subgraph
+    graph = build_realization_subgraph(mock_gemini, mock_driver)
     node_names = set(graph.nodes.keys())
     expected = {
         "load_context", "plan_voicings", "generate_bass", "assemble",
@@ -66,12 +67,11 @@ def test_realization_graph_has_evaluation_nodes(mock_gemini, mock_driver):
 
 
 @pytest.mark.integration
-def test_realization_state_type():
-    """Verify RealizationState has all required fields."""
-    from explorator.engine.realization_state import RealizationState
-    import typing
+def test_exploration_state_has_realization_fields():
+    """Verify ExplorationState has all required realization fields."""
+    from explorator.engine.state import ExplorationState
 
-    hints = typing.get_type_hints(RealizationState)
+    hints = typing.get_type_hints(ExplorationState)
     required_fields = [
         "session_id", "progression_candidate_ids", "progression_candidates",
         "genre_profile", "creative_brief", "voicing_strategies", "voicing_plans",
