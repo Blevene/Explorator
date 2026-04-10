@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 # Clamp bounds for any single weight dimension
 _WEIGHT_MIN = 0.02
-_WEIGHT_MAX = 0.55
+_WEIGHT_MAX = 0.50
 
 
 class FeedbackInterpretation(BaseModel):
