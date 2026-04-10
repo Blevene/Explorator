@@ -137,3 +137,62 @@ def apply_diversity_penalty(
 
     result.extend(remaining)
     return result
+
+
+def assign_selection_roles(
+    candidates: list[dict],
+) -> tuple[dict[str, str], list[str]]:
+    """Assign finalist roles: safest, best_loop, most_experimental.
+
+    Each candidate gets at most one role (first match wins).
+    Returns (roles dict {candidate_id: role_name}, notes list).
+    """
+    roles: dict[str, str] = {}
+    notes: list[str] = []
+    assigned_ids: set[str] = set()
+
+    # Safest: highest weighted_total where genre_fit > 8.0
+    safest_candidates = [
+        c for c in candidates
+        if c.get("scores", {}).get("genre_fit", 0.0) > 8.0
+    ]
+    safest_candidates.sort(key=lambda c: c.get("weighted_total", 0.0), reverse=True)
+    if safest_candidates:
+        cid = safest_candidates[0]["id"]
+        roles[cid] = "safest"
+        assigned_ids.add(cid)
+    else:
+        notes.append("No candidate qualifies for safest (requires genre_fit > 8.0)")
+
+    # Best Loop: highest loopability among unassigned
+    loop_candidates = sorted(
+        candidates,
+        key=lambda c: c.get("scores", {}).get("loopability", 0.0),
+        reverse=True,
+    )
+    found_loop = False
+    for c in loop_candidates:
+        if c["id"] not in assigned_ids:
+            roles[c["id"]] = "best_loop"
+            assigned_ids.add(c["id"])
+            found_loop = True
+            break
+    if not found_loop:
+        notes.append("No candidate qualifies for best_loop (all candidates already assigned)")
+
+    # Most Experimental: highest novelty where weighted_total > 7.0, among unassigned
+    experimental_candidates = [
+        c for c in candidates
+        if c.get("weighted_total", 0.0) > 7.0 and c["id"] not in assigned_ids
+    ]
+    experimental_candidates.sort(
+        key=lambda c: c.get("scores", {}).get("novelty", 0.0), reverse=True,
+    )
+    if experimental_candidates:
+        cid = experimental_candidates[0]["id"]
+        roles[cid] = "most_experimental"
+        assigned_ids.add(cid)
+    else:
+        notes.append("No candidate qualifies for most_experimental (requires weighted_total > 7.0 and unassigned)")
+
+    return roles, notes
