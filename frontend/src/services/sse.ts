@@ -3,7 +3,11 @@ export type SSEEventType =
   | 'node_completed'
   | 'candidates_preview'
   | 'round_completed'
-  | 'round_error';
+  | 'round_error'
+  | 'mutation_completed'
+  | 'mutation_error'
+  | 'realization_completed'
+  | 'realization_error';
 
 export interface SSEEvent {
   type: SSEEventType;

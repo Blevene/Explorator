@@ -60,14 +60,14 @@ export default function SessionWorkspace() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-      const TIMEOUT_MS = 120_000; // 2 minute max round time
+      const TIMEOUT_MS = 300_000; // 5 minute max for multi-round pipelines
 
       try {
         const deadline = Date.now() + TIMEOUT_MS;
 
         while (true) {
           if (Date.now() > deadline) {
-            setError('Round timed out after 2 minutes.');
+            setError('Round timed out after 5 minutes.');
             break;
           }
 
@@ -105,6 +105,16 @@ export default function SessionWorkspace() {
             } else if (eventType === 'round_error') {
               setError((data.error as string) ?? 'Error');
               break;
+            } else if (eventType === 'mutation_completed') {
+              const mutCount = data.mutations_count as number ?? 0;
+              const round = data.round as number ?? 1;
+              nodeRef.current = 'mutation_completed';
+              setCurrentNode(`mutation_completed:${round}:${mutCount}`);
+            } else if (eventType === 'mutation_error') {
+              setError((data.error as string) ?? 'Mutation error');
+            } else if (eventType === 'realization_completed') {
+              nodeRef.current = 'persist_realization';
+              setCurrentNode('persist_realization');
             }
           }
 
@@ -213,6 +223,16 @@ export default function SessionWorkspace() {
       </div>
 
       <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+        {currentNode?.startsWith('mutation_completed') && (() => {
+          const parts = currentNode.split(':');
+          const round = parts[1];
+          const mutations = parts[2];
+          return (
+            <div className="text-xs text-cyan-400 mb-1">
+              Round {round} — {mutations} mutation{mutations === '1' ? '' : 's'} applied, re-evaluating...
+            </div>
+          );
+        })()}
         <PromptBar
           prompt={prompt}
           onPromptChange={setPrompt}
