@@ -5,9 +5,14 @@ from typing import Any
 
 from neo4j import AsyncDriver
 from neo4j.exceptions import Neo4jError
+from ulid import ULID
 
 from explorator.engine.state import ExplorationState
+from explorator.graph.mutation_record_repo import MutationRecordRepo
 from explorator.graph.repository import BaseRepository
+from explorator.graph.search_round_repo import SearchRoundRepo
+from explorator.models.search import MutationRecord, SearchRound
+from explorator.utils import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +74,33 @@ async def persist_round(state: ExplorationState, *, driver: AsyncDriver) -> dict
 
     if failed > 0:
         logger.warning("Persisted %d/%d candidates (%d failed)", saved, saved + failed, failed)
+
+    # --- M3a: Persist SearchRound ---
+    round_number = state.get("round_number", 1)
+    search_round = SearchRound(
+        id=f"sr_{ULID()}",
+        type="search_round",
+        status="completed",
+        created_at=utc_now(),
+        updated_at=utc_now(),
+        session_id=session_id,
+        round_number=round_number,
+        selected_candidate_ids=[p.get("id", "") for p in state.get("top_progressions", [])],
+    )
+    try:
+        sr_repo = SearchRoundRepo(driver)
+        await sr_repo.create(search_round)
+    except Exception:
+        logger.exception("Failed to persist SearchRound")
+
+    # --- M3a: Persist MutationRecords ---
+    mr_repo = MutationRecordRepo(driver)
+    for mr_data in state.get("mutation_records", []):
+        try:
+            mr = MutationRecord.model_validate(mr_data)
+            await mr_repo.create(mr)
+        except Exception:
+            logger.exception("Failed to persist MutationRecord %s", mr_data.get("id"))
 
     if callback:
         top_score = max(
