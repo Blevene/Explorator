@@ -5,7 +5,7 @@ from typing import Any
 
 from neo4j import AsyncDriver
 
-from explorator.engine.realization_state import RealizationState
+from explorator.engine.state import ExplorationState
 from explorator.graph.repository import BaseRepository
 
 logger = logging.getLogger(__name__)
@@ -37,11 +37,16 @@ class CreativeBriefRepo(BaseRepository):
         return results[0] if results else None
 
 
-async def load_context(state: RealizationState, *, driver: AsyncDriver) -> dict[str, Any]:
+async def load_context(state: ExplorationState, *, driver: AsyncDriver) -> dict[str, Any]:
     """Fetch progression candidates, session, genre profile, and creative brief from Neo4j."""
     callback = state.get("on_progress")
     if callback:
         await callback("node_started", {"node": "load_context"})
+
+    # In unified graph, state may already have these fields from M1 pipeline.
+    # Skip Neo4j fetch when data is already present (e.g., during mutation loop re-entry).
+    if state.get("progression_candidates") and state.get("genre_profile"):
+        return {}
 
     candidate_ids = state.get("progression_candidate_ids", [])
 
