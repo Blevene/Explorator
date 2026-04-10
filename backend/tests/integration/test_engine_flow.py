@@ -10,7 +10,7 @@ from neo4j import AsyncDriver
 
 from explorator.adapters.gemini import GeminiClient
 from explorator.domain.style.service import StyleService
-from explorator.engine.graph import build_m1_graph
+from explorator.engine.graph import build_exploration_graph
 
 
 def _has_api_key() -> bool:
@@ -25,7 +25,7 @@ async def test_m1_full_flow(neo4j_driver: AsyncDriver) -> None:
     await style.sync_genres_to_neo4j()
 
     gemini = GeminiClient(api_key=os.environ["GEMINI_API_KEY"])
-    graph = build_m1_graph(gemini, neo4j_driver)
+    graph = build_exploration_graph(gemini, neo4j_driver)
 
     initial_state = {
         "session_id": "sess_test_m1",

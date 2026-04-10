@@ -93,7 +93,3 @@ def build_realization_subgraph(gemini: GeminiClient, driver: AsyncDriver) -> Any
     graph.add_edge("persist_realization", END)
 
     return graph.compile()
-
-
-# Backwards-compatible alias — will be removed after M3-prep completes
-build_m1_graph = build_exploration_graph
