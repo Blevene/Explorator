@@ -11,7 +11,7 @@ from sse_starlette.sse import EventSourceResponse
 from explorator.adapters.gemini import GeminiClient
 from explorator.api.deps import get_gemini_client, get_neo4j_driver
 from explorator.api.sse import SSEChannel
-from explorator.engine.graph import build_m1_graph
+from explorator.engine.graph import build_exploration_graph
 from explorator.graph.session_repo import SessionRepository
 from explorator.utils import parse_json_or_dict
 
@@ -57,7 +57,7 @@ async def trigger_round(
     prompt = request.prompt or session_prompt
 
     channel = SSEChannel()
-    graph = build_m1_graph(gemini, driver)
+    graph = build_exploration_graph(gemini, driver)
 
     n, k = MODE_PARAMS.get(request.generation_mode, (12, 4))
 
@@ -73,7 +73,7 @@ async def trigger_round(
 
     async def run_and_close() -> None:
         try:
-            await graph.ainvoke(initial_state)
+            await graph.ainvoke(initial_state, {"recursion_limit": 100})
         except Exception as e:
             logger.exception("Round failed for session %s", session_id)
             await channel.send("round_error", {"error": str(e)})
