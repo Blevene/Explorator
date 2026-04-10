@@ -5,6 +5,7 @@ from typing import Any
 
 from ulid import ULID
 
+from explorator.domain.evaluation.pareto import compute_pareto_front
 from explorator.engine.state import ExplorationState
 from explorator.models.evaluation import AggregateScorecard
 from explorator.utils import utc_now
@@ -28,6 +29,18 @@ _M1_DIMENSIONS = {"genre_fit", "emotional_fit", "theoretical_coherence", "cadenc
 
 # M2b dimensions that must pass threshold
 _M2B_GATE_DIMENSIONS = {"voice_leading", "register_density", "playability"}
+
+_PARETO_AXES = ["genre_fit", "novelty", "loopability", "playability"]
+
+
+def _identify_pareto_front(candidates: list[dict[str, Any]]) -> set[str]:
+    """Identify Pareto front candidates across key axes."""
+    pareto_input = [
+        {"id": c["id"], "scores": c.get("merged_scores", {})}
+        for c in candidates
+    ]
+    front_ids = compute_pareto_front(pareto_input, axes=_PARETO_AXES)
+    return set(front_ids)
 
 
 def _compute_weighted_total(
@@ -119,6 +132,8 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
     # Build a mutable map for status updates
     arr_status: dict[str, str] = {}
 
+    # First pass: build merged scores and per-family rankings
+    family_data: dict[str, dict[str, Any]] = {}  # prog_id → {candidates, selected_ids}
     for prog_id, arr_ids in by_prog.items():
         m1_scores = m1_scores_lookup.get(prog_id, {})
 
@@ -138,7 +153,39 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
         selected_family_ids = {c["id"] for c in selected_in_family}
         selected_ids |= selected_family_ids
 
-        # Build scorecards for each arrangement in this family
+        family_data[prog_id] = {
+            "candidates": family_candidates,
+            "selected_in_family": selected_in_family,
+            "selected_family_ids": selected_family_ids,
+        }
+
+        for arr_id in arr_ids:
+            arr_status[arr_id] = "selected" if arr_id in selected_family_ids else "rejected"
+
+    # --- Pareto preservation: ensure non-dominated candidates survive ---
+    all_flat_candidates: list[dict[str, Any]] = []
+    for prog_id2, arr_ids2 in by_prog.items():
+        m1_sc = m1_scores_lookup.get(prog_id2, {})
+        for aid in arr_ids2:
+            m2b_sc = eval_lookup.get(aid, {})
+            merged2: dict[str, float] = {}
+            for dim in _M1_DIMENSIONS:
+                merged2[dim] = float(m1_sc.get(dim, 5.0))
+            merged2.update(m2b_sc)
+            all_flat_candidates.append({"id": aid, "merged_scores": merged2})
+
+    pareto_ids = _identify_pareto_front(all_flat_candidates)
+
+    # Add Pareto members to selected set
+    for pid in pareto_ids:
+        if pid not in selected_ids:
+            selected_ids.add(pid)
+            arr_status[pid] = "selected"
+
+    # Second pass: build scorecards now that pareto_ids is known
+    for prog_id, fam in family_data.items():
+        family_candidates = fam["candidates"]
+        selected_in_family = fam["selected_in_family"]
         for cand in family_candidates:
             arr_id = cand["id"]
             merged = cand["merged_scores"]
@@ -157,10 +204,9 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
                 scores=merged,
                 weighted_total=weighted_total,
                 rank_within_round=rank,
+                pareto_tags=["pareto_front"] if arr_id in pareto_ids else [],
             )
             scorecards.append(sc.model_dump(mode="json"))
-
-            arr_status[arr_id] = "selected" if arr_id in selected_family_ids else "rejected"
 
     # Apply status updates to arrangement_candidates
     updated_arrangements = []
@@ -180,9 +226,15 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
         selected_members = [mid for mid in member_ids if mid in selected_ids]
         updated_families.append({**fam_data, "selected_member_ids": selected_members})
 
+    pareto_snapshot = {
+        "candidate_ids": list(pareto_ids),
+        "axes": _PARETO_AXES,
+    }
+
     return {
         "arrangement_candidates": updated_arrangements,
         "scorecards": scorecards,
         "selected_arrangements": selected_arrangements,
         "arrangement_families": updated_families,
+        "pareto_front": pareto_snapshot,
     }

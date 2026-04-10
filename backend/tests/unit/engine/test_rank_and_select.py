@@ -7,6 +7,7 @@ import pytest
 from explorator.engine.nodes.rank_and_select import (
     DEFAULT_WEIGHTS,
     _compute_weighted_total,
+    _identify_pareto_front,
     _rank_family,
 )
 
@@ -118,3 +119,19 @@ def test_rank_family_all_rejected_returns_empty() -> None:
 def test_rank_family_empty_input() -> None:
     """Empty candidate list returns empty list."""
     assert _rank_family([], DEFAULT_WEIGHTS) == []
+
+
+# ---------------------------------------------------------------------------
+# _identify_pareto_front
+# ---------------------------------------------------------------------------
+
+
+def test_identify_pareto_front_basic() -> None:
+    """Non-dominated candidates identified correctly."""
+    candidates = [
+        {"id": "a", "merged_scores": {"genre_fit": 9.0, "novelty": 3.0, "loopability": 5.0, "playability": 5.0}},
+        {"id": "b", "merged_scores": {"genre_fit": 3.0, "novelty": 9.0, "loopability": 5.0, "playability": 5.0}},
+        {"id": "c", "merged_scores": {"genre_fit": 5.0, "novelty": 5.0, "loopability": 5.0, "playability": 5.0}},
+    ]
+    front = _identify_pareto_front(candidates)
+    assert set(front) == {"a", "b", "c"}
