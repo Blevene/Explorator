@@ -6,7 +6,12 @@ from typing import Any
 from ulid import ULID
 
 from explorator.domain.evaluation.pareto import compute_pareto_front
-from explorator.domain.evaluation.ranking import CANONICAL_DEFAULT_WEIGHTS, chord_edit_distance
+from explorator.domain.evaluation.ranking import (
+    CANONICAL_DEFAULT_WEIGHTS,
+    apply_diversity_penalty,
+    assign_selection_roles,
+    chord_edit_distance,
+)
 from explorator.engine.state import ExplorationState
 from explorator.models.evaluation import AggregateScorecard
 from explorator.utils import utc_now
@@ -277,10 +282,50 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
         "pairwise_diverse": pairwise_diverse,
     }
 
+    # --- M3c: Diversity penalties ---
+    diversity_input: list[dict[str, Any]] = []
+    for sc_data in scorecards:
+        arr_id = sc_data["candidate_id"]
+        prog_id = arr_prog_map.get(arr_id, "")
+        diversity_input.append({
+            "id": arr_id,
+            "weighted_total": sc_data["weighted_total"],
+            "chord_symbols": prog_chord_lookup.get(prog_id, []),
+            "scores": sc_data["scores"],
+        })
+    diversity_input.sort(key=lambda c: c["weighted_total"], reverse=True)
+
+    search_plan = state.get("search_plan", {})
+    diversity_target = search_plan.get("diversity_target", 0.65)
+    top_n = max(3, round(len(diversity_input) * diversity_target))
+
+    diversified = apply_diversity_penalty(
+        diversity_input, top_n=top_n, edit_dist_threshold=2, score_dist_threshold=0.5,
+    )
+
+    # --- M3c: Selection roles ---
+    selection_roles, selection_notes = assign_selection_roles(diversified[:top_n])
+
+    final_selection = {
+        "selected_candidate_ids": list(selection_roles.keys()),
+        "selection_roles": selection_roles,
+        "selection_notes": selection_notes,
+    }
+
+    if callback:
+        await callback("node_completed", {
+            "node": "rank_and_select",
+            "selected_count": len(selected_arrangements),
+            "pareto_count": len(pareto_ids),
+            "finalist_count": len(selection_roles),
+            "final_selection": final_selection,
+        })
+
     return {
         "arrangement_candidates": updated_arrangements,
         "scorecards": scorecards,
         "selected_arrangements": selected_arrangements,
         "arrangement_families": updated_families,
         "pareto_front": pareto_snapshot,
+        "final_selection": final_selection,
     }

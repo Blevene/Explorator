@@ -195,3 +195,35 @@ async def test_rank_and_select_uses_state_weights() -> None:
     sc_b = next(sc for sc in scorecards if sc["candidate_id"] == "arr_b")
     # With 60% weight on novelty, candidate A (novelty=9.5) should rank higher
     assert sc_a["weighted_total"] > sc_b["weighted_total"]
+
+
+@pytest.mark.asyncio
+async def test_rank_and_select_produces_final_selection() -> None:
+    """rank_and_select output includes final_selection with roles."""
+    prog = {
+        "id": "prog_1",
+        "chord_symbols": ["C", "G", "Am", "F"],
+        "metadata": {"scores": {"genre_fit": 9.0, "novelty": 5.0, "emotional_fit": 7.0,
+                                  "theoretical_coherence": 7.0, "cadence_quality": 7.0, "loopability": 8.0}},
+    }
+    arr = {"id": "arr_1", "progression_candidate_id": "prog_1", "status": "draft"}
+    ev = {
+        "arrangement_candidate_id": "arr_1",
+        "voice_leading": {"overall_score": 8.0},
+        "register_density": {"overall_score": 7.0},
+        "playability": {"overall_score": 7.0},
+    }
+
+    state = {
+        "arrangement_candidates": [arr],
+        "arrangement_families": [],
+        "progression_candidates": [prog],
+        "evaluations": [ev],
+    }
+
+    result = await rank_and_select(state)
+    assert "final_selection" in result
+    fs = result["final_selection"]
+    assert "selection_roles" in fs
+    assert "selection_notes" in fs
+    assert "selected_candidate_ids" in fs

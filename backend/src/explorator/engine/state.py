@@ -58,6 +58,9 @@ class ExplorationState(TypedDict, total=False):
     n_candidates: int
     k_selection: int
 
+    # --- M3c: Finalists ---
+    final_selection: dict[str, Any]
+
     # --- M3b: Feedback & Memory ---
     feedback_history: list[dict[str, Any]]
     objective_weights: dict[str, Any]
