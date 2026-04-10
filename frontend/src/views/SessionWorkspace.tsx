@@ -9,6 +9,8 @@ import PromptBar from '../components/PromptBar';
 import ArrangementList from '../components/ArrangementList';
 import ArrangementDetail from '../components/ArrangementDetail';
 import LineageTree from '../components/LineageTree';
+import FeedbackSidebar from '../components/FeedbackSidebar';
+import { useFeedbackStore } from '../stores/feedbackStore';
 import * as audioEngine from '../services/audioEngine';
 
 const API_BASE = '/v1';
@@ -259,6 +261,7 @@ export default function SessionWorkspace() {
               setViewMode('generation');
               audioEngine.stop();
               arrangementStore.reset();
+              useFeedbackStore.getState().reset();
             }}
             className="text-xs text-slate-500 hover:text-slate-300 mb-2"
           >
@@ -277,6 +280,12 @@ export default function SessionWorkspace() {
               arrangement={arrangementStore.selectedDetail}
               genre={session?.genre || 'dream_pop'}
             />
+            {sessionId && (
+              <FeedbackSidebar
+                sessionId={sessionId}
+                candidateId={arrangementStore.selectedArrangementId}
+              />
+            )}
           </div>
         </>
       ) : (
