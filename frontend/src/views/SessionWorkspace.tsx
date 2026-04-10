@@ -8,6 +8,7 @@ import CandidateCard from '../components/CandidateCard';
 import PromptBar from '../components/PromptBar';
 import ArrangementList from '../components/ArrangementList';
 import ArrangementDetail from '../components/ArrangementDetail';
+import LineageTree from '../components/LineageTree';
 import * as audioEngine from '../services/audioEngine';
 
 const API_BASE = '/v1';
@@ -304,6 +305,14 @@ export default function SessionWorkspace() {
               </div>
             )
           )}
+
+          <LineageTree
+            candidates={candidates}
+            onSelectCandidate={(id) => {
+              // Could scroll to or highlight the candidate
+              console.log('Selected lineage node:', id);
+            }}
+          />
 
           {loading && candidates.length === 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
