@@ -26,14 +26,14 @@ function WeightBar({ dimension, weight, maxWeight }: { dimension: string; weight
   const label = DIMENSION_LABELS[dimension] || dimension;
   return (
     <div className="flex items-center gap-2 text-xs">
-      <span className="w-20 text-gray-500 truncate" title={dimension}>{label}</span>
-      <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
+      <span className="w-20 truncate" style={{ color: 'var(--text-muted)' }} title={dimension}>{label}</span>
+      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--surface-4)' }}>
         <div
-          className="h-full bg-purple-500 rounded-full transition-all duration-300"
-          style={{ width: `${barPct}%` }}
+          className="h-full rounded-full transition-all duration-300"
+          style={{ width: `${barPct}%`, background: 'var(--accent-primary)' }}
         />
       </div>
-      <span className="w-10 text-right text-gray-400">{pct}%</span>
+      <span className="w-8 text-right font-mono" style={{ color: 'var(--text-secondary)' }}>{pct}%</span>
     </div>
   );
 }
@@ -47,11 +47,14 @@ function FeedbackMessage({ entry }: { entry: FeedbackEntry }) {
 
   return (
     <div className="space-y-1">
-      <div className="bg-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200">
+      <div className="rounded-lg px-3 py-2 text-sm" style={{ background: 'var(--surface-3)', color: 'var(--text-primary)' }}>
         {entry.content}
       </div>
       {summary && (
-        <div className="bg-purple-900/30 border border-purple-800/50 rounded-lg px-3 py-2 text-xs text-purple-300">
+        <div
+          className="rounded-lg px-3 py-2 text-xs"
+          style={{ background: 'var(--accent-primary-dim)', border: '1px solid var(--accent-primary-dim)', color: 'var(--accent-primary)' }}
+        >
           Understood: {summary}
         </div>
       )}
@@ -93,19 +96,18 @@ export default function FeedbackSidebar({ sessionId, candidateId }: FeedbackSide
   };
 
   return (
-    <div className="w-80 border-l border-gray-800 bg-gray-950 flex flex-col">
+    <div className="w-72 flex flex-col" style={{ borderLeft: '1px solid var(--border-subtle)', background: 'var(--surface-1)' }}>
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-800">
-        <h3 className="text-sm font-semibold text-gray-300">Feedback</h3>
-        <p className="text-xs text-gray-600 mt-0.5">Tell me what to change</p>
+      <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+        <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Feedback</h3>
       </div>
 
       {/* Weight visualization */}
       {currentWeights && (() => {
         const maxW = Math.max(...Object.values(currentWeights));
         return (
-          <div className="px-4 py-3 border-b border-gray-800 space-y-1.5">
-            <h4 className="text-xs font-medium text-gray-500 mb-2">Current Weights</h4>
+          <div className="px-4 py-3 space-y-1.5" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+            <h4 className="text-xs font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Weights</h4>
             {Object.entries(currentWeights).map(([dim, weight]) => (
               <WeightBar key={dim} dimension={dim} weight={weight} maxWeight={maxW} />
             ))}
@@ -116,8 +118,8 @@ export default function FeedbackSidebar({ sessionId, candidateId }: FeedbackSide
       {/* Chat thread */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {entries.length === 0 && (
-          <p className="text-xs text-gray-600 text-center py-8">
-            No feedback yet. Type below to steer the search.
+          <p className="text-xs text-center py-8" style={{ color: 'var(--text-muted)' }}>
+            Type below to steer the search.
           </p>
         )}
         {entries.map((entry) => (
@@ -127,27 +129,33 @@ export default function FeedbackSidebar({ sessionId, candidateId }: FeedbackSide
 
       {/* Error */}
       {error && (
-        <div className="px-4 py-2 text-xs text-red-400 bg-red-900/20">
+        <div className="px-4 py-2 text-xs" style={{ color: 'var(--score-low)', background: '#7f1d1d22' }}>
           {error}
         </div>
       )}
 
       {/* Input */}
-      <div className="px-4 py-3 border-t border-gray-800">
+      <div className="px-4 py-3" style={{ borderTop: '1px solid var(--border-subtle)' }}>
         <div className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
-            placeholder={candidateId ? 'e.g. "more experimental"' : 'Select a candidate first'}
+            placeholder={candidateId ? '"more experimental"' : 'Select arrangement'}
             disabled={!candidateId || submitting}
-            className="flex-1 bg-gray-900 border border-gray-700 rounded px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:border-purple-500 focus:outline-none disabled:opacity-50"
+            className="flex-1 rounded px-3 py-1.5 text-sm focus:outline-none disabled:opacity-40"
+            style={{
+              background: 'var(--surface-0)',
+              border: '1px solid var(--border-subtle)',
+              color: 'var(--text-primary)',
+            }}
           />
           <button
             onClick={handleSubmit}
             disabled={!input.trim() || !candidateId || submitting}
-            className="px-3 py-1.5 text-sm bg-purple-600 hover:bg-purple-500 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-3 py-1.5 text-sm rounded font-medium disabled:opacity-30 transition-colors"
+            style={{ background: 'var(--accent-primary)', color: 'var(--surface-0)' }}
           >
             {submitting ? '...' : 'Send'}
           </button>

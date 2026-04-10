@@ -100,8 +100,8 @@ export default function LineageTree({ candidates, onSelectCandidate }: LineageTr
   if (!hasMutations) return null;
 
   return (
-    <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-3">
-      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+    <div className="rounded-lg p-3" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-subtle)' }}>
+      <h4 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>
         Mutation Lineage
       </h4>
       {tree.map((root) => (
