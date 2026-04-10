@@ -11,9 +11,9 @@ interface CandidateCardProps {
 const LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
 function scoreColor(score: number): string {
-  if (score >= 8.0) return 'text-green-400 bg-green-900/30';
-  if (score >= 6.0) return 'text-yellow-400 bg-yellow-900/30';
-  return 'text-red-400 bg-red-900/30';
+  if (score >= 8.0) return 'var(--score-high)';
+  if (score >= 6.0) return 'var(--score-mid)';
+  return 'var(--score-low)';
 }
 
 export default function CandidateCard({ candidate, index, onClick, onRealize, onMutate }: CandidateCardProps) {
@@ -23,70 +23,84 @@ export default function CandidateCard({ candidate, index, onClick, onRealize, on
   return (
     <div
       onClick={onClick}
-      className="bg-gray-900 border border-gray-800 rounded-lg p-4 flex flex-col gap-3 hover:border-purple-500/50 transition-colors cursor-pointer"
+      className="rounded-lg p-4 flex flex-col gap-3 transition-all cursor-pointer"
+      style={{
+        background: 'var(--surface-2)',
+        border: '1px solid var(--border-subtle)',
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--accent-primary-dim)')}
+      onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border-subtle)')}
     >
-      {/* Header: label + score */}
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <span className="text-purple-400 font-bold text-sm">
-          Candidate {label}
+        <span className="text-sm font-semibold" style={{ color: 'var(--accent-primary)' }}>
+          {label}
         </span>
         <div className="flex items-center gap-2">
           {!!candidate.metadata?.mutated_from && (
-            <span className="text-xs bg-cyan-900/40 text-cyan-400 px-2 py-0.5 rounded-full">
-              ⟳ mutated
+            <span
+              className="text-xs px-2 py-0.5 rounded-full font-mono"
+              style={{ background: 'var(--accent-secondary-dim)', color: 'var(--accent-secondary)' }}
+            >
+              mutated
             </span>
           )}
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${scoreColor(score)}`}>
+          <span
+            className="text-xs font-bold font-mono px-2 py-0.5 rounded-full"
+            style={{ color: scoreColor(score), background: `${scoreColor(score)}15` }}
+          >
             {score.toFixed(1)}
           </span>
         </div>
       </div>
 
-      {/* Chord symbols */}
+      {/* Chords */}
       <div>
-        <p className="font-mono text-sm text-white tracking-wide leading-relaxed">
-          {candidate.chord_symbols.join(' → ')}
+        <p className="font-mono text-sm tracking-wide leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+          {candidate.chord_symbols.join(' \u2192 ')}
         </p>
         {candidate.roman_numerals.length > 0 && (
-          <p className="font-mono text-xs text-gray-500 mt-1">
-            {candidate.roman_numerals.join(' → ')}
+          <p className="font-mono text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+            {candidate.roman_numerals.join(' \u2192 ')}
           </p>
         )}
       </div>
 
-      {/* Key / mode badge */}
-      <div className="flex gap-2">
-        <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded">
+      {/* Badges */}
+      <div className="flex gap-2 flex-wrap">
+        <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--surface-3)', color: 'var(--text-secondary)' }}>
           {candidate.key_center} {candidate.mode}
         </span>
         {candidate.intent_tags.map((tag) => (
-          <span key={tag} className="text-xs bg-gray-800 text-gray-500 px-2 py-0.5 rounded">
+          <span key={tag} className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--surface-3)', color: 'var(--text-muted)' }}>
             {tag}
           </span>
         ))}
       </div>
 
-      {/* Rationale — full text, no truncation */}
+      {/* Rationale */}
       {candidate.rationale && (
-        <p className="text-gray-400 text-xs leading-relaxed">{candidate.rationale}</p>
+        <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{candidate.rationale}</p>
       )}
 
       {/* Score breakdown */}
       {Object.keys(candidate.scores).length > 0 && (
-        <div className="border-t border-gray-800 pt-2 grid grid-cols-2 gap-x-4 gap-y-1">
+        <div className="pt-2 grid grid-cols-2 gap-x-4 gap-y-1" style={{ borderTop: '1px solid var(--border-subtle)' }}>
           {Object.entries(candidate.scores).map(([key, val]) => (
             <div key={key} className="flex justify-between text-xs">
-              <span className="text-gray-600 capitalize">{key.replace(/_/g, ' ')}</span>
-              <span className="text-gray-400">{val.toFixed(1)}</span>
+              <span className="capitalize" style={{ color: 'var(--text-muted)' }}>{key.replace(/_/g, ' ')}</span>
+              <span className="font-mono" style={{ color: 'var(--text-secondary)' }}>{val.toFixed(1)}</span>
             </div>
           ))}
         </div>
       )}
 
+      {/* Actions */}
       {onRealize && (
         <button
           onClick={(e) => { e.stopPropagation(); onRealize(candidate.candidate_id) }}
-          className="mt-3 w-full py-1.5 text-xs font-medium rounded bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors"
+          className="mt-1 w-full py-1.5 text-xs font-medium rounded-md transition-colors"
+          style={{ background: 'var(--surface-4)', color: 'var(--text-secondary)' }}
         >
           Realize
         </button>
@@ -94,9 +108,10 @@ export default function CandidateCard({ candidate, index, onClick, onRealize, on
       {onMutate && (
         <button
           onClick={(e) => { e.stopPropagation(); onMutate(candidate.candidate_id) }}
-          className="mt-1 w-full py-1.5 text-xs font-medium rounded bg-cyan-900/50 hover:bg-cyan-800/50 text-cyan-300 transition-colors"
+          className="w-full py-1.5 text-xs font-medium rounded-md transition-colors"
+          style={{ background: 'var(--accent-secondary-dim)', color: 'var(--accent-secondary)' }}
         >
-          ⟳ Mutate
+          Mutate
         </button>
       )}
     </div>
