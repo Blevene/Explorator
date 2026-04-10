@@ -5,6 +5,7 @@ interface CandidateCardProps {
   index: number;
   onClick?: () => void;
   onRealize?: (candidateId: string) => void;
+  onMutate?: (candidateId: string) => void;
 }
 
 const LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
@@ -15,7 +16,7 @@ function scoreColor(score: number): string {
   return 'text-red-400 bg-red-900/30';
 }
 
-export default function CandidateCard({ candidate, index, onClick, onRealize }: CandidateCardProps) {
+export default function CandidateCard({ candidate, index, onClick, onRealize, onMutate }: CandidateCardProps) {
   const label = LABELS[index] || `#${index + 1}`;
   const score = candidate.weighted_total;
 
@@ -29,9 +30,16 @@ export default function CandidateCard({ candidate, index, onClick, onRealize }: 
         <span className="text-purple-400 font-bold text-sm">
           Candidate {label}
         </span>
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${scoreColor(score)}`}>
-          {score.toFixed(1)}
-        </span>
+        <div className="flex items-center gap-2">
+          {candidate.metadata?.mutated_from && (
+            <span className="text-xs bg-cyan-900/40 text-cyan-400 px-2 py-0.5 rounded-full">
+              ⟳ mutated
+            </span>
+          )}
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${scoreColor(score)}`}>
+            {score.toFixed(1)}
+          </span>
+        </div>
       </div>
 
       {/* Chord symbols */}
@@ -81,6 +89,14 @@ export default function CandidateCard({ candidate, index, onClick, onRealize }: 
           className="mt-3 w-full py-1.5 text-xs font-medium rounded bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors"
         >
           Realize
+        </button>
+      )}
+      {onMutate && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onMutate(candidate.candidate_id) }}
+          className="mt-1 w-full py-1.5 text-xs font-medium rounded bg-cyan-900/50 hover:bg-cyan-800/50 text-cyan-300 transition-colors"
+        >
+          ⟳ Mutate
         </button>
       )}
     </div>

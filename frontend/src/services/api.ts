@@ -62,6 +62,7 @@ export interface CandidateSummary {
   intent_tags: string[];
   weighted_total: number;
   scores: Record<string, number>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface CandidateListResponse {
@@ -156,4 +157,24 @@ export async function triggerRealizationSSE(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ progression_candidate_ids: progressionCandidateIds }),
   })
+}
+
+export async function triggerMutation(
+  sessionId: string,
+  candidateIds: string[],
+  guidance?: string,
+): Promise<Response> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/mutate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      candidate_ids: candidateIds,
+      guidance: guidance || null,
+    }),
+  });
+  if (!res.ok) {
+    if (res.status === 409) throw new Error('A mutation is already in progress');
+    throw new Error(`Mutation failed: ${res.status}`);
+  }
+  return res;
 }
