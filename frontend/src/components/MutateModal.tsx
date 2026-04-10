@@ -7,7 +7,7 @@ interface MutateModalProps {
   onClose: () => void;
 }
 
-export default function MutateModal({ candidateId, chordSymbols, onSubmit, onClose }: MutateModalProps) {
+export default function MutateModal({ chordSymbols, onSubmit, onClose }: MutateModalProps) {
   const [guidance, setGuidance] = useState('');
 
   return (

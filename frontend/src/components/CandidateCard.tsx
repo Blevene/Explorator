@@ -31,7 +31,7 @@ export default function CandidateCard({ candidate, index, onClick, onRealize, on
           Candidate {label}
         </span>
         <div className="flex items-center gap-2">
-          {candidate.metadata?.mutated_from && (
+          {!!candidate.metadata?.mutated_from && (
             <span className="text-xs bg-cyan-900/40 text-cyan-400 px-2 py-0.5 rounded-full">
               ⟳ mutated
             </span>
