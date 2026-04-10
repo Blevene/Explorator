@@ -70,7 +70,16 @@ async def mutate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, 
     arr_to_prog: dict[str, str] = {
         a["id"]: a.get("progression_candidate_id", "") for a in arrangements
     }
-    scores_by_id = {sc["candidate_id"]: sc.get("scores", {}) for sc in scorecards}
+    # Map progression IDs to their best arrangement's merged scores
+    prog_scores: dict[str, dict[str, float]] = {}
+    prog_best_total: dict[str, float] = {}
+    for sc in scorecards:
+        arr_id = sc.get("candidate_id", "")
+        pid = arr_to_prog.get(arr_id, "")
+        wt = sc.get("weighted_total", 0.0)
+        if pid and (pid not in prog_best_total or wt > prog_best_total[pid]):
+            prog_best_total[pid] = wt
+            prog_scores[pid] = sc.get("scores", {})
 
     # Select arrangement candidates, then resolve to unique parent progressions
     selected_arr_ids = _select_candidates_to_mutate(scorecards, pareto_ids, budget)
@@ -97,7 +106,7 @@ async def mutate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, 
 
         chord_symbols = source.get("chord_symbols", [])
         # Use arrangement scores if available, else progression scores
-        source_scores = scores_by_id.get(source_id, source.get("metadata", {}).get("scores", {}))
+        source_scores = prog_scores.get(source_id, source.get("metadata", {}).get("scores", {}))
 
         try:
             response = await mutator.mutate_harmonic(
@@ -151,7 +160,7 @@ async def mutate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, 
         new_records.append(record)
 
     history_snapshot = [
-        {"id": p["id"], "round": round_number, "scores": scores_by_id.get(p["id"], {})}
+        {"id": p["id"], "round": round_number, "scores": prog_scores.get(p["id"], {})}
         for p in existing_progs
     ]
 
@@ -166,6 +175,7 @@ async def mutate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, 
         "mutation_records": existing_records + new_records,
         "all_candidates_history": existing_history + history_snapshot,
         "round_number": round_number + 1,
+        "last_mutation_scope": "harmonic",  # all current mutations are harmonic
         "voicing_plans": [],
         "bass_lines": [],
         "arrangement_candidates": [],

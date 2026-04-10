@@ -46,11 +46,14 @@ def mutation_prompt(
         "",
         "Apply 1-3 mutations to improve the progression. For each mutation provide:",
         "- operation: one of the allowed operations",
-        "- params: dict with relevant parameters (e.g. position, original, replacement)",
-        "- reason: brief explanation",
-        "- predicted_effects: dict mapping score names to expected delta (float)",
+        "- position: integer index of the chord affected (-1 if not applicable)",
+        "- original_value: the chord or value being replaced",
+        "- new_value: the replacement chord or value",
+        "- description: brief description of the change",
+        "- reason: why this mutation should improve the progression",
+        "- predicted_score_changes: list of strings like 'novelty: +1.0', 'genre_fit: -0.5'",
         "",
-        "Return the full mutated chord progression and the list of mutations applied.",
+        "Return mutated_chord_symbols (the full mutated progression) and mutations (the list of changes).",
     ]
 
     system_prompt = (

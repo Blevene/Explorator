@@ -68,9 +68,9 @@ def _route_after_stop(state: ExplorationState) -> str:
 
 
 def _route_after_mutate(state: ExplorationState) -> str:
-    """Route based on mutation scope: harmonic (full re-pipeline) or arrangement."""
-    records = state.get("mutation_records", [])
-    if any(r.get("mutation_scope") == "harmonic" for r in records):
+    """Route based on current round's mutation scope."""
+    scope = state.get("last_mutation_scope", "harmonic")
+    if scope == "harmonic":
         return "evaluate_progressions"
     return "evaluate_arrangements"
 

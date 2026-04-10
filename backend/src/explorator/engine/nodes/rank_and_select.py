@@ -43,6 +43,48 @@ def _identify_pareto_front(candidates: list[dict[str, Any]]) -> set[str]:
     return set(front_ids)
 
 
+def _check_pairwise_diverse(
+    pareto_ids: set[str],
+    candidates: list[dict[str, Any]],
+    prog_lookup: dict[str, list[str]],
+    min_edit_distance: int = 3,
+) -> bool:
+    """Check if Pareto front members are pairwise diverse by chord edit distance.
+
+    Returns True if >=3 Pareto members have pairwise chord edit distance > min_edit_distance-1.
+    """
+    if len(pareto_ids) < 3:
+        return False
+
+    # Map arrangement IDs to their progression's chord symbols
+    arr_to_chords: dict[str, list[str]] = {}
+    for cand in candidates:
+        arr_id = cand["id"]
+        if arr_id in pareto_ids:
+            prog_id = cand.get("progression_candidate_id", "")
+            arr_to_chords[arr_id] = prog_lookup.get(prog_id, [])
+
+    pareto_list = [aid for aid in pareto_ids if aid in arr_to_chords]
+    if len(pareto_list) < 3:
+        return False
+
+    # Check all pairs — all must have edit distance > threshold
+    for i in range(len(pareto_list)):
+        for j in range(i + 1, len(pareto_list)):
+            chords_a = arr_to_chords.get(pareto_list[i], [])
+            chords_b = arr_to_chords.get(pareto_list[j], [])
+            max_len = max(len(chords_a), len(chords_b))
+            if max_len == 0:
+                continue
+            diffs = sum(
+                1 for k in range(max_len)
+                if (chords_a[k] if k < len(chords_a) else "") != (chords_b[k] if k < len(chords_b) else "")
+            )
+            if diffs < min_edit_distance:
+                return False
+    return True
+
+
 def _compute_weighted_total(
     scores: dict[str, float],
     weights: dict[str, float],
@@ -226,9 +268,23 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
         selected_members = [mid for mid in member_ids if mid in selected_ids]
         updated_families.append({**fam_data, "selected_member_ids": selected_members})
 
+    # Build chord lookup for diversity check: prog_id → chord_symbols
+    prog_chord_lookup: dict[str, list[str]] = {}
+    for pc in progression_candidates_raw:
+        pc_id = pc.get("id", "")
+        prog_chord_lookup[pc_id] = pc.get("chord_symbols", [])
+
+    # Enrich flat candidates with progression_candidate_id for diversity check
+    arr_prog_map = {a["id"]: a.get("progression_candidate_id", "") for a in arrangement_candidates_raw}
+    for c in all_flat_candidates:
+        c["progression_candidate_id"] = arr_prog_map.get(c["id"], "")
+
+    pairwise_diverse = _check_pairwise_diverse(pareto_ids, all_flat_candidates, prog_chord_lookup)
+
     pareto_snapshot = {
         "candidate_ids": list(pareto_ids),
         "axes": _PARETO_AXES,
+        "pairwise_diverse": pairwise_diverse,
     }
 
     return {

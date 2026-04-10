@@ -49,6 +49,7 @@ class ExplorationState(TypedDict, total=False):
     mutation_records: list[dict[str, Any]]
     stop_condition_met: bool
     stop_reason: str  # "quality" | "budget" | "diversity" | ""
+    last_mutation_scope: str  # "harmonic" | "arrangement" | "" — set by mutate node
     pareto_front: dict[str, Any]
     all_candidates_history: list[dict[str, Any]]
 

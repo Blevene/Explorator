@@ -19,6 +19,9 @@ from explorator.graph.session_repo import SessionRepository
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["mutations"])
 
+# Simple in-memory concurrency guard: tracks sessions with in-flight mutations
+_busy_sessions: set[str] = set()
+
 
 class ProgressionCandidateRepo(BaseRepository):
     label = "ProgressionCandidate"
@@ -48,6 +51,10 @@ async def trigger_mutation(
 
     if not request.candidate_ids:
         raise HTTPException(status_code=422, detail="At least one candidate_id required")
+
+    if session_id in _busy_sessions:
+        raise HTTPException(status_code=409, detail="A mutation or round is already in-flight for this session")
+    _busy_sessions.add(session_id)
 
     channel = SSEChannel()
 
@@ -84,6 +91,7 @@ async def trigger_mutation(
             logger.exception("Mutation failed for session %s", session_id)
             await channel.send("mutation_error", {"error": str(e)})
         finally:
+            _busy_sessions.discard(session_id)
             await channel.close()
 
     asyncio.create_task(run_mutation())
