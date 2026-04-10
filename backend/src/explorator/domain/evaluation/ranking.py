@@ -85,3 +85,55 @@ def score_space_distance(
         diff = scores_a.get(dim, 0.0) - scores_b.get(dim, 0.0)
         total += diff * diff
     return math.sqrt(total)
+
+
+def apply_diversity_penalty(
+    candidates: list[dict],
+    top_n: int = 5,
+    edit_dist_threshold: int = 2,
+    score_dist_threshold: float = 0.5,
+) -> list[dict]:
+    """Reorder candidates by demoting near-duplicates from top-N.
+
+    Two candidates are near-duplicates if chord_edit_distance <= edit_dist_threshold
+    AND score_space_distance < score_dist_threshold. The lower-ranked duplicate
+    is demoted to make room for a more diverse candidate.
+    """
+    if not candidates:
+        return []
+
+    result: list[dict] = []
+    remaining = list(candidates)
+    demoted: set[str] = set()  # Guard against infinite loop
+
+    while remaining and len(result) < top_n:
+        candidate = remaining.pop(0)
+        cid = candidate.get("id", "")
+
+        # If already demoted once, accept it to avoid infinite loop
+        if cid in demoted:
+            result.append(candidate)
+            continue
+
+        is_duplicate = False
+        for accepted in result:
+            edit_dist = chord_edit_distance(
+                candidate.get("chord_symbols", []),
+                accepted.get("chord_symbols", []),
+            )
+            score_dist = score_space_distance(
+                candidate.get("scores", {}),
+                accepted.get("scores", {}),
+            )
+            if edit_dist <= edit_dist_threshold and score_dist < score_dist_threshold:
+                is_duplicate = True
+                break
+
+        if is_duplicate:
+            demoted.add(cid)
+            remaining.append(candidate)
+        else:
+            result.append(candidate)
+
+    result.extend(remaining)
+    return result

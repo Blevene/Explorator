@@ -6,7 +6,7 @@ from typing import Any
 from ulid import ULID
 
 from explorator.domain.evaluation.pareto import compute_pareto_front
-from explorator.domain.evaluation.ranking import CANONICAL_DEFAULT_WEIGHTS
+from explorator.domain.evaluation.ranking import CANONICAL_DEFAULT_WEIGHTS, chord_edit_distance
 from explorator.engine.state import ExplorationState
 from explorator.models.evaluation import AggregateScorecard
 from explorator.utils import utc_now
@@ -65,14 +65,9 @@ def _check_pairwise_diverse(
         for j in range(i + 1, len(pareto_list)):
             chords_a = arr_to_chords.get(pareto_list[i], [])
             chords_b = arr_to_chords.get(pareto_list[j], [])
-            max_len = max(len(chords_a), len(chords_b))
-            if max_len == 0:
+            if not chords_a and not chords_b:
                 continue
-            diffs = sum(
-                1 for k in range(max_len)
-                if (chords_a[k] if k < len(chords_a) else "") != (chords_b[k] if k < len(chords_b) else "")
-            )
-            if diffs < min_edit_distance:
+            if chord_edit_distance(chords_a, chords_b) < min_edit_distance:
                 return False
     return True
 
