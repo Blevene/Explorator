@@ -64,9 +64,25 @@ async def mutate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, 
     genre = state.get("genre", state.get("genre_profile", {}).get("genre", ""))
 
     prog_by_id = {p["id"]: p for p in existing_progs}
+    arrangements = state.get("arrangement_candidates", [])
+
+    # Map arrangement IDs → parent progression IDs (scorecards reference arr_* IDs)
+    arr_to_prog: dict[str, str] = {
+        a["id"]: a.get("progression_candidate_id", "") for a in arrangements
+    }
     scores_by_id = {sc["candidate_id"]: sc.get("scores", {}) for sc in scorecards}
 
-    to_mutate = _select_candidates_to_mutate(scorecards, pareto_ids, budget)
+    # Select arrangement candidates, then resolve to unique parent progressions
+    selected_arr_ids = _select_candidates_to_mutate(scorecards, pareto_ids, budget)
+    seen_prog_ids: set[str] = set()
+    to_mutate: list[str] = []
+    for arr_id in selected_arr_ids:
+        prog_id = arr_to_prog.get(arr_id, arr_id)  # fallback to arr_id if no mapping
+        if prog_id in prog_by_id and prog_id not in seen_prog_ids:
+            to_mutate.append(prog_id)
+            seen_prog_ids.add(prog_id)
+        if len(to_mutate) >= budget:
+            break
 
     mutator = HarmonyMutator(gemini)
     new_progs: list[dict[str, Any]] = []
@@ -80,7 +96,8 @@ async def mutate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, 
             continue
 
         chord_symbols = source.get("chord_symbols", [])
-        source_scores = scores_by_id.get(source_id, {})
+        # Use arrangement scores if available, else progression scores
+        source_scores = scores_by_id.get(source_id, source.get("metadata", {}).get("scores", {}))
 
         try:
             response = await mutator.mutate_harmonic(

@@ -66,11 +66,11 @@ async def test_mutate_returns_merged_candidates() -> None:
         "round_number": 1,
         "progression_candidates": [existing_prog],
         "top_progressions": [existing_prog],
-        "scorecards": [{"candidate_id": "pc_01", "weighted_total": 7.0, "scores": {"genre_fit": 7.0, "novelty": 5.0}}],
-        "pareto_front": {"candidate_ids": ["pc_01"]},
+        "scorecards": [{"candidate_id": "arr_01", "weighted_total": 7.0, "scores": {"genre_fit": 7.0, "novelty": 5.0}}],
+        "pareto_front": {"candidate_ids": ["arr_01"]},
         "mutation_records": [],
         "all_candidates_history": [],
-        "arrangement_candidates": [{"id": "arr_01"}],
+        "arrangement_candidates": [{"id": "arr_01", "progression_candidate_id": "pc_01"}],
     }
 
     result = await mutate(state, gemini=mock_gemini)
