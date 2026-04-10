@@ -29,3 +29,21 @@ def test_exploration_state_partial() -> None:
         "prompt": "test",
     }
     assert "genre_profile" not in state
+
+
+def test_exploration_state_includes_realization_fields() -> None:
+    """Unified state supports all M2 realization fields."""
+    state: ExplorationState = {
+        "session_id": "sess_01",
+        "prompt": "Dream pop",
+        "progression_candidate_ids": ["pc_01", "pc_02"],
+        "voicing_strategies": [{"type": "open"}],
+        "voicing_plans": [{"id": "vp_01"}],
+        "bass_lines": [{"id": "bl_01"}],
+        "arrangement_candidates": [{"id": "arr_01"}],
+        "arrangement_families": [{"id": "fam_01"}],
+        "selected_arrangements": [{"id": "arr_01"}],
+    }
+    assert state["progression_candidate_ids"] == ["pc_01", "pc_02"]
+    assert len(state["voicing_plans"]) == 1
+    assert len(state["arrangement_candidates"]) == 1

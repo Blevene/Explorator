@@ -31,6 +31,15 @@ class ExplorationState(TypedDict, total=False):
     evaluations: list[dict[str, Any]]
     scorecards: list[dict[str, Any]]
 
+    # --- Realization (merged from RealizationState) ---
+    progression_candidate_ids: list[str]
+    voicing_strategies: list[dict[str, Any]]
+    voicing_plans: list[dict[str, Any]]
+    bass_lines: list[dict[str, Any]]
+    arrangement_candidates: list[dict[str, Any]]
+    arrangement_families: list[dict[str, Any]]
+    selected_arrangements: list[dict[str, Any]]
+
     # Search control
     round_number: int
     n_candidates: int
