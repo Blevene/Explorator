@@ -47,3 +47,18 @@ def test_exploration_state_includes_realization_fields() -> None:
     assert state["progression_candidate_ids"] == ["pc_01", "pc_02"]
     assert len(state["voicing_plans"]) == 1
     assert len(state["arrangement_candidates"]) == 1
+
+
+def test_exploration_state_includes_m3a_fields() -> None:
+    """Unified state supports M3a search and mutation fields."""
+    state: ExplorationState = {
+        "session_id": "sess_01",
+        "search_plan": {"max_rounds": 4},
+        "mutation_records": [{"id": "mr_01"}],
+        "stop_condition_met": False,
+        "stop_reason": "",
+        "pareto_front": {"candidate_ids": []},
+        "all_candidates_history": [],
+    }
+    assert state["stop_condition_met"] is False
+    assert state["search_plan"]["max_rounds"] == 4

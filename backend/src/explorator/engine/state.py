@@ -44,6 +44,14 @@ class ExplorationState(TypedDict, total=False):
     arrangement_families: list[dict[str, Any]]
     selected_arrangements: list[dict[str, Any]]
 
+    # --- M3a: Search & Mutation ---
+    search_plan: dict[str, Any]
+    mutation_records: list[dict[str, Any]]
+    stop_condition_met: bool
+    stop_reason: str  # "quality" | "budget" | "diversity" | ""
+    pareto_front: dict[str, Any]
+    all_candidates_history: list[dict[str, Any]]
+
     # Search control
     round_number: int
     n_candidates: int
