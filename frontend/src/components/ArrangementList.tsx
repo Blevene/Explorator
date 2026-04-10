@@ -1,5 +1,6 @@
-import type { ArrangementSummary, CandidateSummary } from "../services/api"
+import type { ArrangementSummary, CandidateSummary, FinalSelection } from "../services/api"
 import ArrangementCard from "./ArrangementCard"
+import FinalistPanel from "./FinalistPanel"
 
 interface ArrangementListProps {
   arrangements: ArrangementSummary[]
@@ -7,6 +8,7 @@ interface ArrangementListProps {
   selectedId: string | null
   onSelect: (id: string) => void
   genre: string
+  finalSelection?: FinalSelection | null
 }
 
 export default function ArrangementList({
@@ -15,6 +17,7 @@ export default function ArrangementList({
   selectedId,
   onSelect,
   genre,
+  finalSelection,
 }: ArrangementListProps) {
   // Build candidate lookup by id
   const candidateLookup = new Map<string, CandidateSummary>(
@@ -44,6 +47,14 @@ export default function ArrangementList({
 
   return (
     <div className="w-72 shrink-0 bg-slate-950 border-r border-slate-700 overflow-y-auto flex flex-col">
+      {finalSelection && finalSelection.selected_candidate_ids.length > 0 && (
+        <FinalistPanel
+          finalSelection={finalSelection}
+          arrangements={arrangements}
+          selectedId={selectedId}
+          onSelect={onSelect}
+        />
+      )}
       {[...grouped.entries()].map(([candidateId, group]) => {
         const candidate = candidateLookup.get(candidateId)
         const familyLabel = candidate

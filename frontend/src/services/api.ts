@@ -205,3 +205,11 @@ export async function submitFeedback(
   if (!res.ok) throw new Error(`Feedback submission failed: ${res.status}`);
   return res.json();
 }
+
+// --- M3c Finalist Types ---
+
+export interface FinalSelection {
+  selected_candidate_ids: string[];
+  selection_roles: Record<string, string>;
+  selection_notes: string[];
+}

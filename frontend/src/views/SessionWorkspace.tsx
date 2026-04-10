@@ -118,6 +118,8 @@ export default function SessionWorkspace() {
             } else if (eventType === 'realization_completed') {
               nodeRef.current = 'persist_realization';
               setCurrentNode('persist_realization');
+            } else if (eventType === 'node_completed' && node === 'rank_and_select' && data.final_selection) {
+              arrangementStore.setFinalSelection(data.final_selection as any);
             }
           }
 
@@ -275,6 +277,7 @@ export default function SessionWorkspace() {
               selectedId={arrangementStore.selectedArrangementId}
               onSelect={handleSelectArrangement}
               genre={session?.genre || 'dream_pop'}
+              finalSelection={arrangementStore.finalSelection}
             />
             <ArrangementDetail
               arrangement={arrangementStore.selectedDetail}
