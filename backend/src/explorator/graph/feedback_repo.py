@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 from explorator.graph.repository import BaseRepository, _neo4j_deserialize, _neo4j_safe
 
 if TYPE_CHECKING:
-    from pydantic import BaseModel
+    from explorator.models.base import BaseEntity
 
 
 class FeedbackEventRepo(BaseRepository):
@@ -17,7 +17,7 @@ class FeedbackEventRepo(BaseRepository):
 
     async def create_with_relationships(
         self,
-        event: "BaseModel",
+        event: "BaseEntity",
         weights_id: str,
         session_id: str,
     ) -> None:
