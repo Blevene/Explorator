@@ -1,5 +1,7 @@
 """Candidate ranking — weighted scoring + top-K selection."""
 
+import math
+
 from explorator.models.evaluation import AggregateScorecard, ObjectiveWeights
 
 # Default M1 weights (equal weighting across theory dimensions)
@@ -55,3 +57,31 @@ def select_top_k(
     """Select top K scorecards by weighted_total, highest first."""
     sorted_cards = sorted(scorecards, key=lambda s: s.weighted_total, reverse=True)
     return sorted_cards[:k]
+
+
+def chord_edit_distance(chords_a: list[str], chords_b: list[str]) -> int:
+    """Count differing chord symbols between two progressions (position-wise).
+
+    Pads the shorter progression — each missing position counts as a difference.
+    """
+    max_len = max(len(chords_a), len(chords_b), 0)
+    diffs = 0
+    for i in range(max_len):
+        a = chords_a[i] if i < len(chords_a) else ""
+        b = chords_b[i] if i < len(chords_b) else ""
+        if a != b:
+            diffs += 1
+    return diffs
+
+
+def score_space_distance(
+    scores_a: dict[str, float],
+    scores_b: dict[str, float],
+) -> float:
+    """Euclidean distance in score-space across all dimensions in either dict."""
+    all_dims = set(scores_a) | set(scores_b)
+    total = 0.0
+    for dim in all_dims:
+        diff = scores_a.get(dim, 0.0) - scores_b.get(dim, 0.0)
+        total += diff * diff
+    return math.sqrt(total)
