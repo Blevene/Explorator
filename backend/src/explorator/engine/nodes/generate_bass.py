@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 from explorator.domain.realization.bass import BassLineGenerator
-from explorator.engine.realization_state import RealizationState
+from explorator.engine.state import ExplorationState
 from explorator.models.harmony import ProgressionCandidate
 from explorator.models.realization import BassPreferences
 
@@ -30,7 +30,7 @@ def _build_bass_prefs(genre_profile: dict[str, Any]) -> BassPreferences:
     return BassPreferences()
 
 
-async def generate_bass(state: RealizationState) -> dict[str, Any]:
+async def generate_bass(state: ExplorationState) -> dict[str, Any]:
     """Generate deterministic bass lines for each progression candidate."""
     callback = state.get("on_progress")
     if callback:

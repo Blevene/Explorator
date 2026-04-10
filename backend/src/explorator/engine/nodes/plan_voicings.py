@@ -7,7 +7,7 @@ from typing import Any
 
 from explorator.adapters.gemini import GeminiClient, ModelTier
 from explorator.domain.realization.voicing import VoicingGenerator
-from explorator.engine.realization_state import RealizationState
+from explorator.engine.state import ExplorationState
 from explorator.models.harmony import ProgressionCandidate
 from explorator.models.realization import ChordVoicingInstruction, VoicingPreferences, VoicingStrategyResponse
 from explorator.prompts.voicing import voicing_strategy_prompt
@@ -63,7 +63,7 @@ def _default_strategy(
     )
 
 
-async def plan_voicings(state: RealizationState, *, gemini: GeminiClient) -> dict[str, Any]:
+async def plan_voicings(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, Any]:
     """Generate voicing strategies via Gemini Flash, then realize them into voicing plans."""
     callback = state.get("on_progress")
     if callback:

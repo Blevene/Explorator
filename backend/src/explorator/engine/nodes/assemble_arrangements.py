@@ -5,12 +5,12 @@ from typing import Any
 from ulid import ULID
 
 from explorator.domain.realization.assembly import ArrangementAssembler
-from explorator.engine.realization_state import RealizationState
+from explorator.engine.state import ExplorationState
 from explorator.models.realization import ArrangementFamily, BassLine, VoicingPlan
 from explorator.utils import utc_now
 
 
-async def assemble_arrangements(state: RealizationState) -> dict[str, Any]:
+async def assemble_arrangements(state: ExplorationState) -> dict[str, Any]:
     """Group voicing plans and bass lines by progression candidate, then assemble families.
 
     M2b: each progression may have multiple bass lines (one per variant mode).  The
