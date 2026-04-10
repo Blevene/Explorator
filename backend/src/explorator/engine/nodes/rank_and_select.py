@@ -141,6 +141,9 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
     progression_candidates_raw = state.get("progression_candidates", [])
     evaluations_raw = state.get("evaluations", [])
 
+    # M3b: use state-provided weights if available, else hardcoded defaults
+    weights: dict[str, float] = state.get("objective_weights", DEFAULT_WEIGHTS)
+
     # Build eval lookup: arrangement_id → {voice_leading, register_density, playability}
     eval_lookup: dict[str, dict[str, float]] = {}
     for ev in evaluations_raw:
@@ -191,7 +194,7 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
             merged.update(m2b_scores)
             family_candidates.append({"id": arr_id, "merged_scores": merged})
 
-        selected_in_family = _rank_family(family_candidates, DEFAULT_WEIGHTS)
+        selected_in_family = _rank_family(family_candidates, weights)
         selected_family_ids = {c["id"] for c in selected_in_family}
         selected_ids |= selected_family_ids
 
@@ -231,7 +234,7 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
         for cand in family_candidates:
             arr_id = cand["id"]
             merged = cand["merged_scores"]
-            weighted_total = _compute_weighted_total(merged, DEFAULT_WEIGHTS)
+            weighted_total = _compute_weighted_total(merged, weights)
             rank = next(
                 (i + 1 for i, c in enumerate(selected_in_family) if c["id"] == arr_id),
                 len(selected_in_family) + 1,

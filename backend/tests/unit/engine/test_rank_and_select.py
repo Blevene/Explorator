@@ -9,6 +9,7 @@ from explorator.engine.nodes.rank_and_select import (
     _compute_weighted_total,
     _identify_pareto_front,
     _rank_family,
+    rank_and_select,
 )
 
 
@@ -135,3 +136,62 @@ def test_identify_pareto_front_basic() -> None:
     ]
     front = _identify_pareto_front(candidates)
     assert set(front) == {"a", "b", "c"}
+
+
+@pytest.mark.asyncio
+async def test_rank_and_select_uses_state_weights() -> None:
+    """When state has objective_weights, those are used instead of DEFAULT_WEIGHTS."""
+    custom_weights = {
+        "voice_leading": 0.05,
+        "register_density": 0.05,
+        "playability": 0.05,
+        "genre_fit": 0.05,
+        "emotional_fit": 0.05,
+        "theoretical_coherence": 0.05,
+        "cadence_quality": 0.05,
+        "novelty": 0.60,
+        "loopability": 0.05,
+    }
+
+    prog_a = {
+        "id": "prog_a",
+        "chord_symbols": ["C", "G"],
+        "metadata": {"scores": {"genre_fit": 3.0, "novelty": 9.5, "emotional_fit": 5.0, "theoretical_coherence": 5.0, "cadence_quality": 5.0, "loopability": 5.0}},
+    }
+    prog_b = {
+        "id": "prog_b",
+        "chord_symbols": ["Am", "F"],
+        "metadata": {"scores": {"genre_fit": 9.5, "novelty": 3.0, "emotional_fit": 5.0, "theoretical_coherence": 5.0, "cadence_quality": 5.0, "loopability": 5.0}},
+    }
+
+    arr_a = {"id": "arr_a", "progression_candidate_id": "prog_a", "status": "draft"}
+    arr_b = {"id": "arr_b", "progression_candidate_id": "prog_b", "status": "draft"}
+
+    eval_a = {
+        "arrangement_candidate_id": "arr_a",
+        "voice_leading": {"overall_score": 7.0},
+        "register_density": {"overall_score": 7.0},
+        "playability": {"overall_score": 7.0},
+    }
+    eval_b = {
+        "arrangement_candidate_id": "arr_b",
+        "voice_leading": {"overall_score": 7.0},
+        "register_density": {"overall_score": 7.0},
+        "playability": {"overall_score": 7.0},
+    }
+
+    state = {
+        "arrangement_candidates": [arr_a, arr_b],
+        "arrangement_families": [],
+        "progression_candidates": [prog_a, prog_b],
+        "evaluations": [eval_a, eval_b],
+        "objective_weights": custom_weights,
+    }
+
+    result = await rank_and_select(state)
+
+    scorecards = result["scorecards"]
+    sc_a = next(sc for sc in scorecards if sc["candidate_id"] == "arr_a")
+    sc_b = next(sc for sc in scorecards if sc["candidate_id"] == "arr_b")
+    # With 60% weight on novelty, candidate A (novelty=9.5) should rank higher
+    assert sc_a["weighted_total"] > sc_b["weighted_total"]
