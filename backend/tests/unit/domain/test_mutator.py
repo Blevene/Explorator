@@ -26,9 +26,11 @@ def sample_response() -> MutationResponse:
         mutations=[
             MutationResponseItem(
                 operation="substitute_chord",
-                params={"position": 1, "original": "Am7", "replacement": "Em7"},
+                position=1,
+                original_value="Am7",
+                new_value="Em7",
                 reason="Em7 adds more tension before the IV chord",
-                predicted_effects={"novelty": 1.0, "genre_fit": -0.5},
+                predicted_score_changes=["novelty: +1.0", "genre_fit: -0.5"],
             ),
         ],
     )
@@ -74,15 +76,13 @@ async def test_mutate_harmonic_limits_experimental() -> None:
         mutations=[
             MutationResponseItem(
                 operation="experimental",
-                params={"description": "replaced everything"},
+                description="replaced everything",
                 reason="creative freedom",
-                predicted_effects={},
             ),
             MutationResponseItem(
                 operation="experimental",
-                params={"description": "more changes"},
+                description="more changes",
                 reason="more freedom",
-                predicted_effects={},
             ),
         ],
     )

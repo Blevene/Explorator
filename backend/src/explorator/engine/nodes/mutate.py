@@ -121,10 +121,7 @@ async def mutate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, 
             "mutation_scope": "harmonic",
             "changes": [m.model_dump() for m in response.mutations],
             "reason": "; ".join(m.reason for m in response.mutations),
-            "predicted_effects": [
-                f"{k}: {v:+.1f}" for m in response.mutations
-                for k, v in m.predicted_effects.items()
-            ],
+            "predicted_effects": [s for m in response.mutations for s in m.predicted_score_changes],
             "actual_score_delta": {},
         }
         new_records.append(record)

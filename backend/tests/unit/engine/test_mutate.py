@@ -41,9 +41,10 @@ async def test_mutate_returns_merged_candidates() -> None:
         mutations=[
             MutationResponseItem(
                 operation="substitute_chord",
-                params={"position": 0, "original": "Am7", "replacement": "Dm7"},
+                position=0,
+                original_value="Am7",
+                new_value="Dm7",
                 reason="test",
-                predicted_effects={},
             ),
         ],
     )

@@ -17,9 +17,12 @@ class MutationResponseItem(BaseModel):
     """One mutation within a response."""
 
     operation: str
-    params: dict = Field(default_factory=dict)
+    position: int = -1  # chord index affected (-1 if N/A)
+    original_value: str = ""  # what was there before
+    new_value: str = ""  # what it was changed to
+    description: str = ""  # free-form description of the change
     reason: str = ""
-    predicted_effects: dict[str, float] = Field(default_factory=dict)
+    predicted_score_changes: list[str] = Field(default_factory=list)  # e.g. ["novelty: +1.0"]
 
 
 class MutationResponse(BaseModel):
