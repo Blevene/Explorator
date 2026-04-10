@@ -27,6 +27,7 @@ class UserFeedbackEvent(BaseEntity):
     feedback_type: str = "text_reaction"
     content: str = ""
     interpreted_adjustments: dict[str, Any] = Field(default_factory=dict)
+    weight_deltas: dict[str, float] = Field(default_factory=dict)
 
 
 class PatternLibraryEntry(BaseEntity):

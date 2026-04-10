@@ -110,6 +110,21 @@ def test_user_feedback_event_requires_candidate_id() -> None:
         )  # type: ignore[call-arg]
 
 
+def test_user_feedback_event_has_weight_deltas() -> None:
+    fb = UserFeedbackEvent(
+        id="fb_1",
+        type="user_feedback_event",
+        status="active",
+        session_id="sess_1",
+        candidate_id="arr_1",
+        content="bass is too busy",
+        interpreted_adjustments={"reduce_bass_motion": True},
+        weight_deltas={"playability": 0.04, "voice_leading": -0.02, "novelty": -0.02},
+    )
+    assert fb.weight_deltas["playability"] == 0.04
+    assert fb.feedback_type == "text_reaction"
+
+
 # ---------------------------------------------------------------------------
 # PatternLibraryEntry
 # ---------------------------------------------------------------------------
