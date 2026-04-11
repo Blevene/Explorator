@@ -1,0 +1,23 @@
+- generic [ref=e13]:
+  - generic [ref=e14]:
+    - link "← Back to Dashboard" [ref=e15] [cursor=pointer]:
+      - /url: /
+    - heading "Dream pop in A major, wistful and haunted, 4 bars" [level=1] [ref=e16]
+    - paragraph [ref=e17]: full_exploration · active
+  - generic [ref=e19]:
+    - generic [ref=e20]:
+      - textbox "Describe the mood, genre, or style you want to explore..." [disabled] [ref=e21]: Dream pop in A major, wistful and haunted, 4 bars
+      - button "Running..." [disabled] [ref=e30]
+    - generic [ref=e23]:
+      - generic [ref=e24]: "Mode:"
+      - generic [ref=e25]:
+        - button "Conservative" [disabled] [ref=e26]
+        - button "Balanced" [disabled] [ref=e27]
+        - button "Exploratory" [disabled] [ref=e28]
+    - generic [ref=e34]:
+      - generic [ref=e35]: ✓ Parsing intent
+      - generic [ref=e36]: ✓ Loading genre
+      - generic [ref=e37]: ▸ Generating
+      - generic [ref=e38]: ○ Evaluating
+      - generic [ref=e39]: ○ Selecting
+      - generic [ref=e40]: ○ Saving

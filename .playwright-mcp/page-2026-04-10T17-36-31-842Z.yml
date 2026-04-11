@@ -1,0 +1,17 @@
+- generic [ref=e17]:
+  - generic [ref=e18]:
+    - link "← Back to Dashboard" [ref=e19] [cursor=pointer]:
+      - /url: /
+    - heading "Dream pop in A major, wistful and haunted, 4 bars" [level=1] [ref=e20]
+    - paragraph [ref=e21]: full_exploration · active
+  - generic [ref=e23]:
+    - generic [ref=e24]:
+      - textbox "Describe the mood, genre, or style you want to explore..." [ref=e25]: Dream pop in A major, wistful and haunted, 4 bars
+      - button "Generate" [ref=e26]
+    - generic [ref=e27]:
+      - generic [ref=e28]: "Mode:"
+      - generic [ref=e29]:
+        - button "Conservative" [ref=e30]
+        - button "Balanced" [ref=e31]
+        - button "Exploratory" [ref=e32]
+  - generic [ref=e33]: No candidates yet. Enter a prompt above and click Generate to start exploring.

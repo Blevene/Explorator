@@ -1,0 +1,107 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - link "← Back to Dashboard" [ref=e5] [cursor=pointer]:
+      - /url: /
+    - heading "dreamy ambient chord progression in C major, 4 bars" [level=1] [ref=e6]
+    - paragraph [ref=e7]: full_exploration · active
+  - generic [ref=e9]:
+    - generic [ref=e10]:
+      - textbox "Describe the mood, genre, or style you want to explore..." [ref=e11]: dreamy ambient chord progression in C major, 4 bars
+      - button "Generate" [ref=e12]
+    - generic [ref=e13]:
+      - generic [ref=e14]: "Mode:"
+      - generic [ref=e15]:
+        - button "Conservative" [ref=e16]
+        - button "Balanced" [ref=e17]
+        - button "Exploratory" [ref=e18]
+  - button "← Back to progressions" [ref=e19]
+  - generic [ref=e20]:
+    - generic [ref=e22]:
+      - paragraph [ref=e24]: Cmaj7 → Em9 → Ebmaj7 → Dm9
+      - generic [ref=e25]:
+        - generic [ref=e26] [cursor=pointer]:
+          - generic [ref=e27]:
+            - generic [ref=e28]: "#"
+            - generic [ref=e29]: "0.00"
+          - generic [ref=e30]:
+            - generic [ref=e31]: Utilize drop2 voicings in the mid-high register to create an ethereal, atmospheric spread typical of dream pop textures.
+            - generic [ref=e32]: supportive bass
+        - generic [ref=e33] [cursor=pointer]:
+          - generic [ref=e34]:
+            - generic [ref=e35]: "#"
+            - generic [ref=e36]: "0.00"
+          - generic [ref=e37]:
+            - generic [ref=e38]: Utilize drop2 voicings in the mid-high register to create an ethereal, atmospheric spread typical of dream pop textures.
+            - generic [ref=e39]: supportive bass
+        - generic [ref=e40] [cursor=pointer]:
+          - generic [ref=e41]:
+            - generic [ref=e42]: "#"
+            - generic [ref=e43]: "0.00"
+          - generic [ref=e44]:
+            - generic [ref=e45]: Utilize drop2 voicings in the mid-high register to create an ethereal, atmospheric spread typical of dream pop textures.
+            - generic [ref=e46]: supportive bass
+        - generic [ref=e47] [cursor=pointer]:
+          - generic [ref=e48]:
+            - generic [ref=e49]: "#"
+            - generic [ref=e50]: "0.00"
+          - generic [ref=e51]:
+            - generic [ref=e52]: Focus on creating an ethereal, wide-reaching soundscape by using open and drop-2 voicings that emphasize shimmering upper extensions like the major 7th and 9th, allowing for maximum resonance with reverb and delay effects.
+            - generic [ref=e53]: supportive bass
+        - generic [ref=e54] [cursor=pointer]:
+          - generic [ref=e55]:
+            - generic [ref=e56]: "#"
+            - generic [ref=e57]: "0.00"
+          - generic [ref=e58]:
+            - generic [ref=e59]: Focus on creating an ethereal, wide-reaching soundscape by using open and drop-2 voicings that emphasize shimmering upper extensions like the major 7th and 9th, allowing for maximum resonance with reverb and delay effects.
+            - generic [ref=e60]: supportive bass
+        - generic [ref=e61] [cursor=pointer]:
+          - generic [ref=e62]:
+            - generic [ref=e63]: "#"
+            - generic [ref=e64]: "0.00"
+          - generic [ref=e65]:
+            - generic [ref=e66]: Focus on creating an ethereal, wide-reaching soundscape by using open and drop-2 voicings that emphasize shimmering upper extensions like the major 7th and 9th, allowing for maximum resonance with reverb and delay effects.
+            - generic [ref=e67]: supportive bass
+        - generic [ref=e68] [cursor=pointer]:
+          - generic [ref=e69]:
+            - generic [ref=e70]: "#"
+            - generic [ref=e71]: "0.00"
+          - generic [ref=e72]:
+            - generic [ref=e73]: Maintain an ethereal and spacious atmosphere by utilizing Drop 2 and open voicings in the mid-high register, prioritizing 7ths and 9ths over the perfect 5th to enhance harmonic color.
+            - generic [ref=e74]: supportive bass
+        - generic [ref=e75] [cursor=pointer]:
+          - generic [ref=e76]:
+            - generic [ref=e77]: "#"
+            - generic [ref=e78]: "0.00"
+          - generic [ref=e79]:
+            - generic [ref=e80]: Maintain an ethereal and spacious atmosphere by utilizing Drop 2 and open voicings in the mid-high register, prioritizing 7ths and 9ths over the perfect 5th to enhance harmonic color.
+            - generic [ref=e81]: supportive bass
+        - generic [ref=e82] [cursor=pointer]:
+          - generic [ref=e83]:
+            - generic [ref=e84]: "#"
+            - generic [ref=e85]: "0.00"
+          - generic [ref=e86]:
+            - generic [ref=e87]: Maintain an ethereal and spacious atmosphere by utilizing Drop 2 and open voicings in the mid-high register, prioritizing 7ths and 9ths over the perfect 5th to enhance harmonic color.
+            - generic [ref=e88]: supportive bass
+    - generic [ref=e89]:
+      - generic [ref=e90]:
+        - button "Play" [ref=e91]:
+          - img [ref=e92]
+        - button "Stop" [ref=e94]:
+          - img [ref=e95]
+        - generic [ref=e98]:
+          - generic [ref=e99]: BPM
+          - 'slider "Tempo: 120 BPM" [ref=e100] [cursor=pointer]': "120"
+          - generic [ref=e101]: "120"
+        - button "Loop on" [ref=e103]:
+          - img [ref=e104]
+        - button "V" [ref=e109]
+        - button "B" [ref=e110]
+        - generic [ref=e112]:
+          - generic [ref=e113]: Vol
+          - 'slider "Volume: -6 dB" [ref=e114] [cursor=pointer]': "-6"
+          - generic [ref=e115]: "-6 dB"
+      - generic [ref=e120]:
+        - generic [ref=e121]:
+          - generic [ref=e122]: Scores
+          - generic [ref=e123]: "0.00"
+        - button "Collapse scores" [ref=e124]: −
