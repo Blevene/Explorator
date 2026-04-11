@@ -5,7 +5,6 @@ import { useArrangementStore } from '../stores/arrangementStore';
 export function useRealizationFlow(sessionId: string | undefined) {
   const [loading, setLoading] = useState(false);
   const [currentNode, setCurrentNode] = useState<string | null>(null);
-  const [realizedCandidateIds, setRealizedCandidateIds] = useState<Set<string>>(new Set());
 
   const arrangementStore = useArrangementStore();
 
@@ -22,7 +21,7 @@ export function useRealizationFlow(sessionId: string | undefined) {
     try {
       const existing = await listArrangements(candidateId);
       if (existing.length > 0) {
-        setRealizedCandidateIds(prev => new Set(prev).add(candidateId));
+
         arrangementStore.reset();
         arrangementStore.setArrangements(existing);
         const best = existing.reduce((a, b) =>
@@ -72,7 +71,6 @@ export function useRealizationFlow(sessionId: string | undefined) {
       }
 
       const arrangements = await listArrangements(candidateId);
-      setRealizedCandidateIds(prev => new Set(prev).add(candidateId));
       arrangementStore.setArrangements(arrangements);
 
       if (arrangements.length > 0) {
@@ -90,5 +88,5 @@ export function useRealizationFlow(sessionId: string | undefined) {
     }
   };
 
-  return { loading, currentNode, realizedCandidateIds, realize, selectArrangement };
+  return { loading, currentNode, realize, selectArrangement };
 }

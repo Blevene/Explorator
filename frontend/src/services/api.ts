@@ -179,33 +179,6 @@ export async function triggerMutation(
   return res;
 }
 
-// --- M3b Feedback Types ---
-
-export interface FeedbackResponse {
-  id: string;
-  interpreted_adjustments: Record<string, unknown>;
-  adjusted_weights: Record<string, number>;
-  satisfaction: string;
-}
-
-export async function submitFeedback(
-  sessionId: string,
-  candidateId: string,
-  content: string,
-): Promise<FeedbackResponse> {
-  const res = await fetch(`${API_BASE}/sessions/${sessionId}/feedback`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      candidate_id: candidateId,
-      content,
-      feedback_type: 'text_reaction',
-    }),
-  });
-  if (!res.ok) throw new Error(`Feedback submission failed: ${res.status}`);
-  return res.json();
-}
-
 // --- M3c Finalist Types ---
 
 export interface FinalSelection {

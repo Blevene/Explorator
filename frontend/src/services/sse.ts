@@ -7,8 +7,7 @@ export type SSEEventType =
   | 'mutation_completed'
   | 'mutation_error'
   | 'realization_completed'
-  | 'realization_error'
-  | 'feedback_processed';
+  | 'realization_error';
 
 export interface SSEEvent {
   type: SSEEventType;
