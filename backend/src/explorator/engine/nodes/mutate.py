@@ -131,6 +131,16 @@ async def mutate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, 
                 **source.get("metadata", {}),
                 "mutated_from": source_id,
                 "mutation_round": round_number + 1,
+                "parent_chord_symbols": chord_symbols,
+                "mutation_ops": [
+                    {
+                        "operation": m.operation,
+                        "original": m.original_value,
+                        "new": m.new_value,
+                        "description": m.description,
+                    }
+                    for m in response.mutations
+                ],
             },
         }
         new_progs.append(new_prog)

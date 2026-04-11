@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { CandidateSummary } from '../services/api';
 
 interface CandidateCardProps {
@@ -16,9 +17,68 @@ function scoreColor(score: number): string {
   return 'var(--score-low)';
 }
 
+interface MutationOp {
+  operation: string;
+  original: string;
+  new: string;
+  description: string;
+}
+
+function MutationLog({ parentChords, ops }: { parentChords: string[]; ops: MutationOp[] }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="pt-2" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+      <button
+        onClick={(e) => { e.stopPropagation(); setExpanded(x => !x); }}
+        className="flex items-center gap-1.5 text-xs font-medium w-full"
+        style={{ color: 'var(--accent-secondary)' }}
+      >
+        <span>{expanded ? '\u25BE' : '\u25B8'}</span>
+        <span>Mutation log ({ops.length} change{ops.length !== 1 ? 's' : ''})</span>
+      </button>
+
+      {expanded && (
+        <div className="mt-2 space-y-2">
+          {/* Parent progression */}
+          <div>
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Parent: </span>
+            <span className="text-xs font-mono" style={{ color: 'var(--text-secondary)' }}>
+              {parentChords.join(' \u2192 ')}
+            </span>
+          </div>
+
+          {/* Changes */}
+          {ops.map((op, i) => (
+            <div key={i} className="text-xs flex flex-col gap-0.5">
+              <div className="flex items-center gap-1.5">
+                <span className="font-mono px-1.5 py-0.5 rounded" style={{ background: 'var(--surface-3)', color: 'var(--accent-secondary)' }}>
+                  {op.operation.replace(/_/g, ' ')}
+                </span>
+                {op.original && op.new && (
+                  <span className="font-mono">
+                    <span style={{ color: 'var(--score-low)' }}>{op.original}</span>
+                    {' \u2192 '}
+                    <span style={{ color: 'var(--score-high)' }}>{op.new}</span>
+                  </span>
+                )}
+              </div>
+              {op.description && (
+                <span style={{ color: 'var(--text-muted)' }}>{op.description}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CandidateCard({ candidate, index, onClick, onRealize, onMutate }: CandidateCardProps) {
   const label = LABELS[index] || `#${index + 1}`;
   const score = candidate.weighted_total;
+  const parentChords = candidate.metadata?.parent_chord_symbols as string[] | undefined;
+  const mutationOps = candidate.metadata?.mutation_ops as MutationOp[] | undefined;
 
   return (
     <div
@@ -81,6 +141,11 @@ export default function CandidateCard({ candidate, index, onClick, onRealize, on
       {/* Rationale */}
       {candidate.rationale && (
         <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{candidate.rationale}</p>
+      )}
+
+      {/* Mutation log — shows parent progression and what changed */}
+      {parentChords && mutationOps && mutationOps.length > 0 && (
+        <MutationLog parentChords={parentChords} ops={mutationOps} />
       )}
 
       {/* Score breakdown */}
