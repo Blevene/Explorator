@@ -3,6 +3,7 @@ import type { CandidateSummary } from '../services/api';
 interface CandidateCardProps {
   candidate: CandidateSummary;
   index: number;
+  realized?: boolean;
   onClick?: () => void;
   onRealize?: (candidateId: string) => void;
   onMutate?: (candidateId: string) => void;
@@ -16,7 +17,7 @@ function scoreColor(score: number): string {
   return 'var(--score-low)';
 }
 
-export default function CandidateCard({ candidate, index, onClick, onRealize, onMutate }: CandidateCardProps) {
+export default function CandidateCard({ candidate, index, realized, onClick, onRealize, onMutate }: CandidateCardProps) {
   const label = LABELS[index] || `#${index + 1}`;
   const score = candidate.weighted_total;
 
@@ -37,6 +38,14 @@ export default function CandidateCard({ candidate, index, onClick, onRealize, on
           {label}
         </span>
         <div className="flex items-center gap-2">
+          {realized && (
+            <span
+              className="text-xs px-2 py-0.5 rounded-full"
+              style={{ background: 'var(--score-high)', color: 'var(--surface-0)' }}
+            >
+              realized
+            </span>
+          )}
           {!!candidate.metadata?.mutated_from && (
             <span
               className="text-xs px-2 py-0.5 rounded-full font-mono"

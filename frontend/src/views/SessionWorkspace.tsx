@@ -26,6 +26,8 @@ export default function SessionWorkspace() {
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'generation' | 'realization'>('generation');
   const [mutatingCandidateId, setMutatingCandidateId] = useState<string | null>(null);
+  const [mutationInFlight, setMutationInFlight] = useState(false);
+  const [realizedCandidateIds, setRealizedCandidateIds] = useState<Set<string>>(new Set());
   const nodeRef = useRef<string | null>(null);
 
   const { candidates, setCandidates } = useCandidateStore();
@@ -168,6 +170,7 @@ export default function SessionWorkspace() {
     try {
       const existing = await listArrangements(candidateId);
       if (existing.length > 0) {
+        setRealizedCandidateIds(prev => new Set(prev).add(candidateId));
         arrangementStore.reset();
         arrangementStore.setFinalSelection(savedFinalSelection);
         arrangementStore.setArrangements(existing);
@@ -224,6 +227,7 @@ export default function SessionWorkspace() {
 
       // Load arrangements
       const arrangements = await listArrangements(candidateId);
+      setRealizedCandidateIds(prev => new Set(prev).add(candidateId));
       arrangementStore.setArrangements(arrangements);
       setViewMode('realization');
 
@@ -247,11 +251,13 @@ export default function SessionWorkspace() {
 
   const handleMutateSubmit = async (guidance: string) => {
     if (!sessionId || !mutatingCandidateId) return;
+    const targetId = mutatingCandidateId;
     setMutatingCandidateId(null);
+    setMutationInFlight(true);
     setError(null);
 
     try {
-      const response = await triggerMutation(sessionId, [mutatingCandidateId], guidance || undefined);
+      const response = await triggerMutation(sessionId, [targetId], guidance || undefined);
       if (!response.body) return;
       const reader = response.body.getReader();
       while (true) {
@@ -265,6 +271,8 @@ export default function SessionWorkspace() {
       setCandidates(res.items);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Mutation failed');
+    } finally {
+      setMutationInFlight(false);
     }
   };
 
@@ -355,6 +363,14 @@ export default function SessionWorkspace() {
         </>
       ) : (
         <>
+          {/* Mutation in-flight banner */}
+          {mutationInFlight && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-lg" style={{ background: 'var(--accent-secondary-dim)', border: '1px solid var(--accent-secondary)' }}>
+              <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--accent-secondary)', borderTopColor: 'transparent' }} />
+              <span className="text-sm" style={{ color: 'var(--accent-secondary)' }}>Mutating candidate...</span>
+            </div>
+          )}
+
           {candidates.length > 0 ? (
             <div>
               <h2 className="text-xs font-medium uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>
@@ -366,9 +382,10 @@ export default function SessionWorkspace() {
                     key={c.candidate_id}
                     candidate={c}
                     index={i}
+                    realized={realizedCandidateIds.has(c.candidate_id)}
                     onRealize={handleRealize}
                     onMutate={handleMutate}
-                    onClick={() => console.log('Selected:', c.candidate_id)}
+                    onClick={() => handleRealize(c.candidate_id)}
                   />
                 ))}
               </div>

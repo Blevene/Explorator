@@ -40,12 +40,17 @@ function buildTree(candidates: LineageTreeProps['candidates']): LineageNode[] {
     }
   }
 
+  const LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+  const orderedIds = candidates.map(c => c.candidate_id);
+
   function toNode(id: string): LineageNode {
     const c = byId.get(id);
     const children = childrenOf.get(id) ?? [];
+    const idx = orderedIds.indexOf(id);
+    const letter = idx >= 0 && idx < LABELS.length ? LABELS[idx] : id.slice(0, 8);
     return {
       id,
-      label: id.slice(0, 12) + '...',
+      label: letter,
       chordSymbols: c?.chord_symbols ?? [],
       round: c?.metadata?.mutation_round as number | undefined,
       children: children.map(toNode),

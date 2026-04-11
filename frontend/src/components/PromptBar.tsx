@@ -9,9 +9,9 @@ interface PromptBarProps {
 }
 
 const MODES = [
-  { value: 'conservative', label: 'Conservative' },
-  { value: 'balanced', label: 'Balanced' },
-  { value: 'exploratory', label: 'Exploratory' },
+  { value: 'conservative', label: 'Conservative', desc: 'Fewer candidates, safer choices' },
+  { value: 'balanced', label: 'Balanced', desc: 'Default — good variety' },
+  { value: 'exploratory', label: 'Exploratory', desc: 'More candidates, bolder experiments' },
 ];
 
 const PIPELINE_STEPS = [
@@ -93,6 +93,7 @@ export default function PromptBar({
               key={m.value}
               onClick={() => onModeChange(m.value)}
               disabled={loading}
+              title={m.desc}
               className="text-xs px-3 py-1 rounded transition-colors disabled:opacity-40"
               style={{
                 background: generationMode === m.value ? 'var(--accent-primary-dim)' : 'var(--surface-3)',
