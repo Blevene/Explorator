@@ -10,14 +10,14 @@ test.describe('Audio & Feedback Integration', () => {
     await expect(page.locator('text=BPM')).toBeVisible();
     await expect(page.locator('text=Vol')).toBeVisible();
 
-    // V/B mute buttons — use exact match to avoid matching "Conservative"/"Balanced"
-    await expect(page.getByRole('button', { name: 'V', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'B', exact: true })).toBeVisible();
+    // Mute buttons — now labeled "Chords" and "Bass"
+    await expect(page.getByRole('button', { name: 'Chords', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Bass', exact: true })).toBeVisible();
 
     // Toggle mutes
-    await page.getByRole('button', { name: 'V', exact: true }).click();
+    await page.getByRole('button', { name: 'Chords', exact: true }).click();
     await page.waitForTimeout(200);
-    await page.getByRole('button', { name: 'B', exact: true }).click();
+    await page.getByRole('button', { name: 'Bass', exact: true }).click();
     await page.waitForTimeout(200);
   });
 

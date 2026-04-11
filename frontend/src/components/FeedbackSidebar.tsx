@@ -100,6 +100,7 @@ export default function FeedbackSidebar({ sessionId, candidateId }: FeedbackSide
       {/* Header */}
       <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Feedback</h3>
+        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Steer the next round's scoring</p>
       </div>
 
       {/* Weight visualization */}

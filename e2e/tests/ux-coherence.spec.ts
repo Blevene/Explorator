@@ -29,8 +29,8 @@ test.describe('UX Coherence', () => {
     // No orphaned spinners
     await expect(page.locator('[class*="animate-pulse"]')).toHaveCount(0);
 
-    // Back to dashboard — use the header "Back" link
-    await page.getByRole('link', { name: /back/i }).click();
+    // Back to dashboard — header link now says "Dashboard"
+    await page.getByRole('link', { name: /dashboard/i }).click();
     await page.waitForURL('/');
     await expect(page.locator('text=Explorator')).toBeVisible();
   });

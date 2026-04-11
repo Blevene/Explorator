@@ -161,12 +161,15 @@ export default function SessionWorkspace() {
     if (!sessionId) return;
 
     setError(null);
+    // Preserve finalSelection across view transitions
+    const savedFinalSelection = arrangementStore.finalSelection;
 
     // Check for existing arrangements first — skip realization if already done
     try {
       const existing = await listArrangements(candidateId);
       if (existing.length > 0) {
         arrangementStore.reset();
+        arrangementStore.setFinalSelection(savedFinalSelection);
         arrangementStore.setArrangements(existing);
         setViewMode('realization');
         const best = existing.reduce((a, b) =>
@@ -179,6 +182,7 @@ export default function SessionWorkspace() {
 
     // No existing arrangements — trigger realization
     arrangementStore.reset();
+    arrangementStore.setFinalSelection(savedFinalSelection);
     setCurrentNode('load_context');
     setLoading(true);
 
@@ -270,7 +274,7 @@ export default function SessionWorkspace() {
     <div className="max-w-6xl mx-auto p-8 flex flex-col gap-5">
       <div className="flex items-center gap-4">
         <Link to="/" className="text-xs font-medium transition-colors" style={{ color: 'var(--text-muted)' }}>
-          &larr; Back
+          &larr; Dashboard
         </Link>
         <div className="flex-1 min-w-0">
           <h1 className="text-lg font-semibold truncate" style={{ color: 'var(--text-primary)' }}>

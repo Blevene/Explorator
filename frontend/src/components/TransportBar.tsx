@@ -160,20 +160,20 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
       <button
         onClick={handleVoicingMute}
         title={isVoicingMuted ? "Unmute voicing" : "Mute voicing"}
-        className="px-2 py-1 rounded text-xs font-bold transition-colors"
-        style={!isVoicingMuted ? { color: "#fbbf24" } : { color: "#475569" }}
+        className="px-2 py-1 rounded text-xs font-medium transition-colors"
+        style={!isVoicingMuted ? { color: "#fbbf24", background: "#fbbf2415" } : { color: "#475569" }}
       >
-        V
+        Chords
       </button>
 
       {/* Mute Bass */}
       <button
         onClick={handleBassMute}
         title={isBassMuted ? "Unmute bass" : "Mute bass"}
-        className="px-2 py-1 rounded text-xs font-bold transition-colors"
-        style={!isBassMuted ? { color: "#22d3ee" } : { color: "#475569" }}
+        className="px-2 py-1 rounded text-xs font-medium transition-colors"
+        style={!isBassMuted ? { color: "#22d3ee", background: "#22d3ee15" } : { color: "#475569" }}
       >
-        B
+        Bass
       </button>
 
       <Divider />
