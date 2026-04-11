@@ -1,5 +1,6 @@
 """FastAPI dependency injection."""
 
+import os
 from functools import lru_cache
 
 from neo4j import AsyncDriver
@@ -30,7 +31,10 @@ async def get_style_repo() -> StyleRepository:
 
 @lru_cache
 def get_gemini_client() -> GeminiClient:
-    """Get Gemini client singleton."""
+    """Get Gemini client singleton. Returns FakeGeminiClient when GEMINI_MOCK=true."""
+    if os.environ.get("GEMINI_MOCK", "").lower() == "true":
+        from explorator.adapters.gemini_mock import FakeGeminiClient
+        return FakeGeminiClient()  # type: ignore[return-value]
     return GeminiClient(
         api_key=settings.gemini_api_key,
         pro_model=settings.gemini_pro_model,
