@@ -37,3 +37,5 @@ Thumbs.db
 
 # Artifacts
 artifacts/
+e2e/test-results/
+.playwright-mcp/
