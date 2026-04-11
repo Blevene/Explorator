@@ -247,11 +247,11 @@ def test_voicing_strategy_response_minimal() -> None:
         global_strategy="mid-register close voicings",
         density_level="medium",
         register_profile="mid",
-        voicing_instructions=[instr],
+        per_chord=[instr],
     )
     assert resp.global_strategy == "mid-register close voicings"
     assert resp.density_level == "medium"
-    assert len(resp.voicing_instructions) == 1
+    assert len(resp.per_chord) == 1
     assert resp.rationale == ""
 
 
@@ -260,10 +260,9 @@ def test_voicing_strategy_response_with_rationale() -> None:
         global_strategy="open voicings",
         density_level="thin",
         register_profile="high",
-        voicing_instructions=[],
-        rationale="Sparse arrangement to leave room for melody",
+        rationale="Sparse for melody room",
     )
-    assert resp.rationale == "Sparse arrangement to leave room for melody"
+    assert resp.rationale == "Sparse for melody room"
 
 
 # ---------------------------------------------------------------------------
