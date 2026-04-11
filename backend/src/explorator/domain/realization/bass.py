@@ -17,10 +17,25 @@ _DEFAULT_OCTAVE = 2
 
 
 def _root_name(chord_symbol: str) -> str:
-    """Return the root note name for a chord symbol (e.g. 'C', 'A', 'F')."""
-    chord = harmony.ChordSymbol(_normalize_chord_symbol(chord_symbol))
-    root = chord.root()
-    return root.name if root else "C"
+    """Return the root note name for a chord symbol (e.g. 'C', 'A', 'F').
+
+    Falls back to string extraction if music21 can't parse the chord type.
+    """
+    normalized = _normalize_chord_symbol(chord_symbol)
+    try:
+        chord = harmony.ChordSymbol(normalized)
+        root = chord.root()
+        if root:
+            return root.name
+    except (ValueError, Exception):
+        pass
+    # Fallback: extract root from string (e.g. "C13sus4" → "C", "Bb7" → "B-")
+    s = normalized.strip()
+    if not s:
+        return "C"
+    if len(s) >= 2 and s[1] in ("-", "b", "#"):
+        return s[:2].replace("b", "-")
+    return s[0]
 
 
 def _pitch_with_octave(note_name: str, octave: int) -> str:
