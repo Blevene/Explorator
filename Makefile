@@ -1,4 +1,4 @@
-.PHONY: dev test lint neo4j-up neo4j-down sync-genres backend frontend
+.PHONY: dev test lint neo4j-up neo4j-down sync-genres backend frontend e2e e2e-headed
 
 # Infrastructure
 neo4j-up:
@@ -31,3 +31,10 @@ sync-genres:
 # Frontend (placeholder for Task 10)
 frontend:
 	cd frontend && npm run dev
+
+# E2E Tests (requires Neo4j running)
+e2e:
+	cd e2e && npx playwright test
+
+e2e-headed:
+	cd e2e && npx playwright test --headed
