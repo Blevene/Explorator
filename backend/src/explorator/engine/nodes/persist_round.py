@@ -46,6 +46,8 @@ async def persist_round(state: ExplorationState, *, driver: AsyncDriver) -> dict
             logger.exception("Failed to persist genre on Session %s", session_id)
 
     # Build a lookup of candidate_id → scorecard
+    # Note: state["scorecards"] may contain M2 arrangement scorecards (arr_*) by this point.
+    # M1 progression scores should already be on candidate metadata from select_top_progressions.
     scorecard_lookup: dict[str, dict[str, Any]] = {}
     for sc in state.get("scorecards", []):
         cid = sc.get("candidate_id", "")
@@ -57,10 +59,12 @@ async def persist_round(state: ExplorationState, *, driver: AsyncDriver) -> dict
     for candidate_data in state.get("top_progressions", []):
         candidate = ProgressionCandidate.model_validate(candidate_data)
 
-        # Attach scorecard data to candidate metadata so it persists
-        sc = scorecard_lookup.get(candidate.id, {})
-        candidate.metadata["weighted_total"] = sc.get("weighted_total", 0.0)
-        candidate.metadata["scores"] = sc.get("scores", {})
+        # Attach scorecard — prefer existing metadata scores (set by select_top_progressions),
+        # fall back to scorecard lookup
+        if not candidate.metadata.get("scores"):
+            sc = scorecard_lookup.get(candidate.id, {})
+            candidate.metadata["weighted_total"] = sc.get("weighted_total", 0.0)
+            candidate.metadata["scores"] = sc.get("scores", {})
 
         try:
             await repo.create(candidate)
