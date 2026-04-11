@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { listCandidates, getSession, listArrangements, getArrangement, triggerRealizationSSE } from '../services/api';
+import { listCandidates, getSession, listArrangements, getArrangement, triggerRealizationSSE, triggerMutation } from '../services/api';
 import type { SessionSummary } from '../services/api';
 import { useCandidateStore } from '../stores/candidateStore';
 import { useArrangementStore } from '../stores/arrangementStore';
@@ -9,6 +9,7 @@ import PromptBar from '../components/PromptBar';
 import ArrangementList from '../components/ArrangementList';
 import ArrangementDetail from '../components/ArrangementDetail';
 import LineageTree from '../components/LineageTree';
+import MutateModal from '../components/MutateModal';
 import FeedbackSidebar from '../components/FeedbackSidebar';
 import { useFeedbackStore } from '../stores/feedbackStore';
 import * as audioEngine from '../services/audioEngine';
@@ -24,6 +25,7 @@ export default function SessionWorkspace() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'generation' | 'realization'>('generation');
+  const [mutatingCandidateId, setMutatingCandidateId] = useState<string | null>(null);
   const nodeRef = useRef<string | null>(null);
 
   const { candidates, setCandidates } = useCandidateStore();
@@ -139,6 +141,7 @@ export default function SessionWorkspace() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to trigger round.');
+    } finally {
       setLoading(false);
       setCurrentNode(null);
     }
@@ -233,6 +236,35 @@ export default function SessionWorkspace() {
       setCurrentNode(null);
     }
   };
+
+  const handleMutate = (candidateId: string) => {
+    setMutatingCandidateId(candidateId);
+  };
+
+  const handleMutateSubmit = async (guidance: string) => {
+    if (!sessionId || !mutatingCandidateId) return;
+    setMutatingCandidateId(null);
+    setError(null);
+
+    try {
+      const response = await triggerMutation(sessionId, [mutatingCandidateId], guidance || undefined);
+      if (!response.body) return;
+      const reader = response.body.getReader();
+      while (true) {
+        const { done } = await reader.read();
+        if (done) break;
+      }
+      reader.releaseLock();
+
+      // Reload candidates
+      const res = await listCandidates(id!);
+      setCandidates(res.items);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Mutation failed');
+    }
+  };
+
+  const mutatingCandidate = candidates.find(c => c.candidate_id === mutatingCandidateId);
 
   return (
     <div className="max-w-6xl mx-auto p-8 flex flex-col gap-5">
@@ -331,6 +363,7 @@ export default function SessionWorkspace() {
                     candidate={c}
                     index={i}
                     onRealize={handleRealize}
+                    onMutate={handleMutate}
                     onClick={() => console.log('Selected:', c.candidate_id)}
                   />
                 ))}
@@ -364,6 +397,16 @@ export default function SessionWorkspace() {
             </div>
           )}
         </>
+      )}
+
+      {/* Mutation modal */}
+      {mutatingCandidate && (
+        <MutateModal
+          candidateId={mutatingCandidate.candidate_id}
+          chordSymbols={mutatingCandidate.chord_symbols}
+          onSubmit={handleMutateSubmit}
+          onClose={() => setMutatingCandidateId(null)}
+        />
       )}
     </div>
   );
