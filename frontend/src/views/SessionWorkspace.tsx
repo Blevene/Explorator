@@ -63,7 +63,7 @@ export default function SessionWorkspace() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-      const TIMEOUT_MS = 300_000; // 5 minute max for multi-round pipelines
+      const TIMEOUT_MS = 600_000; // 10 minute max for multi-round pipelines
 
       try {
         const deadline = Date.now() + TIMEOUT_MS;

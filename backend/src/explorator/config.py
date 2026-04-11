@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     default_generation_mode: str = "balanced"
 
     # Timeouts
-    gemini_timeout_seconds: int = 30
+    gemini_timeout_seconds: int = 120
     neo4j_query_timeout_seconds: int = 5
 
 
