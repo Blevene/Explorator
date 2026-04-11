@@ -21,8 +21,8 @@ test.describe('Pipeline & SSE', () => {
     await goToWorkspace(page, testSession.sessionId);
     await generateCandidates(page, testSession.prompt);
 
-    // Count candidate cards (use the Realize button as proxy — one per candidate)
-    const realizeButtons = page.getByRole('button', { name: /realize/i });
+    // Count candidate cards (use the View Arrangements button as proxy — one per candidate)
+    const realizeButtons = page.getByRole('button', { name: /view arrangements/i });
     const count1 = await realizeButtons.count();
     expect(count1).toBeGreaterThan(0);
 

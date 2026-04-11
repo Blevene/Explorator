@@ -109,12 +109,9 @@ export default function CandidateCard({ candidate, index, realized, onClick, onR
         <button
           onClick={(e) => { e.stopPropagation(); onRealize(candidate.candidate_id) }}
           className="mt-1 w-full py-1.5 text-xs font-medium rounded-md transition-colors"
-          style={{
-            background: realized ? 'var(--score-high)' : 'var(--surface-4)',
-            color: realized ? 'var(--surface-0)' : 'var(--text-secondary)',
-          }}
+          style={{ background: 'var(--accent-primary-dim)', color: 'var(--accent-primary)' }}
         >
-          {realized ? 'View Arrangements' : 'Realize'}
+          View Arrangements
         </button>
       )}
       {onMutate && (

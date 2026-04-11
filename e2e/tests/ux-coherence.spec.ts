@@ -39,8 +39,8 @@ test.describe('UX Coherence', () => {
     await goToWorkspace(page, testSession.sessionId);
     await generateCandidates(page, testSession.prompt);
 
-    // Count candidate cards using Realize buttons (one per candidate)
-    const realizeButtons = page.getByRole('button', { name: /realize/i });
+    // Count candidate cards using View Arrangements buttons (one per candidate)
+    const realizeButtons = page.getByRole('button', { name: /view arrangements/i });
     const cardCount = await realizeButtons.count();
     expect(cardCount).toBeGreaterThan(0);
 
@@ -55,8 +55,8 @@ test.describe('UX Coherence', () => {
     await page.getByRole('button', { name: /back to progressions/i }).click();
     await page.waitForTimeout(500);
 
-    // Candidates still present (one may now say "View Arrangements" instead of "Realize")
-    const allActionButtons = page.getByRole('button', { name: /realize|view arrangements/i });
+    // Candidates still present
+    const allActionButtons = page.getByRole('button', { name: /view arrangements/i });
     expect(await allActionButtons.count()).toBe(cardCount);
     await expect(page.locator('[class*="animate-pulse"]')).toHaveCount(0);
   });
