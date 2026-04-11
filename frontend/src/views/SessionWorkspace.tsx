@@ -232,7 +232,6 @@ export default function SessionWorkspace() {
                     key={c.candidate_id}
                     candidate={c}
                     index={i}
-                    realized={realization.realizedCandidateIds.has(c.candidate_id)}
                     onRealize={handleRealize}
                     onMutate={mutation.openModal}
                     onClick={() => handleRealize(c.candidate_id)}
