@@ -1,6 +1,6 @@
 # M4 — Export and Explanation: Design Specification
 
-**Version**: v1.1 (post-critique fixes)
+**Version**: v1.2 (second critique pass)
 **Date**: 2026-04-11
 **Status**: Draft
 **Branch**: `feat/m4-export-explanation` (to be created)
@@ -62,7 +62,7 @@ duration_sec = duration_beats * (60.0 / bpm)
 
 **Track construction:**
 
-- **Chord track**: Iterates `VoicingPlan.voicing_events`. For each `VoicingEvent`, converts every pitch string (e.g., `"C3"`) to a MIDI note number using a pitch-to-midi utility. Creates a `pretty_midi.Note` for each pitch with the event's start/end times and velocity 80 (default). Instrument: Acoustic Grand Piano (GM program 0).
+- **Chord track**: Iterates `VoicingPlan.voicing_events`. For each `VoicingEvent`, converts every pitch string (e.g., `"C3"`) to a MIDI note number using a pitch-to-midi utility. Creates a `pretty_midi.Note` for each pitch with the event's start/end times. Velocity is hardcoded at 80 since `VoicingEvent` has no velocity field (uniform velocity is acceptable — the user will adjust dynamics in Ableton). Instrument: Acoustic Grand Piano (GM program 0).
 - **Bass track**: Iterates `BassLine.note_events`. For each `BassNoteEvent`, converts the pitch string to MIDI, creates a `Note` with the event's velocity. Instrument: Electric Bass Finger (GM program 33).
 
 **Pitch conversion — `utils.py:pitch_str_to_midi`:**
@@ -272,7 +272,7 @@ The existing session delete uses `MATCH (n) WHERE n.session_id = $sid DETACH DEL
 1. **Delete files first**: Remove `exports/{session_id}/` directory and all contents via `shutil.rmtree`.
 2. **Then delete Neo4j nodes**: The existing Cypher cascade handles all graph cleanup.
 
-Ordering matters: delete files before Neo4j nodes so a crash mid-operation leaves orphaned files (harmless) rather than dangling DB references to missing files (errors on download).
+Ordering matters: delete files before Neo4j nodes so a crash mid-operation leaves orphaned files (harmless) rather than dangling DB references to missing files (errors on download). **Note:** The current session delete handler (`sessions.py`) runs the Cypher delete immediately — it must be reordered to do filesystem cleanup first, then the Cypher cascade.
 
 The `EXPORT_DIR` config value is injected into the delete handler via the existing `Settings` dependency (`config.py`).
 
@@ -301,7 +301,7 @@ Note: these are ArrangementCandidate IDs specifically — the export needs voici
 
 **Download endpoint:** Streams file bytes with:
 - `Content-Type: audio/midi` or `application/json`
-- `Content-Disposition: attachment; filename="candidate-C-chords-bass.mid"`
+- `Content-Disposition: attachment; filename="candidate-C-a3f2b1-chords-bass.mid"`
 
 **No SSE needed.** MIDI rendering is sub-second. The POST is synchronous — render, persist, return.
 
@@ -441,6 +441,7 @@ The "Explain" button appears on ArrangementCards in the realization view (not on
   - `showCursor?: boolean` — defaults to true; set false to hide the playback cursor in comparison view
   - `barWidth?: number` — override to allow the comparison view to control horizontal scale so all rows share the same time axis
   - These props default to current behavior so existing usage in `ArrangementDetail.tsx` is unaffected.
+  - **Refactor note:** The current `PianoRoll.tsx` uses module-level constants (`BAR_WIDTH = 90`, `ROW_HEIGHT = 8`) referenced throughout the `useEffect` canvas drawing closure. These must be parameterized to respect the new props. The component also unconditionally destructures `useAudioStore()` for playback state — when `showCursor` is false, the store subscription should be skipped to avoid unnecessary re-renders.
 - **Score comparison section**: Below the piano rolls. Each dimension on its own row with all candidate values color-coded by candidate. Highlights the leader per dimension.
 - **Explanation section**: If explanations have been generated for any compared candidates, show them below scores in a collapsible section.
 
@@ -563,6 +564,7 @@ All M4 Pydantic models already exist in `models/export.py`:
 - `ComparisonView`
 - `RenderArtifact` — **add `session_id: str` field** (see Section 2.4)
 - `ExportPackage`
+- `CandidateExplanation` — **add `session_id: str` field** (same rationale as RenderArtifact: the existing cascade delete `WHERE n.session_id = $sid` would otherwise miss explanation nodes, leaking cached explanations across session deletes)
 
 All Neo4j schema constraints already exist in `graph/schema.py` (lines 52-60).
 
@@ -606,7 +608,7 @@ This is used for structured validation but stored as dicts in the ProvenanceTrac
 provenance_events: list[dict[str, Any]]  # Accumulated provenance events
 ```
 
-**Initialization:** The `load_context` node (the first node in every graph invocation) initializes `state["provenance_events"] = []` at the start of each run. This ensures a clean list for each graph execution while preserving events across nodes within a single run.
+**Initialization:** The graph invocation wrapper in `engine/graph.py` (where the graph is compiled and invoked) initializes `state["provenance_events"] = []` in the input state before execution begins. This is safer than initializing in `load_context`, which has an early return path (`return {}` when `progression_candidates` already exists) that would skip the initialization on subsequent invocations within the unified graph.
 
 ---
 
@@ -620,17 +622,17 @@ provenance_events: list[dict[str, Any]]  # Accumulated provenance events
 exports/
   {session_id}/
     {package_id}/
-      candidate-C-chords-bass.mid
-      candidate-C-chords.mid
-      candidate-C-bass.mid
-      candidate-C.json
-      candidate-E-chords-bass.mid
-      candidate-E.json
+      candidate-C-a3f2b1-chords-bass.mid
+      candidate-C-a3f2b1-chords.mid
+      candidate-C-a3f2b1-bass.mid
+      candidate-C-a3f2b1.json
+      candidate-E-d7c4e9-chords-bass.mid
+      candidate-E-d7c4e9.json
 ```
 
 **Configuration:** Export root path is read from config (`EXPORT_DIR` env var, defaults to `./exports`).
 
-**Lifecycle:** Files are deleted when the session is cascade-deleted. The session delete handler removes `exports/{session_id}/` after cleaning up Neo4j nodes.
+**Lifecycle:** Files are deleted when the session is cascade-deleted. The session delete handler removes `exports/{session_id}/` **before** the Neo4j cascade (see Section 2.4 for ordering rationale).
 
 **Gitignore:** `exports/` added to `.gitignore`.
 
