@@ -55,8 +55,9 @@ test.describe('UX Coherence', () => {
     await page.getByRole('button', { name: /back to progressions/i }).click();
     await page.waitForTimeout(500);
 
-    // Candidates still present
-    expect(await realizeButtons.count()).toBe(cardCount);
+    // Candidates still present (one may now say "View Arrangements" instead of "Realize")
+    const allActionButtons = page.getByRole('button', { name: /realize|view arrangements/i });
+    expect(await allActionButtons.count()).toBe(cardCount);
     await expect(page.locator('[class*="animate-pulse"]')).toHaveCount(0);
   });
 
