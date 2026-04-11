@@ -7,6 +7,7 @@ interface CandidateCardProps {
   onClick?: () => void;
   onRealize?: (candidateId: string) => void;
   onMutate?: (candidateId: string) => void;
+  onDismiss?: (candidateId: string) => void;
 }
 
 const LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
@@ -24,7 +25,7 @@ interface MutationOp {
   description: string;
 }
 
-function MutationLog({ parentChords, ops }: { parentChords: string[]; ops: MutationOp[] }) {
+function MutationLog({ parentChords, ops, onDismiss }: { parentChords: string[]; ops: MutationOp[]; onDismiss?: () => void }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -68,13 +69,24 @@ function MutationLog({ parentChords, ops }: { parentChords: string[]; ops: Mutat
               )}
             </div>
           ))}
+
+          {/* Dismiss mutation */}
+          {onDismiss && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDismiss(); }}
+              className="text-xs font-medium mt-1 transition-colors"
+              style={{ color: 'var(--score-low)' }}
+            >
+              Dismiss this mutation
+            </button>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-export default function CandidateCard({ candidate, index, onClick, onRealize, onMutate }: CandidateCardProps) {
+export default function CandidateCard({ candidate, index, onClick, onRealize, onMutate, onDismiss }: CandidateCardProps) {
   const label = LABELS[index] || `#${index + 1}`;
   const score = candidate.weighted_total;
   const parentChords = candidate.metadata?.parent_chord_symbols as string[] | undefined;
@@ -145,7 +157,11 @@ export default function CandidateCard({ candidate, index, onClick, onRealize, on
 
       {/* Mutation log — shows parent progression and what changed */}
       {parentChords && mutationOps && mutationOps.length > 0 && (
-        <MutationLog parentChords={parentChords} ops={mutationOps} />
+        <MutationLog
+          parentChords={parentChords}
+          ops={mutationOps}
+          onDismiss={onDismiss ? () => onDismiss(candidate.candidate_id) : undefined}
+        />
       )}
 
       {/* Score breakdown */}

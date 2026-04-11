@@ -24,6 +24,7 @@ export default function SessionWorkspace() {
   const [generationMode, setGenerationMode] = useState('balanced');
   const [viewMode, setViewMode] = useState<'generation' | 'realization'>('generation');
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
   const { candidates, setCandidates } = useCandidateStore();
   const arrangementStore = useArrangementStore();
@@ -79,6 +80,17 @@ export default function SessionWorkspace() {
   }, [session, prompt, candidates.length, generation.loading]);
 
   const handleGenerate = () => generation.generate(prompt, generationMode);
+
+  const handleDismiss = (candidateId: string) => {
+    setDismissedIds(prev => new Set(prev).add(candidateId));
+  };
+
+  // Sort candidates: dismissed ones go to the end
+  const sortedCandidates = [...candidates].sort((a, b) => {
+    const aD = dismissedIds.has(a.candidate_id) ? 1 : 0;
+    const bD = dismissedIds.has(b.candidate_id) ? 1 : 0;
+    return aD - bD;
+  });
 
   const handleRealize = async (candidateId: string) => {
     const result = await realization.realize(candidateId);
@@ -240,17 +252,22 @@ export default function SessionWorkspace() {
             <div>
               <h2 data-testid="candidate-count" className="text-xs font-medium uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>
                 {candidates.length} candidate{candidates.length !== 1 ? 's' : ''}
+                {dismissedIds.size > 0 && (
+                  <span className="ml-2" style={{ color: 'var(--text-muted)' }}>({dismissedIds.size} dismissed)</span>
+                )}
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {candidates.map((c, i) => (
-                  <CandidateCard
-                    key={c.candidate_id}
-                    candidate={c}
-                    index={i}
-                    onRealize={handleRealize}
-                    onMutate={mutation.openModal}
-                    onClick={() => handleRealize(c.candidate_id)}
-                  />
+                {sortedCandidates.map((c, i) => (
+                  <div key={c.candidate_id} style={{ opacity: dismissedIds.has(c.candidate_id) ? 0.35 : 1 }}>
+                    <CandidateCard
+                      candidate={c}
+                      index={i}
+                      onRealize={dismissedIds.has(c.candidate_id) ? undefined : handleRealize}
+                      onMutate={dismissedIds.has(c.candidate_id) ? undefined : mutation.openModal}
+                      onDismiss={c.metadata?.mutated_from ? handleDismiss : undefined}
+                      onClick={dismissedIds.has(c.candidate_id) ? undefined : () => handleRealize(c.candidate_id)}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
