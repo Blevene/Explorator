@@ -23,6 +23,7 @@ export default function SessionWorkspace() {
   const [prompt, setPrompt] = useState('');
   const [generationMode, setGenerationMode] = useState('balanced');
   const [viewMode, setViewMode] = useState<'generation' | 'realization'>('generation');
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const { candidates, setCandidates } = useCandidateStore();
   const arrangementStore = useArrangementStore();
@@ -142,19 +143,33 @@ export default function SessionWorkspace() {
 
       {viewMode === 'realization' ? (
         <>
-          <button
-            data-testid="back-to-progressions"
-            onClick={() => {
-              setViewMode('generation');
-              audioEngine.stop();
-              arrangementStore.reset();
-              useFeedbackStore.getState().reset();
-            }}
-            className="text-xs font-medium mb-2 transition-colors"
-            style={{ color: 'var(--text-muted)' }}
-          >
-            &larr; Back to progressions
-          </button>
+          <div className="flex items-center justify-between mb-2">
+            <button
+              data-testid="back-to-progressions"
+              onClick={() => {
+                setViewMode('generation');
+                setFeedbackOpen(false);
+                audioEngine.stop();
+                arrangementStore.reset();
+                useFeedbackStore.getState().reset();
+              }}
+              className="text-xs font-medium transition-colors"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              &larr; Back to progressions
+            </button>
+            <button
+              onClick={() => setFeedbackOpen(f => !f)}
+              className="text-xs font-medium px-3 py-1 rounded transition-colors"
+              style={{
+                background: feedbackOpen ? 'var(--accent-primary-dim)' : 'var(--surface-3)',
+                color: feedbackOpen ? 'var(--accent-primary)' : 'var(--text-muted)',
+                border: feedbackOpen ? '1px solid var(--accent-primary)' : '1px solid transparent',
+              }}
+            >
+              {feedbackOpen ? 'Hide Feedback' : 'Feedback'}
+            </button>
+          </div>
           <div className="flex flex-1 min-h-0 rounded-lg overflow-hidden" style={{ border: '1px solid var(--border-subtle)' }}>
             <ArrangementList
               arrangements={arrangementStore.arrangements}
@@ -168,7 +183,7 @@ export default function SessionWorkspace() {
               arrangement={arrangementStore.selectedDetail}
               genre={session?.genre || 'dream_pop'}
             />
-            {id && (
+            {feedbackOpen && id && (
               <FeedbackSidebar
                 sessionId={id}
                 candidateId={arrangementStore.selectedArrangementId}
