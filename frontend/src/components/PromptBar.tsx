@@ -6,6 +6,7 @@ interface PromptBarProps {
   onGenerate: () => void;
   loading: boolean;
   currentNode: string | null;
+  flowType?: 'generation' | 'realization';
 }
 
 const MODES = [
@@ -14,7 +15,7 @@ const MODES = [
   { value: 'exploratory', label: 'Exploratory', desc: 'More candidates, bolder experiments' },
 ];
 
-const PIPELINE_STEPS = [
+const GENERATION_STEPS = [
   { key: 'parse_intent', label: 'Intent' },
   { key: 'load_genre', label: 'Genre' },
   { key: 'load_memory', label: 'Memory' },
@@ -32,6 +33,16 @@ const PIPELINE_STEPS = [
   { key: 'persist_round', label: 'Done' },
 ];
 
+const REALIZATION_STEPS = [
+  { key: 'load_context', label: 'Context' },
+  { key: 'plan_voicings', label: 'Voicings' },
+  { key: 'generate_bass', label: 'Bass' },
+  { key: 'assemble', label: 'Assemble' },
+  { key: 'evaluate_arrangements', label: 'Eval Arr.' },
+  { key: 'rank_and_select', label: 'Rank' },
+  { key: 'persist_realization', label: 'Save' },
+];
+
 export default function PromptBar({
   prompt,
   onPromptChange,
@@ -40,17 +51,20 @@ export default function PromptBar({
   onGenerate,
   loading,
   currentNode,
+  flowType = 'generation',
 }: PromptBarProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !loading) onGenerate();
   };
 
+  const steps = flowType === 'realization' ? REALIZATION_STEPS : GENERATION_STEPS;
+
   const stepIndex = currentNode
-    ? PIPELINE_STEPS.findIndex((s) => s.key === currentNode)
+    ? steps.findIndex((s) => s.key === currentNode)
     : -1;
 
   const pct = loading && stepIndex >= 0
-    ? Math.round(((stepIndex + 1) / PIPELINE_STEPS.length) * 100)
+    ? Math.round(((stepIndex + 1) / steps.length) * 100)
     : loading ? 3 : 0;
 
   return (
@@ -117,7 +131,7 @@ export default function PromptBar({
             />
           </div>
           <div className="flex gap-1 flex-wrap">
-            {PIPELINE_STEPS.map((step, i) => {
+            {steps.map((step, i) => {
               const isDone = stepIndex > i;
               const isActive = stepIndex === i;
               return (

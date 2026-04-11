@@ -2,7 +2,6 @@ import { useState, useCallback, useRef } from 'react';
 import { listCandidates } from '../services/api';
 import type { FinalSelection } from '../services/api';
 import { useCandidateStore } from '../stores/candidateStore';
-import { useArrangementStore } from '../stores/arrangementStore';
 
 const API_BASE = '/v1';
 
@@ -18,8 +17,7 @@ export function useGenerationFlow(sessionId: string | undefined) {
   const [error, setError] = useState<string | null>(null);
   const nodeRef = useRef<string | null>(null);
 
-  const { setCandidates } = useCandidateStore();
-  const arrangementStore = useArrangementStore();
+  const { setCandidates, setFinalSelection } = useCandidateStore();
 
   const generate = useCallback(async (prompt: string, generationMode: string) => {
     if (!sessionId || !prompt.trim() || loading) return;
@@ -94,7 +92,7 @@ export function useGenerationFlow(sessionId: string | undefined) {
               nodeRef.current = 'persist_realization';
               setCurrentNode('persist_realization');
             } else if (eventType === 'node_completed' && node === 'rank_and_select' && data.final_selection) {
-              arrangementStore.setFinalSelection(data.final_selection as FinalSelection);
+              setFinalSelection(data.final_selection as FinalSelection);
             }
           }
 
@@ -116,7 +114,7 @@ export function useGenerationFlow(sessionId: string | undefined) {
       setLoading(false);
       setCurrentNode(null);
     }
-  }, [sessionId, loading, setCandidates, arrangementStore]);
+  }, [sessionId, loading, setCandidates, setFinalSelection]);
 
   return { loading, currentNode, error, setError, generate };
 }

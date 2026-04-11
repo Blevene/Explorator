@@ -1,7 +1,5 @@
 """Integration test: JSON serialization round-trip for ProgressionCandidate."""
 
-import json
-
 from neo4j import AsyncDriver
 
 from explorator.graph.repository import BaseRepository
@@ -46,18 +44,15 @@ async def test_progression_candidate_chord_events_round_trip(neo4j_driver: Async
     assert result["key_center"] == "C"
     assert result["status"] == "candidate"
 
-    # chord_events is a list of dicts (non-primitive), so the BaseRepository
-    # serialises it to a JSON string when storing in Neo4j.
-    raw_events = result["chord_events"]
-    assert isinstance(raw_events, str), (
-        f"Expected chord_events to be stored as JSON string, got {type(raw_events)}"
+    # chord_events is a list of dicts — serialized as JSON string in Neo4j,
+    # but _neo4j_deserialize parses it back to a list on read.
+    events = result["chord_events"]
+    assert isinstance(events, list), (
+        f"Expected chord_events to be deserialized back to list, got {type(events)}"
     )
+    assert len(events) == 4
 
-    parsed_events = json.loads(raw_events)
-    assert isinstance(parsed_events, list)
-    assert len(parsed_events) == 4
-
-    first = parsed_events[0]
+    first = events[0]
     assert first["bar"] == 1
     assert first["symbol"] == "Cmaj7"
     assert first["function_label"] == "I"
@@ -65,5 +60,5 @@ async def test_progression_candidate_chord_events_round_trip(neo4j_driver: Async
     assert first["duration_beats"] == 4.0
 
     # Verify all four chords are present in order
-    symbols = [e["symbol"] for e in parsed_events]
+    symbols = [e["symbol"] for e in events]
     assert symbols == ["Cmaj7", "Am7", "Fmaj7", "G7"]

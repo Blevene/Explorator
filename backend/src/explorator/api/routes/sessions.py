@@ -78,9 +78,7 @@ async def list_sessions(
             status=s.get("status", "unknown"),
             mode=s.get("mode", "unknown"),
             created_at=s.get("created_at", ""),
-            prompt=s.get("metadata", {}).get("prompt", "")
-            if isinstance(s.get("metadata"), dict)
-            else "",
+            prompt=parse_json_or_dict(s.get("metadata")).get("prompt", ""),
         )
         for s in sessions
     ]

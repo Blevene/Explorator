@@ -129,7 +129,7 @@ export default function SessionWorkspace() {
               selectedId={arrangementStore.selectedArrangementId}
               onSelect={realization.selectArrangement}
               genre={session?.genre || 'dream_pop'}
-              finalSelection={arrangementStore.finalSelection}
+              finalSelection={useCandidateStore.getState().finalSelection}
             />
             <ArrangementDetail
               arrangement={arrangementStore.selectedDetail}

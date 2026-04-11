@@ -18,15 +18,12 @@ export function useRealizationFlow(sessionId: string | undefined) {
   const realize = async (candidateId: string): Promise<'cached' | 'realized' | 'error'> => {
     if (!sessionId) return 'error';
 
-    const savedFinalSelection = arrangementStore.finalSelection;
-
     // Check cache first
     try {
       const existing = await listArrangements(candidateId);
       if (existing.length > 0) {
         setRealizedCandidateIds(prev => new Set(prev).add(candidateId));
         arrangementStore.reset();
-        arrangementStore.setFinalSelection(savedFinalSelection);
         arrangementStore.setArrangements(existing);
         const best = existing.reduce((a, b) =>
           (a.weighted_total ?? 0) > (b.weighted_total ?? 0) ? a : b
@@ -38,7 +35,6 @@ export function useRealizationFlow(sessionId: string | undefined) {
 
     // Trigger realization
     arrangementStore.reset();
-    arrangementStore.setFinalSelection(savedFinalSelection);
     setCurrentNode('load_context');
     setLoading(true);
 
