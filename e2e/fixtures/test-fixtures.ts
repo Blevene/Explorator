@@ -23,17 +23,33 @@ async function goToWorkspace(page: Page, sessionId: string): Promise<void> {
   await page.waitForLoadState('networkidle');
 }
 
+/**
+ * Ensure candidates are generated. With auto-generate, navigating to a fresh
+ * session starts generation automatically. This helper waits for that to finish,
+ * or triggers generation manually if needed.
+ */
 async function generateCandidates(page: Page, prompt: string): Promise<void> {
-  const input = page.locator('input').first();
-  await input.fill(prompt);
-  await page.getByRole('button', { name: /generate/i }).click();
-  // Wait for at least one candidate card with chord symbols (→)
+  // Check if generation is already running (auto-generate) or candidates exist
+  const genButton = page.getByRole('button', { name: /generate|running/i });
+  const isRunning = await genButton.textContent().then(t => /running/i.test(t ?? '')).catch(() => false);
+
+  if (!isRunning) {
+    // Check if candidates already exist
+    const hasCards = await page.locator('text=→').first().isVisible().catch(() => false);
+    if (hasCards) return;
+
+    // No auto-generate fired — trigger manually
+    const input = page.locator('input').first();
+    await input.fill(prompt);
+    await page.getByRole('button', { name: /generate/i }).click();
+  }
+
+  // Wait for candidates to appear
   await page.locator('text=→').first().waitFor({ timeout: 60_000 });
 }
 
 async function realizeFirstCandidate(page: Page): Promise<void> {
-  await page.getByRole('button', { name: /realize/i }).first().click();
-  // Wait for arrangement view (canvas or arrangement list)
+  await page.getByRole('button', { name: /realize|view arrangements/i }).first().click();
   await page.locator('canvas').or(page.locator('text=Finalists')).first().waitFor({ timeout: 60_000 });
 }
 
