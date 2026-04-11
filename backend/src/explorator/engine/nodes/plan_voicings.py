@@ -1,5 +1,6 @@
 """Plan voicings node — generate voicing strategies and plans using Gemini Flash."""
 
+import asyncio
 import logging
 from typing import Any
 
@@ -70,14 +71,12 @@ async def plan_voicings(state: ExplorationState, *, gemini: GeminiClient) -> dic
     mode = creative_brief.get("mode") or "major"
 
     generator = VoicingGenerator()
-    all_strategies: list[dict[str, Any]] = []
-    all_plans: list[dict[str, Any]] = []
 
-    for candidate_data in candidates_raw:
+    async def _process_candidate(candidate_data: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        """Process one candidate: LLM strategy → voicing plan variants."""
         candidate = ProgressionCandidate.model_validate(candidate_data)
         chord_symbols = [e.symbol for e in candidate.chord_events]
 
-        # Build and call LLM prompt
         user_prompt, system = voicing_strategy_prompt(
             chord_symbols=chord_symbols,
             key_center=key_center,
@@ -104,13 +103,29 @@ async def plan_voicings(state: ExplorationState, *, gemini: GeminiClient) -> dic
 
         strategy_dict = strategy.model_dump(mode="json")
         strategy_dict["progression_candidate_id"] = candidate.id
-        all_strategies.append(strategy_dict)
 
-        # Realize into variant plans
-        plans = generator.generate_variants(strategy, chord_symbols, prefs)
-        for plan in plans:
+        plans_out: list[dict[str, Any]] = []
+        for plan in generator.generate_variants(strategy, chord_symbols, prefs):
             plan.progression_candidate_id = candidate.id
-            all_plans.append(plan.model_dump(mode="json"))
+            plans_out.append(plan.model_dump(mode="json"))
+
+        return strategy_dict, plans_out
+
+    # Run all candidates in parallel
+    results = await asyncio.gather(
+        *[_process_candidate(cd) for cd in candidates_raw],
+        return_exceptions=True,
+    )
+
+    all_strategies: list[dict[str, Any]] = []
+    all_plans: list[dict[str, Any]] = []
+    for r in results:
+        if isinstance(r, Exception):
+            logger.warning("Voicing generation failed for a candidate: %s", r)
+            continue
+        strategy_dict, plans_out = r
+        all_strategies.append(strategy_dict)
+        all_plans.extend(plans_out)
 
     return {
         "voicing_strategies": all_strategies,
