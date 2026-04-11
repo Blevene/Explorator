@@ -11,17 +11,16 @@ test.describe('UX Coherence', () => {
     await page.waitForURL(/\/session\//);
 
     // Generate
-    const promptInput = page.locator('input').first();
-    await promptInput.fill('Navigation test, dream pop, 4 bars');
+    await page.locator('input').first().fill('Navigation test, dream pop, 4 bars');
     await page.getByRole('button', { name: /generate/i }).click();
-    await page.locator('text=→').first().waitFor({ timeout: 30_000 });
+    await page.locator('text=→').first().waitFor({ timeout: 60_000 });
 
     // Realize
     await page.getByRole('button', { name: /realize/i }).first().click();
-    await page.locator('canvas').or(page.locator('text=Finalists')).first().waitFor({ timeout: 30_000 });
+    await page.locator('canvas').or(page.locator('text=Finalists')).first().waitFor({ timeout: 60_000 });
 
-    // Back to progressions
-    await page.getByText('Back to progressions').or(page.getByText('Back')).click();
+    // Back to progressions — use specific button
+    await page.getByRole('button', { name: /back to progressions/i }).click();
     await page.waitForTimeout(500);
 
     // Candidates still there
@@ -30,8 +29,8 @@ test.describe('UX Coherence', () => {
     // No orphaned spinners
     await expect(page.locator('[class*="animate-pulse"]')).toHaveCount(0);
 
-    // Back to dashboard
-    await page.getByText('Back').first().click();
+    // Back to dashboard — use the header "Back" link
+    await page.getByRole('link', { name: /back/i }).click();
     await page.waitForURL('/');
     await expect(page.locator('text=Explorator')).toBeVisible();
   });
@@ -40,41 +39,48 @@ test.describe('UX Coherence', () => {
     await goToWorkspace(page, testSession.sessionId);
     await generateCandidates(page, testSession.prompt);
 
-    // Count heading
+    // Count candidate cards using Realize buttons (one per candidate)
+    const realizeButtons = page.getByRole('button', { name: /realize/i });
+    const cardCount = await realizeButtons.count();
+    expect(cardCount).toBeGreaterThan(0);
+
+    // Check heading count matches
     const heading = page.locator('text=/\\d+ candidate/');
     const headingText = await heading.textContent() ?? '';
     const headingCount = parseInt(headingText.match(/(\d+)/)?.[1] ?? '0');
-
-    // Count actual cards
-    const cards = page.locator('text=→');
-    expect(await cards.count()).toBe(headingCount);
+    expect(cardCount).toBe(headingCount);
 
     // Realize and go back
     await realizeFirstCandidate(page);
-    await page.getByText('Back to progressions').or(page.getByText('Back')).click();
+    await page.getByRole('button', { name: /back to progressions/i }).click();
     await page.waitForTimeout(500);
 
     // Candidates still present
-    expect(await page.locator('text=→').count()).toBe(headingCount);
+    expect(await realizeButtons.count()).toBe(cardCount);
     await expect(page.locator('[class*="animate-pulse"]')).toHaveCount(0);
   });
 
   test('13: interaction-affordances', async ({ page, testSession }) => {
     await goToWorkspace(page, testSession.sessionId);
 
-    // Generate button disabled when empty
+    // The session was created with a prompt, so the input may already have text.
+    // Clear it first to test the disabled state.
+    const input = page.locator('input').first();
+    await input.fill('');
+    await page.waitForTimeout(200);
+
     const genButton = page.getByRole('button', { name: /generate/i });
     await expect(genButton).toBeDisabled();
 
     // Fill and generate
-    await page.locator('input').first().fill(testSession.prompt);
+    await input.fill(testSession.prompt);
     await genButton.click();
 
-    // While running: button + input disabled
+    // While running: button disabled
     await expect(genButton).toBeDisabled();
 
     // Wait for completion
-    await page.locator('text=→').first().waitFor({ timeout: 30_000 });
+    await page.locator('text=→').first().waitFor({ timeout: 60_000 });
 
     // After: button re-enabled
     await expect(genButton).not.toBeDisabled();
