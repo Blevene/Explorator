@@ -24,7 +24,8 @@ class FeedbackEventRepo(BaseRepository):
         """Create feedback event and its Neo4j relationships in a single transaction."""
         data = _neo4j_safe(event.model_dump(mode="json"))
         async with self.driver.session() as session:
-            async with session.begin_transaction() as tx:
+            tx = await session.begin_transaction()
+            try:
                 # Create feedback node
                 await tx.run(
                     f"CREATE (n:{self.label} $props) SET n.id = $props.id",
@@ -49,6 +50,9 @@ class FeedbackEventRepo(BaseRepository):
                     sess_id=session_id, fb_id=event.id,
                 )
                 await tx.commit()
+            except Exception:
+                await tx.rollback()
+                raise
 
     async def list_by_session(self, session_id: str) -> list[dict[str, Any]]:
         """List all feedback events for a session, ordered by creation time."""
