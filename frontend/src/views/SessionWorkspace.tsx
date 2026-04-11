@@ -181,8 +181,43 @@ export default function SessionWorkspace() {
           {/* Mutation in-flight banner */}
           {mutation.inFlight && (
             <div data-testid="mutation-spinner" className="flex items-center gap-3 px-4 py-3 rounded-lg" style={{ background: 'var(--accent-secondary-dim)', border: '1px solid var(--accent-secondary)' }}>
-              <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--accent-secondary)', borderTopColor: 'transparent' }} />
-              <span className="text-sm" style={{ color: 'var(--accent-secondary)' }}>Mutating candidate...</span>
+              <div className="w-4 h-4 border-2 rounded-full animate-spin shrink-0" style={{ borderColor: 'var(--accent-secondary)', borderTopColor: 'transparent' }} />
+              <div>
+                <span className="text-sm" style={{ color: 'var(--accent-secondary)' }}>
+                  Mutating candidate {mutation.inFlightLabel}
+                </span>
+                <span className="text-xs font-mono ml-2" style={{ color: 'var(--text-muted)' }}>
+                  {mutation.inFlightChords.join(' \u2192 ')}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Mutation result banner */}
+          {mutation.lastResult && !mutation.inFlight && (
+            <div className="rounded-lg px-4 py-3" style={{ background: 'var(--accent-secondary-dim)', border: '1px solid var(--accent-secondary)' }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium" style={{ color: 'var(--accent-secondary)' }}>
+                  Mutation applied to {mutation.inFlightLabel}
+                </span>
+                <button onClick={mutation.dismissResult} className="text-xs" style={{ color: 'var(--text-muted)' }}>dismiss</button>
+              </div>
+              <div className="text-xs font-mono mb-1" style={{ color: 'var(--text-primary)' }}>
+                {mutation.lastResult.mutated_chord_symbols.join(' \u2192 ')}
+              </div>
+              {mutation.lastResult.mutations.map((m, i) => (
+                <div key={i} className="text-xs flex gap-2" style={{ color: 'var(--text-secondary)' }}>
+                  <span className="font-mono" style={{ color: 'var(--accent-secondary)' }}>{m.operation}</span>
+                  {m.original_value && m.new_value && (
+                    <span>
+                      <span style={{ color: 'var(--score-low)' }}>{m.original_value}</span>
+                      {' \u2192 '}
+                      <span style={{ color: 'var(--score-high)' }}>{m.new_value}</span>
+                    </span>
+                  )}
+                  {m.description && <span style={{ color: 'var(--text-muted)' }}>{m.description}</span>}
+                </div>
+              ))}
             </div>
           )}
 
