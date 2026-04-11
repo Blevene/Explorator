@@ -157,10 +157,27 @@ export default function SessionWorkspace() {
   const handleRealize = async (candidateId: string) => {
     if (!sessionId) return;
 
+    setError(null);
+
+    // Check for existing arrangements first — skip realization if already done
+    try {
+      const existing = await listArrangements(candidateId);
+      if (existing.length > 0) {
+        arrangementStore.reset();
+        arrangementStore.setArrangements(existing);
+        setViewMode('realization');
+        const best = existing.reduce((a, b) =>
+          (a.weighted_total ?? 0) > (b.weighted_total ?? 0) ? a : b
+        );
+        await handleSelectArrangement(best.id);
+        return;
+      }
+    } catch { /* no cached results, proceed with realization */ }
+
+    // No existing arrangements — trigger realization
     arrangementStore.reset();
     setCurrentNode('load_context');
     setLoading(true);
-    setError(null);
 
     try {
       const response = await triggerRealizationSSE(sessionId, [candidateId]);
@@ -174,16 +191,27 @@ export default function SessionWorkspace() {
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split(/\r?\n/);
-        buffer = lines.pop() || '';
+        const parts = buffer.split(/\r?\n\r?\n/);
+        buffer = parts.pop() || '';
 
-        for (const line of lines) {
-          if (line.startsWith('data:')) {
-            try {
-              const data = JSON.parse(line.slice(5).trim());
-              if (data.node) setCurrentNode(data.node);
-            } catch { /* skip */ }
+        for (const part of parts) {
+          if (!part.trim()) continue;
+          let eventType = '';
+          let dataStr = '';
+          for (const line of part.split(/\r?\n/)) {
+            if (line.startsWith('event: ')) eventType = line.slice(7).trim();
+            else if (line.startsWith('data: ')) dataStr = line.slice(6).trim();
           }
+          if (!dataStr) continue;
+          try {
+            const data = JSON.parse(dataStr);
+            const node = data.node as string | undefined;
+            if (eventType === 'node_started' && node) {
+              setCurrentNode(node);
+            } else if (eventType === 'realization_completed') {
+              setCurrentNode(null);
+            }
+          } catch { /* skip */ }
         }
       }
 
@@ -192,7 +220,6 @@ export default function SessionWorkspace() {
       arrangementStore.setArrangements(arrangements);
       setViewMode('realization');
 
-      // Auto-select best
       if (arrangements.length > 0) {
         const best = arrangements.reduce((a, b) =>
           (a.weighted_total ?? 0) > (b.weighted_total ?? 0) ? a : b
