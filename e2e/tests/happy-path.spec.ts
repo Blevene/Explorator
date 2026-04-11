@@ -32,6 +32,6 @@ test.describe('Happy Path', () => {
 
     await expect(page.locator('canvas')).toBeVisible();
     await expect(page.locator('text=BPM')).toBeVisible();
-    await expect(page.locator('text=Scores').or(page.locator('text=Arrangement'))).toBeVisible();
+    await expect(page.locator('text=Scores').first()).toBeVisible();
   });
 });
