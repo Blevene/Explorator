@@ -66,7 +66,22 @@ class HarmonyMutator:
         )
 
         response = self._cap_experimental(response)
+        response = self._ensure_length(response, chord_symbols)
         return response
+
+    def _ensure_length(self, response: MutationResponse, original: list[str]) -> MutationResponse:
+        """Ensure mutated progression has same length as original. Pad with originals if too short."""
+        mutated = list(response.mutated_chord_symbols)
+        if len(mutated) < len(original):
+            logger.warning(
+                "Gemini returned %d chords, expected %d — padding with originals",
+                len(mutated), len(original),
+            )
+            mutated.extend(original[len(mutated):])
+        return MutationResponse(
+            mutated_chord_symbols=mutated[:len(original)],
+            mutations=response.mutations,
+        )
 
     def _cap_experimental(self, response: MutationResponse) -> MutationResponse:
         """Keep at most 1 experimental mutation."""
