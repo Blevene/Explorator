@@ -6,14 +6,10 @@ from typing import Any
 from neo4j import AsyncDriver
 
 from explorator.engine.state import ExplorationState
-from explorator.graph.repository import BaseRepository
+from explorator.graph.repository import BaseRepository, ProgressionCandidateRepo
 from explorator.graph.session_repo import SessionRepository
 
 logger = logging.getLogger(__name__)
-
-
-class ProgressionCandidateRepo(BaseRepository):
-    label = "ProgressionCandidate"
 
 
 class GenreProfileRepo(BaseRepository):

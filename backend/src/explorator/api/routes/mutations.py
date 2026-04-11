@@ -15,7 +15,7 @@ from explorator.adapters.gemini import GeminiClient
 from explorator.api.deps import get_gemini_client, get_neo4j_driver
 from explorator.api.sse import SSEChannel
 from explorator.domain.harmony.mutator import HarmonyMutator
-from explorator.graph.repository import BaseRepository
+from explorator.graph.repository import ProgressionCandidateRepo
 from explorator.graph.session_repo import SessionRepository
 from explorator.utils import parse_json_or_dict, utc_now
 
@@ -25,9 +25,6 @@ router = APIRouter(tags=["mutations"])
 # Simple in-memory concurrency guard: tracks sessions with in-flight mutations
 _busy_sessions: set[str] = set()
 
-
-class ProgressionCandidateRepo(BaseRepository):
-    label = "ProgressionCandidate"
 
 
 class TriggerMutationRequest(BaseModel):

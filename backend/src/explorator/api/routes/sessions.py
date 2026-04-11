@@ -6,7 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from ulid import ULID
 
-from explorator.api.deps import get_session_repo
+from neo4j import AsyncDriver
+
+from explorator.api.deps import get_neo4j_driver, get_session_repo
 from explorator.graph.session_repo import SessionRepository
 from explorator.models.session import Session
 from explorator.utils import parse_json_or_dict
@@ -102,3 +104,27 @@ async def get_session(
         created_at=session.get("created_at", ""),
         prompt=metadata.get("prompt", ""),
     )
+
+
+@router.delete("/sessions/{session_id}", status_code=204)
+async def delete_session(
+    session_id: str,
+    repo: SessionRepository = Depends(get_session_repo),  # noqa: B008
+    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+) -> None:
+    """Delete a session and all its child nodes from Neo4j."""
+    session = await repo.get_by_id(session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    async with driver.session() as neo_session:
+        # Delete all nodes that reference this session_id
+        await neo_session.run(
+            "MATCH (n) WHERE n.session_id = $sid DETACH DELETE n",
+            sid=session_id,
+        )
+        # Delete the session node itself
+        await neo_session.run(
+            "MATCH (n:Session {id: $sid}) DETACH DELETE n",
+            sid=session_id,
+        )

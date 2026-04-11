@@ -77,6 +77,9 @@ class GeminiClient:
             msg = f"Gemini returned malformed JSON for model={model_name}: {e}"
             raise ValueError(msg) from e
 
+        # Truncate overlong string fields before validation
+        parsed = self._truncate_to_max_length(parsed, response_model)
+
         try:
             return response_model.model_validate(parsed)
         except Exception:
@@ -85,6 +88,43 @@ class GeminiClient:
                 model_name, response_model.__name__, parsed,
             )
             raise
+
+    @staticmethod
+    def _truncate_to_max_length(data: dict | list, model: type) -> dict | list:
+        """Truncate string fields to their maxLength constraint before Pydantic validation.
+
+        Prevents Gemini's verbose text from causing validation rejection.
+        """
+        if not isinstance(data, dict):
+            return data
+
+        schema = model.model_json_schema() if hasattr(model, 'model_json_schema') else {}
+        props = schema.get('properties', {})
+
+        for field_name, field_schema in props.items():
+            if field_name in data and isinstance(data[field_name], str):
+                max_len = field_schema.get('maxLength')
+                if max_len and len(data[field_name]) > max_len:
+                    data[field_name] = data[field_name][:max_len]
+
+            # Recurse into lists of objects (e.g., per_chord list)
+            if field_name in data and isinstance(data[field_name], list):
+                items_ref = field_schema.get('items', {}).get('$ref', '')
+                if items_ref:
+                    # Resolve $ref to get the sub-model schema
+                    def_name = items_ref.split('/')[-1]
+                    defs = schema.get('$defs', {})
+                    sub_schema = defs.get(def_name, {})
+                    sub_props = sub_schema.get('properties', {})
+                    for item in data[field_name]:
+                        if isinstance(item, dict):
+                            for sf_name, sf_schema in sub_props.items():
+                                if sf_name in item and isinstance(item[sf_name], str):
+                                    sub_max = sf_schema.get('maxLength')
+                                    if sub_max and len(item[sf_name]) > sub_max:
+                                        item[sf_name] = item[sf_name][:sub_max]
+
+        return data
 
     async def generate_text(
         self,

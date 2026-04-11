@@ -98,3 +98,9 @@ class BaseRepository:
                 status=status,
                 now=utc_now().isoformat(),
             )
+
+
+class ProgressionCandidateRepo(BaseRepository):
+    """CRUD for ProgressionCandidate nodes."""
+
+    label = "ProgressionCandidate"

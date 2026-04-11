@@ -9,7 +9,7 @@ from ulid import ULID
 
 from explorator.engine.state import ExplorationState
 from explorator.graph.mutation_record_repo import MutationRecordRepo
-from explorator.graph.repository import BaseRepository
+from explorator.graph.repository import ProgressionCandidateRepo
 from explorator.graph.search_round_repo import SearchRoundRepo
 from explorator.models.search import MutationRecord, SearchRound
 from explorator.utils import utc_now
@@ -17,8 +17,6 @@ from explorator.utils import utc_now
 logger = logging.getLogger(__name__)
 
 
-class ProgressionCandidateRepo(BaseRepository):
-    label = "ProgressionCandidate"
 
 
 async def persist_round(state: ExplorationState, *, driver: AsyncDriver) -> dict[str, Any]:
