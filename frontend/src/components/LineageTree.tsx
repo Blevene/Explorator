@@ -86,8 +86,8 @@ function TreeNode({
         {node.round && (
           <span className="text-xs text-gray-600">R{node.round}</span>
         )}
-        <span className="text-xs text-gray-500 truncate max-w-[150px]">
-          {node.chordSymbols.join(' → ')}
+        <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
+          {node.chordSymbols.join(' \u2192 ')}
         </span>
       </div>
       {node.children.map((child) => (
