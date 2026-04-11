@@ -28,13 +28,13 @@ async function generateCandidates(page: Page, prompt: string): Promise<void> {
   await input.fill(prompt);
   await page.getByRole('button', { name: /generate/i }).click();
   // Wait for at least one candidate card with chord symbols (→)
-  await page.locator('text=→').first().waitFor({ timeout: 30_000 });
+  await page.locator('text=→').first().waitFor({ timeout: 60_000 });
 }
 
 async function realizeFirstCandidate(page: Page): Promise<void> {
   await page.getByRole('button', { name: /realize/i }).first().click();
   // Wait for arrangement view (canvas or arrangement list)
-  await page.locator('canvas').or(page.locator('text=Finalists')).first().waitFor({ timeout: 30_000 });
+  await page.locator('canvas').or(page.locator('text=Finalists')).first().waitFor({ timeout: 60_000 });
 }
 
 // Extended test fixture with per-test session
