@@ -5,7 +5,7 @@ from typing import Any
 
 from explorator.domain.realization.bass import BassLineGenerator
 from explorator.engine.state import ExplorationState
-from explorator.utils import parse_json_field
+from explorator.utils import parse_json_field, parse_json_or_dict
 from explorator.models.harmony import ProgressionCandidate
 from explorator.models.realization import BassPreferences
 
@@ -26,8 +26,8 @@ async def generate_bass(state: ExplorationState) -> dict[str, Any]:
     if callback:
         await callback("node_started", {"node": "generate_bass"})
 
-    genre_profile = state.get("genre_profile", {})
-    creative_brief = state.get("creative_brief", {})
+    genre_profile = parse_json_or_dict(state.get("genre_profile", {}))
+    creative_brief = parse_json_or_dict(state.get("creative_brief", {}))
     candidates_raw = state.get("progression_candidates", [])
 
     prefs = _build_bass_prefs(genre_profile)

@@ -8,6 +8,7 @@ from explorator.adapters.gemini import GeminiClient
 from explorator.domain.evaluation.theory import TheoryEvaluator
 from explorator.engine.state import ExplorationState
 from explorator.models.harmony import ProgressionCandidate
+from explorator.utils import parse_json_or_dict
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ async def evaluate_progressions(
         await callback("node_started", {"node": "evaluate_progressions", "count": n})
 
     evaluator = TheoryEvaluator(gemini)
-    brief = state.get("creative_brief", {})
+    brief = parse_json_or_dict(state.get("creative_brief", {}))
     genre = state.get("genre", "dream_pop")
     mood_targets = brief.get("mood_targets", [])
 

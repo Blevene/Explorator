@@ -8,6 +8,7 @@ from explorator.domain.evaluation.register_density import RegisterDensityEvaluat
 from explorator.domain.evaluation.voice_leading import VoiceLeadingEvaluator
 from explorator.engine.state import ExplorationState
 from explorator.models.realization import BassLine, VoicingPlan
+from explorator.utils import parse_json_or_dict
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +19,9 @@ async def evaluate_arrangements(state: ExplorationState) -> dict[str, Any]:
     if callback:
         await callback("node_started", {"node": "evaluate_arrangements"})
 
-    genre_profile = state.get("genre_profile", {})
-    preferred_register: str = (
-        genre_profile.get("voicing_preferences", {}).get("default_register", "mid")
-    )
+    genre_profile = parse_json_or_dict(state.get("genre_profile", {}))
+    voicing_prefs = parse_json_or_dict(genre_profile.get("voicing_preferences", {}))
+    preferred_register: str = voicing_prefs.get("default_register", "mid")
 
     # Build lookups by id
     voicing_plan_lookup: dict[str, VoicingPlan] = {}

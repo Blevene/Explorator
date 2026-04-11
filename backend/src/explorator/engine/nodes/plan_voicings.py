@@ -7,7 +7,7 @@ from typing import Any
 from explorator.adapters.gemini import GeminiClient, ModelTier
 from explorator.domain.realization.voicing import VoicingGenerator
 from explorator.engine.state import ExplorationState
-from explorator.utils import parse_json_field
+from explorator.utils import parse_json_field, parse_json_or_dict
 from explorator.models.harmony import ProgressionCandidate
 from explorator.models.realization import ChordVoicingInstruction, VoicingPreferences, VoicingStrategyResponse
 from explorator.prompts.voicing import voicing_strategy_prompt
@@ -60,8 +60,8 @@ async def plan_voicings(state: ExplorationState, *, gemini: GeminiClient) -> dic
     if callback:
         await callback("node_started", {"node": "plan_voicings"})
 
-    genre_profile = state.get("genre_profile", {})
-    creative_brief = state.get("creative_brief", {})
+    genre_profile = parse_json_or_dict(state.get("genre_profile", {}))
+    creative_brief = parse_json_or_dict(state.get("creative_brief", {}))
     candidates_raw = state.get("progression_candidates", [])
 
     prefs = _build_voicing_prefs(genre_profile)

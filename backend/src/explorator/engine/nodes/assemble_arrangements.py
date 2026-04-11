@@ -7,7 +7,7 @@ from ulid import ULID
 from explorator.domain.realization.assembly import ArrangementAssembler
 from explorator.engine.state import ExplorationState
 from explorator.models.realization import ArrangementFamily, BassLine, VoicingPlan
-from explorator.utils import utc_now
+from explorator.utils import parse_json_or_dict, utc_now
 
 
 async def assemble_arrangements(state: ExplorationState) -> dict[str, Any]:
@@ -22,7 +22,7 @@ async def assemble_arrangements(state: ExplorationState) -> dict[str, Any]:
         await callback("node_started", {"node": "assemble"})
 
     session_id = state.get("session_id", "")
-    creative_brief = state.get("creative_brief", {})
+    creative_brief = parse_json_or_dict(state.get("creative_brief", {}))
     voicing_plans_raw = state.get("voicing_plans", [])
     bass_lines_raw = state.get("bass_lines", [])
 

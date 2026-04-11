@@ -5,6 +5,7 @@ from typing import Any
 from explorator.adapters.gemini import GeminiClient
 from explorator.domain.harmony.generator import HarmonyGenerator
 from explorator.engine.state import ExplorationState
+from explorator.utils import parse_json_or_dict
 
 
 async def generate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, Any]:
@@ -14,8 +15,8 @@ async def generate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str
         await callback("node_started", {"node": "generate"})
 
     generator = HarmonyGenerator(gemini)
-    brief = state.get("creative_brief", {})
-    profile = state.get("genre_profile", {})
+    brief = parse_json_or_dict(state.get("creative_brief", {}))
+    profile = parse_json_or_dict(state.get("genre_profile", {}))
 
     candidates = await generator.generate(
         session_id=state["session_id"],

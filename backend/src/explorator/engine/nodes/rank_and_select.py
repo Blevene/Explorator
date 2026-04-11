@@ -14,7 +14,7 @@ from explorator.domain.evaluation.ranking import (
 )
 from explorator.engine.state import ExplorationState
 from explorator.models.evaluation import AggregateScorecard
-from explorator.utils import utc_now
+from explorator.utils import parse_json_or_dict, utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -295,7 +295,7 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
         })
     diversity_input.sort(key=lambda c: c["weighted_total"], reverse=True)
 
-    search_plan = state.get("search_plan", {})
+    search_plan = parse_json_or_dict(state.get("search_plan", {}))
     diversity_target = search_plan.get("diversity_target", 0.65)
     top_n = max(3, round(len(diversity_input) * diversity_target))
 

@@ -4,6 +4,7 @@ import logging
 from typing import Any
 
 from explorator.engine.state import ExplorationState
+from explorator.utils import parse_json_or_dict
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ async def check_stop(state: ExplorationState) -> dict[str, Any]:
     if callback:
         await callback("node_started", {"node": "check_stop"})
 
-    plan = state.get("search_plan", {})
+    plan = parse_json_or_dict(state.get("search_plan", {}))
     stop_conditions = plan.get("stop_conditions", {})
     target_score = stop_conditions.get("target_score", 8.5)
     max_rounds = stop_conditions.get("max_rounds", 4)

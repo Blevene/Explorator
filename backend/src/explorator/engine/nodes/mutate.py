@@ -8,7 +8,7 @@ from ulid import ULID
 from explorator.adapters.gemini import GeminiClient
 from explorator.domain.harmony.mutator import HarmonyMutator
 from explorator.engine.state import ExplorationState
-from explorator.utils import utc_now
+from explorator.utils import parse_json_or_dict, utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -52,16 +52,17 @@ async def mutate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, 
     if callback:
         await callback("node_started", {"node": "mutate"})
 
-    plan = state.get("search_plan", {})
+    plan = parse_json_or_dict(state.get("search_plan", {}))
     budget = plan.get("mutation_budget_per_round", 6)
     round_number = state.get("round_number", 1)
     scorecards = state.get("scorecards", [])
-    pareto = state.get("pareto_front", {})
+    pareto = parse_json_or_dict(state.get("pareto_front", {}))
     pareto_ids = pareto.get("candidate_ids", [])
     existing_progs = list(state.get("progression_candidates", []))
     existing_records = list(state.get("mutation_records", []))
     existing_history = list(state.get("all_candidates_history", []))
-    genre = state.get("genre", state.get("genre_profile", {}).get("genre", ""))
+    genre_profile = parse_json_or_dict(state.get("genre_profile", {}))
+    genre = state.get("genre", genre_profile.get("genre", ""))
 
     prog_by_id = {p["id"]: p for p in existing_progs}
     arrangements = state.get("arrangement_candidates", [])
