@@ -35,9 +35,10 @@ export default async function globalSetup() {
 
   console.log(`[e2e] Starting frontend on port ${FRONTEND_PORT}`);
   const frontend = spawn(
-    'npx', ['vite', '--port', String(FRONTEND_PORT), '--strictPort'],
+    'npm', ['run', 'dev', '--', '--port', String(FRONTEND_PORT), '--strictPort'],
     {
       cwd: path.join(ROOT, 'frontend'),
+      env: { ...process.env, VITE_API_TARGET: `http://localhost:${BACKEND_PORT}` },
       stdio: 'pipe',
       detached: true,
     },
