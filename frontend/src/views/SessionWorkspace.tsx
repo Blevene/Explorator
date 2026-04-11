@@ -70,7 +70,7 @@ export default function SessionWorkspace() {
 
         while (true) {
           if (Date.now() > deadline) {
-            setError('Round timed out after 5 minutes.');
+            setError('Round timed out after 10 minutes.');
             break;
           }
 

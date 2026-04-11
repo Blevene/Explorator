@@ -105,14 +105,14 @@ class ChordVoicingInstruction(BaseModel):
 class VoicingStrategyResponse(BaseModel):
     """Full voicing strategy returned by the LLM for a progression."""
 
-    global_strategy: str
+    global_strategy: str = Field(description="Brief strategy description, max 1 sentence")
     density_level: str
     voice_count: int = 4
     per_chord: list[ChordVoicingInstruction] = Field(default_factory=list)
     # Optional legacy / extended fields
-    register_profile: str = "mid_high"
+    register_profile: Literal["low", "mid", "mid_high", "high"] = "mid_high"
     voicing_instructions: list[ChordVoicingInstruction] = Field(default_factory=list)
-    rationale: str = ""
+    rationale: str = Field(default="", description="Brief rationale, max 1 sentence")
 
 
 class VariantConfig(BaseModel):

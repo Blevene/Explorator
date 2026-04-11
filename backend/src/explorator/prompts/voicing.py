@@ -38,9 +38,14 @@ def voicing_strategy_prompt(
         "(ALWAYS include at least the 7th for triads in a {voice_count}-voice arrangement)\n"
         "- avoid: optional list like ['double_third', 'parallel_fifths']\n\n"
         "Also provide:\n"
-        "- global_strategy: short description of overall voicing approach\n"
+        "- global_strategy: ONE short sentence describing the overall voicing approach\n"
         "- density_level: 'thin', 'medium', or 'full'\n"
         f"- voice_count: {voice_count}\n"
+        "- register_profile: one of 'low', 'mid', 'mid_high', 'high'\n"
+        "- rationale: ONE short sentence\n\n"
+        "CRITICAL: Keep global_strategy and rationale to ONE sentence each. "
+        "register_profile MUST be exactly one of: 'low', 'mid', 'mid_high', 'high'. "
+        "Do NOT write paragraphs — the response must fit within token limits.\n"
     )
 
     system_prompt = (
