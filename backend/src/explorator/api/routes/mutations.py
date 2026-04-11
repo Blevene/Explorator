@@ -9,12 +9,15 @@ from neo4j import AsyncDriver
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
+from ulid import ULID
+
 from explorator.adapters.gemini import GeminiClient
 from explorator.api.deps import get_gemini_client, get_neo4j_driver
 from explorator.api.sse import SSEChannel
 from explorator.domain.harmony.mutator import HarmonyMutator
 from explorator.graph.repository import BaseRepository
 from explorator.graph.session_repo import SessionRepository
+from explorator.utils import parse_json_or_dict, utc_now
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["mutations"])
@@ -80,8 +83,61 @@ async def trigger_mutation(
                     guidance=request.guidance,
                 )
 
+                # Persist the new mutated candidate to Neo4j
+                now = utc_now()
+                new_id = f"prog_{ULID()}"
+                source_metadata = parse_json_or_dict(candidate.get("metadata"))
+                new_candidate_data = {
+                    **candidate,
+                    "id": new_id,
+                    "chord_symbols": response.mutated_chord_symbols,
+                    "status": "candidate",
+                    "created_at": now.isoformat(),
+                    "updated_at": now.isoformat(),
+                    "metadata": {
+                        **source_metadata,
+                        "mutated_from": cid,
+                        "mutation_round": source_metadata.get("mutation_round", 0) + 1,
+                        "parent_chord_symbols": chord_symbols,
+                        "mutation_ops": [
+                            {
+                                "operation": m.operation,
+                                "original": m.original_value,
+                                "new": m.new_value,
+                                "description": m.description,
+                            }
+                            for m in response.mutations
+                        ],
+                    },
+                }
+
+                # Re-serialize chord_events from mutated symbols
+                import json
+                original_events = candidate.get("chord_events", [])
+                if isinstance(original_events, str):
+                    try:
+                        original_events = json.loads(original_events)
+                    except (json.JSONDecodeError, TypeError):
+                        original_events = []
+                new_events = []
+                for i, sym in enumerate(response.mutated_chord_symbols):
+                    if i < len(original_events) and isinstance(original_events[i], dict):
+                        new_events.append({**original_events[i], "symbol": sym})
+                    else:
+                        new_events.append({"bar": i + 1, "beat": 1.0, "duration_beats": 4.0, "symbol": sym, "function_label": ""})
+                new_candidate_data["chord_events"] = new_events
+
+                from explorator.graph.repository import _neo4j_safe
+                safe_data = _neo4j_safe(new_candidate_data)
+                async with driver.session() as neo_session:
+                    await neo_session.run(
+                        "CREATE (n:ProgressionCandidate $props) SET n.id = $props.id",
+                        props=safe_data,
+                    )
+
                 results.append({
                     "source_id": cid,
+                    "new_candidate_id": new_id,
                     "mutated_chord_symbols": response.mutated_chord_symbols,
                     "mutations": [m.model_dump() for m in response.mutations],
                 })

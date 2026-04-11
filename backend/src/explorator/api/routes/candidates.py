@@ -36,6 +36,7 @@ class CandidateSummary(BaseModel):
     intent_tags: list[str] = Field(default_factory=list)
     weighted_total: float = 0.0
     scores: dict[str, float] = Field(default_factory=dict)
+    metadata: dict[str, object] = Field(default_factory=dict)
 
 
 class CandidateListResponse(BaseModel):
@@ -99,6 +100,7 @@ async def list_candidates(
                 intent_tags=_parse_json_field(c.get("intent_tags")),
                 weighted_total=weighted,
                 scores=scores_data,
+                metadata=metadata,
             )
         )
 
