@@ -1,0 +1,203 @@
+"""Explanation API routes — generate and cache candidate explanations."""
+
+import logging
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException
+from neo4j import AsyncDriver
+from pydantic import BaseModel
+from ulid import ULID
+
+from explorator.adapters.gemini import GeminiClient, ModelTier
+from explorator.api.deps import get_gemini_client, get_neo4j_driver
+from explorator.graph.candidate_explanation_repo import CandidateExplanationRepo
+from explorator.graph.repository import BaseRepository
+from explorator.models.export import CandidateExplanation
+from explorator.prompts.explanation import explanation_prompt
+from explorator.utils import parse_json_or_dict
+
+logger = logging.getLogger(__name__)
+router = APIRouter(tags=["explanations"])
+
+
+class ArrangementCandidateRepo(BaseRepository):
+    label = "ArrangementCandidate"
+
+
+class ProgressionCandidateRepo(BaseRepository):
+    label = "ProgressionCandidate"
+
+
+class GenreRuleRepo(BaseRepository):
+    label = "GenreRule"
+
+
+class ExplanationResponse(BaseModel):
+    """Structured explanation of a candidate."""
+
+    summary: str
+    why_it_works: list[str]
+    what_is_experimental: list[str]
+    recommended_use_cases: list[str]
+
+
+class GeminiExplanationOutput(BaseModel):
+    """Schema for Gemini structured output."""
+
+    summary: str
+    why_it_works: list[str]
+    what_is_experimental: list[str]
+    recommended_use_cases: list[str]
+
+
+@router.get("/candidates/{candidate_id}/explanation")
+async def get_explanation(
+    candidate_id: str,
+    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+) -> ExplanationResponse:
+    """Get a cached explanation for a candidate (404 if not generated)."""
+    repo = CandidateExplanationRepo(driver)
+    cached = await repo.get_by_candidate_id(candidate_id)
+    if cached is None:
+        raise HTTPException(status_code=404, detail="Explanation not generated yet")
+    return ExplanationResponse(
+        summary=cached.get("summary", ""),
+        why_it_works=cached.get("why_it_works", []),
+        what_is_experimental=cached.get("what_is_experimental", []),
+        recommended_use_cases=cached.get("recommended_use_cases", []),
+    )
+
+
+@router.post("/candidates/{candidate_id}/explain")
+async def generate_or_get_explanation(
+    candidate_id: str,
+    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    gemini: GeminiClient = Depends(get_gemini_client),  # noqa: B008
+) -> ExplanationResponse:
+    """Generate or return cached explanation for a candidate.
+
+    Checks Neo4j cache first. If not found, loads context,
+    calls Gemini Pro, persists, and returns.
+    """
+    explanation_repo = CandidateExplanationRepo(driver)
+
+    # Check cache
+    cached = await explanation_repo.get_by_candidate_id(candidate_id)
+    if cached is not None:
+        return ExplanationResponse(
+            summary=cached.get("summary", ""),
+            why_it_works=cached.get("why_it_works", []),
+            what_is_experimental=cached.get("what_is_experimental", []),
+            recommended_use_cases=cached.get("recommended_use_cases", []),
+        )
+
+    # Load ArrangementCandidate
+    ac_repo = ArrangementCandidateRepo(driver)
+    ac_data = await ac_repo.get_by_id(candidate_id)
+    if ac_data is None:
+        raise HTTPException(status_code=404, detail="ArrangementCandidate not found")
+
+    # Load parent ProgressionCandidate
+    prog_id = ac_data.get("progression_candidate_id", "")
+    prog_repo = ProgressionCandidateRepo(driver)
+    prog_data = await prog_repo.get_by_id(prog_id) if prog_id else None
+    if prog_data is None:
+        raise HTTPException(
+            status_code=422,
+            detail=f"ProgressionCandidate not found for arrangement {candidate_id}",
+        )
+
+    session_id = ac_data.get("session_id", prog_data.get("session_id", ""))
+
+    # Extract data
+    chord_symbols = prog_data.get("chord_symbols", [])
+    roman_numerals = prog_data.get("roman_numerals", [])
+    key_center = prog_data.get("key_center", "C")
+    mode = prog_data.get("mode", "major")
+    prog_meta = parse_json_or_dict(prog_data.get("metadata", {}))
+    genre = prog_meta.get("genre", prog_data.get("genre", ""))
+
+    # Scores from arrangement metadata/scorecard
+    ac_meta = parse_json_or_dict(ac_data.get("metadata", {}))
+    scores: dict[str, float] = ac_meta.get("scores", {})
+    if not scores:
+        scores = prog_meta.get("scores", {})
+
+    # Genre rules
+    genre_rules: list[str] = []
+    if genre:
+        rule_repo = GenreRuleRepo(driver)
+        rules_data = await rule_repo.query_by_property("genre", genre)
+        genre_rules = [r.get("description", "") for r in rules_data if r.get("description")]
+
+    # Mutation lineage
+    mutation_lineage: list[str] | None = None
+    mutation_ops = prog_meta.get("mutation_ops", [])
+    if mutation_ops:
+        mutation_lineage = [
+            op.get("description", f"{op.get('operation', '?')}")
+            for op in mutation_ops
+        ]
+
+    # Build prompt and call Gemini Pro
+    user_prompt, system_prompt = explanation_prompt(
+        chord_symbols=chord_symbols,
+        roman_numerals=roman_numerals,
+        key_center=key_center,
+        mode=mode,
+        genre=genre,
+        genre_rules=genre_rules,
+        scores=scores,
+        mutation_lineage=mutation_lineage,
+    )
+
+    try:
+        gemini_result = await gemini.generate_structured(
+            user_prompt,
+            GeminiExplanationOutput,
+            tier=ModelTier.PRO,
+            system_prompt=system_prompt,
+        )
+    except Exception as exc:
+        logger.exception("Gemini explanation generation failed for %s", candidate_id)
+        raise HTTPException(
+            status_code=504,
+            detail="Explanation generation timed out. Try again.",
+        ) from exc
+
+    # Persist to Neo4j
+    explanation = CandidateExplanation(
+        id=f"ce_{ULID()}",
+        type="candidate_explanation",
+        status="active",
+        session_id=session_id,
+        candidate_id=candidate_id,
+        summary=gemini_result.summary,
+        why_it_works=gemini_result.why_it_works,
+        what_is_experimental=gemini_result.what_is_experimental,
+        recommended_use_cases=gemini_result.recommended_use_cases,
+    )
+    try:
+        await explanation_repo.create(explanation)
+
+        # Create relationship: (CandidateExplanation)-[:EXPLAINS]->(ArrangementCandidate)
+        async with driver.session() as neo_session:
+            await neo_session.run(
+                """
+                MATCH (e:CandidateExplanation {id: $eid})
+                MATCH (a:ArrangementCandidate {id: $aid})
+                MERGE (e)-[:EXPLAINS]->(a)
+                """,
+                eid=explanation.id,
+                aid=candidate_id,
+            )
+    except Exception:
+        logger.exception("Failed to persist explanation for %s", candidate_id)
+        # Still return the result even if persistence fails
+
+    return ExplanationResponse(
+        summary=gemini_result.summary,
+        why_it_works=gemini_result.why_it_works,
+        what_is_experimental=gemini_result.what_is_experimental,
+        recommended_use_cases=gemini_result.recommended_use_cases,
+    )

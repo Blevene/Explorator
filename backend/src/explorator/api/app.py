@@ -8,6 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from explorator.api.middleware import AuthStubMiddleware
 from explorator.api.routes import candidates, genres, rounds, sessions
+from explorator.api.routes.explanations import router as explanations_router
+from explorator.api.routes.exports import router as exports_router
 from explorator.api.routes.feedback import router as feedback_router
 from explorator.api.routes.mutations import router as mutations_router
 from explorator.api.routes.realization_rounds import router as realization_router
@@ -60,5 +62,7 @@ def create_app() -> FastAPI:
     app.include_router(realization_router, prefix="/v1")
     app.include_router(mutations_router, prefix="/v1")
     app.include_router(feedback_router, prefix="/v1")
+    app.include_router(exports_router, prefix="/v1")
+    app.include_router(explanations_router, prefix="/v1")
 
     return app
