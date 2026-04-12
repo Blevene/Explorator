@@ -80,7 +80,6 @@ import pytest_asyncio
 from neo4j import AsyncDriver
 
 from explorator.graph.provenance_trace_repo import ProvenanceTraceRepo
-from explorator.utils import utc_now
 
 
 class TestProvenanceTraceRepo:

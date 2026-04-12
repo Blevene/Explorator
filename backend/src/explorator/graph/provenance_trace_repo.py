@@ -3,7 +3,7 @@
 import json
 from typing import Any
 
-from explorator.graph.repository import BaseRepository, _neo4j_deserialize
+from explorator.graph.repository import BaseRepository
 from explorator.utils import utc_now
 
 
