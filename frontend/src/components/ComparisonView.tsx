@@ -2,6 +2,7 @@ import { useEffect } from "react"
 import type { ArrangementDetail } from "../services/api"
 import { recordComparison } from "../services/api"
 import { useCandidateStore } from "../stores/candidateStore"
+import { scoreColorVar } from "../utils/designTokens"
 import PianoRoll from "./PianoRoll"
 
 interface ComparisonViewProps {
@@ -27,11 +28,6 @@ function dimensionLabel(dim: string): string {
     .join(" ")
 }
 
-function scoreColor(score: number): string {
-  if (score >= 8) return "text-emerald-400"
-  if (score >= 6) return "text-amber-400"
-  return "text-rose-400"
-}
 
 export default function ComparisonView({
   sessionId,
@@ -64,7 +60,7 @@ export default function ComparisonView({
 
   if (comparedArrangements.length < 2) {
     return (
-      <div className="p-4 text-center text-slate-500 text-sm">
+      <div className="p-4 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
         Select at least 2 candidates to compare.
       </div>
     )
@@ -171,7 +167,8 @@ export default function ComparisonView({
                   return (
                     <span
                       key={a.id}
-                      className={`font-mono ${scoreColor(score)} ${isLeader ? "font-bold" : "opacity-70"}`}
+                      className="font-mono"
+                      style={{ color: scoreColorVar(score), fontWeight: isLeader ? 700 : 400, opacity: isLeader ? 1 : 0.7 }}
                     >
                       {String.fromCharCode(65 + i)}: {score.toFixed(1)}
                     </span>
