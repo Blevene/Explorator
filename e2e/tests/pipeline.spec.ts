@@ -4,17 +4,15 @@ test.describe('Pipeline & SSE', () => {
   test('14: sse-stream-completion', async ({ page, testSession }) => {
     await goToWorkspace(page, testSession.sessionId);
 
-    await page.locator('input').first().fill(testSession.prompt);
-    await page.getByRole('button', { name: /generate/i }).click();
-
-    // Wait for candidates (means stream completed successfully)
-    await page.locator('text=→').first().waitFor({ timeout: 60_000 });
+    // Auto-generate may have already started. Wait for candidates to appear
+    // (which proves SSE stream completed successfully).
+    await generateCandidates(page, testSession.prompt);
 
     // Loading cleared, button re-enabled
     await expect(page.getByRole('button', { name: /generate/i })).not.toBeDisabled();
 
-    // No timeout or error messages
-    await expect(page.locator('text=timed out')).toBeHidden();
+    // No timeout or error messages visible
+    await expect(page.locator('[data-testid="error-message"]')).toHaveCount(0);
   });
 
   test('15: multi-round-generation', async ({ page, testSession }) => {

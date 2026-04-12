@@ -19,6 +19,25 @@ async function waitForHealth(url: string, timeoutMs = 30_000): Promise<void> {
   throw new Error(`Health check failed: ${url} not ready after ${timeoutMs}ms`);
 }
 
+async function cleanTestSessions(): Promise<void> {
+  try {
+    const res = await fetch(`http://localhost:${BACKEND_PORT}/v1/sessions`);
+    if (!res.ok) return;
+    const data = await res.json();
+    const sessions: { session_id: string }[] = data.items ?? data ?? [];
+    for (const s of sessions) {
+      await fetch(`http://localhost:${BACKEND_PORT}/v1/sessions/${s.session_id}`, {
+        method: 'DELETE',
+      });
+    }
+    if (sessions.length > 0) {
+      console.log(`[e2e] Cleaned ${sessions.length} stale test sessions`);
+    }
+  } catch {
+    // Backend not ready yet or no sessions — fine
+  }
+}
+
 export default async function globalSetup() {
   console.log(`[e2e] Starting backend on port ${BACKEND_PORT} (GEMINI_MOCK=true)`);
   const backend = spawn(
@@ -52,6 +71,9 @@ export default async function globalSetup() {
 
   await waitForHealth(`http://localhost:${BACKEND_PORT}/v1/sessions`);
   console.log('[e2e] Backend ready');
+
+  // Clean stale sessions from prior test runs to avoid strict mode violations
+  await cleanTestSessions();
 
   await waitForHealth(`http://localhost:${FRONTEND_PORT}`);
   console.log('[e2e] Frontend ready');

@@ -9,7 +9,8 @@ test.describe('Happy Path', () => {
     await page.getByRole('button', { name: /explore/i }).click();
 
     await page.waitForURL(/\/session\//);
-    await expect(page.locator('text=Dream pop')).toBeVisible();
+    // Use .first() because other test sessions with similar prompts may exist
+    await expect(page.locator('text=Dream pop').first()).toBeVisible();
   });
 
   test('2: generation-flow', async ({ page, testSession }) => {
