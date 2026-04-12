@@ -17,6 +17,7 @@ class ProvenanceTrace(BaseEntity):
 class CandidateExplanation(BaseEntity):
     """Human-readable explanation of one result."""
 
+    session_id: str
     candidate_id: str
     summary: str = ""
     why_it_works: list[str] = Field(default_factory=list)
@@ -36,6 +37,7 @@ class ComparisonView(BaseEntity):
 class RenderArtifact(BaseEntity):
     """Exported render or file."""
 
+    session_id: str
     candidate_id: str
     artifact_type: str
     path: str

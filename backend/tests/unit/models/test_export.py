@@ -62,6 +62,7 @@ def test_candidate_explanation_minimal() -> None:
         id="ce_01",
         type="candidate_explanation",
         status="completed",
+        session_id="test-session",
         candidate_id="arr_01",
     )
     assert exp.candidate_id == "arr_01"
@@ -76,6 +77,7 @@ def test_candidate_explanation_full() -> None:
         id="ce_02",
         type="candidate_explanation",
         status="completed",
+        session_id="test-session",
         candidate_id="arr_01",
         summary="A dreamy, floating progression built on stacked fourths.",
         why_it_works=["Open voicings create space", "Plagal cadence fits genre"],
@@ -93,6 +95,7 @@ def test_candidate_explanation_requires_candidate_id() -> None:
             id="ce_03",
             type="candidate_explanation",
             status="completed",
+            session_id="test-session",
         )  # type: ignore[call-arg]
 
 
@@ -148,6 +151,7 @@ def test_render_artifact_minimal() -> None:
         id="ra_01",
         type="render_artifact",
         status="ready",
+        session_id="test-session",
         candidate_id="arr_01",
         artifact_type="midi",
         path="/exports/sess_01/arr_01.mid",
@@ -163,6 +167,7 @@ def test_render_artifact_with_metadata() -> None:
         id="ra_02",
         type="render_artifact",
         status="ready",
+        session_id="test-session",
         candidate_id="arr_01",
         artifact_type="audio",
         path="/exports/sess_01/arr_01.wav",
@@ -177,6 +182,7 @@ def test_render_artifact_requires_candidate_id() -> None:
             id="ra_03",
             type="render_artifact",
             status="ready",
+            session_id="test-session",
             artifact_type="midi",
             path="/exports/file.mid",
         )  # type: ignore[call-arg]
@@ -188,6 +194,7 @@ def test_render_artifact_requires_artifact_type() -> None:
             id="ra_04",
             type="render_artifact",
             status="ready",
+            session_id="test-session",
             candidate_id="arr_01",
             path="/exports/file.mid",
         )  # type: ignore[call-arg]
@@ -199,6 +206,7 @@ def test_render_artifact_requires_path() -> None:
             id="ra_05",
             type="render_artifact",
             status="ready",
+            session_id="test-session",
             candidate_id="arr_01",
             artifact_type="midi",
         )  # type: ignore[call-arg]
