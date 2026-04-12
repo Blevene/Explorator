@@ -9,7 +9,7 @@ from ulid import ULID
 from explorator.adapters.music21_adapter import _REGISTER_BOUNDS
 from explorator.models.evaluation import RegisterDensityEvaluation
 from explorator.models.realization import BassLine, VoicingPlan
-from explorator.utils import utc_now
+from explorator.utils import pitch_str_to_midi, utc_now
 
 _MUD_ZONE_LOW = 36
 _MUD_ZONE_HIGH = 52
@@ -72,15 +72,17 @@ class RegisterDensityEvaluator:
             all_voicing_midi: list[int] = []
             for pitches in voicing_events:
                 for p in pitches:
-                    midi = _pitch_to_midi(p)
-                    if midi is not None:
-                        all_voicing_midi.append(midi)
+                    try:
+                        all_voicing_midi.append(pitch_str_to_midi(p))
+                    except ValueError:
+                        continue  # skip unparseable pitches
 
             bass_midi_list: list[int] = []
             for p in bass_pitches:
-                midi = _pitch_to_midi(p)
-                if midi is not None:
-                    bass_midi_list.append(midi)
+                try:
+                    bass_midi_list.append(pitch_str_to_midi(p))
+                except ValueError:
+                    continue  # skip unparseable pitches
 
             # 1. Mud zone check: count pitches in [36, 52]
             mud_count = sum(
@@ -145,10 +147,3 @@ class RegisterDensityEvaluator:
         return round(sum(fields) / len(fields), 3)
 
 
-def _pitch_to_midi(pitch: str) -> int | None:
-    """Convert a named pitch string (e.g. 'C4', 'B-3') to MIDI number."""
-    try:
-        from music21 import pitch as m21pitch
-        return m21pitch.Pitch(pitch).midi
-    except Exception:
-        return None
