@@ -18,12 +18,12 @@ interface Props {
 }
 
 const FORMAT_OPTIONS = [
-  { id: "combined_midi", label: "Combined MIDI" },
-  { id: "separate_midi", label: "Separate MIDI" },
+  { id: "midi_combined", label: "Combined MIDI" },
+  { id: "midi_separate", label: "Separate MIDI" },
   { id: "json", label: "JSON" },
 ];
 
-const DEFAULT_FORMATS = new Set(["combined_midi", "json"]);
+const DEFAULT_FORMATS = new Set(["midi_combined", "json"]);
 const FINALIST_ROLES = new Set(["best", "runner-up", "wildcard"]);
 
 function roleBadgeStyle(role: string): React.CSSProperties {
