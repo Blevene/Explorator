@@ -23,6 +23,8 @@ class ProgressionCandidate(CandidateBase):
     mode: str = "major"
     phrase_length_bars: int = 8
     chord_events: list[ChordEvent] = Field(default_factory=list)
+    chord_symbols: list[str] = Field(default_factory=list)
+    roman_numerals: list[str] = Field(default_factory=list)
     roman_numeral_analysis_id: str | None = None
     generator_mode: str = "balanced"
     source_type: str = "generated"
