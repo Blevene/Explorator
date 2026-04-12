@@ -2,8 +2,6 @@
 
 import os
 
-import pytest
-
 from explorator.domain.export.orchestrator import (
     ExportRequest,
     build_filename,

@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from explorator.domain.export.json_renderer import JsonRenderContext, render_json
 from explorator.domain.export.midi_renderer import (
-    MidiRenderError,
     render_combined_midi,
     render_separate_midi,
 )
