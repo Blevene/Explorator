@@ -98,7 +98,7 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
   return (
     <div
       className="fixed inset-0 flex items-center justify-center z-50"
-      style={{ background: "rgba(0,0,0,0.7)" }}
+      style={{ background: "var(--overlay-backdrop)" }}
       onClick={onClose}
     >
       <div

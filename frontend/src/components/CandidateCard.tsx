@@ -95,13 +95,11 @@ export default function CandidateCard({ candidate, index, onClick, onRealize, on
   return (
     <div
       onClick={onClick}
-      className="rounded-lg p-4 flex flex-col gap-3 transition-all cursor-pointer"
+      className="rounded-lg p-4 flex flex-col gap-3 transition-all cursor-pointer card-interactive"
       style={{
         background: 'var(--surface-2)',
         border: '1px solid var(--border-subtle)',
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--accent-primary-dim)')}
-      onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border-subtle)')}
     >
       {/* Header */}
       <div className="flex items-center justify-between">

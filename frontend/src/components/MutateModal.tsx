@@ -11,7 +11,7 @@ export default function MutateModal({ chordSymbols, onSubmit, onClose }: MutateM
   const [guidance, setGuidance] = useState('');
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={onClose}>
+    <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'var(--overlay-backdrop)' }} onClick={onClose}>
       <div
         className="rounded-xl p-6 w-full max-w-md"
         style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}
