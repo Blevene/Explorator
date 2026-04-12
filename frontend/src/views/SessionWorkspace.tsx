@@ -13,6 +13,8 @@ import ArrangementList from '../components/ArrangementList';
 import ArrangementDetail from '../components/ArrangementDetail';
 import LineageTree from '../components/LineageTree';
 import MutateModal from '../components/MutateModal';
+import ExportModal from '../components/ExportModal';
+import { useExportStore } from '../stores/exportStore';
 import * as audioEngine from '../services/audioEngine';
 
 export default function SessionWorkspace() {
@@ -22,8 +24,10 @@ export default function SessionWorkspace() {
   const [generationMode, setGenerationMode] = useState('balanced');
   const [viewMode, setViewMode] = useState<'generation' | 'realization'>('generation');
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [showExportModal, setShowExportModal] = useState(false);
 
   const { candidates, setCandidates } = useCandidateStore();
+  const { fetchPackages } = useExportStore();
   const arrangementStore = useArrangementStore();
 
   const generation = useGenerationFlow(id);
@@ -120,6 +124,18 @@ export default function SessionWorkspace() {
             </p>
           )}
         </div>
+        {candidates.length > 0 && (
+          <button
+            onClick={() => {
+              fetchPackages(id!);
+              setShowExportModal(true);
+            }}
+            className="rounded border border-[var(--border)] px-3 py-1 text-sm hover:bg-[var(--surface-2)]"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            Export
+          </button>
+        )}
       </div>
 
       {/* Prompt bar */}
@@ -277,6 +293,24 @@ export default function SessionWorkspace() {
           chordSymbols={mutation.mutatingCandidate.chord_symbols}
           onSubmit={handleMutateSubmit}
           onClose={mutation.closeModal}
+        />
+      )}
+
+      {/* Export modal */}
+      {showExportModal && (
+        <ExportModal
+          sessionId={id!}
+          candidates={(() => {
+            const finalSelection = useCandidateStore.getState().finalSelection;
+            const roles = finalSelection?.selection_roles ?? {};
+            return candidates.map((c, i) => ({
+              id: c.candidate_id,
+              label: `Candidate ${i + 1}`,
+              role: roles[c.candidate_id] ?? '',
+              chords: c.chord_symbols,
+            }));
+          })()}
+          onClose={() => setShowExportModal(false)}
         />
       )}
     </div>
