@@ -1,29 +1,13 @@
 import { useState } from "react"
 import type { ArrangementSummary, CandidateExplanation } from "../services/api"
 import { generateExplanation } from "../services/api"
+import { scoreColorVar, genreAccentVar } from "../utils/designTokens"
 
 interface ArrangementCardProps {
   arrangement: ArrangementSummary
   selected: boolean
   onClick: () => void
   genre: string
-}
-
-const GENRE_ACCENT: Record<string, string> = {
-  dream_pop: "border-violet-500",
-  synthwave: "border-pink-500",
-  cinematic: "border-yellow-500",
-}
-
-function getAccentBorder(genre: string): string {
-  const key = genre.toLowerCase().replace(/[\s-]/g, "_")
-  return GENRE_ACCENT[key] ?? GENRE_ACCENT["dream_pop"]
-}
-
-function scoreColor(score: number): string {
-  if (score >= 8) return "text-emerald-400"
-  if (score >= 6) return "text-amber-400"
-  return "text-rose-400"
 }
 
 function parseBadges(rationale: string): { voicing: string; bass: string } | null {
@@ -40,12 +24,12 @@ export default function ArrangementCard({
 }: ArrangementCardProps) {
   const isRejected = arrangement.status === "rejected"
   const badges = parseBadges(arrangement.rationale)
-  const accentBorder = getAccentBorder(genre)
 
   const [explanation, setExplanation] = useState<CandidateExplanation | null>(null)
   const [explaining, setExplaining] = useState(false)
   const [explainError, setExplainError] = useState<string | null>(null)
   const [showExplanation, setShowExplanation] = useState(false)
+  const [explainBtnHover, setExplainBtnHover] = useState(false)
 
   const handleExplain = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -71,22 +55,25 @@ export default function ArrangementCard({
   return (
     <div
       onClick={onClick}
-      className={[
-        "border rounded-md p-3 cursor-pointer transition-all",
-        selected
-          ? `border-l-4 ${accentBorder} bg-slate-800 border-slate-700`
-          : "border-slate-700 bg-slate-900 hover:bg-slate-800",
-        isRejected ? "opacity-40" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      className="rounded-md p-3 cursor-pointer transition-all"
+      style={{
+        background: selected ? "var(--surface-3)" : "var(--surface-1)",
+        border: "1px solid var(--border-default)",
+        borderLeft: selected
+          ? `4px solid ${genreAccentVar(genre)}`
+          : "1px solid var(--border-default)",
+        opacity: isRejected ? 0.4 : 1,
+      }}
     >
       {/* Score */}
       <div className="flex items-center justify-between mb-2">
-        <span className="text-slate-500 text-xs">
+        <span className="text-xs" style={{ color: "var(--text-muted)" }}>
           #{arrangement.rank_within_round}
         </span>
-        <span className={`text-sm font-bold font-mono ${scoreColor(arrangement.weighted_total)}`}>
+        <span
+          className="text-sm font-bold font-mono"
+          style={{ color: scoreColorVar(arrangement.weighted_total) }}
+        >
           {(arrangement.weighted_total ?? 0).toFixed(2)}
         </span>
       </div>
@@ -94,15 +81,29 @@ export default function ArrangementCard({
       {/* Badges */}
       {badges ? (
         <div className="flex flex-wrap gap-1">
-          <span className="text-xs bg-amber-400/10 text-amber-400 px-1.5 py-0.5 rounded font-mono">
+          <span
+            className="text-xs px-1.5 py-0.5 rounded font-mono"
+            style={{
+              background: "var(--accent-primary-dim)",
+              color: "var(--accent-primary)",
+            }}
+          >
             {badges.voicing}
           </span>
-          <span className="text-xs bg-cyan-400/10 text-cyan-400 px-1.5 py-0.5 rounded font-mono">
+          <span
+            className="text-xs px-1.5 py-0.5 rounded font-mono"
+            style={{
+              background: "var(--accent-secondary-dim)",
+              color: "var(--accent-secondary)",
+            }}
+          >
             {badges.bass}
           </span>
         </div>
       ) : (
-        <p className="text-slate-500 text-xs truncate">{arrangement.rationale}</p>
+        <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
+          {arrangement.rationale}
+        </p>
       )}
 
       {/* Explain button */}
@@ -110,11 +111,20 @@ export default function ArrangementCard({
         <button
           onClick={handleExplain}
           disabled={explaining}
-          className="mt-2 text-xs px-2 py-1 rounded border border-slate-600 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-colors disabled:opacity-50"
+          onMouseEnter={() => setExplainBtnHover(true)}
+          onMouseLeave={() => setExplainBtnHover(false)}
+          className="mt-2 text-xs px-2 py-1 rounded transition-colors disabled:opacity-50"
+          style={{
+            border: `1px solid ${explainBtnHover ? "var(--border-bright)" : "var(--border-default)"}`,
+            color: explainBtnHover ? "var(--text-primary)" : "var(--text-secondary)",
+          }}
         >
           {explaining ? (
             <span className="flex items-center gap-1">
-              <span className="w-3 h-3 border border-slate-400 border-t-transparent rounded-full animate-spin" />
+              <span
+                className="w-3 h-3 border border-t-transparent rounded-full animate-spin"
+                style={{ borderColor: "var(--text-secondary)", borderTopColor: "transparent" }}
+              />
               Generating...
             </span>
           ) : explanation ? (
@@ -127,18 +137,27 @@ export default function ArrangementCard({
 
       {/* Explain error */}
       {explainError && (
-        <p className="mt-1 text-xs text-rose-400">{explainError}</p>
+        <p className="mt-1 text-xs" style={{ color: "var(--score-low)" }}>
+          {explainError}
+        </p>
       )}
 
       {/* Explanation display */}
       {showExplanation && explanation && (
-        <div className="mt-2 pt-2 border-t border-slate-700 text-xs space-y-2">
-          <p className="text-slate-300 italic">{explanation.summary}</p>
+        <div
+          className="mt-2 pt-2 text-xs space-y-2"
+          style={{ borderTop: "1px solid var(--border-default)" }}
+        >
+          <p style={{ color: "var(--text-primary)", fontStyle: "italic" }}>
+            {explanation.summary}
+          </p>
 
           {explanation.why_it_works.length > 0 && (
             <div>
-              <span className="text-emerald-400 font-medium">Why it works:</span>
-              <ul className="list-disc list-inside text-slate-400 mt-0.5">
+              <span className="font-medium" style={{ color: "var(--score-high)" }}>
+                Why it works:
+              </span>
+              <ul className="list-disc list-inside mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 {explanation.why_it_works.map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}
@@ -148,8 +167,10 @@ export default function ArrangementCard({
 
           {explanation.what_is_experimental.length > 0 && (
             <div>
-              <span className="text-amber-400 font-medium">Experimental:</span>
-              <ul className="list-disc list-inside text-slate-400 mt-0.5">
+              <span className="font-medium" style={{ color: "var(--score-mid)" }}>
+                Experimental:
+              </span>
+              <ul className="list-disc list-inside mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 {explanation.what_is_experimental.map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}
@@ -159,8 +180,10 @@ export default function ArrangementCard({
 
           {explanation.recommended_use_cases.length > 0 && (
             <div>
-              <span className="text-sky-400 font-medium">Use cases:</span>
-              <ul className="list-disc list-inside text-slate-400 mt-0.5">
+              <span className="font-medium" style={{ color: "var(--accent-secondary)" }}>
+                Use cases:
+              </span>
+              <ul className="list-disc list-inside mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 {explanation.recommended_use_cases.map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}
