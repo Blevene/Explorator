@@ -25,8 +25,11 @@ test.describe('Error & Edge Cases', () => {
     await goToWorkspace(page, testSession.sessionId);
     await generateCandidates(page, testSession.prompt);
 
-    // Lineage tree hidden when no mutations have occurred (component returns null)
-    await expect(page.locator('text=Mutation Lineage')).toHaveCount(0);
+    // Lineage tree hidden when no mutations have occurred (component returns null).
+    // Use not.toBeVisible instead of toHaveCount(0) — the element may exist
+    // in DOM but be hidden, or may not exist at all.
+    const lineageHeading = page.locator('h4', { hasText: 'Mutation Lineage' });
+    await expect(lineageHeading).not.toBeVisible();
 
     // No orphaned loading spinners
     await expect(page.locator('[class*="animate-pulse"]')).toHaveCount(0);

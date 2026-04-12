@@ -9,17 +9,16 @@ test.describe('M3 Features', () => {
 
     // Open mutate modal
     await page.getByRole('button', { name: /mutate/i }).first().click();
-    await expect(page.locator('text=Mutate Candidate')).toBeVisible();
+    const modal = page.locator('.fixed.inset-0').filter({ hasText: 'Mutate Candidate' });
+    await expect(modal).toBeVisible();
 
     // Fill guidance
-    const guidanceInput = page.locator('input[placeholder*="darker"]')
-      .or(page.locator('input[placeholder*="tension"]'))
-      .or(page.locator('textarea[placeholder*="darker"]'));
-    await expect(guidanceInput.first()).toBeVisible({ timeout: 5_000 });
-    await guidanceInput.first().fill('more experimental, less predictable');
+    const guidanceInput = modal.locator('input[placeholder*="darker"]');
+    await expect(guidanceInput).toBeVisible({ timeout: 5_000 });
+    await guidanceInput.fill('more experimental, less predictable');
 
-    // Submit via the Mutate button in the modal
-    await page.getByRole('button', { name: /^mutate$/i }).click();
+    // Submit via the Mutate button inside the modal
+    await modal.getByRole('button', { name: /^mutate$/i }).click();
 
     // Wait for SSE mutation to complete
     await page.waitForTimeout(10_000);
@@ -32,15 +31,14 @@ test.describe('M3 Features', () => {
     await generateCandidates(page, testSession.prompt);
 
     await page.getByRole('button', { name: /mutate/i }).first().click();
-    await expect(page.locator('text=Mutate Candidate')).toBeVisible();
+    const modal = page.locator('.fixed.inset-0').filter({ hasText: 'Mutate Candidate' });
+    await expect(modal).toBeVisible();
 
-    const guidanceInput = page.locator('input[placeholder*="darker"]')
-      .or(page.locator('input[placeholder*="tension"]'))
-      .or(page.locator('textarea[placeholder*="darker"]'));
-    await guidanceInput.first().fill('make it darker');
+    const guidanceInput = modal.locator('input[placeholder*="darker"]');
+    await guidanceInput.fill('make it darker');
 
     // Click the modal's Mutate button
-    await page.getByRole('button', { name: /^mutate$/i }).click();
+    await modal.getByRole('button', { name: /^mutate$/i }).click();
 
     // Wait for SSE and reload
     await page.waitForTimeout(10_000);
