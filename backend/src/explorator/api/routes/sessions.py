@@ -1,14 +1,17 @@
 """Session CRUD endpoints."""
 
 import datetime
+import os
+import shutil
 
 from fastapi import APIRouter, Depends, HTTPException
+from neo4j import AsyncDriver
 from pydantic import BaseModel
 from ulid import ULID
 
-from neo4j import AsyncDriver
-
 from explorator.api.deps import get_neo4j_driver, get_session_repo
+from explorator.graph.provenance_trace_repo import ProvenanceTraceRepo
+from explorator.config import settings
 from explorator.graph.session_repo import SessionRepository
 from explorator.models.session import Session
 from explorator.utils import parse_json_or_dict
@@ -117,6 +120,11 @@ async def delete_session(
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
+    # Remove exported files for this session from the filesystem
+    export_dir = os.path.join(settings.export_dir, session_id)
+    if os.path.isdir(export_dir):
+        shutil.rmtree(export_dir)
+
     async with driver.session() as neo_session:
         # Delete all nodes that reference this session_id
         await neo_session.run(
@@ -128,3 +136,30 @@ async def delete_session(
             "MATCH (n:Session {id: $sid}) DETACH DELETE n",
             sid=session_id,
         )
+
+
+class ProvenanceResponse(BaseModel):
+    """Response for session provenance trace."""
+
+    session_id: str
+    events: list[dict]
+
+
+@router.get("/sessions/{session_id}/provenance")
+async def get_provenance(
+    session_id: str,
+    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+) -> ProvenanceResponse:
+    """Return the provenance trace for a session.
+
+    Returns an empty events list if no trace exists yet
+    (session hasn't been explored).
+    """
+    repo = ProvenanceTraceRepo(driver)
+    trace = await repo.get_by_session_id(session_id)
+    if trace is None:
+        return ProvenanceResponse(session_id=session_id, events=[])
+    return ProvenanceResponse(
+        session_id=session_id,
+        events=trace.get("events", []),
+    )
