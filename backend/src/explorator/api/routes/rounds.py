@@ -69,6 +69,7 @@ async def trigger_round(
         "n_candidates": n,
         "k_selection": k,
         "on_progress": channel.send,
+        "provenance_events": [],
     }
 
     async def run_and_close() -> None:

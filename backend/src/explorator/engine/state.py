@@ -66,5 +66,8 @@ class ExplorationState(TypedDict, total=False):
     objective_weights: dict[str, Any]
     user_preference_profile: dict[str, Any]
 
+    # --- M4b: Provenance ---
+    provenance_events: list[dict[str, Any]]
+
     # Progress callback
     on_progress: ProgressCallback
