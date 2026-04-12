@@ -321,6 +321,20 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
             "final_selection": final_selection,
         })
 
+    # M4b: Provenance event
+    existing_events = list(state.get("provenance_events", []))
+    existing_events.append({
+        "timestamp": utc_now().isoformat(),
+        "action": "rank_and_select",
+        "object_id": state.get("session_id", ""),
+        "round_number": state.get("round_number", 1),
+        "details": {
+            "role_assignments": selection_roles,
+            "selected_count": len(selected_arrangements),
+            "pareto_count": len(pareto_ids),
+        },
+    })
+
     return {
         "arrangement_candidates": updated_arrangements,
         "scorecards": scorecards,
@@ -328,4 +342,5 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
         "arrangement_families": updated_families,
         "pareto_front": pareto_snapshot,
         "final_selection": final_selection,
+        "provenance_events": existing_events,
     }

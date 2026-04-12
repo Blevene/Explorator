@@ -10,6 +10,7 @@ from neo4j import AsyncDriver
 from explorator.domain.evaluation.ranking import CANONICAL_DEFAULT_WEIGHTS
 from explorator.engine.state import ExplorationState
 from explorator.graph.feedback_repo import FeedbackEventRepo, ObjectiveWeightsRepo
+from explorator.utils import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +63,27 @@ async def load_memory(
             "weights_source": "session" if feedback_history else "canonical_default",
         })
 
+    # M4b: Provenance event — only log when feedback was actually loaded
+    existing_events = list(state.get("provenance_events", []))
+    if feedback_history:
+        existing_events.append({
+            "timestamp": utc_now().isoformat(),
+            "action": "feedback",
+            "object_id": session_id,
+            "round_number": None,
+            "details": {
+                "feedback_count": len(feedback_history),
+                "weight_deltas": {
+                    fb.get("id", ""): fb.get("weight_deltas", {})
+                    for fb in feedback_history
+                    if fb.get("weight_deltas")
+                },
+            },
+        })
+
     return {
         "feedback_history": feedback_history,
         "objective_weights": objective_weights,
         "user_preference_profile": user_preference_profile,
+        "provenance_events": existing_events,
     }

@@ -5,7 +5,7 @@ from typing import Any
 from explorator.adapters.gemini import GeminiClient
 from explorator.domain.harmony.generator import HarmonyGenerator
 from explorator.engine.state import ExplorationState
-from explorator.utils import parse_json_or_dict
+from explorator.utils import parse_json_or_dict, utc_now
 
 
 async def generate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, Any]:
@@ -40,4 +40,17 @@ async def generate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str
             {"count": len(serialized), "type": "progression"},
         )
 
-    return {"progression_candidates": serialized}
+    # M4b: Provenance event
+    existing_events = list(state.get("provenance_events", []))
+    existing_events.append({
+        "timestamp": utc_now().isoformat(),
+        "action": "generate",
+        "object_id": state["session_id"],
+        "round_number": state.get("round_number", 1),
+        "details": {
+            "candidate_count": len(serialized),
+            "prompt_summary": state.get("prompt", "")[:100],
+        },
+    })
+
+    return {"progression_candidates": serialized, "provenance_events": existing_events}
