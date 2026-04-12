@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     default_target_score: float = 8.5
     default_generation_mode: str = "balanced"
 
+    # Export
+    export_dir: str = "exports"
+
     # Timeouts
     gemini_timeout_seconds: int = 120
     neo4j_query_timeout_seconds: int = 5

@@ -15,6 +15,7 @@ dependencies = [
     "httpx>=0.28.0",
     "langgraph>=0.3.0",
     "music21>=9.1.0",
+    "pretty-midi>=0.2.10",
     "sse-starlette>=2.0.0",
 ]
 
