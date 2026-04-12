@@ -251,3 +251,32 @@ export async function getCachedExplanation(candidateId: string): Promise<Candida
   if (!res.ok) throw new Error(`Failed to get explanation: ${res.statusText}`);
   return res.json();
 }
+
+// --- M4b Comparison + Provenance ---
+
+export async function recordComparison(
+  sessionId: string,
+  candidateIds: string[],
+  comparisonAxes: string[],
+  labels: Record<string, string>,
+): Promise<void> {
+  fetch(`${API_BASE}/sessions/${sessionId}/comparisons`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ candidate_ids: candidateIds, comparison_axes: comparisonAxes, labels }),
+  }).catch(() => {}); // fire-and-forget
+}
+
+export interface ProvenanceEvent {
+  timestamp: string;
+  action: string;
+  object_id: string;
+  round_number: number | null;
+  details: Record<string, unknown>;
+}
+
+export async function getProvenance(sessionId: string): Promise<{ session_id: string; events: ProvenanceEvent[] }> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/provenance`);
+  if (!res.ok) throw new Error(`Failed to fetch provenance`);
+  return res.json();
+}

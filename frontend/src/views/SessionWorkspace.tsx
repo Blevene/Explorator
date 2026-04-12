@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { listCandidates, getSession } from '../services/api';
-import type { SessionSummary } from '../services/api';
+import { listCandidates, getSession, listArrangements, getArrangement } from '../services/api';
+import type { SessionSummary, ArrangementDetail } from '../services/api';
 import { useCandidateStore } from '../stores/candidateStore';
 import { useArrangementStore } from '../stores/arrangementStore';
 import { useGenerationFlow } from '../hooks/useGenerationFlow';
@@ -10,10 +10,12 @@ import { useMutationFlow } from '../hooks/useMutationFlow';
 import CandidateCard from '../components/CandidateCard';
 import PromptBar from '../components/PromptBar';
 import ArrangementList from '../components/ArrangementList';
-import ArrangementDetail from '../components/ArrangementDetail';
+import ArrangementDetailView from '../components/ArrangementDetail';
 import LineageTree from '../components/LineageTree';
 import MutateModal from '../components/MutateModal';
 import ExportModal from '../components/ExportModal';
+import ComparisonView from '../components/ComparisonView';
+import SessionHistory from '../components/SessionHistory';
 import { useExportStore } from '../stores/exportStore';
 import * as audioEngine from '../services/audioEngine';
 
@@ -25,8 +27,10 @@ export default function SessionWorkspace() {
   const [viewMode, setViewMode] = useState<'generation' | 'realization'>('generation');
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
+  const [comparisonArrangements, setComparisonArrangements] = useState<Map<string, ArrangementDetail>>(new Map());
 
-  const { candidates, setCandidates } = useCandidateStore();
+  const { candidates, setCandidates, selectedForComparison, toggleComparison } = useCandidateStore();
   const { fetchPackages } = useExportStore();
   const arrangementStore = useArrangementStore();
 
@@ -105,6 +109,23 @@ export default function SessionWorkspace() {
   const handleMutateSubmit = async (guidance: string) => {
     const err = await mutation.submit(guidance);
     if (err) generation.setError(err);
+  };
+
+  const handleCompare = async () => {
+    const loaded = new Map<string, ArrangementDetail>();
+    for (const candidateId of selectedForComparison) {
+      try {
+        const summaries = await listArrangements(candidateId);
+        if (summaries.length > 0) {
+          const detail = await getArrangement(summaries[0].id);
+          loaded.set(candidateId, detail);
+        }
+      } catch {
+        // skip failed loads
+      }
+    }
+    setComparisonArrangements(loaded);
+    setShowComparison(true);
   };
 
   return (
@@ -189,7 +210,7 @@ export default function SessionWorkspace() {
               genre={session?.genre || 'dream_pop'}
               finalSelection={useCandidateStore.getState().finalSelection}
             />
-            <ArrangementDetail
+            <ArrangementDetailView
               arrangement={arrangementStore.selectedDetail}
               genre={session?.genre || 'dream_pop'}
             />
@@ -242,23 +263,53 @@ export default function SessionWorkspace() {
 
           {candidates.length > 0 ? (
             <div>
-              <h2 data-testid="candidate-count" className="text-xs font-medium uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>
-                {candidates.length} candidate{candidates.length !== 1 ? 's' : ''}
-                {dismissedIds.size > 0 && (
-                  <span className="ml-2" style={{ color: 'var(--text-muted)' }}>({dismissedIds.size} dismissed)</span>
+              <div className="flex items-center justify-between mb-3">
+                <h2 data-testid="candidate-count" className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                  {candidates.length} candidate{candidates.length !== 1 ? 's' : ''}
+                  {dismissedIds.size > 0 && (
+                    <span className="ml-2" style={{ color: 'var(--text-muted)' }}>({dismissedIds.size} dismissed)</span>
+                  )}
+                </h2>
+                {selectedForComparison.length >= 2 && !showComparison && (
+                  <button
+                    onClick={handleCompare}
+                    className="rounded-md px-3 py-1 text-xs font-medium transition-colors"
+                    style={{ background: 'var(--role-experimental)', color: '#fff' }}
+                  >
+                    Compare {selectedForComparison.length}
+                  </button>
                 )}
-              </h2>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {sortedCandidates.map((c, i) => (
                   <div key={c.candidate_id} style={{ opacity: dismissedIds.has(c.candidate_id) ? 0.35 : 1 }}>
-                    <CandidateCard
-                      candidate={c}
-                      index={i}
-                      onRealize={dismissedIds.has(c.candidate_id) ? undefined : handleRealize}
-                      onMutate={dismissedIds.has(c.candidate_id) ? undefined : mutation.openModal}
-                      onDismiss={c.metadata?.mutated_from ? handleDismiss : undefined}
-                      onClick={dismissedIds.has(c.candidate_id) ? undefined : () => handleRealize(c.candidate_id)}
-                    />
+                    <div className="relative">
+                      {/* Comparison checkbox */}
+                      {!dismissedIds.has(c.candidate_id) && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleComparison(c.candidate_id); }}
+                          className="absolute top-2 right-2 z-10 w-5 h-5 rounded flex items-center justify-center text-xs transition-colors"
+                          style={{
+                            background: selectedForComparison.includes(c.candidate_id)
+                              ? 'var(--role-experimental)'
+                              : 'var(--surface-3)',
+                            border: `1px solid ${selectedForComparison.includes(c.candidate_id) ? 'var(--role-experimental)' : 'var(--border-default)'}`,
+                            color: selectedForComparison.includes(c.candidate_id) ? '#fff' : 'var(--text-muted)',
+                          }}
+                          title={selectedForComparison.includes(c.candidate_id) ? 'Remove from comparison' : 'Add to comparison'}
+                        >
+                          {selectedForComparison.includes(c.candidate_id) ? '\u2713' : '+'}
+                        </button>
+                      )}
+                      <CandidateCard
+                        candidate={c}
+                        index={i}
+                        onRealize={dismissedIds.has(c.candidate_id) ? undefined : handleRealize}
+                        onMutate={dismissedIds.has(c.candidate_id) ? undefined : mutation.openModal}
+                        onDismiss={c.metadata?.mutated_from ? handleDismiss : undefined}
+                        onClick={dismissedIds.has(c.candidate_id) ? undefined : () => handleRealize(c.candidate_id)}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -275,6 +326,16 @@ export default function SessionWorkspace() {
             candidates={candidates}
             onSelectCandidate={(cid) => handleRealize(cid)}
           />
+
+          {/* Comparison view */}
+          {showComparison && (
+            <ComparisonView
+              sessionId={id!}
+              genre={session?.genre || 'dream_pop'}
+              arrangements={comparisonArrangements}
+              onClose={() => setShowComparison(false)}
+            />
+          )}
 
           {loading && candidates.length === 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -313,6 +374,9 @@ export default function SessionWorkspace() {
           onClose={() => setShowExportModal(false)}
         />
       )}
+
+      {/* Session history */}
+      {id && <SessionHistory sessionId={id} />}
     </div>
   );
 }

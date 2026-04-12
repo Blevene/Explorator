@@ -6,10 +6,14 @@ import { useAudioStore } from "../stores/audioStore"
 interface PianoRollProps {
   arrangement: ArrangementDetail
   genre: string
+  compact?: boolean
+  showCursor?: boolean
+  barWidth?: number
 }
 
-const BAR_WIDTH = 90 // Fit 8-bar progressions in ~720px + labels
-const ROW_HEIGHT = 8
+const DEFAULT_BAR_WIDTH = 90 // Fit 8-bar progressions in ~720px + labels
+const DEFAULT_ROW_HEIGHT = 8
+const COMPACT_ROW_HEIGHT = 4
 const LABEL_WIDTH = 48
 const HEADER_HEIGHT = 24
 
@@ -35,10 +39,21 @@ function collectMidiValues(arrangement: ArrangementDetail): number[] {
   return midis
 }
 
-export default function PianoRoll({ arrangement, genre }: PianoRollProps) {
+export default function PianoRoll({
+  arrangement,
+  genre,
+  compact = false,
+  showCursor = true,
+  barWidth: barWidthProp,
+}: PianoRollProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // Always call useAudioStore (Rules of Hooks); ignore cursor values when showCursor=false
   const { playing, currentPosition, mutedTracks } = useAudioStore()
+
+  const BAR_WIDTH = barWidthProp ?? DEFAULT_BAR_WIDTH
+  const ROW_HEIGHT = compact ? COMPACT_ROW_HEIGHT : DEFAULT_ROW_HEIGHT
 
   const voicingEvents = arrangement.voicing_plan?.voicing_events ?? []
   const bassEvents = arrangement.bass_line?.note_events ?? []
@@ -55,7 +70,7 @@ export default function PianoRoll({ arrangement, genre }: PianoRollProps) {
 
     // Calculate MIDI range
     const midiValues = collectMidiValues(arrangement)
-    const octavePad = 12 // 1 octave
+    const octavePad = compact ? 6 : 12
     const minMidi = midiValues.length > 0 ? Math.min(...midiValues) - octavePad : 48
     const maxMidi = midiValues.length > 0 ? Math.max(...midiValues) + octavePad : 84
 
@@ -119,22 +134,24 @@ export default function PianoRoll({ arrangement, genre }: PianoRollProps) {
 
     // Bar numbers in header
     ctx.fillStyle = "#64748b" // slate-500
-    ctx.font = "10px monospace"
+    ctx.font = compact ? "8px monospace" : "10px monospace"
     ctx.textAlign = "center"
     for (let bar = 1; bar <= totalBars; bar++) {
       const x = LABEL_WIDTH + (bar - 1) * BAR_WIDTH + BAR_WIDTH / 2
       ctx.fillText(`${bar}`, x, HEADER_HEIGHT - 6)
     }
 
-    // Pitch labels on left edge — only C octave markers
-    ctx.textAlign = "right"
-    ctx.font = "9px monospace"
-    for (let midi = minMidi; midi <= maxMidi; midi++) {
-      if (midi % 12 === 0) {
-        const label = midiToPitchLabel(midi)
-        const y = HEADER_HEIGHT + (maxMidi - midi) * ROW_HEIGHT + ROW_HEIGHT - 1
-        ctx.fillStyle = "#94a3b8" // slate-400
-        ctx.fillText(label, LABEL_WIDTH - 4, y)
+    // Pitch labels on left edge — only C octave markers (skip in compact mode)
+    if (!compact) {
+      ctx.textAlign = "right"
+      ctx.font = "9px monospace"
+      for (let midi = minMidi; midi <= maxMidi; midi++) {
+        if (midi % 12 === 0) {
+          const label = midiToPitchLabel(midi)
+          const y = HEADER_HEIGHT + (maxMidi - midi) * ROW_HEIGHT + ROW_HEIGHT - 1
+          ctx.fillStyle = "#94a3b8" // slate-400
+          ctx.fillText(label, LABEL_WIDTH - 4, y)
+        }
       }
     }
 
@@ -143,7 +160,7 @@ export default function PianoRoll({ arrangement, genre }: PianoRollProps) {
     ctx.globalAlpha = voicingOpacity
     for (const ev of voicingEvents) {
       const x = LABEL_WIDTH + (ev.bar + (ev.beat - 1) / 4) * BAR_WIDTH
-      const noteWidth = Math.max(4, (ev.duration_beats / 4) * BAR_WIDTH - 2)
+      const noteWidth = Math.max(compact ? 2 : 4, (ev.duration_beats / 4) * BAR_WIDTH - 2)
 
       for (const pitch of ev.pitches) {
         const midi = pitchToMidi(pitch)
@@ -152,7 +169,7 @@ export default function PianoRoll({ arrangement, genre }: PianoRollProps) {
 
         ctx.fillStyle = "#fbbf24" // amber-400
         ctx.beginPath()
-        ctx.roundRect(x, y, noteWidth, ROW_HEIGHT - 2, 2)
+        ctx.roundRect(x, y, noteWidth, ROW_HEIGHT - 2, compact ? 1 : 2)
         ctx.fill()
       }
     }
@@ -166,17 +183,17 @@ export default function PianoRoll({ arrangement, genre }: PianoRollProps) {
       if (midi < minMidi || midi > maxMidi) continue
       const x = LABEL_WIDTH + (ev.bar + (ev.beat - 1) / 4) * BAR_WIDTH
       const y = HEADER_HEIGHT + (maxMidi - midi) * ROW_HEIGHT + 1
-      const noteWidth = Math.max(4, (ev.duration_beats / 4) * BAR_WIDTH - 2)
+      const noteWidth = Math.max(compact ? 2 : 4, (ev.duration_beats / 4) * BAR_WIDTH - 2)
 
       ctx.fillStyle = "#22d3ee" // cyan-400
       ctx.beginPath()
-      ctx.roundRect(x, y, noteWidth, ROW_HEIGHT - 2, 2)
+      ctx.roundRect(x, y, noteWidth, ROW_HEIGHT - 2, compact ? 1 : 2)
       ctx.fill()
     }
     ctx.globalAlpha = 1.0
 
     // Playback cursor
-    if (playing) {
+    if (showCursor && playing) {
       const cursorX = LABEL_WIDTH + currentPosition * BAR_WIDTH
       ctx.strokeStyle = getAccent(genre)
       ctx.lineWidth = 2
@@ -185,11 +202,11 @@ export default function PianoRoll({ arrangement, genre }: PianoRollProps) {
       ctx.lineTo(cursorX, canvasHeight)
       ctx.stroke()
     }
-  }, [arrangement, currentPosition, playing, mutedTracks, genre, voicingEvents, bassEvents])
+  }, [arrangement, currentPosition, playing, mutedTracks, genre, voicingEvents, bassEvents, BAR_WIDTH, ROW_HEIGHT, compact, showCursor])
 
   // Auto-scroll to keep cursor in view
   useEffect(() => {
-    if (!playing || !containerRef.current) return
+    if (!showCursor || !playing || !containerRef.current) return
     const container = containerRef.current
     const cursorX = LABEL_WIDTH + currentPosition * BAR_WIDTH
     const scrollLeft = container.scrollLeft
@@ -200,11 +217,11 @@ export default function PianoRoll({ arrangement, genre }: PianoRollProps) {
     } else if (cursorX < scrollLeft + 80) {
       container.scrollLeft = cursorX - viewWidth / 2
     }
-  }, [currentPosition, playing])
+  }, [currentPosition, playing, showCursor, BAR_WIDTH])
 
   if (!hasEvents) {
     return (
-      <div className="flex items-center justify-center h-48 bg-slate-900 text-slate-500 text-sm">
+      <div className={`flex items-center justify-center ${compact ? "h-24" : "h-48"} bg-slate-900 text-slate-500 text-sm`}>
         No events to display
       </div>
     )
@@ -214,7 +231,7 @@ export default function PianoRoll({ arrangement, genre }: PianoRollProps) {
     <div
       ref={containerRef}
       className="overflow-x-auto overflow-y-auto bg-slate-900"
-      style={{ maxHeight: "400px" }}
+      style={{ maxHeight: compact ? "150px" : "400px" }}
     >
       <canvas ref={canvasRef} />
     </div>
