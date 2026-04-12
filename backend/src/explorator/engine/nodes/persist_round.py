@@ -9,8 +9,10 @@ from ulid import ULID
 
 from explorator.engine.state import ExplorationState
 from explorator.graph.mutation_record_repo import MutationRecordRepo
+from explorator.graph.provenance_trace_repo import ProvenanceTraceRepo
 from explorator.graph.repository import ProgressionCandidateRepo
 from explorator.graph.search_round_repo import SearchRoundRepo
+from explorator.models.export import ProvenanceTrace
 from explorator.models.search import MutationRecord, SearchRound
 from explorator.utils import utc_now
 
@@ -103,6 +105,26 @@ async def persist_round(state: ExplorationState, *, driver: AsyncDriver) -> dict
             await mr_repo.create(mr)
         except Exception:
             logger.exception("Failed to persist MutationRecord %s", mr_data.get("id"))
+
+    # --- M4b: Persist provenance events ---
+    provenance_events = state.get("provenance_events", [])
+    if provenance_events:
+        try:
+            prov_repo = ProvenanceTraceRepo(driver)
+            existing_trace = await prov_repo.get_by_session_id(session_id)
+            if existing_trace:
+                await prov_repo.append_events(existing_trace["id"], provenance_events)
+            else:
+                new_trace = ProvenanceTrace(
+                    id=f"pt_{ULID()}",
+                    type="provenance_trace",
+                    status="active",
+                    session_id=session_id,
+                    events=provenance_events,
+                )
+                await prov_repo.create(new_trace)
+        except Exception:
+            logger.exception("Failed to persist provenance events")
 
     if callback:
         top_score = max(
