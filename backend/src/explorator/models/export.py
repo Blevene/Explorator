@@ -1,10 +1,21 @@
 """Presentation and export models."""
 
+from datetime import datetime
 from typing import Any
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from explorator.models.base import BaseEntity
+
+
+class ProvenanceEvent(BaseModel):
+    """Single event in a provenance timeline."""
+
+    timestamp: datetime
+    action: str
+    object_id: str
+    round_number: int | None = None
+    details: dict[str, Any] = Field(default_factory=dict)
 
 
 class ProvenanceTrace(BaseEntity):
