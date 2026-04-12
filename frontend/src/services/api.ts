@@ -226,3 +226,28 @@ export async function listExportPackages(sessionId: string): Promise<ExportPacka
 export function getArtifactDownloadUrl(packageId: string, artifactId: string): string {
   return `${API_BASE}/exports/${packageId}/artifacts/${artifactId}/download`;
 }
+
+// --- M4b Explanation Types ---
+
+export interface CandidateExplanation {
+  summary: string;
+  why_it_works: string[];
+  what_is_experimental: string[];
+  recommended_use_cases: string[];
+}
+
+export async function generateExplanation(candidateId: string): Promise<CandidateExplanation> {
+  const res = await fetch(`${API_BASE}/candidates/${candidateId}/explain`, {
+    method: 'POST',
+  });
+  if (res.status === 504) throw new Error('Explanation generation timed out. Try again.');
+  if (!res.ok) throw new Error(`Explanation failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function getCachedExplanation(candidateId: string): Promise<CandidateExplanation | null> {
+  const res = await fetch(`${API_BASE}/candidates/${candidateId}/explanation`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Failed to get explanation: ${res.statusText}`);
+  return res.json();
+}

@@ -1,4 +1,6 @@
-import type { ArrangementSummary } from "../services/api"
+import { useState } from "react"
+import type { ArrangementSummary, CandidateExplanation } from "../services/api"
+import { generateExplanation } from "../services/api"
 
 interface ArrangementCardProps {
   arrangement: ArrangementSummary
@@ -40,6 +42,32 @@ export default function ArrangementCard({
   const badges = parseBadges(arrangement.rationale)
   const accentBorder = getAccentBorder(genre)
 
+  const [explanation, setExplanation] = useState<CandidateExplanation | null>(null)
+  const [explaining, setExplaining] = useState(false)
+  const [explainError, setExplainError] = useState<string | null>(null)
+  const [showExplanation, setShowExplanation] = useState(false)
+
+  const handleExplain = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+
+    if (explanation) {
+      setShowExplanation(!showExplanation)
+      return
+    }
+
+    setExplaining(true)
+    setExplainError(null)
+    try {
+      const result = await generateExplanation(arrangement.id)
+      setExplanation(result)
+      setShowExplanation(true)
+    } catch (err) {
+      setExplainError(err instanceof Error ? err.message : "Failed to generate explanation")
+    } finally {
+      setExplaining(false)
+    }
+  }
+
   return (
     <div
       onClick={onClick}
@@ -75,6 +103,71 @@ export default function ArrangementCard({
         </div>
       ) : (
         <p className="text-slate-500 text-xs truncate">{arrangement.rationale}</p>
+      )}
+
+      {/* Explain button */}
+      {!isRejected && (
+        <button
+          onClick={handleExplain}
+          disabled={explaining}
+          className="mt-2 text-xs px-2 py-1 rounded border border-slate-600 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-colors disabled:opacity-50"
+        >
+          {explaining ? (
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 border border-slate-400 border-t-transparent rounded-full animate-spin" />
+              Generating...
+            </span>
+          ) : explanation ? (
+            showExplanation ? "Hide explanation" : "Show explanation"
+          ) : (
+            "Explain"
+          )}
+        </button>
+      )}
+
+      {/* Explain error */}
+      {explainError && (
+        <p className="mt-1 text-xs text-rose-400">{explainError}</p>
+      )}
+
+      {/* Explanation display */}
+      {showExplanation && explanation && (
+        <div className="mt-2 pt-2 border-t border-slate-700 text-xs space-y-2">
+          <p className="text-slate-300 italic">{explanation.summary}</p>
+
+          {explanation.why_it_works.length > 0 && (
+            <div>
+              <span className="text-emerald-400 font-medium">Why it works:</span>
+              <ul className="list-disc list-inside text-slate-400 mt-0.5">
+                {explanation.why_it_works.map((item, i) => (
+                  <li key={i}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {explanation.what_is_experimental.length > 0 && (
+            <div>
+              <span className="text-amber-400 font-medium">Experimental:</span>
+              <ul className="list-disc list-inside text-slate-400 mt-0.5">
+                {explanation.what_is_experimental.map((item, i) => (
+                  <li key={i}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {explanation.recommended_use_cases.length > 0 && (
+            <div>
+              <span className="text-sky-400 font-medium">Use cases:</span>
+              <ul className="list-disc list-inside text-slate-400 mt-0.5">
+                {explanation.recommended_use_cases.map((item, i) => (
+                  <li key={i}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
