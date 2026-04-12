@@ -186,3 +186,43 @@ export interface FinalSelection {
   selection_roles: Record<string, string>;
   selection_notes: string[];
 }
+
+// --- M4a Export Types ---
+
+export interface ExportArtifact {
+  id: string;
+  filename: string;
+  artifact_type: string;
+}
+
+export interface ExportPackage {
+  id: string;
+  session_id: string;
+  included_candidate_ids: string[];
+  formats: string[];
+  artifacts: ExportArtifact[];
+}
+
+export async function createExportPackage(
+  sessionId: string,
+  arrangementCandidateIds: string[],
+  formats: string[],
+): Promise<ExportPackage> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/export`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ arrangement_candidate_ids: arrangementCandidateIds, formats }),
+  });
+  if (!res.ok) throw new Error(`Export failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function listExportPackages(sessionId: string): Promise<ExportPackage[]> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/exports`);
+  if (!res.ok) throw new Error(`Failed to list exports: ${res.statusText}`);
+  return res.json();
+}
+
+export function getArtifactDownloadUrl(packageId: string, artifactId: string): string {
+  return `${API_BASE}/exports/${packageId}/artifacts/${artifactId}/download`;
+}
