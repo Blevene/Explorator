@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react"
 import type { ArrangementDetail } from "../services/api"
 import { pitchToMidi, midiToPitchLabel } from "../services/midiUtils"
 import { useAudioStore } from "../stores/audioStore"
+import { CANVAS_COLORS } from "../utils/designTokens"
 
 interface PianoRollProps {
   arrangement: ArrangementDetail
@@ -17,15 +18,9 @@ const COMPACT_ROW_HEIGHT = 4
 const LABEL_WIDTH = 48
 const HEADER_HEIGHT = 24
 
-const GENRE_ACCENT: Record<string, string> = {
-  dream_pop: "#a78bfa",
-  synthwave: "#f472b6",
-  cinematic: "#eab308",
-}
-
 function getAccent(genre: string): string {
   const key = genre.toLowerCase().replace(/[\s-]/g, "_")
-  return GENRE_ACCENT[key] ?? GENRE_ACCENT["dream_pop"]
+  return CANVAS_COLORS.genreAccent[key] ?? CANVAS_COLORS.voicingNote
 }
 
 function collectMidiValues(arrangement: ArrangementDetail): number[] {
@@ -93,7 +88,7 @@ export default function PianoRoll({
     ctx.scale(dpr, dpr)
 
     // Background
-    ctx.fillStyle = "#0f172a" // slate-900
+    ctx.fillStyle = CANVAS_COLORS.background
     ctx.fillRect(0, 0, canvasWidth, canvasHeight)
 
     // Draw horizontal pitch rows (alternating subtle bg for black keys)
@@ -103,7 +98,7 @@ export default function PianoRoll({
       const y = HEADER_HEIGHT + (maxMidi - midi) * ROW_HEIGHT
 
       if (isBlackKey) {
-        ctx.fillStyle = "#1e293b" // slate-800 subtle
+        ctx.fillStyle = CANVAS_COLORS.gridLine
         ctx.fillRect(LABEL_WIDTH, y, totalBars * BAR_WIDTH, ROW_HEIGHT)
       }
     }
@@ -114,11 +109,11 @@ export default function PianoRoll({
         const x = LABEL_WIDTH + bar * BAR_WIDTH + beat * (BAR_WIDTH / 4)
         if (beat === 0) {
           // Bar line
-          ctx.strokeStyle = "#334155" // slate-700
+          ctx.strokeStyle = CANVAS_COLORS.barLine
           ctx.lineWidth = 1
         } else {
           // Beat line
-          ctx.strokeStyle = "#1e293b" // slate-800
+          ctx.strokeStyle = CANVAS_COLORS.gridLine
           ctx.lineWidth = 0.5
         }
         ctx.beginPath()
@@ -129,11 +124,11 @@ export default function PianoRoll({
     }
 
     // Header background
-    ctx.fillStyle = "#0f172a"
+    ctx.fillStyle = CANVAS_COLORS.headerBg
     ctx.fillRect(0, 0, canvasWidth, HEADER_HEIGHT)
 
     // Bar numbers in header
-    ctx.fillStyle = "#64748b" // slate-500
+    ctx.fillStyle = CANVAS_COLORS.headerText
     ctx.font = compact ? "8px monospace" : "10px monospace"
     ctx.textAlign = "center"
     for (let bar = 1; bar <= totalBars; bar++) {
@@ -149,7 +144,7 @@ export default function PianoRoll({
         if (midi % 12 === 0) {
           const label = midiToPitchLabel(midi)
           const y = HEADER_HEIGHT + (maxMidi - midi) * ROW_HEIGHT + ROW_HEIGHT - 1
-          ctx.fillStyle = "#94a3b8" // slate-400
+          ctx.fillStyle = CANVAS_COLORS.labelText
           ctx.fillText(label, LABEL_WIDTH - 4, y)
         }
       }
@@ -167,7 +162,7 @@ export default function PianoRoll({
         if (midi < minMidi || midi > maxMidi) continue
         const y = HEADER_HEIGHT + (maxMidi - midi) * ROW_HEIGHT + 1
 
-        ctx.fillStyle = "#fbbf24" // amber-400
+        ctx.fillStyle = CANVAS_COLORS.voicingNote
         ctx.beginPath()
         ctx.roundRect(x, y, noteWidth, ROW_HEIGHT - 2, compact ? 1 : 2)
         ctx.fill()
@@ -185,7 +180,7 @@ export default function PianoRoll({
       const y = HEADER_HEIGHT + (maxMidi - midi) * ROW_HEIGHT + 1
       const noteWidth = Math.max(compact ? 2 : 4, (ev.duration_beats / 4) * BAR_WIDTH - 2)
 
-      ctx.fillStyle = "#22d3ee" // cyan-400
+      ctx.fillStyle = CANVAS_COLORS.bassNote
       ctx.beginPath()
       ctx.roundRect(x, y, noteWidth, ROW_HEIGHT - 2, compact ? 1 : 2)
       ctx.fill()
@@ -221,7 +216,10 @@ export default function PianoRoll({
 
   if (!hasEvents) {
     return (
-      <div className={`flex items-center justify-center ${compact ? "h-24" : "h-48"} bg-slate-900 text-slate-500 text-sm`}>
+      <div
+        className={`flex items-center justify-center ${compact ? "h-24" : "h-48"} text-sm`}
+        style={{ background: 'var(--surface-1)', color: 'var(--text-muted)' }}
+      >
         No events to display
       </div>
     )
@@ -230,8 +228,8 @@ export default function PianoRoll({
   return (
     <div
       ref={containerRef}
-      className="overflow-x-auto overflow-y-auto bg-slate-900"
-      style={{ maxHeight: compact ? "150px" : "400px" }}
+      className="overflow-x-auto overflow-y-auto"
+      style={{ background: 'var(--surface-1)', maxHeight: compact ? "150px" : "400px" }}
     >
       <canvas ref={canvasRef} />
     </div>
