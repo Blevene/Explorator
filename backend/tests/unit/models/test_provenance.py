@@ -82,6 +82,7 @@ from neo4j import AsyncDriver
 from explorator.graph.provenance_trace_repo import ProvenanceTraceRepo
 
 
+@pytest.mark.skip(reason="Integration tests — require live Neo4j connection")
 class TestProvenanceTraceRepo:
     """Integration tests for ProvenanceTraceRepo (requires Neo4j)."""
 
