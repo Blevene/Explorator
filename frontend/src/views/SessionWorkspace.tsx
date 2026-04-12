@@ -282,7 +282,11 @@ export default function SessionWorkspace() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {sortedCandidates.map((c, i) => (
-                  <div key={c.candidate_id} style={{ opacity: dismissedIds.has(c.candidate_id) ? 0.35 : 1 }}>
+                  <div
+                    key={c.candidate_id}
+                    className="card-animated"
+                    style={{ opacity: dismissedIds.has(c.candidate_id) ? 0.35 : 1, animationDelay: `${i * 50}ms` }}
+                  >
                     <div className="relative">
                       {/* Comparison checkbox */}
                       {!dismissedIds.has(c.candidate_id) && (
