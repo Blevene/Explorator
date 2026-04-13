@@ -151,8 +151,12 @@ export default function SessionWorkspace() {
               fetchPackages(id!);
               setShowExportModal(true);
             }}
-            className="rounded border border-[var(--border)] px-3 py-1 text-sm hover:bg-[var(--surface-2)]"
-            style={{ color: 'var(--text-secondary)' }}
+            className="rounded border px-3 py-1 text-sm transition-colors"
+            style={{
+              color: viewMode === 'realization' ? 'var(--accent-primary)' : 'var(--text-muted)',
+              borderColor: viewMode === 'realization' ? 'var(--accent-primary-dim)' : 'var(--border-default)',
+            }}
+            title={viewMode === 'generation' ? 'View arrangements first to export MIDI' : 'Export arrangements as MIDI/JSON'}
           >
             Export
           </button>
@@ -361,11 +365,21 @@ export default function SessionWorkspace() {
         />
       )}
 
-      {/* Export modal */}
+      {/* Export modal — shows arrangements when in realization view, progressions otherwise */}
       {showExportModal && (
         <ExportModal
           sessionId={id!}
           candidates={(() => {
+            if (viewMode === 'realization' && arrangementStore.arrangements.length > 0) {
+              // In arrangement view: export the actual arrangements (which have voicing + bass data)
+              return arrangementStore.arrangements.map((a, i) => ({
+                id: a.id,
+                label: `Arrangement ${i + 1}`,
+                role: a.status === 'selected' ? 'best' : '',
+                chords: [a.rationale],
+              }));
+            }
+            // In generation view: show progression candidates (export needs arrangements though)
             const finalSelection = useCandidateStore.getState().finalSelection;
             const roles = finalSelection?.selection_roles ?? {};
             return candidates.map((c, i) => ({
