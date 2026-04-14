@@ -10,6 +10,10 @@ interface PianoRollProps {
   compact?: boolean
   showCursor?: boolean
   barWidth?: number
+  dimmed?: boolean
+  currentPosition?: number
+  playing?: boolean
+  totalBars?: number
 }
 
 const DEFAULT_BAR_WIDTH = 90 // Fit 8-bar progressions in ~720px + labels
@@ -40,12 +44,19 @@ export default function PianoRoll({
   compact = false,
   showCursor = true,
   barWidth: barWidthProp,
+  dimmed = false,
+  currentPosition: currentPositionProp,
+  playing: playingProp,
+  totalBars: totalBarsProp,
 }: PianoRollProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Always call useAudioStore (Rules of Hooks); ignore cursor values when showCursor=false
-  const { playing, currentPosition, mutedTracks } = useAudioStore()
+  const audioStoreState = useAudioStore()
+  const playing = playingProp ?? audioStoreState.playing
+  const currentPosition = currentPositionProp ?? audioStoreState.currentPosition
+  const { mutedTracks } = audioStoreState
 
   const BAR_WIDTH = barWidthProp ?? DEFAULT_BAR_WIDTH
   const ROW_HEIGHT = compact ? COMPACT_ROW_HEIGHT : DEFAULT_ROW_HEIGHT
@@ -74,7 +85,8 @@ export default function PianoRoll({
       ...voicingEvents.map((e) => e.bar + Math.ceil(e.duration_beats / 4)),
       ...bassEvents.map((e) => e.bar + Math.ceil(e.duration_beats / 4)),
     ]
-    const totalBars = allBars.length > 0 ? Math.max(...allBars) : 8
+    const computedBars = allBars.length > 0 ? Math.max(...allBars) : 8
+    const totalBars = totalBarsProp ?? computedBars
 
     const rows = maxMidi - minMidi + 1
     const canvasWidth = LABEL_WIDTH + totalBars * BAR_WIDTH
@@ -196,7 +208,7 @@ export default function PianoRoll({
       ctx.lineTo(cursorX, canvasHeight)
       ctx.stroke()
     }
-  }, [arrangement, currentPosition, playing, mutedTracks, genre, voicingEvents, bassEvents, BAR_WIDTH, ROW_HEIGHT, compact, showCursor])
+  }, [arrangement, currentPosition, playing, mutedTracks, genre, voicingEvents, bassEvents, BAR_WIDTH, ROW_HEIGHT, compact, showCursor, totalBarsProp])
 
   // Auto-scroll to keep cursor in view
   useEffect(() => {
@@ -228,7 +240,12 @@ export default function PianoRoll({
     <div
       ref={containerRef}
       className="overflow-x-auto overflow-y-auto"
-      style={{ background: 'var(--surface-1)', maxHeight: compact ? "220px" : "400px" }}
+      style={{
+        background: 'var(--surface-1)',
+        maxHeight: compact ? "220px" : "400px",
+        opacity: dimmed ? 0.2 : 1,
+        transition: "opacity 150ms ease",
+      }}
     >
       <canvas ref={canvasRef} />
     </div>
