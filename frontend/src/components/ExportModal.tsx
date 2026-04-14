@@ -276,14 +276,14 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
                 Export history ({packages.length})
               </summary>
               <div className="flex flex-col gap-2 mt-2">
-                {[...packages].reverse().map((pkg) => (
+                {[...packages].reverse().filter(pkg => pkg?.id).map((pkg) => (
                   <div
                     key={pkg.id}
                     className="rounded-lg p-2"
                     style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)" }}
                   >
                     <div className="font-mono" style={{ color: "var(--text-muted)" }}>
-                      {pkg.id.slice(0, 8)}… — {(pkg.artifacts ?? []).length} file{(pkg.artifacts ?? []).length !== 1 ? "s" : ""}
+                      {(pkg.id ?? "").slice(0, 8)}… — {(pkg.artifacts ?? []).length} file{(pkg.artifacts ?? []).length !== 1 ? "s" : ""}
                     </div>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {(pkg.artifacts ?? []).map((artifact) => (
