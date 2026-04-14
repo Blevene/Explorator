@@ -142,7 +142,7 @@ export default function SessionWorkspace() {
   useEffect(() => {
     if (showComparison && selectedForComparison.length >= 2) {
       loadComparisonArrangements(selectedForComparison);
-    } else if (showComparison && selectedForComparison.length < 2) {
+    } else if (showComparison && selectedForComparison.length < 1) {
       setShowComparison(false);
     }
   }, [selectedForComparison.join(',')]);
