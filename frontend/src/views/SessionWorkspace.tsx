@@ -111,9 +111,15 @@ export default function SessionWorkspace() {
     if (err) generation.setError(err);
   };
 
-  const handleCompare = async () => {
+  const loadComparisonArrangements = async (ids: string[]) => {
     const loaded = new Map<string, ArrangementDetail>();
-    for (const candidateId of selectedForComparison) {
+    for (const candidateId of ids) {
+      // Reuse already-loaded arrangements to avoid redundant fetches
+      const existing = comparisonArrangements.get(candidateId);
+      if (existing) {
+        loaded.set(candidateId, existing);
+        continue;
+      }
       try {
         const summaries = await listArrangements(candidateId);
         if (summaries.length > 0) {
@@ -125,8 +131,21 @@ export default function SessionWorkspace() {
       }
     }
     setComparisonArrangements(loaded);
+  };
+
+  const handleCompare = async () => {
+    await loadComparisonArrangements(selectedForComparison);
     setShowComparison(true);
   };
+
+  // Auto-refresh comparison view when selections change while it's open
+  useEffect(() => {
+    if (showComparison && selectedForComparison.length >= 2) {
+      loadComparisonArrangements(selectedForComparison);
+    } else if (showComparison && selectedForComparison.length < 2) {
+      setShowComparison(false);
+    }
+  }, [selectedForComparison.join(',')]);
 
   return (
     <div data-testid="session-workspace" className="max-w-6xl mx-auto p-8 flex flex-col gap-5">

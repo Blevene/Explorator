@@ -104,27 +104,18 @@ export default function ComparisonView({
         <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
           Comparing {comparedArrangements.length} candidates
         </span>
-        <div className="flex gap-2">
-          <button
-            onClick={onClose}
-            className="text-xs transition-colors"
-            style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
-          >
-            Close
-          </button>
-          <button
-            onClick={() => {
-              clearComparison()
-              onClose()
-            }}
-            className="text-xs transition-colors"
-            style={{ color: 'var(--score-low)' }}
-          >
-            Clear
-          </button>
-        </div>
+        <button
+          onClick={() => {
+            clearComparison()
+            onClose()
+          }}
+          className="text-xs transition-colors"
+          style={{ color: 'var(--text-muted)' }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+        >
+          Close
+        </button>
       </div>
 
       {/* Stacked piano rolls */}
