@@ -10,6 +10,7 @@ import { useAudioStore } from "../stores/audioStore"
 import { ensureTone, resetTone, normalizePitch, normalizePitches } from "./audioUtils"
 import type { ToneModule } from "./audioUtils"
 import { getPreset, buildPolySynth, buildMonoSynth } from "./audioPresets"
+import * as comparisonAudioEngine from "./comparisonAudioEngine"
 
 // ---------------------------------------------------------------------------
 // Module-level engine state
@@ -127,6 +128,7 @@ export async function play(
   tempo: number,
   genre: string,
 ): Promise<void> {
+  comparisonAudioEngine.stop()
   Tone = await ensureTone()
   const T = Tone
   const transport = T.getTransport()
