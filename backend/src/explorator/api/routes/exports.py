@@ -260,11 +260,11 @@ async def create_export(
 
             all_artifact_ids.append(artifact_id)
             all_artifact_meta.append({
-                "artifact_id": artifact_id,
+                "id": artifact_id,
+                "artifact_id": artifact_id,  # backwards compat
                 "arrangement_candidate_id": ac_id,
                 "artifact_type": meta["artifact_type"],
                 "filename": meta["filename"],
-                "path": meta["path"],
             })
 
     # Create ExportPackage node
@@ -315,9 +315,11 @@ async def create_export(
             )
 
     return {
-        "package_id": package_id,
+        "id": package_id,
+        "package_id": package_id,  # backwards compat
         "session_id": session_id,
         "formats": body.formats,
+        "included_candidate_ids": body.arrangement_candidate_ids,
         "artifact_count": len(all_artifact_ids),
         "artifacts": all_artifact_meta,
     }
