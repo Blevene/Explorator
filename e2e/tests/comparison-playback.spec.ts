@@ -29,8 +29,8 @@ async function openComparison(page: import('@playwright/test').Page, count = 2) 
   const compareHeader = page.getByRole('button', { name: /compare \d+ candidates/i })
   await compareHeader.click()
 
-  // Wait for comparison view to render
-  await expect(page.locator('text=COMPARING')).toBeVisible({ timeout: 15_000 })
+  // Wait for comparison view to render (arrangements load async from API)
+  await expect(page.locator('text=COMPARING')).toBeVisible({ timeout: 30_000 })
 }
 
 test.describe('Comparison Playback (M4c)', () => {
