@@ -1,0 +1,66 @@
+import { useComparisonAudioStore } from "../stores/comparisonAudioStore"
+
+interface LaneSidebarProps {
+  candidateId: string
+  label: string
+  score: number
+  audible: boolean
+}
+
+export default function LaneSidebar({ candidateId, label, score, audible }: LaneSidebarProps) {
+  const { mutedLanes, soloedLanes, toggleMute, toggleSolo } = useComparisonAudioStore()
+
+  const isSoloed = !!soloedLanes[candidateId]
+  const isMuted = !!mutedLanes[candidateId]
+
+  return (
+    <div
+      className="w-[72px] flex-shrink-0 flex flex-col items-center justify-center py-2 gap-1.5"
+      style={{
+        background: "var(--surface-2)",
+        borderRight: "1px solid var(--border-subtle)",
+        opacity: audible ? 1 : 0.2,
+        transition: "opacity 150ms ease",
+      }}
+    >
+      {/* Candidate label */}
+      <div
+        className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm"
+        style={{ background: "var(--accent-primary)", color: "#fff" }}
+      >
+        {label}
+      </div>
+
+      {/* Score */}
+      <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+        {score.toFixed(1)}
+      </span>
+
+      {/* Solo / Mute buttons */}
+      <div className="flex gap-1">
+        <button
+          onClick={(e) => { e.stopPropagation(); toggleSolo(candidateId) }}
+          title={isSoloed ? "Unsolo" : "Solo"}
+          className="w-[22px] h-[18px] rounded-sm text-[9px] font-bold border-none cursor-pointer"
+          style={{
+            background: isSoloed ? "#eab308" : "var(--surface-3)",
+            color: isSoloed ? "#0f172a" : "var(--text-muted)",
+          }}
+        >
+          S
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); toggleMute(candidateId) }}
+          title={isMuted ? "Unmute" : "Mute"}
+          className="w-[22px] h-[18px] rounded-sm text-[9px] font-bold border-none cursor-pointer"
+          style={{
+            background: isMuted ? "#ef4444" : "var(--surface-3)",
+            color: isMuted ? "#fff" : "var(--text-muted)",
+          }}
+        >
+          M
+        </button>
+      </div>
+    </div>
+  )
+}
