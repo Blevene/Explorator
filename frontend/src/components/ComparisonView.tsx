@@ -139,7 +139,7 @@ export default function ComparisonView({
                 genre={genre}
                 compact
                 showCursor={false}
-                barWidth={70}
+                barWidth={90}
               />
             </div>
           </div>

@@ -14,7 +14,7 @@ interface PianoRollProps {
 
 const DEFAULT_BAR_WIDTH = 90 // Fit 8-bar progressions in ~720px + labels
 const DEFAULT_ROW_HEIGHT = 8
-const COMPACT_ROW_HEIGHT = 4
+const COMPACT_ROW_HEIGHT = 6
 const LABEL_WIDTH = 48
 const HEADER_HEIGHT = 24
 
@@ -229,7 +229,7 @@ export default function PianoRoll({
     <div
       ref={containerRef}
       className="overflow-x-auto overflow-y-auto"
-      style={{ background: 'var(--surface-1)', maxHeight: compact ? "150px" : "400px" }}
+      style={{ background: 'var(--surface-1)', maxHeight: compact ? "220px" : "400px" }}
     >
       <canvas ref={canvasRef} />
     </div>
