@@ -7,6 +7,8 @@
 
 import type { ArrangementDetail } from "./api"
 import { useAudioStore } from "../stores/audioStore"
+import { ensureTone, resetTone, normalizePitch, normalizePitches } from "./audioUtils"
+import type { ToneModule } from "./audioUtils"
 
 // ---------------------------------------------------------------------------
 // Genre presets
@@ -68,10 +70,7 @@ function deepMerge<T extends Record<string, unknown>>(base: T, override: Partial
 // Module-level engine state
 // ---------------------------------------------------------------------------
 
-// Tone types (resolved after lazy import)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ToneModule = typeof import("tone") & Record<string, any>
-
+// Cached Tone reference — set after first ensureTone() call in play()
 let Tone: ToneModule | null = null
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -84,30 +83,6 @@ let voicingVol: any | null = null
 let bassVol: any | null = null
 
 let rafId: number | null = null
-let isInitialised = false
-
-// ---------------------------------------------------------------------------
-// Lazy-load + initialise Tone on first user gesture
-// ---------------------------------------------------------------------------
-
-async function ensureTone(): Promise<ToneModule> {
-  if (!Tone) {
-    try {
-      Tone = (await import("tone")) as ToneModule
-    } catch {
-      throw new Error("Failed to load audio library. Your browser may not support Web Audio.")
-    }
-  }
-  if (!isInitialised) {
-    try {
-      await Tone.start()
-      isInitialised = true
-    } catch {
-      throw new Error("Audio context blocked. Click the page first to enable audio playback.")
-    }
-  }
-  return Tone
-}
 
 // ---------------------------------------------------------------------------
 // Build synths with genre preset merged over defaults
@@ -158,18 +133,6 @@ function stopPositionTracking(): void {
     cancelAnimationFrame(rafId)
     rafId = null
   }
-}
-
-// ---------------------------------------------------------------------------
-// Pitch normalization — music21 uses "-" for flat (e.g. "E-3"), Tone.js expects "b" (e.g. "Eb3")
-// ---------------------------------------------------------------------------
-
-function normalizePitch(pitch: string): string {
-  return pitch.replace("-", "b")
-}
-
-function normalizePitches(pitches: string[]): string[] {
-  return pitches.map(normalizePitch)
 }
 
 // ---------------------------------------------------------------------------
@@ -243,7 +206,8 @@ export async function play(
   tempo: number,
   genre: string,
 ): Promise<void> {
-  const T = await ensureTone()
+  Tone = await ensureTone()
+  const T = Tone
   const transport = T.getTransport()
   const store = useAudioStore.getState()
 
@@ -358,6 +322,6 @@ export function setVolume(db: number): void {
 export function dispose(): void {
   stop()
   teardownNodes()
-  isInitialised = false
+  resetTone()
   Tone = null
 }
