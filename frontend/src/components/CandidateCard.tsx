@@ -8,6 +8,8 @@ interface CandidateCardProps {
   onRealize?: (candidateId: string) => void;
   onMutate?: (candidateId: string) => void;
   onDismiss?: (candidateId: string) => void;
+  onCompare?: (candidateId: string) => void;
+  isSelectedForComparison?: boolean;
 }
 
 const LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
@@ -86,7 +88,7 @@ function MutationLog({ parentChords, ops, onDismiss }: { parentChords: string[];
   );
 }
 
-export default function CandidateCard({ candidate, index, onClick, onRealize, onMutate, onDismiss }: CandidateCardProps) {
+export default function CandidateCard({ candidate, index, onClick, onRealize, onMutate, onDismiss, onCompare, isSelectedForComparison }: CandidateCardProps) {
   const label = LABELS[index] || `#${index + 1}`;
   const score = candidate.weighted_total;
   const parentChords = candidate.metadata?.parent_chord_symbols as string[] | undefined;
@@ -191,6 +193,19 @@ export default function CandidateCard({ candidate, index, onClick, onRealize, on
           style={{ background: 'var(--accent-secondary-dim)', color: 'var(--accent-secondary)' }}
         >
           Mutate
+        </button>
+      )}
+      {onCompare && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onCompare(candidate.candidate_id) }}
+          className="w-full py-1.5 text-xs font-medium rounded-md transition-colors"
+          style={{
+            background: isSelectedForComparison ? 'var(--role-experimental)' : 'var(--surface-3)',
+            color: isSelectedForComparison ? '#fff' : 'var(--text-muted)',
+            border: `1px solid ${isSelectedForComparison ? 'var(--role-experimental)' : 'var(--border-default)'}`,
+          }}
+        >
+          {isSelectedForComparison ? '✓ Selected for Compare' : 'Compare'}
         </button>
       )}
     </div>

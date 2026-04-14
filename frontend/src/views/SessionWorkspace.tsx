@@ -291,24 +291,7 @@ export default function SessionWorkspace() {
                     className="card-animated"
                     style={{ opacity: dismissedIds.has(c.candidate_id) ? 0.35 : 1, animationDelay: `${i * 50}ms` }}
                   >
-                    <div className="relative">
-                      {/* Comparison checkbox */}
-                      {!dismissedIds.has(c.candidate_id) && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); toggleComparison(c.candidate_id); }}
-                          className="absolute top-2 right-2 z-10 w-5 h-5 rounded flex items-center justify-center text-xs transition-colors"
-                          style={{
-                            background: selectedForComparison.includes(c.candidate_id)
-                              ? 'var(--role-experimental)'
-                              : 'var(--surface-3)',
-                            border: `1px solid ${selectedForComparison.includes(c.candidate_id) ? 'var(--role-experimental)' : 'var(--border-default)'}`,
-                            color: selectedForComparison.includes(c.candidate_id) ? '#fff' : 'var(--text-muted)',
-                          }}
-                          title={selectedForComparison.includes(c.candidate_id) ? 'Remove from comparison' : 'Add to comparison'}
-                        >
-                          {selectedForComparison.includes(c.candidate_id) ? '\u2713' : '+'}
-                        </button>
-                      )}
+                    <div>
                       <CandidateCard
                         candidate={c}
                         index={i}
@@ -316,6 +299,8 @@ export default function SessionWorkspace() {
                         onMutate={dismissedIds.has(c.candidate_id) ? undefined : mutation.openModal}
                         onDismiss={c.metadata?.mutated_from ? handleDismiss : undefined}
                         onClick={dismissedIds.has(c.candidate_id) ? undefined : () => handleRealize(c.candidate_id)}
+                        onCompare={dismissedIds.has(c.candidate_id) ? undefined : toggleComparison}
+                        isSelectedForComparison={selectedForComparison.includes(c.candidate_id)}
                       />
                     </div>
                   </div>
