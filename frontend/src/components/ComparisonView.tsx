@@ -9,6 +9,7 @@ interface ComparisonViewProps {
   sessionId: string
   genre: string
   arrangements: Map<string, ArrangementDetail>
+  candidateLabels: Record<string, string>
   onClose: () => void
 }
 
@@ -36,6 +37,7 @@ export default function ComparisonView({
   sessionId,
   genre,
   arrangements,
+  candidateLabels,
   onClose,
 }: ComparisonViewProps) {
   const { selectedForComparison, clearComparison } = useCandidateStore()
@@ -130,7 +132,7 @@ export default function ComparisonView({
               style={{ background: 'var(--surface-2)', borderRight: '1px solid var(--border-subtle)' }}
             >
               <span className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                {String.fromCharCode(65 + i)}
+                {candidateLabels[candidateIds[i]] ?? String.fromCharCode(65 + i)}
               </span>
               <span className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                 {(a.scorecard?.weighted_total ?? a.weighted_total ?? 0).toFixed(1)}
@@ -173,7 +175,7 @@ export default function ComparisonView({
                       className="font-mono"
                       style={{ color: scoreColorVar(score), fontWeight: isLeader ? 700 : 400, opacity: isLeader ? 1 : 0.7 }}
                     >
-                      {String.fromCharCode(65 + i)}: {score.toFixed(1)}
+                      {candidateLabels[candidateIds[i]] ?? String.fromCharCode(65 + i)}: {score.toFixed(1)}
                     </span>
                   )
                 })}

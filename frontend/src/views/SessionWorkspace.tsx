@@ -335,6 +335,9 @@ export default function SessionWorkspace() {
               sessionId={id!}
               genre={session?.genre || 'dream_pop'}
               arrangements={comparisonArrangements}
+              candidateLabels={Object.fromEntries(
+                sortedCandidates.map((c, i) => [c.candidate_id, String.fromCharCode(65 + i)])
+              )}
               onClose={() => setShowComparison(false)}
             />
           )}
