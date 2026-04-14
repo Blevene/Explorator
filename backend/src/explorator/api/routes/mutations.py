@@ -71,8 +71,19 @@ async def trigger_mutation(
                     await channel.send("mutation_error", {"error": f"Candidate {cid} not found"})
                     continue
 
-                chord_symbols = candidate.get("chord_symbols", [])
-                scores = candidate.get("metadata", {}).get("scores", {})
+                # chord_symbols on the Neo4j node is always empty —
+                # the actual symbols live inside chord_events[].symbol
+                raw_events = candidate.get("chord_events", [])
+                if isinstance(raw_events, str):
+                    import json as _json
+                    try:
+                        raw_events = _json.loads(raw_events)
+                    except (ValueError, TypeError):
+                        raw_events = []
+                chord_symbols = [
+                    e.get("symbol", "") for e in raw_events if isinstance(e, dict)
+                ] or candidate.get("chord_symbols", [])
+                scores = parse_json_or_dict(candidate.get("metadata", {})).get("scores", {})
 
                 response = await mutator.mutate_harmonic(
                     chord_symbols=chord_symbols,
