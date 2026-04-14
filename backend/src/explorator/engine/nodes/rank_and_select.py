@@ -150,7 +150,10 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
     m1_scores_lookup: dict[str, dict[str, float]] = {}
     for pc_data in progression_candidates_raw:
         pc_id = pc_data.get("id", "")
-        raw_scores = pc_data.get("metadata", {}).get("scores", {})
+        meta = parse_json_or_dict(pc_data.get("metadata", {}))
+        raw_scores = meta.get("scores", {})
+        if isinstance(raw_scores, str):
+            raw_scores = parse_json_or_dict(raw_scores)
         if isinstance(raw_scores, dict):
             m1_scores_lookup[pc_id] = raw_scores
 
