@@ -50,15 +50,7 @@ test.describe('Comparison Playback (M4c)', () => {
 
     await openComparison(page, 2)
 
-    // Lane sidebars render with S and M buttons
-    const soloButtons = page.getByRole('button', { name: 'Solo', exact: true }).or(
-      page.getByRole('button', { name: /^S$/ })
-    )
-    const muteButtons = page.getByRole('button', { name: 'Mute', exact: true }).or(
-      page.getByRole('button', { name: /^M$/ })
-    )
-
-    // Should have 2 of each (one per lane)
+    // S and M buttons visible (one per lane)
     await expect(page.locator('button:text("S")').first()).toBeVisible()
     await expect(page.locator('button:text("M")').first()).toBeVisible()
 
