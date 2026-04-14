@@ -1,5 +1,6 @@
-# Superpowers brainstorm sessions
+# Superpowers
 .superpowers/
+.worktrees/
 
 # Firebase
 firebase-debug.log
