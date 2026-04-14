@@ -9,62 +9,7 @@ import type { ArrangementDetail } from "./api"
 import { useAudioStore } from "../stores/audioStore"
 import { ensureTone, resetTone, normalizePitch, normalizePitches } from "./audioUtils"
 import type { ToneModule } from "./audioUtils"
-
-// ---------------------------------------------------------------------------
-// Genre presets
-// ---------------------------------------------------------------------------
-
-interface SynthOptions {
-  oscillator?: { type: string }
-  envelope?: { attack?: number; release?: number }
-  volume?: number
-}
-
-interface GenrePreset {
-  voicing: SynthOptions
-  bass: SynthOptions
-}
-
-const GENRE_PRESETS: Record<string, GenrePreset> = {
-  dream_pop: {
-    voicing: { envelope: { attack: 0.3, release: 1.5 }, volume: -12 },
-    bass: { oscillator: { type: "sine" }, envelope: { attack: 0.1, release: 1.0 } },
-  },
-  synthwave: {
-    voicing: { oscillator: { type: "sawtooth" }, envelope: { attack: 0.01, release: 0.4 }, volume: -8 },
-    bass: { oscillator: { type: "square" }, envelope: { attack: 0.005, release: 0.3 } },
-  },
-  cinematic: {
-    voicing: { oscillator: { type: "triangle" }, envelope: { attack: 0.15, release: 2.0 }, volume: -10 },
-    bass: { oscillator: { type: "sine" }, envelope: { attack: 0.2, release: 2.0 } },
-  },
-}
-
-function getPreset(genre: string): GenrePreset {
-  const key = genre.toLowerCase().replace(/[\s-]/g, "_")
-  return GENRE_PRESETS[key] ?? GENRE_PRESETS["dream_pop"]
-}
-
-// ---------------------------------------------------------------------------
-// Deep-merge helper (shallow second level for our known shape)
-// ---------------------------------------------------------------------------
-
-function deepMerge<T extends Record<string, unknown>>(base: T, override: Partial<T>): T {
-  const result = { ...base }
-  for (const k of Object.keys(override) as Array<keyof T>) {
-    const bv = base[k]
-    const ov = override[k]
-    if (ov !== undefined) {
-      if (bv !== null && typeof bv === "object" && !Array.isArray(bv) &&
-          ov !== null && typeof ov === "object" && !Array.isArray(ov)) {
-        result[k] = { ...(bv as object), ...(ov as object) } as T[keyof T]
-      } else {
-        result[k] = ov as T[keyof T]
-      }
-    }
-  }
-  return result
-}
+import { getPreset, buildPolySynth, buildMonoSynth } from "./audioPresets"
 
 // ---------------------------------------------------------------------------
 // Module-level engine state
@@ -83,30 +28,6 @@ let voicingVol: any | null = null
 let bassVol: any | null = null
 
 let rafId: number | null = null
-
-// ---------------------------------------------------------------------------
-// Build synths with genre preset merged over defaults
-// ---------------------------------------------------------------------------
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildPolySynth(T: ToneModule, preset: SynthOptions): any {
-  const defaults: Record<string, unknown> = {
-    oscillator: { type: "triangle" },
-    envelope: { attack: 0.1, decay: 0.2, sustain: 0.5, release: 0.8 },
-  }
-  const merged = deepMerge(defaults, preset as Record<string, unknown>)
-  return new T.PolySynth(T.Synth, merged)
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildMonoSynth(T: ToneModule, preset: SynthOptions): any {
-  const defaults: Record<string, unknown> = {
-    oscillator: { type: "sine" },
-    envelope: { attack: 0.05, decay: 0.1, sustain: 0.8, release: 0.5 },
-  }
-  const merged = deepMerge(defaults, preset as Record<string, unknown>)
-  return new T.MonoSynth(merged)
-}
 
 // ---------------------------------------------------------------------------
 // rAF position tracking
