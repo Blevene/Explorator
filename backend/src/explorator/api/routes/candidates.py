@@ -131,3 +131,22 @@ async def get_candidate(
         rationale=c.get("rationale", ""),
         intent_tags=_parse_json_field(c.get("intent_tags")),
     )
+
+
+@router.patch("/candidates/{candidate_id}/dismiss", status_code=200)
+async def dismiss_candidate(
+    candidate_id: str,
+    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+) -> dict[str, str]:
+    """Mark a candidate as dismissed in Neo4j."""
+    repo = CandidateRepo(driver)
+    candidate = await repo.get_by_id(candidate_id)
+    if candidate is None:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    async with driver.session() as session:
+        await session.run(
+            "MATCH (n:ProgressionCandidate {id: $id}) SET n.status = 'dismissed'",
+            id=candidate_id,
+        )
+    return {"status": "dismissed"}

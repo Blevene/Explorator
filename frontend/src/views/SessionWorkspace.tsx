@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { listCandidates, getSession, listArrangements, getArrangement } from '../services/api';
+import { listCandidates, getSession, listArrangements, getArrangement, dismissCandidate } from '../services/api';
 import type { SessionSummary, ArrangementDetail } from '../services/api';
 import { useCandidateStore } from '../stores/candidateStore';
 import { useArrangementStore } from '../stores/arrangementStore';
@@ -86,16 +86,17 @@ export default function SessionWorkspace() {
 
   const handleGenerate = () => generation.generate(prompt, generationMode);
 
-  const handleDismiss = (candidateId: string) => {
+  const handleDismiss = async (candidateId: string) => {
+    try {
+      await dismissCandidate(candidateId);
+    } catch {
+      // API call failed — still dismiss locally
+    }
     setDismissedIds(prev => new Set(prev).add(candidateId));
   };
 
-  // Sort candidates: dismissed ones go to the end
-  const sortedCandidates = [...candidates].sort((a, b) => {
-    const aD = dismissedIds.has(a.candidate_id) ? 1 : 0;
-    const bD = dismissedIds.has(b.candidate_id) ? 1 : 0;
-    return aD - bD;
-  });
+  // Filter out dismissed candidates entirely
+  const sortedCandidates = candidates.filter(c => !dismissedIds.has(c.candidate_id));
 
   const handleRealize = async (candidateId: string) => {
     const result = await realization.realize(candidateId);
@@ -289,9 +290,6 @@ export default function SessionWorkspace() {
               <div className="flex items-center justify-between mb-3">
                 <h2 data-testid="candidate-count" className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                   {candidates.length} candidate{candidates.length !== 1 ? 's' : ''}
-                  {dismissedIds.size > 0 && (
-                    <span className="ml-2" style={{ color: 'var(--text-muted)' }}>({dismissedIds.size} dismissed)</span>
-                  )}
                 </h2>
                 {selectedForComparison.length > 0 && !showComparison && (
                   <button
@@ -311,7 +309,7 @@ export default function SessionWorkspace() {
                   <div
                     key={c.candidate_id}
                     className="card-animated"
-                    style={{ opacity: dismissedIds.has(c.candidate_id) ? 0.35 : 1, animationDelay: `${i * 50}ms` }}
+                    style={{ animationDelay: `${i * 50}ms` }}
                   >
                     <div>
                       <CandidateCard

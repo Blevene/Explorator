@@ -75,6 +75,11 @@ export async function listCandidates(sessionId: string): Promise<CandidateListRe
   return res.json();
 }
 
+export async function dismissCandidate(candidateId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/candidates/${candidateId}/dismiss`, { method: 'PATCH' });
+  if (!res.ok) throw new Error(`Failed to dismiss candidate: ${res.status}`);
+}
+
 export async function triggerRoundSSE(
   sessionId: string,
   prompt: string,
