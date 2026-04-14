@@ -15,6 +15,7 @@ from explorator.adapters.gemini import GeminiClient
 from explorator.api.deps import get_gemini_client, get_neo4j_driver
 from explorator.api.sse import SSEChannel
 from explorator.domain.harmony.mutator import HarmonyMutator
+from explorator.engine.graph import build_realization_subgraph
 from explorator.graph.repository import ProgressionCandidateRepo
 from explorator.graph.session_repo import SessionRepository
 from explorator.utils import parse_json_or_dict, utc_now
@@ -140,6 +141,28 @@ async def trigger_mutation(
                 })
 
             await channel.send("mutation_completed", {"results": results})
+
+            # Run realization for each mutated candidate so they have arrangements
+            new_ids = [r["new_candidate_id"] for r in results]
+            if new_ids:
+                try:
+                    realization_graph = build_realization_subgraph(gemini, driver)
+                    await realization_graph.ainvoke(
+                        {
+                            "session_id": session_id,
+                            "progression_candidate_ids": new_ids,
+                            "on_progress": channel.send,
+                        },
+                        {"recursion_limit": 100},
+                    )
+                except Exception as real_err:
+                    logger.exception(
+                        "Realization failed for mutated candidates %s", new_ids
+                    )
+                    await channel.send(
+                        "realization_error", {"error": str(real_err)}
+                    )
+
         except Exception as e:
             logger.exception("Mutation failed for session %s", session_id)
             await channel.send("mutation_error", {"error": str(e)})
