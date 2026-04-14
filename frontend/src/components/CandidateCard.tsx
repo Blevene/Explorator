@@ -10,6 +10,7 @@ interface CandidateCardProps {
   onDismiss?: (candidateId: string) => void;
   onCompare?: (candidateId: string) => void;
   isSelectedForComparison?: boolean;
+  parentLabel?: string;
 }
 
 const LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
@@ -27,7 +28,7 @@ interface MutationOp {
   description: string;
 }
 
-function MutationLog({ parentChords, ops, onDismiss }: { parentChords: string[]; ops: MutationOp[]; onDismiss?: () => void }) {
+function MutationLog({ parentLabel, parentChords, ops, onDismiss }: { parentLabel?: string; parentChords: string[]; ops: MutationOp[]; onDismiss?: () => void }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -45,7 +46,9 @@ function MutationLog({ parentChords, ops, onDismiss }: { parentChords: string[];
         <div className="mt-2 space-y-2">
           {/* Parent progression */}
           <div>
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Parent: </span>
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              Parent{parentLabel ? ` (${parentLabel})` : ''}:{' '}
+            </span>
             <span className="text-xs font-mono" style={{ color: 'var(--text-secondary)' }}>
               {parentChords.join(' \u2192 ')}
             </span>
@@ -88,7 +91,7 @@ function MutationLog({ parentChords, ops, onDismiss }: { parentChords: string[];
   );
 }
 
-export default function CandidateCard({ candidate, index, onClick, onRealize, onMutate, onDismiss, onCompare, isSelectedForComparison }: CandidateCardProps) {
+export default function CandidateCard({ candidate, index, onClick, onRealize, onMutate, onDismiss, onCompare, isSelectedForComparison, parentLabel }: CandidateCardProps) {
   const label = LABELS[index] || `#${index + 1}`;
   const score = candidate.weighted_total;
   const parentChords = candidate.metadata?.parent_chord_symbols as string[] | undefined;
@@ -158,6 +161,7 @@ export default function CandidateCard({ candidate, index, onClick, onRealize, on
       {/* Mutation log — shows parent progression and what changed */}
       {parentChords && mutationOps && mutationOps.length > 0 && (
         <MutationLog
+          parentLabel={parentLabel}
           parentChords={parentChords}
           ops={mutationOps}
           onDismiss={onDismiss ? () => onDismiss(candidate.candidate_id) : undefined}

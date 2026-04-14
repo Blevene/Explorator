@@ -304,6 +304,12 @@ export default function SessionWorkspace() {
                         onClick={dismissedIds.has(c.candidate_id) ? undefined : () => handleRealize(c.candidate_id)}
                         onCompare={dismissedIds.has(c.candidate_id) ? undefined : toggleComparison}
                         isSelectedForComparison={selectedForComparison.includes(c.candidate_id)}
+                        parentLabel={(() => {
+                          const parentId = c.metadata?.mutated_from as string | undefined;
+                          if (!parentId) return undefined;
+                          const parentIdx = sortedCandidates.findIndex(p => p.candidate_id === parentId);
+                          return parentIdx >= 0 ? String.fromCharCode(65 + parentIdx) : undefined;
+                        })()}
                       />
                     </div>
                   </div>
