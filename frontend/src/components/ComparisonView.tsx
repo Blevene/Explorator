@@ -14,11 +14,14 @@ interface ComparisonViewProps {
 
 const SCORE_DIMENSIONS = [
   "voice_leading",
-  "tension_curve",
   "playability",
   "register_density",
   "genre_fit",
+  "emotional_fit",
+  "theoretical_coherence",
+  "cadence_quality",
   "novelty",
+  "loopability",
 ]
 
 function dimensionLabel(dim: string): string {
