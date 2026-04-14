@@ -64,7 +64,8 @@ async def list_candidates(
 ) -> CandidateListResponse:
     """List all progression candidates for a session."""
     repo = CandidateRepo(driver)
-    candidates = await repo.query_by_property("session_id", session_id)
+    all_candidates = await repo.query_by_property("session_id", session_id)
+    candidates = [c for c in all_candidates if c.get("status") != "dismissed"]
 
     items = []
     for c in candidates:
