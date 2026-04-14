@@ -274,13 +274,16 @@ export default function SessionWorkspace() {
                     <span className="ml-2" style={{ color: 'var(--text-muted)' }}>({dismissedIds.size} dismissed)</span>
                   )}
                 </h2>
-                {selectedForComparison.length >= 2 && !showComparison && (
+                {selectedForComparison.length > 0 && !showComparison && (
                   <button
                     onClick={handleCompare}
-                    className="rounded-md px-3 py-1 text-xs font-medium transition-colors"
+                    disabled={selectedForComparison.length < 2}
+                    className="rounded-md px-4 py-1.5 text-sm font-medium transition-colors disabled:opacity-40"
                     style={{ background: 'var(--role-experimental)', color: '#fff' }}
                   >
-                    Compare {selectedForComparison.length}
+                    {selectedForComparison.length < 2
+                      ? `Compare (select ${2 - selectedForComparison.length} more)`
+                      : `Compare ${selectedForComparison.length} candidates`}
                   </button>
                 )}
               </div>
