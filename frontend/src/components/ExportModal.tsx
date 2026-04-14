@@ -179,7 +179,7 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
                         )}
                       </div>
                       <div className="text-xs font-mono mt-0.5 truncate" style={{ color: "var(--text-secondary)" }}>
-                        {c.chords.join(" → ")}
+                        {(c.chords ?? []).join(" → ")}
                       </div>
                     </div>
                   </label>
@@ -238,7 +238,7 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
                   Export ready — {lastExportedPackage.artifacts.length} file{lastExportedPackage.artifacts.length !== 1 ? "s" : ""}
                 </div>
                 <div className="flex flex-col gap-1">
-                  {lastExportedPackage.artifacts.map((artifact) => (
+                  {(lastExportedPackage.artifacts ?? []).map((artifact) => (
                     <button
                       key={artifact.id}
                       onClick={(e) => {
@@ -252,7 +252,7 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
                     </button>
                   ))}
                 </div>
-                {lastExportedPackage.artifacts.length > 1 && (
+                {(lastExportedPackage.artifacts ?? []).length > 1 && (
                   <button
                     onClick={() => handleDownloadAll(lastExportedPackage)}
                     disabled={zipping}
@@ -283,10 +283,10 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
                     style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)" }}
                   >
                     <div className="font-mono" style={{ color: "var(--text-muted)" }}>
-                      {pkg.id.slice(0, 8)}… — {pkg.artifacts.length} file{pkg.artifacts.length !== 1 ? "s" : ""}
+                      {pkg.id.slice(0, 8)}… — {(pkg.artifacts ?? []).length} file{(pkg.artifacts ?? []).length !== 1 ? "s" : ""}
                     </div>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {pkg.artifacts.map((artifact) => (
+                      {(pkg.artifacts ?? []).map((artifact) => (
                         <button
                           key={artifact.id}
                           onClick={(e) => {

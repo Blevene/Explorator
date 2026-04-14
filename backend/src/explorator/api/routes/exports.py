@@ -335,8 +335,26 @@ async def list_exports(
         raise HTTPException(status_code=404, detail="Session not found")
 
     package_repo = ExportPackageRepo(driver)
+    artifact_repo = RenderArtifactRepo(driver)
     packages = await package_repo.query_by_property("session_id", session_id)
-    return packages
+
+    # Enrich each package with artifact details
+    enriched = []
+    for pkg in packages:
+        artifact_ids = pkg.get("included_artifact_ids", [])
+        artifacts = []
+        for aid in artifact_ids:
+            art = await artifact_repo.get_by_id(aid)
+            if art:
+                meta = art.get("render_metadata", {})
+                artifacts.append({
+                    "id": art["id"],
+                    "artifact_type": art.get("artifact_type", ""),
+                    "filename": meta.get("filename", art["id"]),
+                })
+        pkg["artifacts"] = artifacts
+        enriched.append(pkg)
+    return enriched
 
 
 @router.get("/exports/{package_id}/artifacts/{artifact_id}/download")
