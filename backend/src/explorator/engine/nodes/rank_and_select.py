@@ -130,7 +130,9 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
 
     arrangement_candidates_raw = state.get("arrangement_candidates", [])
     arrangement_families_raw = state.get("arrangement_families", [])
-    progression_candidates_raw = state.get("progression_candidates", [])
+    # Prefer top_progressions (has M1 scores attached by select_top_progressions)
+    # over raw progression_candidates (which lack scores in metadata)
+    progression_candidates_raw = state.get("top_progressions", []) or state.get("progression_candidates", [])
     evaluations_raw = state.get("evaluations", [])
 
     # M3b: use state-provided weights if available, else hardcoded defaults
