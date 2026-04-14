@@ -33,6 +33,18 @@ function roleBadgeStyle(role: string): React.CSSProperties {
   return { background: "var(--surface-3)", color: "var(--text-secondary)" };
 }
 
+async function downloadArtifact(packageId: string, artifactId: string, filename: string) {
+  const url = getArtifactDownloadUrl(packageId, artifactId);
+  const res = await fetch(url);
+  const blob = await res.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(blobUrl);
+}
+
 async function downloadAllAsZip(pkg: ExportPackage) {
   const zip = new JSZip();
   await Promise.all(
@@ -227,15 +239,17 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
                 </div>
                 <div className="flex flex-col gap-1">
                   {lastExportedPackage.artifacts.map((artifact) => (
-                    <a
+                    <button
                       key={artifact.id}
-                      href={getArtifactDownloadUrl(lastExportedPackage.id, artifact.id)}
-                      download={artifact.filename}
-                      className="text-xs font-mono truncate transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        downloadArtifact(lastExportedPackage.id, artifact.id, artifact.filename);
+                      }}
+                      className="text-xs font-mono truncate transition-colors text-left cursor-pointer"
                       style={{ color: "var(--accent-secondary)" }}
                     >
                       {artifact.filename}
-                    </a>
+                    </button>
                   ))}
                 </div>
                 {lastExportedPackage.artifacts.length > 1 && (
@@ -273,15 +287,17 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
                     </div>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {pkg.artifacts.map((artifact) => (
-                        <a
+                        <button
                           key={artifact.id}
-                          href={getArtifactDownloadUrl(pkg.id, artifact.id)}
-                          download={artifact.filename}
-                          className="font-mono truncate transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            downloadArtifact(pkg.id, artifact.id, artifact.filename);
+                          }}
+                          className="font-mono truncate transition-colors cursor-pointer"
                           style={{ color: "var(--accent-secondary)" }}
                         >
                           {artifact.filename}
-                        </a>
+                        </button>
                       ))}
                     </div>
                   </div>
