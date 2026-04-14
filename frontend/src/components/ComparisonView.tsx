@@ -1,9 +1,15 @@
 import { useEffect } from "react"
 import type { ArrangementDetail } from "../services/api"
 import { recordComparison } from "../services/api"
+import * as audioEngine from "../services/audioEngine"
+import * as comparisonAudioEngine from "../services/comparisonAudioEngine"
+import { useAudioStore } from "../stores/audioStore"
+import { useComparisonAudioStore } from "../stores/comparisonAudioStore"
 import { useCandidateStore } from "../stores/candidateStore"
 import { scoreColorVar } from "../utils/designTokens"
 import PianoRoll from "./PianoRoll"
+import ComparisonTransportBar from "./ComparisonTransportBar"
+import LaneSidebar from "./LaneSidebar"
 
 interface ComparisonViewProps {
   sessionId: string
@@ -63,6 +69,43 @@ export default function ComparisonView({
     }
   }, [candidateIds.join(",")])
 
+  // Read comparison audio state
+  const { playing: compPlaying, currentPosition: compPosition, mutedLanes, soloedLanes } = useComparisonAudioStore()
+
+  // On mount: stop single-arrangement playback and clear stale mute state
+  useEffect(() => {
+    audioEngine.stop()
+    useAudioStore.getState().reset()
+    return () => {
+      comparisonAudioEngine.stop()
+      useComparisonAudioStore.getState().reset()
+    }
+  }, [])
+
+  // Sync lane mute state to engine when mute/solo toggles change
+  useEffect(() => {
+    const anySoloed = Object.values(soloedLanes).some(Boolean)
+    for (const id of candidateIds) {
+      const audible = !mutedLanes[id] && (!anySoloed || !!soloedLanes[id])
+      comparisonAudioEngine.setLaneMute(id, !audible)
+    }
+  }, [mutedLanes, soloedLanes, candidateIds])
+
+  // Compute audibility per lane (for visual dimming)
+  const anySoloed = Object.values(soloedLanes).some(Boolean)
+  function isLaneAudible(id: string): boolean {
+    return !mutedLanes[id] && (!anySoloed || !!soloedLanes[id])
+  }
+
+  // Compute max bars across all arrangements for visual alignment
+  const maxBars = Math.max(8, ...comparedArrangements.map((a) => {
+    const allBars = [
+      ...(a.voicing_plan?.voicing_events ?? []).map((e) => e.bar + Math.ceil(e.duration_beats / 4)),
+      ...(a.bass_line?.note_events ?? []).map((e) => e.bar + Math.ceil(e.duration_beats / 4)),
+    ]
+    return allBars.length > 0 ? Math.max(...allBars) : 0
+  }))
+
   if (comparedArrangements.length < 2) {
     return (
       <div className="p-4 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
@@ -96,59 +139,45 @@ export default function ComparisonView({
       className="rounded-lg overflow-hidden"
       style={{ background: 'var(--surface-1)', border: '1px solid var(--border-default)' }}
     >
-      {/* Header */}
-      <div
-        className="flex items-center justify-between px-4 py-2"
-        style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--border-default)' }}
-      >
-        <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-          Comparing {comparedArrangements.length} candidates
-        </span>
-        <button
-          onClick={() => {
-            clearComparison()
-            onClose()
-          }}
-          className="text-xs transition-colors"
-          style={{ color: 'var(--text-muted)' }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
-        >
-          Close
-        </button>
-      </div>
+      <ComparisonTransportBar
+        arrangements={arrangements}
+        genre={genre}
+        onClose={() => { clearComparison(); onClose() }}
+      />
 
-      {/* Stacked piano rolls */}
+      {/* Stacked piano rolls with lane sidebars */}
       <div style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-        {comparedArrangements.map((a, i) => (
-          <div
-            key={a.id}
-            className="flex"
-            style={{ borderBottom: i < comparedArrangements.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}
-          >
-            {/* Left rail: label + score */}
+        {comparedArrangements.map((a, i) => {
+          const candidateId = candidateIds[i]
+          const audible = isLaneAudible(candidateId)
+          return (
             <div
-              className="w-16 flex-shrink-0 flex flex-col items-center justify-center py-2"
-              style={{ background: 'var(--surface-2)', borderRight: '1px solid var(--border-subtle)' }}
+              key={a.id}
+              className="flex"
+              style={{ borderBottom: i < comparedArrangements.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}
             >
-              <span className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                {candidateLabels[candidateIds[i]] ?? String.fromCharCode(65 + i)}
-              </span>
-              <span className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                {(a.scorecard?.weighted_total ?? a.weighted_total ?? 0).toFixed(1)}
-              </span>
-            </div>
-            <div className="flex-1">
-              <PianoRoll
-                arrangement={a}
-                genre={genre}
-                compact
-                showCursor={false}
-                barWidth={90}
+              <LaneSidebar
+                candidateId={candidateId}
+                label={candidateLabels[candidateId] ?? String.fromCharCode(65 + i)}
+                score={a.scorecard?.weighted_total ?? a.weighted_total ?? 0}
+                audible={audible}
               />
+              <div className="flex-1">
+                <PianoRoll
+                  arrangement={a}
+                  genre={genre}
+                  compact
+                  showCursor
+                  barWidth={90}
+                  dimmed={!audible}
+                  currentPosition={compPosition}
+                  playing={compPlaying}
+                  totalBars={maxBars}
+                />
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Score comparison table */}
