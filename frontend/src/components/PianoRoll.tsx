@@ -136,17 +136,16 @@ export default function PianoRoll({
       ctx.fillText(`${bar}`, x, HEADER_HEIGHT - 6)
     }
 
-    // Pitch labels on left edge — only C octave markers (skip in compact mode)
-    if (!compact) {
-      ctx.textAlign = "right"
-      ctx.font = "9px monospace"
-      for (let midi = minMidi; midi <= maxMidi; midi++) {
-        if (midi % 12 === 0) {
-          const label = midiToPitchLabel(midi)
-          const y = HEADER_HEIGHT + (maxMidi - midi) * ROW_HEIGHT + ROW_HEIGHT - 1
-          ctx.fillStyle = CANVAS_COLORS.labelText
-          ctx.fillText(label, LABEL_WIDTH - 4, y)
-        }
+    // Pitch labels on left edge — C octave markers
+    ctx.textAlign = "right"
+    ctx.font = compact ? "7px monospace" : "9px monospace"
+    for (let midi = minMidi; midi <= maxMidi; midi++) {
+      // In compact mode, label every octave (C); in full mode, same
+      if (midi % 12 === 0) {
+        const label = midiToPitchLabel(midi)
+        const y = HEADER_HEIGHT + (maxMidi - midi) * ROW_HEIGHT + ROW_HEIGHT - 1
+        ctx.fillStyle = CANVAS_COLORS.labelText
+        ctx.fillText(label, LABEL_WIDTH - 4, y)
       }
     }
 
