@@ -130,7 +130,18 @@ export async function playComparison(
   // Stop any existing playback (both engines)
   audioEngine.stop()
   useAudioStore.getState().reset()
-  stop()
+
+  // Synchronously tear down comparison state and cancel transport
+  // (can't use stop() here — its async transport.cancel() would race
+  // with the new events we're about to schedule)
+  stopPositionTracking()
+  teardownNodes()
+  const compStore = useComparisonAudioStore.getState()
+  compStore.setPlaying(false)
+  compStore.setPaused(false)
+  compStore.setCurrentPosition(0)
+  transport.stop()
+  transport.cancel()
 
   // Apply tempo
   transport.bpm.value = tempo
@@ -147,8 +158,7 @@ export async function playComparison(
     }
   }
 
-  const store = useComparisonAudioStore.getState()
-  transport.loop = store.loop
+  transport.loop = compStore.loop
   transport.loopStart = "0:0:0"
   transport.loopEnd = `${maxBars}:0:0`
 
@@ -173,8 +183,8 @@ export async function playComparison(
   transport.start()
   startPositionTracking(T, tempo)
 
-  store.setPlaying(true)
-  store.setPaused(false)
+  compStore.setPlaying(true)
+  compStore.setPaused(false)
 }
 
 export function pause(): void {
