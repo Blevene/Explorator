@@ -193,7 +193,7 @@ def _syncopated_events(bars: int, rng: random.Random) -> list[GrooveEvent]:
     return events
 
 
-def _dotted_events(bars: int, rng: random.Random) -> list[GrooveEvent]:
+def _dotted_events(bars: int, _rng: random.Random) -> list[GrooveEvent]:
     """Long-short pattern using 1.5 + 0.5 beat pairs."""
     events: list[GrooveEvent] = []
     for bar in range(bars):

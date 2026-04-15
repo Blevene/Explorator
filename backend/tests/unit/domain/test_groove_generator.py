@@ -1,7 +1,5 @@
 # backend/tests/unit/domain/test_groove_generator.py
 
-import pytest
-
 from explorator.domain.realization.groove import GrooveGenerator
 from explorator.models.groove import GroovePattern, GroovePreferences
 
