@@ -5,6 +5,7 @@ from music21 import harmony
 from ulid import ULID
 
 from explorator.adapters.music21_adapter import _normalize_chord_symbol
+from explorator.models.groove import GroovePattern
 from explorator.models.realization import BassLine, BassNoteEvent, BassPreferences
 from explorator.utils import utc_now
 
@@ -65,6 +66,7 @@ class BassLineGenerator:
         chord_symbols: list[str],
         prefs: BassPreferences,
         genre: str = "dream_pop",
+        groove_pattern: GroovePattern | None = None,
     ) -> BassLine:
         """Generate a BassLine for the given chord progression.
 
@@ -81,6 +83,9 @@ class BassLineGenerator:
         octave = _REGISTER_OCTAVE.get(prefs.default_register, _DEFAULT_OCTAVE)
         mode = prefs.default_bass_mode
         density = prefs.rhythmic_density
+
+        if groove_pattern is not None and groove_pattern.pattern_events:
+            return self._groove_driven_events(chord_symbols, prefs, genre, groove_pattern)
 
         events: list[BassNoteEvent] = []
 
@@ -195,3 +200,50 @@ class BassLineGenerator:
             BassNoteEvent(bar=bar, beat=1.0, duration_beats=1.0, pitch=pitch),
             BassNoteEvent(bar=bar, beat=3.5, duration_beats=0.5, pitch=pitch),
         ]
+
+    def _groove_driven_events(
+        self,
+        chord_symbols: list[str],
+        prefs: BassPreferences,
+        genre: str,
+        groove: GroovePattern,
+    ) -> BassLine:
+        """Generate a BassLine driven by a GroovePattern's beat positions.
+
+        For each chord (bar), the groove pattern's events determine timing.
+        Accented beat-1 events use the root; all other events alternate with the fifth.
+        """
+        octave = _REGISTER_OCTAVE.get(prefs.default_register, _DEFAULT_OCTAVE)
+        events: list[BassNoteEvent] = []
+
+        for bar_idx, symbol in enumerate(chord_symbols):
+            root = _root_name(symbol)
+            root_pitch = _pitch_with_octave(root, octave)
+            fifth_pitch = _fifth_pitch(root, octave)
+
+            for groove_event in groove.pattern_events:
+                if groove_event.accent and groove_event.beat == 1.0:
+                    pitch = root_pitch
+                else:
+                    pitch = fifth_pitch
+                events.append(
+                    BassNoteEvent(
+                        bar=bar_idx,
+                        beat=groove_event.beat,
+                        duration_beats=groove_event.duration_beats,
+                        pitch=pitch,
+                        velocity=groove_event.velocity,
+                    )
+                )
+
+        now = utc_now()
+        return BassLine(
+            id=f"bl_{ULID()}",
+            type="bass_line",
+            status="draft",
+            created_at=now,
+            updated_at=now,
+            style_mode="groove_driven",
+            contour_type="groove_aligned",
+            note_events=events,
+        )
