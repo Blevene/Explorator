@@ -40,6 +40,7 @@ class ExplorationState(TypedDict, total=False):
     voicing_strategies: list[dict[str, Any]]
     voicing_plans: list[dict[str, Any]]
     bass_lines: list[dict[str, Any]]
+    groove_patterns: list[dict[str, Any]]
     arrangement_candidates: list[dict[str, Any]]
     arrangement_families: list[dict[str, Any]]
     selected_arrangements: list[dict[str, Any]]

@@ -82,6 +82,13 @@ async def assemble_arrangements(state: ExplorationState) -> dict[str, Any]:
         all_families.append(family.model_dump(mode="json"))
         all_candidates.extend(c.model_dump(mode="json") for c in family_candidates)
 
+    # Assign groove_pattern_id via round-robin from available groove patterns
+    groove_patterns_raw = state.get("groove_patterns", [])
+    if groove_patterns_raw:
+        groove_ids = [gp["id"] for gp in groove_patterns_raw]
+        for idx, cand in enumerate(all_candidates):
+            cand["groove_pattern_id"] = groove_ids[idx % len(groove_ids)]
+
     return {
         "arrangement_candidates": all_candidates,
         "arrangement_families": all_families,

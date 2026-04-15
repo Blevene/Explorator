@@ -112,6 +112,13 @@ export interface BassNoteEvent {
   velocity: number
 }
 
+export interface GrooveEvent {
+  beat: number
+  duration_beats: number
+  velocity: number
+  accent: boolean
+}
+
 export interface ArrangementSummary {
   id: string
   status: "draft" | "selected" | "rejected"
@@ -133,6 +140,13 @@ export interface ArrangementDetail extends ArrangementSummary {
   bass_line: {
     style_mode: string
     note_events: BassNoteEvent[]
+  } | null
+  groove_pattern: {
+    time_signature: string
+    swing_amount: number
+    density: number
+    pattern_events: GrooveEvent[]
+    source_template: string
   } | null
   scorecard?: {
     scores: Record<string, number>
