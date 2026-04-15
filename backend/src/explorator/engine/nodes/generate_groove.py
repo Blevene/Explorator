@@ -37,8 +37,7 @@ async def generate_groove(state: ExplorationState) -> dict[str, Any]:
     generator = GrooveGenerator()
     all_patterns: list[dict[str, Any]] = []
 
-    for candidate_data in candidates_raw:
-        candidate_id = candidate_data.get("id", "")
+    for _candidate_data in candidates_raw:
         patterns = generator.generate_variants(
             prefs,
             genre=genre,
