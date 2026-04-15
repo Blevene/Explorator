@@ -198,6 +198,25 @@ export default function PianoRoll({
     }
     ctx.globalAlpha = 1.0
 
+    // Groove accent overlay
+    const grooveEvents = arrangement?.groove_pattern?.pattern_events ?? []
+    const beatsPerBar = 4
+    for (const ev of grooveEvents) {
+      if (!ev.accent) continue
+      // Draw accent marker as dashed vertical line at the beat position, repeated for each bar
+      for (let bar = 0; bar < totalBars; bar++) {
+        const x = LABEL_WIDTH + (bar + (ev.beat - 1) / beatsPerBar) * BAR_WIDTH
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.25)' // yellow-400 at 25% opacity
+        ctx.lineWidth = 1
+        ctx.setLineDash([4, 4])
+        ctx.beginPath()
+        ctx.moveTo(x, 0)
+        ctx.lineTo(x, canvasHeight)
+        ctx.stroke()
+        ctx.setLineDash([])
+      }
+    }
+
     // Playback cursor
     if (showCursor && playing) {
       const cursorX = LABEL_WIDTH + currentPosition * BAR_WIDTH
