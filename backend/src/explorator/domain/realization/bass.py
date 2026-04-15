@@ -210,8 +210,11 @@ class BassLineGenerator:
     ) -> BassLine:
         """Generate a BassLine driven by a GroovePattern's beat positions.
 
-        For each chord (bar), the groove pattern's events determine timing.
-        Accented beat-1 events use the root; all other events alternate with the fifth.
+        For each chord (bar), the groove pattern's events for that bar
+        determine timing. Groove events use absolute continuous beats
+        (bar 0 = beats 1-4, bar 1 = beats 5-8, etc.), so we filter to
+        events belonging to the current bar and convert to per-bar beats.
+        Accented beat-1 events use the root; others use the fifth.
         """
         octave = _REGISTER_OCTAVE.get(prefs.default_register, _DEFAULT_OCTAVE)
         events: list[BassNoteEvent] = []
@@ -221,15 +224,23 @@ class BassLineGenerator:
             root_pitch = _pitch_with_octave(root, octave)
             fifth_pitch = _fifth_pitch(root, octave)
 
+            # Groove events use absolute beats: bar 0 = 1.0-4.x, bar 1 = 5.0-8.x
+            bar_start = bar_idx * 4.0 + 1.0
+            bar_end = bar_start + 4.0
+
             for groove_event in groove.pattern_events:
-                if groove_event.accent and groove_event.beat == 1.0:
+                if not (bar_start <= groove_event.beat < bar_end):
+                    continue
+                # Convert absolute beat to per-bar beat (1.0-based)
+                per_bar_beat = groove_event.beat - (bar_idx * 4.0)
+                if groove_event.accent and per_bar_beat == 1.0:
                     pitch = root_pitch
                 else:
                     pitch = fifth_pitch
                 events.append(
                     BassNoteEvent(
                         bar=bar_idx,
-                        beat=groove_event.beat,
+                        beat=per_bar_beat,
                         duration_beats=groove_event.duration_beats,
                         pitch=pitch,
                         velocity=groove_event.velocity,

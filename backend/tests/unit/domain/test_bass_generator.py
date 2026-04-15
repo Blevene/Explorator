@@ -61,13 +61,19 @@ def _make_groove_pattern(events: list[GrooveEvent]) -> GroovePattern:
 
 class TestBassLineGeneratorGroove:
     def test_groove_drives_beat_positions(self):
-        """A GroovePattern with specific beat positions should drive bass note timing."""
+        """A GroovePattern with absolute beat positions should drive bass note timing.
+
+        Groove events use absolute continuous beats: bar 0 = beats 1-4, bar 1 = 5-8.
+        """
         gen = BassLineGenerator()
         prefs = BassPreferences(default_register="low")
 
+        # Absolute beats: bar 0 gets 1.0, 3.0; bar 1 gets 5.0, 7.0
         groove = _make_groove_pattern([
             GrooveEvent(beat=1.0, duration_beats=2.0, velocity=100, accent=True),
             GrooveEvent(beat=3.0, duration_beats=2.0, velocity=80, accent=False),
+            GrooveEvent(beat=5.0, duration_beats=2.0, velocity=100, accent=True),
+            GrooveEvent(beat=7.0, duration_beats=2.0, velocity=80, accent=False),
         ])
 
         # 2 chords = 2 bars, each bar gets 2 groove events
@@ -78,7 +84,7 @@ class TestBassLineGeneratorGroove:
         assert bl.contour_type == "groove_aligned"
         assert len(bl.note_events) == 4  # 2 chords × 2 groove events
 
-        # Each bar should have a beat-1.0 event
+        # Each bar should have a beat-1.0 event (per-bar beats after conversion)
         bar0_events = [e for e in bl.note_events if e.bar == 0]
         bar1_events = [e for e in bl.note_events if e.bar == 1]
         assert any(e.beat == 1.0 for e in bar0_events)
