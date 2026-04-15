@@ -146,6 +146,7 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
             "voice_leading": ev["voice_leading"]["overall_score"],
             "register_density": ev["register_density"]["overall_score"],
             "playability": ev["playability"]["overall_score"],
+            "groove": ev.get("groove", {}).get("overall_score", 5.0),
         }
 
     # Build M1 scores lookup: progression_candidate_id → scores dict

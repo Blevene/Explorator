@@ -3,10 +3,12 @@
 import logging
 from typing import Any
 
+from explorator.domain.evaluation.groove import GrooveEvaluator
 from explorator.domain.evaluation.playability import PlayabilityEvaluator
 from explorator.domain.evaluation.register_density import RegisterDensityEvaluator
 from explorator.domain.evaluation.voice_leading import VoiceLeadingEvaluator
 from explorator.engine.state import ExplorationState
+from explorator.models.groove import GroovePattern, GroovePreferences
 from explorator.models.realization import BassLine, VoicingPlan
 from explorator.utils import parse_json_or_dict
 
@@ -34,9 +36,19 @@ async def evaluate_arrangements(state: ExplorationState) -> dict[str, Any]:
         bl = BassLine.model_validate(bl_data)
         bass_line_lookup[bl.id] = bl
 
+    # Build groove pattern lookup and preferences
+    groove_pattern_lookup: dict[str, GroovePattern] = {}
+    for gp_data in state.get("groove_patterns", []):
+        gp = GroovePattern.model_validate(gp_data)
+        groove_pattern_lookup[gp.id] = gp
+
+    groove_tendencies = parse_json_or_dict(genre_profile.get("groove_tendencies", {}))
+    groove_prefs = GroovePreferences.from_genre_tendencies(groove_tendencies)
+
     vl_evaluator = VoiceLeadingEvaluator()
     rd_evaluator = RegisterDensityEvaluator()
     play_evaluator = PlayabilityEvaluator()
+    groove_evaluator = GrooveEvaluator()
 
     evaluations: list[dict[str, Any]] = []
 
@@ -68,6 +80,23 @@ async def evaluate_arrangements(state: ExplorationState) -> dict[str, Any]:
         rd_score = rd_evaluator.overall_score(rd_eval)
         play_score = play_evaluator.overall_score(play_eval)
 
+        # Groove evaluation
+        groove_pattern_id: str | None = arr_data.get("groove_pattern_id")
+        groove_pattern = groove_pattern_lookup.get(groove_pattern_id or "") if groove_pattern_id else None
+
+        if groove_pattern is not None:
+            groove_eval = groove_evaluator.evaluate(groove_pattern, groove_prefs, candidate_id=arrangement_id)
+            groove_score = groove_evaluator.overall_score(groove_eval)
+            groove_entry = {
+                "evaluation": groove_eval.model_dump(mode="json"),
+                "overall_score": groove_score,
+            }
+        else:
+            groove_entry = {
+                "evaluation": None,
+                "overall_score": 5.0,
+            }
+
         evaluations.append({
             "arrangement_candidate_id": arrangement_id,
             "voice_leading": {
@@ -82,6 +111,7 @@ async def evaluate_arrangements(state: ExplorationState) -> dict[str, Any]:
                 "evaluation": play_eval.model_dump(mode="json"),
                 "overall_score": play_score,
             },
+            "groove": groove_entry,
         })
 
     return {"evaluations": evaluations}

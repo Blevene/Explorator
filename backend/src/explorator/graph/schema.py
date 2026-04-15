@@ -33,6 +33,7 @@ CONSTRAINTS = [
     "CREATE CONSTRAINT voicing_plan_id IF NOT EXISTS"
     " FOR (n:VoicingPlan) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT bass_line_id IF NOT EXISTS FOR (n:BassLine) REQUIRE n.id IS UNIQUE",
+    "CREATE CONSTRAINT groove_pattern_id IF NOT EXISTS FOR (n:GroovePattern) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT evaluation_bundle_id IF NOT EXISTS"
     " FOR (n:EvaluationBundle) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT evaluation_id IF NOT EXISTS FOR (n:Evaluation) REQUIRE n.id IS UNIQUE",

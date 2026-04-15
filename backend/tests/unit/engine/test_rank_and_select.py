@@ -42,7 +42,7 @@ def test_compute_weighted_total_missing_m1_scores_uses_fallback() -> None:
     }
     result = _compute_weighted_total(scores, DEFAULT_WEIGHTS)
 
-    # Compute expected manually using 5.0 fallback for M1 dims
+    # Compute expected manually using 5.0 fallback for M1 dims and groove
     expected = (
         8.0 * DEFAULT_WEIGHTS["voice_leading"]
         + 8.0 * DEFAULT_WEIGHTS["register_density"]
@@ -53,6 +53,7 @@ def test_compute_weighted_total_missing_m1_scores_uses_fallback() -> None:
         + 5.0 * DEFAULT_WEIGHTS["cadence_quality"]
         + 5.0 * DEFAULT_WEIGHTS["novelty"]
         + 5.0 * DEFAULT_WEIGHTS["loopability"]
+        + 5.0 * DEFAULT_WEIGHTS["groove"]
     )
     assert abs(result - expected) < 0.001
 
