@@ -142,11 +142,14 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
     eval_lookup: dict[str, dict[str, float]] = {}
     for ev in evaluations_raw:
         arr_id = ev["arrangement_candidate_id"]
+        melody_data = ev.get("melody", {})
         eval_lookup[arr_id] = {
             "voice_leading": ev["voice_leading"]["overall_score"],
             "register_density": ev["register_density"]["overall_score"],
             "playability": ev["playability"]["overall_score"],
             "groove": ev.get("groove", {}).get("overall_score", 5.0),
+            "melody_support": melody_data.get("melody_support_score", 5.0),
+            "collision_risk": melody_data.get("collision_risk_score", 5.0),
         }
 
     # Build M1 scores lookup: progression_candidate_id → scores dict

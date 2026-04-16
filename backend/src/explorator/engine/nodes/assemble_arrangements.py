@@ -89,6 +89,13 @@ async def assemble_arrangements(state: ExplorationState) -> dict[str, Any]:
         for idx, cand in enumerate(all_candidates):
             cand["groove_pattern_id"] = groove_ids[idx % len(groove_ids)]
 
+    # Assign melodic_complement_id via round-robin from available melodic complements
+    melodic_complements_raw = state.get("melodic_complements", [])
+    if melodic_complements_raw:
+        mc_ids = [mc["id"] for mc in melodic_complements_raw]
+        for idx, cand in enumerate(all_candidates):
+            cand["melodic_complement_id"] = mc_ids[idx % len(mc_ids)]
+
     return {
         "arrangement_candidates": all_candidates,
         "arrangement_families": all_families,

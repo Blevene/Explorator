@@ -51,12 +51,12 @@ def test_canonical_weights_sum_to_one() -> None:
     assert abs(total - 1.0) < 0.01
 
 
-def test_canonical_weights_have_all_ten_dimensions() -> None:
-    """Canonical weights cover all 6 theory + 3 arrangement + 1 groove dimensions."""
+def test_canonical_weights_have_all_twelve_dimensions() -> None:
+    """Canonical weights cover all 6 theory + 3 arrangement + 1 groove + 2 melody dimensions."""
     expected = {
         "genre_fit", "emotional_fit", "theoretical_coherence",
         "cadence_quality", "novelty", "loopability",
         "voice_leading", "register_density", "playability",
-        "groove",
+        "groove", "melody_support", "collision_risk",
     }
     assert set(CANONICAL_DEFAULT_WEIGHTS.weights.keys()) == expected
