@@ -46,7 +46,7 @@ M5b adds a single-line melody voice on top of existing arrangements. The melody 
 
 ## 2. MelodicComplement Model
 
-New entity extending `BaseEntity`. ULID prefix: `mc_`. Lives in `models/realization.py` alongside `VoicingPlan`, `BassLine`, `ArrangementCandidate`.
+New entity extending `BaseEntity`. ULID prefix: `mc_`. Lives in `models/melody.py` (new file, following the M5a precedent where `GroovePattern` lives in `models/groove.py` rather than `models/realization.py`).
 
 Separate from the existing `Melody` stub in `stubs.py`, which is reserved for user-supplied melody input in reharm mode (v1.5). Different fields, different lifecycle, different pipeline linkage.
 
@@ -125,7 +125,7 @@ All available from state at generation time:
 
 ### 4.3 Structured Output — MelodicStrategyResponse
 
-Lives in `models/realization.py` alongside `VoicingStrategyResponse`.
+Lives in `models/melody.py` alongside `MelodicComplement`.
 
 ```python
 class PhraseInstruction(BaseModel):
@@ -141,7 +141,7 @@ class MelodicStrategyResponse(BaseModel):
     range_high: str                 # e.g. "C6"
     overall_contour: str            # summary descriptor
     phrase_instructions: list[PhraseInstruction]
-    rationale: str                  # one sentence
+    rationale: str = Field(default="", max_length=200)  # matches VoicingStrategyResponse convention
 ```
 
 One Gemini Flash call per arrangement candidate. Phrase instructions cover the full progression — for an 8-bar progression with 4-bar phrases, you get 2 `PhraseInstruction` entries.
@@ -201,7 +201,7 @@ No motif repetition — each phrase is independently realized. Velocity is unifo
 
 ## 6. Pipeline Integration
 
-New LangGraph node `generate_melody` in `engine/nodes/generate_melody.py`, following the `generate_groove.py` pattern.
+New LangGraph node `generate_melody` in `engine/nodes/generate_melody.py`. This is a **hybrid node**: it follows `generate_groove.py` for state access and return patterns, but follows `plan_voicings` for the LLM strategy call (requires Gemini client injection via `partial(generate_melody, gemini=gemini)` in `graph.py`, matching the `plan_voicings` pattern at `graph.py:44`).
 
 ### 6.1 Pipeline Position
 
@@ -212,24 +212,35 @@ plan_voicings → generate_bass → generate_groove → generate_melody → asse
 ### 6.2 Node Logic
 
 1. Read from state: `voicing_plans`, `bass_lines`, `groove_patterns`, `progression_candidates`, genre profile (including key center and mode)
-2. For each arrangement combination (voicing plan + bass line + groove pattern):
+2. For each (voicing plan, bass line) pair per progression:
    - Extract voicing register summary (highest note per bar) and bass range
-   - Build beat grid from groove pattern, or synthesize straight-eighths fallback if `groove_patterns` is empty
+   - Select a groove pattern for beat grid context: use the first available groove pattern for this progression, or synthesize a straight-eighths fallback if `groove_patterns` is empty. (Melody does not need per-groove variants — the beat grid is used for rhythmic alignment, not as a distinguishing factor. The groove round-robin assignment in assembly may assign a different groove to the final arrangement, but the rhythmic grid differences between groove variants are minor enough that the melody remains valid.)
    - Call `melody_strategy_prompt()` → Gemini Flash → `MelodicStrategyResponse`
    - Validate response (Section 5.3); fall back to default strategy on failure
    - Call `MelodyGenerator.realize()` with strategy + chord progression + key center/mode + voicing events + beat grid
    - Produce `MelodicComplement` entity with `arrangement_candidate_id = None` (linked at assembly time)
 3. Write `melodic_complements` list to state
 
-Melody maps 1:1 to arrangement combinations — one melody per (voicing plan, bass line, groove pattern) tuple. This does not expand the assembly cross-product; melody is assigned directly to its corresponding arrangement at assembly time.
+One melody per (voicing plan, bass line) pair. This matches the assembly cross-product granularity — the `assemble_arrangements` node builds one `ArrangementCandidate` per (VP x BL) pair.
 
 ### 6.3 Assembly Changes
 
-`ArrangementAssembler.assemble_one()` gains an optional `melodic_complement: MelodicComplement | None = None` parameter. When present, sets `arrangement_candidate.melodic_complement_id` and merges melody note events into the arrangement's render data. `assemble_family()` updated to accept and pass through melodic complements corresponding to each arrangement combination.
+Melody linkage follows the **groove round-robin pattern** used in `assemble_arrangements.py:85-90`. After the cross-product loop builds `all_candidates`, a second pass assigns `melodic_complement_id` from the `melodic_complements` state list:
+
+```python
+# Assign melodic_complement_id via round-robin (matching groove pattern)
+melodic_complements_raw = state.get("melodic_complements", [])
+if melodic_complements_raw:
+    mc_ids = [mc["id"] for mc in melodic_complements_raw]
+    for idx, cand in enumerate(all_candidates):
+        cand["melodic_complement_id"] = mc_ids[idx % len(mc_ids)]
+```
+
+No changes to `assemble_one()` or `assemble_family()` — melody is linked post-hoc on the serialized dicts, not passed as a constructor parameter.
 
 ### 6.4 Backward Compatibility
 
-If `melodic_complements` is empty in state (legacy sessions, or generation skipped), assembly proceeds without melody. No behavior change for existing sessions.
+If `melodic_complements` is empty in state (legacy sessions, or generation skipped), the round-robin assignment is skipped and `melodic_complement_id` remains `None`. No behavior change for existing sessions.
 
 ### 6.5 Known Limitation: Mutation Loop
 
@@ -243,17 +254,39 @@ Implements the existing stub in `evaluation.py` with two deterministic dimension
 
 ### 7.1 Dimensions
 
-**melody_support_score** (deterministic) — two sub-metrics averaged:
-- *Chord-tone ratio on strong beats*: proportion of downbeat melody notes that are chord tones (or strategy-specified target degrees) of the current chord. Perfect score at 1.0, degrades linearly.
-- *Voice-leading smoothness*: proportion of consecutive melody intervals that are a 3rd or smaller. Penalizes large leaps unless genre `motion_preference` is "leaping" (in which case 4ths/5ths don't penalize).
+All scores use the 0.0–10.0 scale, consistent with existing evaluators (`VoiceLeadingEvaluator`, `GrooveEvaluator`, etc.).
 
-**collision_risk_score** (deterministic) — count of unisons and minor 2nds between melody note events and voicing events on the same bar/beat. Scored as `1.0 - (collision_count / total_melody_events)`, floored at 0.0. A collision-free melody scores 1.0.
+**melody_support_score** (deterministic) — two sub-metrics averaged:
+- *Chord-tone ratio on strong beats*: `ratio * 10.0` where ratio is the proportion of downbeat melody notes that are chord tones (or strategy-specified target degrees) of the current chord. Perfect score at 10.0, degrades linearly.
+- *Voice-leading smoothness*: `ratio * 10.0` where ratio is the proportion of consecutive melody intervals that are a 3rd or smaller. Penalizes large leaps unless genre `motion_preference` is "leaping" (in which case 4ths/5ths don't penalize).
+
+**collision_risk_score** (deterministic) — count of unisons and minor 2nds between melody note events and voicing events on the same bar/beat. Scored as `(1.0 - (collision_count / total_melody_events)) * 10.0`, floored at 0.0. A collision-free melody scores 10.0.
+
+When `melodic_complement_id` is null (no melody), the evaluation node returns a default score of 5.0 for both dimensions (matching the groove evaluator's pattern for missing groove patterns at `evaluate_arrangements.py:97`).
 
 ### 7.2 Weight Integration
 
-New weight entries in `ObjectiveWeights`: `melody_support: 0.15`, `collision_risk: 0.10`.
+`CANONICAL_DEFAULT_WEIGHTS` in `ranking.py` is updated with all 12 dimensions summing to 1.0. Existing weights are scaled by 0.75 to make room for the two melody dimensions (0.25 total):
 
-**Conditional weight normalization:** Normalization happens at weight *application* time (during scoring), not at storage time. `ObjectiveWeights` stores the base weights including melody dimensions. At scoring time, check whether the session's arrangements include melodic complements. If yes, apply all weights as stored (they sum to 1.0 including melody dimensions). If no, exclude melody weights and renormalize the remaining weights proportionally so they sum to 1.0. This preserves the existing `ObjectiveWeights` validator (weights must sum to ~1.0 at storage time) while allowing melody-less sessions to score correctly. This is a session-level check — all candidates in a session go through the same pipeline.
+| Dimension | Current | With Melody |
+|-----------|---------|-------------|
+| genre_fit | 0.13 | 0.10 |
+| emotional_fit | 0.09 | 0.07 |
+| theoretical_coherence | 0.11 | 0.08 |
+| cadence_quality | 0.09 | 0.07 |
+| novelty | 0.09 | 0.07 |
+| loopability | 0.12 | 0.09 |
+| voice_leading | 0.10 | 0.07 |
+| register_density | 0.08 | 0.06 |
+| playability | 0.08 | 0.06 |
+| groove | 0.11 | 0.08 |
+| **melody_support** | — | **0.15** |
+| **collision_risk** | — | **0.10** |
+| **Total** | 1.00 | **1.00** |
+
+**Conditional weight normalization:** Normalization happens at weight *application* time (in `weighted_score()` in `ranking.py`), not at storage time. `ObjectiveWeights` stores the full 12-dimension weight set (summing to 1.0). At scoring time, check whether the session's arrangements include melodic complements. If yes, apply all weights as stored. If no, exclude `melody_support` and `collision_risk` weights and renormalize the remaining 10 weights proportionally so they sum to 1.0 (i.e., divide each by 0.75). This preserves the existing `ObjectiveWeights` validator while allowing melody-less sessions to score correctly. This is a session-level check — all candidates in a session go through the same pipeline.
+
+The `MelodyHarmonyEvaluator` uses ULID prefix `mhev_` for its evaluation entity IDs.
 
 ### 7.3 Deferred
 
@@ -267,7 +300,12 @@ New weight entries in `ObjectiveWeights`: `melody_support: 0.15`, `collision_ris
 
 ### 8.1 Piano Roll
 
-`PianoRoll.tsx` gains a third note lane for melody, rendered in a distinct color from the design tokens (separate from voicing and bass colors). Melody notes render in the same coordinate space — they naturally sit above voicing events due to their higher register. No structural change to the canvas rendering logic, just a third pass over `melodic_complement.note_events`.
+`PianoRoll.tsx` gains a third note lane for melody, rendered in a distinct color from the design tokens (separate from voicing and bass colors). Melody notes render in the same coordinate space — they naturally sit above voicing events due to their higher register. A third rendering pass over `melodic_complement.note_events`.
+
+**Required updates to existing functions:**
+- `collectMidiValues()` (line 30): must include melody note pitches in MIDI range calculation, or the canvas Y-axis will clip melody notes (since melody has the highest pitches in the arrangement)
+- `hasEvents` guard (line 66): must include melody events so the "No events to display" fallback accounts for melody-only scenarios
+- `allBars` calculation (line 84): must include melody bar extents for total bar count
 
 ### 8.2 Transport Bar
 
@@ -279,11 +317,27 @@ New weight entries in `ObjectiveWeights`: `melody_support: 0.15`, `collision_ris
 
 ### 8.4 Melody Synth
 
-Single default synth for all genres: a simple triangle-wave lead with moderate attack/release. Added to `audioPresets.ts` as a top-level `MELODY_DEFAULT` preset, not per-genre. Genre-specific presets deferred to M5c.
+Single default `MonoSynth` (melody is single-line, so monophonic is correct — matching bass which also uses `MonoSynth`). Triangle-wave oscillator with moderate attack/release. Added to `audioPresets.ts` as a standalone `MELODY_DEFAULT: SynthOptions` constant, **not** part of the `GenrePreset` interface. The `audioEngine.ts` play function constructs the melody synth from this constant directly, not via `getPreset()`. Genre-specific presets deferred to M5c (at which point `GenrePreset` gains a `melody` field).
 
 ### 8.5 Comparison Playback
 
-Melody becomes a new lane with its own mute/solo in the DAW comparison view, following the same pattern as voicing and bass lanes.
+The current comparison audio engine (`comparisonAudioEngine.ts`) uses **per-lane muting** — one shared `Volume` node per candidate, with `mutedLanes: Record<string, boolean>` in `comparisonAudioStore.ts`. Voicing and bass within a lane share a single volume and cannot be independently muted.
+
+Adding melody as a separately mutable track within each lane requires expanding `LaneSynths` from `{ poly, mono, vol }` to separate volumes per track:
+
+```typescript
+interface LaneSynths {
+  poly: PolySynth        // voicing
+  mono: MonoSynth        // bass
+  melody: MonoSynth      // melody (new)
+  voicingVol: Volume      // per-track volume (new)
+  bassVol: Volume         // per-track volume (new)
+  melodyVol: Volume       // per-track volume (new)
+  laneVol: Volume         // master lane volume (existing vol, renamed)
+}
+```
+
+`comparisonAudioStore.ts` expands from `mutedLanes` to a two-dimensional model: `trackMutes: Record<string, { voicing: boolean; bass: boolean; melody: boolean }>` keyed by `candidateId`. The existing `toggleMute(candidateId)` for lane-level muting is preserved; a new `toggleTrackMute(candidateId, track)` handles per-track muting within a lane.
 
 ### 8.6 Conditional Rendering
 
@@ -310,32 +364,34 @@ All melody UI elements are conditional on `melodic_complement_id` being non-null
 
 | File | Action | Purpose |
 |------|--------|---------|
-| `models/realization.py` | Edit | Add `MelodicNoteEvent`, `MelodicComplement`, `PhraseInstruction`, `MelodicStrategyResponse` |
+| `models/melody.py` | Create | `MelodicNoteEvent`, `MelodicComplement`, `PhraseInstruction`, `MelodicStrategyResponse` |
 | `engine/state.py` | Edit | Add `melodic_complements` key |
 | `domain/style/genres/dream_pop.yaml` | Edit | Add `melodic_tendencies` |
 | `domain/style/genres/synthwave.yaml` | Edit | Add `melodic_tendencies` |
 | `domain/style/genres/cinematic.yaml` | Edit | Add `melodic_tendencies` |
 | `prompts/melody.py` | Create | Strategy prompt template |
 | `domain/realization/melody.py` | Create | `MelodyGenerator` service |
-| `engine/nodes/generate_melody.py` | Create | LangGraph node |
-| `engine/graph.py` | Edit | Wire `generate_melody` into pipeline |
-| `domain/realization/assembly.py` | Edit | Accept optional melody in assembly |
-| `domain/evaluation/melody_harmony.py` | Create | `MelodyHarmonyEvaluator` |
-| `domain/evaluation/` (orchestrator) | Edit | Conditional activation, weight normalization |
+| `engine/nodes/generate_melody.py` | Create | LangGraph node (hybrid: groove state pattern + voicing Gemini pattern) |
+| `engine/nodes/assemble_arrangements.py` | Edit | Add melody round-robin assignment (matching groove pattern at lines 85-90) |
+| `engine/graph.py` | Edit | Wire `generate_melody` into pipeline with `partial(generate_melody, gemini=gemini)` |
+| `domain/evaluation/melody_harmony.py` | Create | `MelodyHarmonyEvaluator` (ULID prefix `mhev_`) |
+| `engine/nodes/evaluate_arrangements.py` | Edit | Add conditional MelodyHarmonyEvaluator call (matching groove evaluator pattern at lines 87-98) |
+| `domain/evaluation/ranking.py` | Edit | Update `CANONICAL_DEFAULT_WEIGHTS` with 12-dimension weight set; conditional normalization in `weighted_score()` |
 
 ### Frontend
 
 | File | Action | Purpose |
 |------|--------|---------|
-| `frontend/src/services/api.ts` | Edit | Add `melodic_complement` to arrangement response types |
-| `frontend/src/stores/audioStore.ts` | Edit | Add melody to `mutedTracks` |
-| `frontend/src/services/audioPresets.ts` | Edit | Add `MELODY_DEFAULT` preset |
-| `frontend/src/services/audioEngine.ts` | Edit | Add melody synth scheduling to playback |
-| `frontend/src/services/comparisonAudioEngine.ts` | Edit | Add melody lane to comparison playback |
+| `frontend/src/services/api.ts` | Edit | Add `melodic_complement` to `ArrangementDetail` interface |
+| `frontend/src/stores/audioStore.ts` | Edit | Add `melody` to `mutedTracks` and `toggleMute` union |
+| `frontend/src/services/audioPresets.ts` | Edit | Add standalone `MELODY_DEFAULT: SynthOptions` constant |
+| `frontend/src/services/audioEngine.ts` | Edit | Add melody `MonoSynth` scheduling to playback |
+| `frontend/src/services/comparisonAudioEngine.ts` | Edit | Expand `LaneSynths` for per-track volumes; add melody synth per lane |
+| `frontend/src/stores/comparisonAudioStore.ts` | Edit | Add `trackMutes` model and `toggleTrackMute()` action |
 | `frontend/src/utils/designTokens.ts` | Edit | Add melody color token |
-| `frontend/src/components/PianoRoll.tsx` | Edit | Melody lane rendering |
+| `frontend/src/components/PianoRoll.tsx` | Edit | Melody lane rendering; update `collectMidiValues`, `hasEvents`, `allBars` |
 | `frontend/src/components/TransportBar.tsx` | Edit | Melody mute toggle |
-| `frontend/src/components/ComparisonView.tsx` | Edit | Melody lane in DAW view |
+| `frontend/src/components/ComparisonView.tsx` | Edit | Melody lane with per-track mute/solo in DAW view |
 
 ### Tests
 
