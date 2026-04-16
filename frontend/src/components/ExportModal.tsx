@@ -1,7 +1,7 @@
 import { useState } from "react";
 import JSZip from "jszip";
 import { useExportStore } from "../stores/exportStore";
-import { getArtifactDownloadUrl } from "../services/api";
+import { getArtifactDownloadUrl, listArrangements } from "../services/api";
 import type { ExportPackage } from "../services/api";
 
 interface CandidateEntry {
@@ -95,7 +95,28 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
   const handleExport = async () => {
     if (selectedIds.size === 0 || selectedFormats.size === 0) return;
     clearError();
-    await createExport(sessionId, Array.from(selectedIds), Array.from(selectedFormats));
+
+    // Resolve IDs: if they're progression candidates (prog_), look up their arrangement IDs
+    let arrangementIds = Array.from(selectedIds);
+    if (arrangementIds.some((id) => id.startsWith("prog_"))) {
+      const resolved: string[] = [];
+      for (const id of arrangementIds) {
+        if (id.startsWith("arr_")) {
+          resolved.push(id);
+        } else {
+          // Fetch arrangements for this progression candidate
+          const arrangements = await listArrangements(id);
+          resolved.push(...arrangements.map((a) => a.id));
+        }
+      }
+      arrangementIds = resolved;
+    }
+
+    if (arrangementIds.length === 0) {
+      return; // No arrangements found
+    }
+
+    await createExport(sessionId, arrangementIds, Array.from(selectedFormats));
   };
 
   const handleDownloadAll = async (pkg: ExportPackage) => {
