@@ -67,9 +67,9 @@ test.describe('Melodic Complement (M5b)', () => {
     await openComparison(page, 2);
 
     // Per-track mute buttons (V, B, M) should be visible in comparison lanes
-    await expect(page.getByRole('button', { name: /mute voicing/i }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /mute bass/i }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /mute melody/i }).first()).toBeVisible();
+    await expect(page.getByTitle(/mute voicing/i).first()).toBeVisible();
+    await expect(page.getByTitle(/mute bass/i).first()).toBeVisible();
+    await expect(page.getByTitle(/mute melody/i).first()).toBeVisible();
   });
 
   test('32: melody-scores-in-comparison', async ({ page, testSession }) => {
