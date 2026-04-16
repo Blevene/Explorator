@@ -17,8 +17,8 @@ def melody_strategy_prompt(
     chords = " → ".join(chord_symbols)
     n_bars = len(chord_symbols)
 
-    ceiling = ", ".join(f"bar {i + 1}: {n}" for i, n in enumerate(voicing_ceiling_notes))
-    floor = ", ".join(f"bar {i + 1}: {n}" for i, n in enumerate(bass_floor_notes))
+    ceiling = ", ".join(f"bar {i}: {n}" for i, n in enumerate(voicing_ceiling_notes))
+    floor = ", ".join(f"bar {i}: {n}" for i, n in enumerate(bass_floor_notes))
 
     tendencies_text = ""
     if melodic_tendencies:
@@ -42,8 +42,8 @@ def melody_strategy_prompt(
         "and whether to rest after the phrase.\n"
         "- Provide an overall_contour summary and a one-sentence rationale.\n\n"
         "For each phrase, specify:\n"
-        "- start_bar: first bar number (1-indexed)\n"
-        "- end_bar: last bar number (inclusive)\n"
+        "- start_bar: first bar number (0-indexed, so first bar is 0)\n"
+        "- end_bar: last bar number (inclusive, 0-indexed)\n"
         "- contour: one of 'arch', 'ascending', 'descending', 'wave', 'static'\n"
         "- density: one of 'sparse', 'moderate', 'active'\n"
         "- strong_beat_targets: list of scale degree names like 'root', '3rd', '5th', '7th'\n"

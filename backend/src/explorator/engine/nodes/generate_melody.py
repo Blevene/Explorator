@@ -193,6 +193,18 @@ async def generate_melody(state: ExplorationState, *, gemini: GeminiClient) -> d
         if not strategy.phrase_instructions:
             strategy = _default_strategy(len(chord_symbols))
 
+        # Safety: normalize phrase bars to 0-based. The prompt asks for 0-indexed
+        # but Gemini may return 1-indexed anyway. Detect by checking if first
+        # phrase starts at 1 when we expect 0.
+        if (
+            strategy.phrase_instructions
+            and strategy.phrase_instructions[0].start_bar == 1
+            and len(chord_symbols) > 1
+        ):
+            for pi in strategy.phrase_instructions:
+                pi.start_bar = max(0, pi.start_bar - 1)
+                pi.end_bar = max(0, pi.end_bar - 1)
+
         # Get voicing events for collision avoidance
         voicing_events = vp.voicing_events if vp else []
 
