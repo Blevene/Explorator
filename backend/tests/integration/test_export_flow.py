@@ -63,6 +63,7 @@ def test_full_export_produces_valid_files(export_dir):
     json_ctx = JsonRenderContext(
         session=session, creative_brief=brief, candidate=candidate,
         arrangement=arrangement, voicing_plan=vp, bass_line=bl,
+        melodic_complement=None,
         scores={"tension_curve": 0.82, "voice_leading": 0.91},
         mutation_summaries=[],
     )
@@ -70,6 +71,7 @@ def test_full_export_produces_valid_files(export_dir):
     req = ExportRequest(
         label="C", short_id="a3f2b1",
         voicing_plan=vp, bass_line=bl,
+        melodic_complement=None,
         bpm=118.0, beats_per_bar=4,
         formats=["midi_combined", "json"],
         output_dir=export_dir,

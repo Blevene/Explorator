@@ -298,6 +298,7 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
         prog_id = arr_prog_map.get(arr_id, "")
         diversity_input.append({
             "id": arr_id,
+            "progression_candidate_id": prog_id,
             "weighted_total": sc_data["weighted_total"],
             "chord_symbols": prog_chord_lookup.get(prog_id, []),
             "scores": sc_data["scores"],

@@ -56,6 +56,7 @@ def _make_context() -> JsonRenderContext:
         arrangement=arrangement,
         voicing_plan=voicing_plan,
         bass_line=bass_line,
+        melodic_complement=None,
         scores={"tension_curve": 0.82, "voice_leading": 0.91},
         mutation_summaries=["reharmonize bar 3"],
     )

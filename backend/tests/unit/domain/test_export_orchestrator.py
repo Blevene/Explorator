@@ -18,7 +18,7 @@ from explorator.models.realization import (
 class TestBuildFilename:
     def test_midi_combined(self):
         name = build_filename("C", "a3f2b1", "midi_combined")
-        assert name == "candidate-C-a3f2b1-chords-bass.mid"
+        assert name == "candidate-C-a3f2b1-chords-bass-melody.mid"
 
     def test_midi_separate_chords(self):
         name = build_filename("C", "a3f2b1", "midi_separate_chords")
@@ -52,6 +52,7 @@ class TestRenderAndWriteArtifacts:
             short_id="a3f2b1",
             voicing_plan=vp,
             bass_line=bl,
+            melodic_complement=None,
             bpm=120.0,
             beats_per_bar=4,
             formats=["midi_combined"],
@@ -80,6 +81,7 @@ class TestRenderAndWriteArtifacts:
             short_id="a3f2b1",
             voicing_plan=vp,
             bass_line=bl,
+            melodic_complement=None,
             bpm=120.0,
             beats_per_bar=4,
             formats=["midi_combined", "midi_separate", "json"],
