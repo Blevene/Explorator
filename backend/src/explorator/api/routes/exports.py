@@ -152,6 +152,17 @@ async def create_export(
         voicing_plan = VoicingPlan.model_validate(vp_data)
         bass_line = BassLine.model_validate(bl_data)
 
+        # Load optional MelodicComplement
+        from explorator.graph.melodic_complement_repo import MelodicComplementRepo
+        from explorator.models.melody import MelodicComplement
+        melodic_complement: MelodicComplement | None = None
+        mc_id = ac_data.get("melodic_complement_id")
+        if mc_id:
+            mc_repo = MelodicComplementRepo(driver)
+            mc_data = await mc_repo.get_by_id(mc_id)
+            if mc_data:
+                melodic_complement = MelodicComplement.model_validate(mc_data)
+
         # Determine label for filenames
         ac_meta = ac_data.get("metadata") or {}
         if isinstance(ac_meta, str):
@@ -213,6 +224,7 @@ async def create_export(
                     arrangement=arrangement_obj,
                     voicing_plan=voicing_plan,
                     bass_line=bass_line,
+                    melodic_complement=melodic_complement,
                     scores={},
                     mutation_summaries=[],
                 )
@@ -223,6 +235,7 @@ async def create_export(
             short_id=short_id,
             voicing_plan=voicing_plan,
             bass_line=bass_line,
+            melodic_complement=melodic_complement,
             bpm=bpm,
             beats_per_bar=beats_per_bar,
             formats=body.formats,

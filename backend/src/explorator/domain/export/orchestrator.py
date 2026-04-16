@@ -11,13 +11,15 @@ from explorator.domain.export.midi_renderer import (
     render_combined_midi,
     render_separate_midi,
 )
+from explorator.models.melody import MelodicComplement
 from explorator.models.realization import BassLine, VoicingPlan
 
 
 _FILENAME_MAP = {
-    "midi_combined": "candidate-{label}-{sid}-chords-bass.mid",
+    "midi_combined": "candidate-{label}-{sid}-chords-bass-melody.mid",
     "midi_separate_chords": "candidate-{label}-{sid}-chords.mid",
     "midi_separate_bass": "candidate-{label}-{sid}-bass.mid",
+    "midi_separate_melody": "candidate-{label}-{sid}-melody.mid",
     "json": "candidate-{label}-{sid}.json",
 }
 
@@ -36,6 +38,7 @@ class ExportRequest:
     short_id: str
     voicing_plan: VoicingPlan
     bass_line: BassLine
+    melodic_complement: MelodicComplement | None
     bpm: float
     beats_per_bar: int
     formats: list[str]
@@ -50,7 +53,10 @@ def render_and_write_artifacts(req: ExportRequest) -> list[dict[str, Any]]:
 
     for fmt in req.formats:
         if fmt == "midi_combined":
-            data = render_combined_midi(req.voicing_plan, req.bass_line, req.bpm, req.beats_per_bar)
+            data = render_combined_midi(
+                req.voicing_plan, req.bass_line, req.bpm, req.beats_per_bar,
+                melodic_complement=req.melodic_complement,
+            )
             fname = build_filename(req.label, req.short_id, "midi_combined")
             path = os.path.join(req.output_dir, fname)
             with open(path, "wb") as f:
@@ -58,8 +64,13 @@ def render_and_write_artifacts(req: ExportRequest) -> list[dict[str, Any]]:
             artifacts.append({"artifact_type": "midi_combined", "path": path, "filename": fname})
 
         elif fmt == "midi_separate":
-            separate = render_separate_midi(req.voicing_plan, req.bass_line, req.bpm, req.beats_per_bar)
-            for voice, key in [("chords", "chords"), ("bass", "bass")]:
+            separate = render_separate_midi(
+                req.voicing_plan, req.bass_line, req.bpm, req.beats_per_bar,
+                melodic_complement=req.melodic_complement,
+            )
+            for voice, key in [("chords", "chords"), ("bass", "bass"), ("melody", "melody")]:
+                if key not in separate:
+                    continue
                 fname = build_filename(req.label, req.short_id, f"midi_separate_{voice}")
                 path = os.path.join(req.output_dir, fname)
                 with open(path, "wb") as f:

@@ -6,6 +6,7 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
+from explorator.models.melody import MelodicComplement
 from explorator.models.realization import ArrangementCandidate, BassLine, VoicingPlan
 from explorator.models.session import CreativeBrief, Session
 from explorator.models.harmony import ProgressionCandidate
@@ -23,6 +24,7 @@ class JsonRenderContext:
     arrangement: ArrangementCandidate
     voicing_plan: VoicingPlan
     bass_line: BassLine
+    melodic_complement: MelodicComplement | None
     scores: dict[str, float]
     mutation_summaries: list[str]
 
@@ -69,6 +71,16 @@ def render_json(ctx: JsonRenderContext) -> str:
                 }
                 for ev in ctx.bass_line.note_events
             ],
+            "melody": [
+                {
+                    "bar": ev.bar,
+                    "beat": ev.beat,
+                    "pitch": ev.pitch,
+                    "velocity": ev.velocity,
+                    "duration_beats": ev.duration_beats,
+                }
+                for ev in (ctx.melodic_complement.note_events if ctx.melodic_complement else [])
+            ] or None,
             "lineage": {
                 "origin_round": ctx.candidate.metadata.get("origin_round", 1),
                 "mutations": ctx.mutation_summaries,

@@ -6,6 +6,7 @@ import io
 
 import pretty_midi
 
+from explorator.models.melody import MelodicComplement
 from explorator.models.realization import BassLine, VoicingPlan
 from explorator.utils import pitch_str_to_midi
 
@@ -17,6 +18,7 @@ class MidiRenderError(Exception):
 _CHORD_VELOCITY = 80
 _CHORD_PROGRAM = 0   # Acoustic Grand Piano
 _BASS_PROGRAM = 33   # Electric Bass Finger
+_MELODY_PROGRAM = 73  # Flute (clean melodic lead)
 
 
 def _time_sec(bar: int, beat: float, beats_per_bar: int, bpm: float) -> float:
@@ -33,8 +35,9 @@ def _build_tracks(
     bass_line: BassLine,
     bpm: float,
     beats_per_bar: int,
-) -> tuple[pretty_midi.Instrument, pretty_midi.Instrument]:
-    """Build chord and bass Instrument objects."""
+    melodic_complement: MelodicComplement | None = None,
+) -> tuple[pretty_midi.Instrument, pretty_midi.Instrument, pretty_midi.Instrument | None]:
+    """Build chord, bass, and optional melody Instrument objects."""
     chord_inst = pretty_midi.Instrument(program=_CHORD_PROGRAM, name="Chords")
     for ev in voicing_plan.voicing_events:
         start = _time_sec(ev.bar, ev.beat, beats_per_bar, bpm)
@@ -54,11 +57,22 @@ def _build_tracks(
             pretty_midi.Note(velocity=ev.velocity, pitch=midi_num, start=start, end=end)
         )
 
-    total_notes = len(chord_inst.notes) + len(bass_inst.notes)
-    if total_notes == 0:
-        raise MidiRenderError("No notes to render — VoicingPlan and BassLine are both empty")
+    melody_inst: pretty_midi.Instrument | None = None
+    if melodic_complement and melodic_complement.note_events:
+        melody_inst = pretty_midi.Instrument(program=_MELODY_PROGRAM, name="Melody")
+        for ev in melodic_complement.note_events:
+            start = _time_sec(ev.bar, ev.beat, beats_per_bar, bpm)
+            end = start + _duration_sec(ev.duration_beats, bpm)
+            midi_num = pitch_str_to_midi(ev.pitch)
+            melody_inst.notes.append(
+                pretty_midi.Note(velocity=ev.velocity, pitch=midi_num, start=start, end=end)
+            )
 
-    return chord_inst, bass_inst
+    total_notes = len(chord_inst.notes) + len(bass_inst.notes) + (len(melody_inst.notes) if melody_inst else 0)
+    if total_notes == 0:
+        raise MidiRenderError("No notes to render — VoicingPlan, BassLine, and MelodicComplement are all empty")
+
+    return chord_inst, bass_inst, melody_inst
 
 
 def _to_bytes(midi: pretty_midi.PrettyMIDI) -> bytes:
@@ -72,12 +86,17 @@ def render_combined_midi(
     bass_line: BassLine,
     bpm: float,
     beats_per_bar: int = 4,
+    melodic_complement: MelodicComplement | None = None,
 ) -> bytes:
-    """One MIDI file with two tracks (chords + bass)."""
-    chord_inst, bass_inst = _build_tracks(voicing_plan, bass_line, bpm, beats_per_bar)
+    """One MIDI file with tracks (chords + bass + optional melody)."""
+    chord_inst, bass_inst, melody_inst = _build_tracks(
+        voicing_plan, bass_line, bpm, beats_per_bar, melodic_complement,
+    )
     midi = pretty_midi.PrettyMIDI(initial_tempo=bpm)
     midi.instruments.append(chord_inst)
     midi.instruments.append(bass_inst)
+    if melody_inst:
+        midi.instruments.append(melody_inst)
     return _to_bytes(midi)
 
 
@@ -86,9 +105,12 @@ def render_separate_midi(
     bass_line: BassLine,
     bpm: float,
     beats_per_bar: int = 4,
+    melodic_complement: MelodicComplement | None = None,
 ) -> dict[str, bytes]:
-    """Separate MIDI files: {"chords": bytes, "bass": bytes}."""
-    chord_inst, bass_inst = _build_tracks(voicing_plan, bass_line, bpm, beats_per_bar)
+    """Separate MIDI files: {"chords": bytes, "bass": bytes, "melody": bytes (if present)}."""
+    chord_inst, bass_inst, melody_inst = _build_tracks(
+        voicing_plan, bass_line, bpm, beats_per_bar, melodic_complement,
+    )
 
     chords_midi = pretty_midi.PrettyMIDI(initial_tempo=bpm)
     chords_midi.instruments.append(chord_inst)
@@ -96,4 +118,11 @@ def render_separate_midi(
     bass_midi = pretty_midi.PrettyMIDI(initial_tempo=bpm)
     bass_midi.instruments.append(bass_inst)
 
-    return {"chords": _to_bytes(chords_midi), "bass": _to_bytes(bass_midi)}
+    result: dict[str, bytes] = {"chords": _to_bytes(chords_midi), "bass": _to_bytes(bass_midi)}
+
+    if melody_inst:
+        melody_midi = pretty_midi.PrettyMIDI(initial_tempo=bpm)
+        melody_midi.instruments.append(melody_inst)
+        result["melody"] = _to_bytes(melody_midi)
+
+    return result
