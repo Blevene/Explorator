@@ -45,6 +45,7 @@ export const CANVAS_COLORS = {
   barLine: "#252a38",
   voicingNote: "#f0b429",
   bassNote: "#6c9bef",
+  melodyNote: "#34d399",  // emerald green, distinct from voicing (amber) and bass (blue)
   cursorLine: "#f0b429",
   labelText: "#555e74",
   headerText: "#8891a5",

@@ -30,6 +30,12 @@ export const GENRE_PRESETS: Record<string, GenrePreset> = {
   },
 }
 
+export const MELODY_DEFAULT: SynthOptions = {
+  oscillator: { type: "triangle" },
+  envelope: { attack: 0.08, release: 0.6 },
+  volume: -8,
+}
+
 export function getPreset(genre: string): GenrePreset {
   const key = genre.toLowerCase().replace(/[\s-]/g, "_")
   return GENRE_PRESETS[key] ?? GENRE_PRESETS["dream_pop"]

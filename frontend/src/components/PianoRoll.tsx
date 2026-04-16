@@ -35,6 +35,9 @@ function collectMidiValues(arrangement: ArrangementDetail): number[] {
   arrangement.bass_line?.note_events.forEach((ev) => {
     midis.push(pitchToMidi(ev.pitch))
   })
+  arrangement.melodic_complement?.note_events.forEach((ev) => {
+    midis.push(pitchToMidi(ev.pitch))
+  })
   return midis
 }
 
@@ -63,7 +66,8 @@ export default function PianoRoll({
 
   const voicingEvents = arrangement.voicing_plan?.voicing_events ?? []
   const bassEvents = arrangement.bass_line?.note_events ?? []
-  const hasEvents = voicingEvents.length > 0 || bassEvents.length > 0
+  const melodyEvents = arrangement.melodic_complement?.note_events ?? []
+  const hasEvents = voicingEvents.length > 0 || bassEvents.length > 0 || melodyEvents.length > 0
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -84,6 +88,7 @@ export default function PianoRoll({
     const allBars = [
       ...voicingEvents.map((e) => e.bar + Math.ceil(e.duration_beats / 4)),
       ...bassEvents.map((e) => e.bar + Math.ceil(e.duration_beats / 4)),
+      ...melodyEvents.map((e) => e.bar + Math.ceil(e.duration_beats / 4)),
     ]
     const computedBars = allBars.length > 0 ? Math.max(...allBars) : 8
     const totalBars = totalBarsProp ?? computedBars
@@ -198,6 +203,23 @@ export default function PianoRoll({
     }
     ctx.globalAlpha = 1.0
 
+    // Draw melody notes — emerald green
+    const melodyOpacity = mutedTracks.melody ? 0.2 : 1.0
+    ctx.globalAlpha = melodyOpacity
+    for (const ev of melodyEvents) {
+      const midi = pitchToMidi(ev.pitch)
+      if (midi < minMidi || midi > maxMidi) continue
+      const x = LABEL_WIDTH + (ev.bar + (ev.beat - 1) / 4) * BAR_WIDTH
+      const y = HEADER_HEIGHT + (maxMidi - midi) * ROW_HEIGHT + 1
+      const noteWidth = Math.max(compact ? 2 : 4, (ev.duration_beats / 4) * BAR_WIDTH - 2)
+
+      ctx.fillStyle = CANVAS_COLORS.melodyNote
+      ctx.beginPath()
+      ctx.roundRect(x, y, noteWidth, ROW_HEIGHT - 2, compact ? 1 : 2)
+      ctx.fill()
+    }
+    ctx.globalAlpha = 1.0
+
     // Groove accent overlay
     const grooveEvents = arrangement?.groove_pattern?.pattern_events ?? []
     const beatsPerBar = 4
@@ -227,7 +249,7 @@ export default function PianoRoll({
       ctx.lineTo(cursorX, canvasHeight)
       ctx.stroke()
     }
-  }, [arrangement, currentPosition, playing, mutedTracks, genre, voicingEvents, bassEvents, BAR_WIDTH, ROW_HEIGHT, compact, showCursor, totalBarsProp])
+  }, [arrangement, currentPosition, playing, mutedTracks, genre, voicingEvents, bassEvents, melodyEvents, BAR_WIDTH, ROW_HEIGHT, compact, showCursor, totalBarsProp])
 
   // Auto-scroll to keep cursor in view
   useEffect(() => {
