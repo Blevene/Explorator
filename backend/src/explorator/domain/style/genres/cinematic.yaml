@@ -35,6 +35,14 @@ groove_tendencies:
   articulation_style: sustained_swells
   syncopation_level: minimal
 
+melodic_tendencies:
+  motion_preference: leaping
+  range_placement: above_voicing
+  density: sparse
+  phrase_length: 4
+  strong_beat_preference: roots_and_fifths
+  rest_between_phrases: true
+
 common_devices:
   - pedal tones under moving harmony
   - deceptive cadences
