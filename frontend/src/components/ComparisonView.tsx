@@ -70,7 +70,7 @@ export default function ComparisonView({
   }, [candidateIds.join(",")])
 
   // Read comparison audio state
-  const { playing: compPlaying, currentPosition: compPosition, mutedLanes, soloedLanes } = useComparisonAudioStore()
+  const { playing: compPlaying, currentPosition: compPosition, mutedLanes, soloedLanes, trackMutes, toggleTrackMute } = useComparisonAudioStore()
 
   // On mount: stop single-arrangement playback and clear stale mute state
   useEffect(() => {
@@ -91,6 +91,16 @@ export default function ComparisonView({
     }
   }, [mutedLanes, soloedLanes, candidateIds])
 
+  // Sync per-track mute state to engine
+  useEffect(() => {
+    for (const id of candidateIds) {
+      const mutes = trackMutes[id] ?? { voicing: false, bass: false, melody: false }
+      comparisonAudioEngine.setTrackMute(id, "voicing", mutes.voicing)
+      comparisonAudioEngine.setTrackMute(id, "bass", mutes.bass)
+      comparisonAudioEngine.setTrackMute(id, "melody", mutes.melody)
+    }
+  }, [trackMutes, candidateIds])
+
   // Compute audibility per lane (for visual dimming)
   const anySoloed = Object.values(soloedLanes).some(Boolean)
   function isLaneAudible(id: string): boolean {
@@ -102,6 +112,7 @@ export default function ComparisonView({
     const allBars = [
       ...(a.voicing_plan?.voicing_events ?? []).map((e) => e.bar + Math.ceil(e.duration_beats / 4)),
       ...(a.bass_line?.note_events ?? []).map((e) => e.bar + Math.ceil(e.duration_beats / 4)),
+      ...(a.melodic_complement?.note_events ?? []).map((e) => e.bar + Math.ceil(e.duration_beats / 4)),
     ]
     return allBars.length > 0 ? Math.max(...allBars) : 0
   }))
@@ -162,6 +173,28 @@ export default function ComparisonView({
                 score={a.scorecard?.weighted_total ?? a.weighted_total ?? 0}
                 audible={audible}
               />
+              <div className="flex flex-col justify-center gap-1 px-1">
+                {(["voicing", "bass", "melody"] as const).map((track) => {
+                  const label = track === "voicing" ? "V" : track === "bass" ? "B" : "M"
+                  const muted = trackMutes[candidateId]?.[track] ?? false
+                  return (
+                    <button
+                      key={track}
+                      title={`${muted ? "Unmute" : "Mute"} ${track}`}
+                      onClick={() => toggleTrackMute(candidateId, track)}
+                      className="text-[10px] font-bold rounded px-1 py-0.5 leading-none"
+                      style={{
+                        background: muted ? 'var(--surface-3)' : 'var(--accent-subtle)',
+                        color: muted ? 'var(--text-muted)' : 'var(--accent)',
+                        opacity: muted ? 0.5 : 1,
+                        border: '1px solid var(--border-subtle)',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
               <div className="flex-1">
                 <PianoRoll
                   arrangement={a}
