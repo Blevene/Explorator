@@ -66,6 +66,10 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
     audioEngine.setBassMute(!mutedTracks.bass)
   }
 
+  function handleMelodyMute() {
+    audioEngine.setMelodyMute(!mutedTracks.melody)
+  }
+
   function handleVolumeChange(e: React.ChangeEvent<HTMLInputElement>) {
     audioEngine.setVolume(Number(e.target.value))
   }
@@ -74,6 +78,7 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
   const isLoopActive = loop
   const isVoicingMuted = mutedTracks.voicing
   const isBassMuted = mutedTracks.bass
+  const isMelodyMuted = mutedTracks.melody
 
   return (
     <div className="h-12 bg-slate-900 border-b border-slate-700 flex items-center px-3 gap-1">
@@ -161,7 +166,9 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
         onClick={handleVoicingMute}
         title={isVoicingMuted ? "Unmute voicing" : "Mute voicing"}
         className="px-2 py-1 rounded text-xs font-medium transition-colors"
-        style={!isVoicingMuted ? { color: "#fbbf24", background: "#fbbf2415" } : { color: "#475569" }}
+        style={!isVoicingMuted
+          ? { color: "var(--accent-primary)", background: "var(--accent-primary-dim)" }
+          : { color: "var(--text-muted)" }}
       >
         Chords
       </button>
@@ -171,9 +178,23 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
         onClick={handleBassMute}
         title={isBassMuted ? "Unmute bass" : "Mute bass"}
         className="px-2 py-1 rounded text-xs font-medium transition-colors"
-        style={!isBassMuted ? { color: "#22d3ee", background: "#22d3ee15" } : { color: "#475569" }}
+        style={!isBassMuted
+          ? { color: "var(--accent-secondary)", background: "var(--accent-secondary-dim)" }
+          : { color: "var(--text-muted)" }}
       >
         Bass
+      </button>
+
+      {/* Mute Melody */}
+      <button
+        onClick={handleMelodyMute}
+        title={isMelodyMuted ? "Unmute melody" : "Mute melody"}
+        className="px-2 py-1 rounded text-xs font-medium transition-colors"
+        style={!isMelodyMuted
+          ? { color: "var(--accent-tertiary)", background: "var(--accent-tertiary-dim)" }
+          : { color: "var(--text-muted)" }}
+      >
+        Melody
       </button>
 
       <Divider />

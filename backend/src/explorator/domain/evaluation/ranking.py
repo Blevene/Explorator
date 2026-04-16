@@ -26,27 +26,43 @@ CANONICAL_DEFAULT_WEIGHTS = ObjectiveWeights(
     status="active",
     profile_name="canonical_default",
     weights={
-        "genre_fit": 0.13,
-        "emotional_fit": 0.09,
-        "theoretical_coherence": 0.11,
-        "cadence_quality": 0.09,
-        "novelty": 0.09,
-        "loopability": 0.12,
-        "voice_leading": 0.10,
-        "register_density": 0.08,
-        "playability": 0.08,
-        "groove": 0.11,
+        "genre_fit": 0.10,
+        "emotional_fit": 0.07,
+        "theoretical_coherence": 0.08,
+        "cadence_quality": 0.07,
+        "novelty": 0.07,
+        "loopability": 0.09,
+        "voice_leading": 0.07,
+        "register_density": 0.06,
+        "playability": 0.06,
+        "groove": 0.08,
+        "melody_support": 0.15,
+        "collision_risk": 0.10,
     },
 )
+
+
+_MELODY_DIMS = {"melody_support", "collision_risk"}
 
 
 def weighted_score(
     scorecard: AggregateScorecard,
     weights: ObjectiveWeights,
+    has_melody: bool = True,
 ) -> float:
-    """Compute weighted total from scorecard and weights."""
+    """Compute weighted total from scorecard and weights.
+
+    When has_melody is False, melody dimensions are excluded and remaining
+    weights are renormalized to sum to 1.0.
+    """
+    active_weights = weights.weights
+    if not has_melody:
+        active_weights = {k: v for k, v in active_weights.items() if k not in _MELODY_DIMS}
+        weight_sum = sum(active_weights.values())
+        if weight_sum > 0:
+            active_weights = {k: v / weight_sum for k, v in active_weights.items()}
     total = 0.0
-    for dim, weight in weights.weights.items():
+    for dim, weight in active_weights.items():
         total += scorecard.scores.get(dim, 0.0) * weight
     return round(total, 3)
 

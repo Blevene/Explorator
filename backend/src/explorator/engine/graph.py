@@ -21,6 +21,7 @@ from explorator.engine.nodes.evaluate_progressions import evaluate_progressions
 from explorator.engine.nodes.generate import generate
 from explorator.engine.nodes.generate_bass import generate_bass
 from explorator.engine.nodes.generate_groove import generate_groove
+from explorator.engine.nodes.generate_melody import generate_melody
 from explorator.engine.nodes.load_context import load_context
 from explorator.engine.nodes.load_genre import load_genre
 from explorator.engine.nodes.load_memory import load_memory
@@ -44,6 +45,7 @@ def _add_m2_nodes(
     graph.add_node("plan_voicings", partial(plan_voicings, gemini=gemini))
     graph.add_node("generate_bass", generate_bass)
     graph.add_node("generate_groove", generate_groove)
+    graph.add_node("generate_melody", partial(generate_melody, gemini=gemini))
     graph.add_node("assemble", assemble_arrangements)
     graph.add_node("evaluate_arrangements", evaluate_arrangements)
     graph.add_node("rank_and_select", rank_and_select)
@@ -59,7 +61,8 @@ def _add_m2_edges(graph: StateGraph) -> None:
     graph.add_edge("load_context", "plan_voicings")
     graph.add_edge("plan_voicings", "generate_bass")
     graph.add_edge("generate_bass", "generate_groove")
-    graph.add_edge("generate_groove", "assemble")
+    graph.add_edge("generate_groove", "generate_melody")
+    graph.add_edge("generate_melody", "assemble")
     graph.add_edge("assemble", "evaluate_arrangements")
     graph.add_edge("evaluate_arrangements", "rank_and_select")
 

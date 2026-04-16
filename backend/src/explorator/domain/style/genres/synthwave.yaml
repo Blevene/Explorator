@@ -32,6 +32,14 @@ groove_tendencies:
   articulation_style: arpeggiated_pulse
   syncopation_level: low
 
+melodic_tendencies:
+  motion_preference: mixed
+  range_placement: above_voicing
+  density: moderate
+  phrase_length: 2
+  strong_beat_preference: chord_tones
+  rest_between_phrases: true
+
 common_devices:
   - minor key center
   - octave bass movement

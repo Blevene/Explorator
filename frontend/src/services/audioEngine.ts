@@ -9,7 +9,7 @@ import type { ArrangementDetail } from "./api"
 import { useAudioStore } from "../stores/audioStore"
 import { ensureTone, resetTone, normalizePitch, normalizePitches } from "./audioUtils"
 import type { ToneModule } from "./audioUtils"
-import { getPreset, buildPolySynth, buildMonoSynth } from "./audioPresets"
+import { getPreset, buildPolySynth, buildMonoSynth, MELODY_DEFAULT } from "./audioPresets"
 import * as comparisonAudioEngine from "./comparisonAudioEngine"
 
 // ---------------------------------------------------------------------------
@@ -27,6 +27,10 @@ let monoSynth: any | null = null
 let voicingVol: any | null = null
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let bassVol: any | null = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let melodySynth: any | null = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let melodyVol: any | null = null
 
 let rafId: number | null = null
 
@@ -104,6 +108,27 @@ function scheduleBass(
   }
 }
 
+function scheduleMelody(
+  T: ToneModule,
+  arrangement: ArrangementDetail,
+): void {
+  if (!arrangement.melodic_complement || !melodySynth) return
+  const transport = T.getTransport()
+
+  for (const ev of arrangement.melodic_complement.note_events) {
+    const time = `${ev.bar}:${ev.beat - 1}:0`
+    const dur = `0:${ev.duration_beats}:0`
+    const vel = ev.velocity / 127
+    const pitch = normalizePitch(ev.pitch)
+
+    transport.schedule((t: number) => {
+      const { mutedTracks } = useAudioStore.getState()
+      if (mutedTracks.melody) return
+      melodySynth?.triggerAttackRelease(pitch, dur, t, vel)
+    }, time)
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Dispose active synths / volumes
 // ---------------------------------------------------------------------------
@@ -117,6 +142,8 @@ function teardownNodes(): void {
   monoSynth = null
   voicingVol = null
   bassVol = null
+  if (melodySynth) { melodySynth.dispose(); melodySynth = null }
+  if (melodyVol) { melodyVol.dispose(); melodyVol = null }
 }
 
 // ---------------------------------------------------------------------------
@@ -146,6 +173,7 @@ export async function play(
   const allBars = [
     ...(arrangement.voicing_plan?.voicing_events ?? []).map((e) => e.bar + Math.ceil(e.duration_beats / 4)),
     ...(arrangement.bass_line?.note_events ?? []).map((e) => e.bar + Math.ceil(e.duration_beats / 4)),
+    ...(arrangement.melodic_complement?.note_events ?? []).map((e) => e.bar + Math.ceil(e.duration_beats / 4)),
   ]
   const totalBars = allBars.length > 0 ? Math.max(...allBars) : 8
 
@@ -165,13 +193,19 @@ export async function play(
   monoSynth = buildMonoSynth(T, preset.bass)
   monoSynth.connect(bassVol)
 
+  melodySynth = buildMonoSynth(T, MELODY_DEFAULT)
+  melodyVol = new T.Volume(MELODY_DEFAULT.volume ?? -8).toDestination()
+  melodySynth.connect(melodyVol)
+
   // Mute volumes if already muted
   if (store.mutedTracks.voicing) voicingVol.mute = true
   if (store.mutedTracks.bass) bassVol.mute = true
+  melodyVol.mute = store.mutedTracks.melody
 
   // Schedule notes
   scheduleVoicing(T, arrangement)
   scheduleBass(T, arrangement)
+  scheduleMelody(T, arrangement)
 
   // Start
   transport.start()
@@ -234,6 +268,11 @@ export function setBassMute(muted: boolean): void {
   if (bassVol) bassVol.mute = muted
   const store = useAudioStore.getState()
   if (store.mutedTracks.bass !== muted) store.toggleMute("bass")
+}
+
+export function setMelodyMute(muted: boolean): void {
+  if (melodyVol) melodyVol.mute = muted
+  useAudioStore.getState().toggleMute("melody")
 }
 
 export function setVolume(db: number): void {

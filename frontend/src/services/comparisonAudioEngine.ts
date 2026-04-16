@@ -8,7 +8,7 @@
 import type { ArrangementDetail } from "./api"
 import { ensureTone, normalizePitch, normalizePitches } from "./audioUtils"
 import type { ToneModule } from "./audioUtils"
-import { getPreset, buildPolySynth, buildMonoSynth } from "./audioPresets"
+import { getPreset, buildPolySynth, buildMonoSynth, MELODY_DEFAULT } from "./audioPresets"
 import { useComparisonAudioStore } from "../stores/comparisonAudioStore"
 import { useAudioStore } from "../stores/audioStore"
 import * as audioEngine from "./audioEngine"
@@ -23,7 +23,15 @@ interface LaneSynths {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mono: any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  vol: any
+  melody: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  voicingVol: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  bassVol: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  melodyVol: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  laneVol: any
 }
 
 let synths: Record<string, LaneSynths> = {}
@@ -63,7 +71,11 @@ function teardownNodes(): void {
   for (const lane of Object.values(synths)) {
     lane.poly?.dispose()
     lane.mono?.dispose()
-    lane.vol?.dispose()
+    lane.melody?.dispose()
+    lane.voicingVol?.dispose()
+    lane.bassVol?.dispose()
+    lane.melodyVol?.dispose()
+    lane.laneVol?.dispose()
   }
   synths = {}
 }
@@ -115,6 +127,28 @@ function scheduleBass(
   }
 }
 
+function scheduleMelody(
+  T: ToneModule,
+  candidateId: string,
+  arrangement: ArrangementDetail,
+): void {
+  if (!arrangement.melodic_complement) return
+  const transport = T.getTransport()
+  const lane = synths[candidateId]
+  if (!lane) return
+
+  for (const ev of arrangement.melodic_complement.note_events) {
+    const time = `${ev.bar}:${ev.beat - 1}:0`
+    const dur = `0:${ev.duration_beats}:0`
+    const vel = ev.velocity / 127
+    const pitch = normalizePitch(ev.pitch)
+
+    transport.schedule((t: number) => {
+      lane.melody?.triggerAttackRelease(pitch, dur, t, vel)
+    }, time)
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -152,6 +186,7 @@ export async function playComparison(
     const allBars = [
       ...(arrangement.voicing_plan?.voicing_events ?? []).map((e) => e.bar + Math.ceil(e.duration_beats / 4)),
       ...(arrangement.bass_line?.note_events ?? []).map((e) => e.bar + Math.ceil(e.duration_beats / 4)),
+      ...(arrangement.melodic_complement?.note_events ?? []).map((e) => e.bar + Math.ceil(e.duration_beats / 4)),
     ]
     if (allBars.length > 0) {
       maxBars = Math.max(maxBars, Math.max(...allBars))
@@ -166,17 +201,27 @@ export async function playComparison(
   const preset = getPreset(genre)
 
   for (const [candidateId, arrangement] of arrangements.entries()) {
-    const vol = new T.Volume(-6).toDestination()
-    const poly = buildPolySynth(T, preset.voicing)
-    poly.connect(vol)
-    const mono = buildMonoSynth(T, preset.bass)
-    mono.connect(vol)
+    // Master lane volume (mute/solo acts here)
+    const laneVol = new T.Volume(-6).toDestination()
 
-    synths[candidateId] = { poly, mono, vol }
+    // Per-track volumes → laneVol
+    const voicingVol = new T.Volume(0).connect(laneVol)
+    const bassVol = new T.Volume(0).connect(laneVol)
+    const melodyVol = new T.Volume(MELODY_DEFAULT.volume ?? -8).connect(laneVol)
+
+    const poly = buildPolySynth(T, preset.voicing)
+    poly.connect(voicingVol)
+    const mono = buildMonoSynth(T, preset.bass)
+    mono.connect(bassVol)
+    const melody = buildMonoSynth(T, MELODY_DEFAULT)
+    melody.connect(melodyVol)
+
+    synths[candidateId] = { poly, mono, melody, voicingVol, bassVol, melodyVol, laneVol }
 
     // Schedule events
     scheduleVoicing(T, candidateId, arrangement)
     scheduleBass(T, candidateId, arrangement)
+    scheduleMelody(T, candidateId, arrangement)
   }
 
   // Start
@@ -241,7 +286,15 @@ export function setLoop(enabled: boolean): void {
 
 export function setLaneMute(candidateId: string, muted: boolean): void {
   const lane = synths[candidateId]
-  if (lane) lane.vol.mute = muted
+  if (lane) lane.laneVol.mute = muted
+}
+
+export function setTrackMute(candidateId: string, track: "voicing" | "bass" | "melody", muted: boolean): void {
+  const lane = synths[candidateId]
+  if (!lane) return
+  if (track === "voicing") lane.voicingVol.mute = muted
+  else if (track === "bass") lane.bassVol.mute = muted
+  else if (track === "melody") lane.melodyVol.mute = muted
 }
 
 export function dispose(): void {

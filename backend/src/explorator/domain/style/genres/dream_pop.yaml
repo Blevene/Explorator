@@ -32,6 +32,14 @@ groove_tendencies:
   articulation_style: floating_pulse
   syncopation_level: light
 
+melodic_tendencies:
+  motion_preference: stepwise
+  range_placement: above_voicing
+  density: sparse
+  phrase_length: 4
+  strong_beat_preference: extensions
+  rest_between_phrases: true
+
 common_devices:
   - borrowed minor iv
   - shimmering add9 voicings

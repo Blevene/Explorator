@@ -10,14 +10,17 @@ test.describe('Audio & Feedback Integration', () => {
     await expect(page.locator('text=BPM')).toBeVisible();
     await expect(page.locator('text=Vol')).toBeVisible();
 
-    // Mute buttons — now labeled "Chords" and "Bass"
+    // Mute buttons — Chords, Bass, and Melody
     await expect(page.getByRole('button', { name: 'Chords', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Bass', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Melody', exact: true })).toBeVisible();
 
     // Toggle mutes
     await page.getByRole('button', { name: 'Chords', exact: true }).click();
     await page.waitForTimeout(200);
     await page.getByRole('button', { name: 'Bass', exact: true }).click();
+    await page.waitForTimeout(200);
+    await page.getByRole('button', { name: 'Melody', exact: true }).click();
     await page.waitForTimeout(200);
   });
 

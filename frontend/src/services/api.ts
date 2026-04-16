@@ -148,6 +148,12 @@ export interface ArrangementDetail extends ArrangementSummary {
     pattern_events: GrooveEvent[]
     source_template: string
   } | null
+  melodic_complement: {
+    note_events: { bar: number; beat: number; duration_beats: number; pitch: string; velocity: number }[]
+    range_low: string
+    range_high: string
+    contour_type: string
+  } | null
   scorecard?: {
     scores: Record<string, number>
     weighted_total: number
