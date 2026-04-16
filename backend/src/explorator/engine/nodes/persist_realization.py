@@ -97,9 +97,28 @@ async def persist_realization(state: ExplorationState, *, driver: AsyncDriver) -
         except Exception:
             logger.exception("Unexpected error persisting MelodicComplement %s", mc.id)
 
+    # Stamp selection roles into arrangement metadata before persisting
+    final_selection = state.get("final_selection") or {}
+    selection_roles: dict[str, str] = {}
+    if isinstance(final_selection, dict):
+        selection_roles = final_selection.get("selection_roles", {})
+
     # 3. Persist ArrangementCandidates + relationships
     arrangement_candidate_ids: list[str] = []
     for arr_data in state.get("arrangement_candidates", []):
+        # Stamp role into metadata if this arrangement has a role
+        role = selection_roles.get(arr_data.get("id", ""), "")
+        if role:
+            meta = arr_data.get("metadata", {})
+            if isinstance(meta, str):
+                import json as _json
+                try:
+                    meta = _json.loads(meta)
+                except Exception:
+                    meta = {}
+            meta["role"] = role
+            arr_data["metadata"] = meta
+
         arr = ArrangementCandidate.model_validate(arr_data)
         try:
             await arrangement_candidate_repo.create(arr)
@@ -248,6 +267,21 @@ async def persist_realization(state: ExplorationState, *, driver: AsyncDriver) -
             logger.error("Failed to persist AggregateScorecard %s: %s", sc.id, e)
         except Exception:
             logger.exception("Unexpected error persisting AggregateScorecard %s", sc.id)
+
+    # 6b. Persist final_selection to Session node for re-fetch on page load
+    if selection_roles:
+        import json as _json
+        session_id = state.get("session_id", "")
+        if session_id:
+            fs_json = _json.dumps(final_selection)
+            try:
+                async with driver.session() as session:
+                    await session.run(
+                        "MATCH (s:Session {id: $id}) SET s.final_selection = $fs",
+                        id=session_id, fs=fs_json,
+                    )
+            except Exception:
+                logger.exception("Failed to persist final_selection on Session %s", session_id)
 
     # 7. Update ArrangementCandidate statuses (selected / rejected)
     for arr_data in state.get("arrangement_candidates", []):

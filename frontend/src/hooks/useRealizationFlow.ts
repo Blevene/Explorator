@@ -1,6 +1,29 @@
 import { useState } from 'react';
 import { listArrangements, getArrangement, triggerRealizationSSE } from '../services/api';
+import type { FinalSelection } from '../services/api';
 import { useArrangementStore } from '../stores/arrangementStore';
+import { useCandidateStore } from '../stores/candidateStore';
+
+/**
+ * Reconstruct finalSelection from arrangement metadata roles.
+ * Each arrangement may have metadata.role stamped by persist_realization.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function reconstructFinalSelection(arrangements: any[]): FinalSelection | null {
+  const roles: Record<string, string> = {};
+  for (const a of arrangements) {
+    const meta = typeof a.metadata === 'string' ? JSON.parse(a.metadata || '{}') : (a.metadata ?? {});
+    if (meta.role) {
+      roles[a.id] = meta.role;
+    }
+  }
+  if (Object.keys(roles).length === 0) return null;
+  return {
+    selected_candidate_ids: Object.keys(roles),
+    selection_roles: roles,
+    selection_notes: [],
+  };
+}
 
 export function useRealizationFlow(sessionId: string | undefined) {
   const [loading, setLoading] = useState(false);
@@ -24,6 +47,9 @@ export function useRealizationFlow(sessionId: string | undefined) {
 
         arrangementStore.reset();
         arrangementStore.setArrangements(existing);
+        // Reconstruct finalist roles from arrangement metadata
+        const fs = reconstructFinalSelection(existing);
+        if (fs) useCandidateStore.getState().setFinalSelection(fs);
         const best = existing.reduce((a, b) =>
           (a.weighted_total ?? 0) > (b.weighted_total ?? 0) ? a : b
         );
@@ -72,6 +98,9 @@ export function useRealizationFlow(sessionId: string | undefined) {
 
       const arrangements = await listArrangements(candidateId);
       arrangementStore.setArrangements(arrangements);
+      // Reconstruct finalist roles from arrangement metadata
+      const fs = reconstructFinalSelection(arrangements);
+      if (fs) useCandidateStore.getState().setFinalSelection(fs);
 
       if (arrangements.length > 0) {
         const best = arrangements.reduce((a, b) =>
