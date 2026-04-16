@@ -94,6 +94,7 @@ async def get_arrangement(arrangement_id: str, driver: AsyncDriver = Depends(get
     from explorator.graph.voicing_plan_repo import VoicingPlanRepo
     from explorator.graph.bass_line_repo import BassLineRepo
     from explorator.graph.groove_pattern_repo import GroovePatternRepo
+    from explorator.graph.melodic_complement_repo import MelodicComplementRepo
 
     ac_repo = ArrangementCandidateRepo(driver)
     arrangement = await ac_repo.get_by_id(arrangement_id)
@@ -109,6 +110,10 @@ async def get_arrangement(arrangement_id: str, driver: AsyncDriver = Depends(get
         arrangement["bass_line"] = await BassLineRepo(driver).get_by_id(bl_id)
     if gp_id:
         arrangement["groove_pattern"] = await GroovePatternRepo(driver).get_by_id(gp_id)
+
+    mc_id = arrangement.get("melodic_complement_id")
+    if mc_id:
+        arrangement["melodic_complement"] = await MelodicComplementRepo(driver).get_by_id(mc_id)
 
     sc_repo = ScorecardRepo(driver)
     scorecards = await sc_repo.query_by_property("candidate_id", arrangement_id)

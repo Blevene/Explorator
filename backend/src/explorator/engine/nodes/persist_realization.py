@@ -11,9 +11,11 @@ from explorator.graph.arrangement_candidate_repo import ArrangementCandidateRepo
 from explorator.graph.arrangement_family_repo import ArrangementFamilyRepo
 from explorator.graph.bass_line_repo import BassLineRepo
 from explorator.graph.groove_pattern_repo import GroovePatternRepo
+from explorator.graph.melodic_complement_repo import MelodicComplementRepo
 from explorator.graph.voicing_plan_repo import VoicingPlanRepo
 from explorator.models.evaluation import AggregateScorecard
 from explorator.models.groove import GroovePattern
+from explorator.models.melody import MelodicComplement
 from explorator.models.realization import (
     ArrangementCandidate,
     ArrangementFamily,
@@ -51,6 +53,7 @@ async def persist_realization(state: ExplorationState, *, driver: AsyncDriver) -
     voicing_plan_repo = VoicingPlanRepo(driver)
     bass_line_repo = BassLineRepo(driver)
     groove_pattern_repo = GroovePatternRepo(driver)
+    melodic_complement_repo = MelodicComplementRepo(driver)
     arrangement_candidate_repo = ArrangementCandidateRepo(driver)
     arrangement_family_repo = ArrangementFamilyRepo(driver)
 
@@ -83,6 +86,16 @@ async def persist_realization(state: ExplorationState, *, driver: AsyncDriver) -
             logger.error("Failed to persist GroovePattern %s: %s", gp.id, e)
         except Exception:
             logger.exception("Unexpected error persisting GroovePattern %s", gp.id)
+
+    # 2c. Persist MelodicComplements
+    for mc_data in state.get("melodic_complements", []):
+        mc = MelodicComplement.model_validate(mc_data)
+        try:
+            await melodic_complement_repo.create(mc)
+        except Neo4jError as e:
+            logger.error("Failed to persist MelodicComplement %s: %s", mc.id, e)
+        except Exception:
+            logger.exception("Unexpected error persisting MelodicComplement %s", mc.id)
 
     # 3. Persist ArrangementCandidates + relationships
     arrangement_candidate_ids: list[str] = []
@@ -133,6 +146,17 @@ async def persist_realization(state: ExplorationState, *, driver: AsyncDriver) -
                     "USES_GROOVE_PATTERN",
                     "GroovePattern",
                     arr.groove_pattern_id,
+                )
+
+            # (ArrangementCandidate)-[:USES_MELODIC_COMPLEMENT]->(MelodicComplement)
+            if arr.melodic_complement_id:
+                await _create_relationship(
+                    driver,
+                    "ArrangementCandidate",
+                    arr.id,
+                    "USES_MELODIC_COMPLEMENT",
+                    "MelodicComplement",
+                    arr.melodic_complement_id,
                 )
 
         except Neo4jError as e:
