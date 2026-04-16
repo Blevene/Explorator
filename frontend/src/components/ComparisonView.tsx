@@ -29,7 +29,15 @@ const SCORE_DIMENSIONS = [
   "cadence_quality",
   "novelty",
   "loopability",
+  "melody_support",
+  "collision_risk",
 ]
+
+const TRACK_COLORS: Record<string, { active: string; activeBg: string; muted: string }> = {
+  voicing: { active: "var(--accent-primary)", activeBg: "var(--accent-primary-dim)", muted: "var(--text-muted)" },
+  bass: { active: "var(--accent-secondary)", activeBg: "var(--accent-secondary-dim)", muted: "var(--text-muted)" },
+  melody: { active: "var(--accent-tertiary)", activeBg: "var(--accent-tertiary-dim)", muted: "var(--text-muted)" },
+}
 
 function dimensionLabel(dim: string): string {
   return dim
@@ -177,15 +185,16 @@ export default function ComparisonView({
                 {(["voicing", "bass", "melody"] as const).map((track) => {
                   const label = track === "voicing" ? "V" : track === "bass" ? "B" : "M"
                   const muted = trackMutes[candidateId]?.[track] ?? false
+                  const colors = TRACK_COLORS[track]
                   return (
                     <button
                       key={track}
                       title={`${muted ? "Unmute" : "Mute"} ${track}`}
                       onClick={() => toggleTrackMute(candidateId, track)}
-                      className="text-[10px] font-bold rounded px-1 py-0.5 leading-none"
+                      className="text-[10px] font-bold rounded px-1 py-0.5 leading-none transition-colors"
                       style={{
-                        background: muted ? 'var(--surface-3)' : 'var(--accent-subtle)',
-                        color: muted ? 'var(--text-muted)' : 'var(--accent)',
+                        background: muted ? 'var(--surface-3)' : colors.activeBg,
+                        color: muted ? colors.muted : colors.active,
                         opacity: muted ? 0.5 : 1,
                         border: '1px solid var(--border-subtle)',
                       }}

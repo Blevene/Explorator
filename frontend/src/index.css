@@ -18,11 +18,13 @@
   --text-secondary: #8891a5;
   --text-muted: #555e74;
 
-  /* Accents — warm amber primary, cool blue secondary */
+  /* Accents — warm amber primary, cool blue secondary, emerald tertiary */
   --accent-primary: #f0b429;
   --accent-primary-dim: #f0b42933;
   --accent-secondary: #6c9bef;
   --accent-secondary-dim: #6c9bef22;
+  --accent-tertiary: #34d399;
+  --accent-tertiary-dim: #34d39922;
 
   /* Semantic */
   --score-high: #34d399;
