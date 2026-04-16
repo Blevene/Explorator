@@ -37,5 +37,6 @@ test.describe('Groove Patterns (M5a)', () => {
     await expect(page.locator('text=BPM')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Chords', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Bass', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Melody', exact: true })).toBeVisible();
   });
 });
