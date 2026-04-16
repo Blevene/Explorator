@@ -110,7 +110,8 @@ async def generate_melody(state: ExplorationState, *, gemini: GeminiClient) -> d
 
     genre_profile = parse_json_or_dict(state.get("genre_profile", {}))
     creative_brief = parse_json_or_dict(state.get("creative_brief", {}))
-    candidates_raw = state.get("progression_candidates", [])
+    # Use top_progressions if available, otherwise progression_candidates
+    candidates_raw = state.get("top_progressions", []) or state.get("progression_candidates", [])
 
     genre = genre_profile.get("genre", creative_brief.get("genre", "dream_pop"))
     key_center = creative_brief.get("key_center") or "C"
