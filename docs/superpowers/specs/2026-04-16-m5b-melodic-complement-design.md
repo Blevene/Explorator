@@ -27,8 +27,10 @@ M5b adds a single-line melody voice on top of existing arrangements. The melody 
 - Motif repetition / recall (AABA, call-and-response patterns)
 - Genre-specific melody synth presets (`playback_hints` / `melody_preset` in YAML) — deferred to M5c
 - Gemini `tension_justification_score` evaluation dimension
+- Explicit tension/release point mapping in strategy response — implicitly handled via per-phrase contour and strong-beat targets; explicit tension fields deferred until tension evaluation is activated
 - Melody velocity variation from groove accents
 - `melodic_deviation_tolerance` in experimentation envelope
+- Melody regeneration on arrangement-scope mutations (see Section 6.5)
 
 ### 1.2 Key Design Decisions
 
@@ -59,12 +61,14 @@ class MelodicNoteEvent(BaseModel):
 class MelodicComplement(BaseEntity):
     arrangement_candidate_id: str
     groove_pattern_id: str | None = None
-    note_events: list[MelodicNoteEvent]
-    range_low: str              # e.g. "C5"
-    range_high: str             # e.g. "C6"
-    contour_type: str           # "arch", "descending", "wave", "static"
-    source_strategy: str        # reference to the strategy that generated this
+    note_events: list[MelodicNoteEvent] = Field(default_factory=list)
+    range_low: str = ""         # e.g. "C5"
+    range_high: str = ""        # e.g. "C6"
+    contour_type: str = ""      # "arch", "descending", "wave", "static"
+    source_strategy: str = ""   # reference to the strategy that generated this
 ```
+
+Field defaults follow `VoicingPlan`/`BassLine` conventions (`default_factory=list` for event lists, empty-string defaults for string fields). The entity is linked to the arrangement via `arrangement_candidate_id`, not to the session directly — melody is a per-arrangement artifact, like voicing and bass.
 
 `ArrangementCandidate.melodic_complement_id` (already nullable in the model) gets populated at assembly time.
 
@@ -102,7 +106,7 @@ No `melodic_deviation_tolerance` in the experimentation envelope. Melody quality
 
 ## 4. Melody Strategy Prompt (Phase 1)
 
-New prompt template at `prompts/melody.py`, following the `prompts/voicing.py` pattern. Returns `(system_prompt, user_prompt)`.
+New prompt template at `prompts/melody.py`, following the `prompts/voicing.py` pattern. Returns `(user_prompt, system_prompt)` (same order as `voicing_strategy_prompt`).
 
 ### 4.1 System Prompt
 
@@ -120,6 +124,8 @@ All available from state at generation time:
 - Genre melodic tendencies (the YAML section from Section 3)
 
 ### 4.3 Structured Output — MelodicStrategyResponse
+
+Lives in `models/realization.py` alongside `VoicingStrategyResponse`.
 
 ```python
 class PhraseInstruction(BaseModel):
@@ -148,28 +154,44 @@ New domain service `MelodyGenerator` at `domain/realization/melody.py`, followin
 
 ### 5.1 Input
 
-`MelodicStrategyResponse` + chord progression + voicing events + beat grid (from GroovePattern or straight-eighths fallback).
+`MelodicStrategyResponse` + chord progression + key center and mode + voicing events + beat grid (from GroovePattern or straight-eighths fallback).
 
 ### 5.2 Algorithm (per phrase)
 
-**Step 1 — Set up beat grid.** Collect onset positions from the groove pattern (or synthesize straight-eighths) for bars in this phrase. Filter to match density (in 4/4):
+**Step 1 — Set up beat grid.** Collect onset positions from the groove pattern (or synthesize straight-eighths) for bars in this phrase. **Coordinate transformation**: GroovePattern events use absolute beat positions; these must be converted to per-bar `(bar, beat_within_bar)` pairs before use — this is the same transformation needed for groove-driven bass (see `d4b792c`). Filter the per-bar positions to match density (in 4/4):
 - **Sparse**: beats 1 and 3
 - **Moderate**: beats 1, 2, 3, 4
 - **Active**: all eighth-note positions from the grid
 
-**Step 2 — Strong beat targeting.** For each downbeat position, pick a pitch from the current chord that matches the phrase's `strong_beat_targets`. If the target scale degree isn't present in the chord (e.g. "7th" on a simple triad), fall back to the nearest available chord tone. Selection prefers pitches within the strategy's range that maintain stepwise or small-interval motion from the previous note. First note of first phrase defaults to a chord tone of the opening chord within the upper third of the range.
+Groove accent events are included regardless of density filter — if the groove marks beat 2.5 as accented, it appears even at "moderate" density.
 
-**Step 3 — Weak beat filling.** For non-downbeat positions, use diatonic passing tones and neighbor tones to connect strong-beat pitches. Genre `motion_preference` controls interval size: stepwise limits to 2nds, leaping allows 4ths/5ths, mixed allows 3rds freely with occasional larger leaps.
+**Phrase length vs. progression length**: If the progression length is not evenly divisible by the phrase length (e.g. 7 bars with 4-bar phrases), the final phrase is truncated to cover the remaining bars. Single-bar remainders are merged into the preceding phrase rather than standing alone.
 
-**Step 4 — Contour shaping.** Apply the phrase's contour directive as a pitch-direction bias. "Arch" biases upward in the first half, downward in the second. "Ascending" biases upward throughout. "Descending" biases downward throughout. "Wave" alternates bias direction every 2 beats. "Static" applies no directional bias, letting chord-tone constraints alone determine pitch direction. The bias is soft — it influences tone selection when multiple valid options exist, it doesn't override chord-tone constraints.
+**Steps 2–4 are integrated, not sequential passes.** For each onset position in the beat grid, the generator selects a pitch by applying Steps 2, 3, and 4 together as selection criteria. The description below separates them for clarity, but implementation interleaves them in a single forward pass through the beat grid.
 
-**Step 5 — Collision avoidance.** After note selection, check each event against voicing events on the same bar/beat. If a unison or minor 2nd collision exists, shift the melody note up by a diatonic step. If the shift creates a new collision or exceeds range ceiling, try shifting down instead. Hard constraint, always enforced.
+**Step 2 — Strong beat targeting.** For each downbeat position, pick a pitch from the current chord that matches the phrase's `strong_beat_targets`. If the target scale degree isn't present in the chord (e.g. "7th" on a simple triad), fall back to the nearest available chord tone measured in semitones from where the target degree would have been. Selection prefers pitches within the strategy's range that maintain stepwise or small-interval motion from the previous note. First note of first phrase defaults to a chord tone of the opening chord within the upper third of the range; if no chord tone falls in that sub-range, use the highest chord tone within the full range.
+
+**Step 3 — Weak beat filling.** For non-downbeat positions, use diatonic passing tones and neighbor tones (relative to the current key center and mode) to connect strong-beat pitches. Genre `motion_preference` controls interval size: stepwise limits to 2nds, leaping allows 4ths/5ths, mixed allows 3rds freely with occasional larger leaps.
+
+**Step 4 — Contour shaping.** Applied as a pitch-direction bias during Steps 2-3 tone selection, not as a separate rewrite pass. When multiple valid pitches exist for a position, contour biases the selection with ~70/30 weighting toward the preferred direction (vs. uniform random among valid options). "Arch" biases upward in the first half, downward in the second. "Ascending" biases upward throughout. "Descending" biases downward throughout. "Wave" alternates bias direction every 2 beats. "Static" applies no directional bias, letting chord-tone constraints alone determine pitch direction.
+
+**Step 5 — Collision avoidance.** After note selection, check each event against voicing events on the same bar/beat. If a unison or minor 2nd collision exists, shift the melody note up by a diatonic step. If the shift creates a new collision or exceeds range ceiling, try shifting down instead. If both directions create collisions or exceed range, omit the note (insert a rest). Hard constraint, always enforced.
 
 **Step 6 — Phrase boundaries.** If `rest_after` is true, insert a quarter-rest gap after the last note of the phrase.
 
-**Step 7 — Resolution rule.** The final phrase's last note must be a chord tone of the final chord, preferring root or 5th.
+**Step 7 — Resolution rule.** The final phrase's last note must be a chord tone of the final chord, preferring root or 5th. (Intentional simplification: the original M5 spec says "resolves to tonic area," but targeting the final chord's tones is simpler to implement and produces correct results when the progression ends on tonic, which is the common case for all three initial genres. For progressions ending on non-tonic chords — e.g. deceptive cadences — this still produces a consonant ending.)
 
-### 5.3 Output
+### 5.3 Validation of MelodicStrategyResponse
+
+Before realization, validate the Gemini response:
+- Phrase instructions must cover all bars of the progression without gaps or overlaps
+- `start_bar` must be <= `end_bar` for each instruction
+- `range_low` must be below `range_high`
+- All `contour` and `density` values must be from the allowed enums
+
+If validation fails, fall back to a default strategy: single phrase covering the full progression, "arch" contour, "moderate" density, chord-tone strong-beat targets, range one octave above the voicing ceiling.
+
+### 5.4 Output
 
 `MelodicComplement` entity with populated `note_events`, `range_low`/`range_high` from strategy, `contour_type` from `overall_contour`, `source_strategy` referencing the strategy response.
 
@@ -189,22 +211,29 @@ plan_voicings → generate_bass → generate_groove → generate_melody → asse
 
 ### 6.2 Node Logic
 
-1. Read from state: `voicing_plans`, `bass_lines`, `groove_patterns`, `progression_candidates`, genre profile
+1. Read from state: `voicing_plans`, `bass_lines`, `groove_patterns`, `progression_candidates`, genre profile (including key center and mode)
 2. For each arrangement combination (voicing plan + bass line + groove pattern):
    - Extract voicing register summary (highest note per bar) and bass range
    - Build beat grid from groove pattern, or synthesize straight-eighths fallback if `groove_patterns` is empty
    - Call `melody_strategy_prompt()` → Gemini Flash → `MelodicStrategyResponse`
-   - Call `MelodyGenerator.realize()` with strategy + chord progression + voicing events + beat grid
+   - Validate response (Section 5.3); fall back to default strategy on failure
+   - Call `MelodyGenerator.realize()` with strategy + chord progression + key center/mode + voicing events + beat grid
    - Produce `MelodicComplement` entity with `arrangement_candidate_id = None` (linked at assembly time)
 3. Write `melodic_complements` list to state
 
+Melody maps 1:1 to arrangement combinations — one melody per (voicing plan, bass line, groove pattern) tuple. This does not expand the assembly cross-product; melody is assigned directly to its corresponding arrangement at assembly time.
+
 ### 6.3 Assembly Changes
 
-`ArrangementAssembler.assemble_one()` gains an optional `melodic_complement: MelodicComplement | None = None` parameter. When present, sets `arrangement_candidate.melodic_complement_id` and merges melody note events into the arrangement's render data. `assemble_family()` updated to pass melodic complements through the cross-product alongside groove patterns.
+`ArrangementAssembler.assemble_one()` gains an optional `melodic_complement: MelodicComplement | None = None` parameter. When present, sets `arrangement_candidate.melodic_complement_id` and merges melody note events into the arrangement's render data. `assemble_family()` updated to accept and pass through melodic complements corresponding to each arrangement combination.
 
 ### 6.4 Backward Compatibility
 
 If `melodic_complements` is empty in state (legacy sessions, or generation skipped), assembly proceeds without melody. No behavior change for existing sessions.
+
+### 6.5 Known Limitation: Mutation Loop
+
+The arrangement-scope mutation loop in the pipeline re-enters at `evaluate_arrangements`, skipping `generate_melody`. This means mutated arrangements retain their original melody — if a mutation changes voicing register, the melody is not regenerated to match. The `collision_risk_score` evaluation dimension will catch new collisions introduced by the mutation, penalizing the arrangement's score. Full melody regeneration on mutation is deferred as a future enhancement.
 
 ---
 
@@ -224,7 +253,7 @@ Implements the existing stub in `evaluation.py` with two deterministic dimension
 
 New weight entries in `ObjectiveWeights`: `melody_support: 0.15`, `collision_risk: 0.10`.
 
-**Conditional weight normalization:** At evaluation time, check whether the session's arrangements include melodic complements. If yes, use the full weight set (existing weights rebalanced proportionally so the total including melody dimensions sums to 1.0). If no, use existing weights unchanged. This is a session-level check — all candidates in a session go through the same pipeline.
+**Conditional weight normalization:** Normalization happens at weight *application* time (during scoring), not at storage time. `ObjectiveWeights` stores the base weights including melody dimensions. At scoring time, check whether the session's arrangements include melodic complements. If yes, apply all weights as stored (they sum to 1.0 including melody dimensions). If no, exclude melody weights and renormalize the remaining weights proportionally so they sum to 1.0. This preserves the existing `ObjectiveWeights` validator (weights must sum to ~1.0 at storage time) while allowing melody-less sessions to score correctly. This is a session-level check — all candidates in a session go through the same pipeline.
 
 ### 7.3 Deferred
 
@@ -277,9 +306,11 @@ All melody UI elements are conditional on `melodic_complement_id` being non-null
 
 ## 10. File Manifest
 
+### Backend
+
 | File | Action | Purpose |
 |------|--------|---------|
-| `models/realization.py` | Edit | Add `MelodicNoteEvent`, `MelodicComplement` |
+| `models/realization.py` | Edit | Add `MelodicNoteEvent`, `MelodicComplement`, `PhraseInstruction`, `MelodicStrategyResponse` |
 | `engine/state.py` | Edit | Add `melodic_complements` key |
 | `domain/style/genres/dream_pop.yaml` | Edit | Add `melodic_tendencies` |
 | `domain/style/genres/synthwave.yaml` | Edit | Add `melodic_tendencies` |
@@ -288,12 +319,29 @@ All melody UI elements are conditional on `melodic_complement_id` being non-null
 | `domain/realization/melody.py` | Create | `MelodyGenerator` service |
 | `engine/nodes/generate_melody.py` | Create | LangGraph node |
 | `engine/graph.py` | Edit | Wire `generate_melody` into pipeline |
-| `domain/realization/assembler.py` | Edit | Accept optional melody in assembly |
+| `domain/realization/assembly.py` | Edit | Accept optional melody in assembly |
 | `domain/evaluation/melody_harmony.py` | Create | `MelodyHarmonyEvaluator` |
 | `domain/evaluation/` (orchestrator) | Edit | Conditional activation, weight normalization |
+
+### Frontend
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `frontend/src/services/api.ts` | Edit | Add `melodic_complement` to arrangement response types |
 | `frontend/src/stores/audioStore.ts` | Edit | Add melody to `mutedTracks` |
 | `frontend/src/services/audioPresets.ts` | Edit | Add `MELODY_DEFAULT` preset |
+| `frontend/src/services/audioEngine.ts` | Edit | Add melody synth scheduling to playback |
+| `frontend/src/services/comparisonAudioEngine.ts` | Edit | Add melody lane to comparison playback |
+| `frontend/src/utils/designTokens.ts` | Edit | Add melody color token |
 | `frontend/src/components/PianoRoll.tsx` | Edit | Melody lane rendering |
 | `frontend/src/components/TransportBar.tsx` | Edit | Melody mute toggle |
 | `frontend/src/components/ComparisonView.tsx` | Edit | Melody lane in DAW view |
-| `e2e/tests/` | Create | 5-6 new test files |
+
+### Tests
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `backend/tests/unit/domain/test_melody_generator.py` | Create | Unit tests for `MelodyGenerator` (realization algorithm, edge cases) |
+| `backend/tests/unit/domain/test_melody_harmony_evaluator.py` | Create | Unit tests for `MelodyHarmonyEvaluator` |
+| `backend/tests/unit/prompts/test_melody_prompt.py` | Create | Unit tests for melody strategy prompt |
+| `e2e/tests/` | Create | 5-6 new E2E test files |
