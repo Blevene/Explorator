@@ -321,9 +321,18 @@ New `GenreResearchRepository` in `graph/genre_research_repo.py` with CRUD operat
 
 ## 6. Frontend — Genre Management View
 
-Top-level "Genres" nav item. State managed by `genreResearchStore.ts` (Zustand).
+Top-level "Genres" nav item. State managed by `genreResearchStore.ts` (Zustand). The view is a single-page application at route `/genres` with three inline view states (no sub-routes).
 
-### 6.1 Store
+### 6.1 Design Direction
+
+The existing Explorator aesthetic is deep blue-black surfaces (`--surface-0` through `--surface-4`), amber primary accent (`--accent-primary`), Outfit font, and subtle noise texture. The Genre Management view follows this system exactly but has its own character: it's an **agentic workflow monitor** — part library catalog, part mission control for dispatching AI research agents.
+
+**Key design moments:**
+- Genre cards in the library use genre-specific accent colors (extending the existing `--genre-*` tokens) as a left border stripe — a visual shorthand for identity
+- The research progress indicator is the signature interaction: a horizontal step rail with nodes that illuminate sequentially, with a pulsing glow on the active step
+- The review view presents the three YAML structures as side-by-side dossier cards — structured data displayed as labeled fields, not raw code
+
+### 6.2 Store
 
 ```typescript
 interface GenreResearchStore {
@@ -350,26 +359,145 @@ interface GenreResearchStore {
 }
 ```
 
-### 6.2 View States
+### 6.3 View State 1: Genre Library (default)
 
-**Genre Library (default)**
-- Lists existing genres (from `GET /v1/genres`) with display names
-- Lists pending drafts (from `GET /v1/genres/drafts`) with status badges
-- "Research New Genre" button opens request form
+**Layout:** Centered container (`max-w-4xl`), matching the Dashboard's centered content pattern.
 
-**Research In-Progress**
-- Shown after submitting a research request
-- Connects to SSE stream at `GET /v1/genres/research/{job_id}/stream`
-- Step indicator: Research → Draft → Critique → Refine → Validate — current step highlighted
-- Substep detail text below indicator (e.g., "Researching voicing conventions...")
-- Follows existing SSE consumption pattern from rounds
+**Header row:**
+- Page title: "Genres" in `text-2xl font-light` with `--text-primary`
+- Subtitle: "Genre library & research" in `text-xs tracking-widest uppercase` with `--text-muted` (mirrors Dashboard subtitle pattern)
+- "Research New Genre" button: right-aligned, amber primary style (`--accent-primary` bg, `--surface-0` text, `rounded-lg font-medium text-sm`)
 
-**Review View**
-- Shown when draft reaches `pending_review`
-- Three formatted cards: profile, rules, grammar — rendered as readable key-value sections, not raw YAML
-- Expandable panels for research log and critique trail (transparency)
-- Approve and Reject buttons
-- Reject shows optional reason text field
+**Genre cards** (existing genres):
+- `--surface-2` background, `--border-subtle` border, `rounded-xl`
+- Left border accent: 3px solid genre-specific color (e.g., `--genre-dream-pop: #a78bfa`). New genres get dynamically assigned colors from a predefined palette.
+- Content: display name in `text-sm font-medium --text-primary`, genre slug in `font-mono text-xs --text-muted`
+- Hover: `card-interactive` class (border → `--accent-primary-dim`, bg → `--surface-3`)
+- Staggered fade-in: `card-animated` with `animation-delay` per card index (`index * 50ms`)
+
+**Pending draft cards** (research jobs awaiting review):
+- Same card structure but with a status badge: amber `--accent-primary` pill badge reading "Pending Review"
+- Click navigates to Review View (view state 3)
+
+**Empty state** (if no genres exist beyond the three defaults): subtle prompt text, "No custom genres yet. Research your first one."
+
+**Request form** (inline, appears below the button when clicked):
+- Matches Dashboard input pattern: `rounded-xl p-px` gradient border wrapper → `--surface-2` inner panel
+- Genre name input: `--surface-1` bg, `--border-subtle` border, placeholder "e.g. lo-fi hip hop, post-rock, ambient techno..."
+- Reference artists textarea: same styling, placeholder "Optional: reference artists for style anchoring"
+- Submit button: "Start Research" in amber, disabled when genre name empty
+- Genre name validated client-side: lowercase, alphanumeric + underscores only (auto-slugified from display input)
+
+### 6.4 View State 2: Research In-Progress
+
+Replaces the library view while a research job is active. Centered layout.
+
+**Step rail** (horizontal progress indicator):
+- 5 step nodes connected by lines, horizontally centered
+- Each node: 28px circle, `--surface-3` bg, `--border-default` border
+- Completed steps: `--accent-tertiary` (#34d399 emerald) fill, check icon
+- Active step: `--accent-primary` (#f0b429 amber) border with a subtle pulsing glow animation (`box-shadow: 0 0 12px var(--accent-primary-dim)`, animated opacity 0.4 → 0.8 over 1.5s ease-in-out infinite)
+- Future steps: `--surface-3` fill, `--border-subtle` border, `--text-muted` label
+- Step labels below each node: "Research", "Draft", "Critique", "Refine", "Validate" in `text-xs --text-secondary`
+- Connecting lines: 2px, `--border-subtle` for future, `--accent-tertiary` for completed segments
+
+**Substep detail panel** (below step rail):
+- `--surface-2` card, `rounded-xl`, `--border-subtle` border
+- Genre name as header: `text-lg font-medium --text-primary`
+- Current substep text: `text-sm --text-secondary`, updates in real-time from SSE
+- Text transitions with a subtle `card-fade-in` animation on each update (opacity 0→1, translateY 2px→0, 150ms)
+
+**Refine loop indicator** (when critique → refine → critique cycles):
+- The step rail shows "Refine" step with iteration badge: small `font-mono text-[10px]` circle showing "1/2" or "2/2"
+- If critique passes (no refine needed), the "Refine" step shows a skip indicator (dashed border, dimmed)
+
+**Error state** (job fails):
+- Active step node turns `--score-low` (#f87171 red)
+- Error message displayed in substep panel with red accent
+- "Back to Library" button
+
+### 6.5 View State 3: Review View
+
+Shown when a draft reaches `pending_review`. Full-width within the container.
+
+**Header:**
+- Genre name: `text-xl font-medium --text-primary`
+- Status badge: "Pending Review" in amber pill
+- If `validation_errors` present: additional "Validation Warnings" badge in `--score-low` red
+
+**Draft cards** (three columns on desktop, stacked on mobile):
+- Three `--surface-2` cards in a `grid grid-cols-3 gap-4` layout (collapses to `grid-cols-1` on narrow viewports)
+- Card headers: "Profile", "Rules", "Grammar" in `text-sm font-semibold uppercase tracking-wider --text-muted`
+- Card content: structured key-value fields, not raw YAML
+  - **Profile card:** Genre name, display name, harmonic vocabulary (as tag pills), tendencies (as labeled values), common devices (as list), experimentation envelope (as labeled bars)
+  - **Rules card:** Rules listed with name, type badge, weight (as score bar `score-bar-animated`), description. Anti-patterns listed separately with severity badge (red for high, amber for medium)
+  - **Grammar card:** Chord qualities (as tag pills), cadence archetypes (as list), harmonic rhythm defaults (as labeled values), functional motion bias (as labeled bars)
+- Tag pills: `rounded-full px-2 py-0.5 text-[11px] font-mono` with `--surface-4` bg, `--text-secondary` text
+- Score bars: reuse existing `score-bar-animated` pattern (colored bar proportional to 0-1 value)
+
+**Validation errors panel** (if present):
+- Below draft cards, `--surface-2` card with `--score-low` left border (3px)
+- Lists each validation error as a row with error text in `text-sm --text-secondary`
+
+**Research log & critique trail** (expandable):
+- Two collapsible sections below the draft cards
+- Collapsed: `--surface-2` row with section title + chevron icon
+- Expanded: monospace text (`font-mono text-xs`) in a `--surface-1` pre-formatted block, `max-h-64 overflow-y-auto`
+- Critique trail: shows iterations with issue severity badges (major in `--score-low`, minor in `--score-mid`), resolution text
+
+**Action buttons** (bottom of review):
+- Fixed bottom bar within the view (not global sticky — scrolls with content but always visible at the end)
+- "Approve" button: `--accent-tertiary` (#34d399 emerald) bg, `--surface-0` text, `rounded-lg font-medium`
+- "Reject" button: `--surface-3` bg, `--text-secondary` text, `rounded-lg font-medium`
+- On reject click: inline textarea slides open with `--surface-1` bg for rejection reason, plus "Confirm Reject" button in `--score-low` red
+
+### 6.6 Navigation Integration
+
+The "Genres" nav item is added to the main app layout. Since the current app uses React Router with `/` (Dashboard) and `/session/:id` (SessionWorkspace), the genre view registers as `/genres`.
+
+- Nav link: appears in the Dashboard hero area as a secondary link, or as a subtle top bar if one exists
+- Active state: amber underline or highlight matching existing nav patterns
+- The genre view is a standalone page (not nested within SessionWorkspace)
+
+### 6.7 CSS Additions
+
+New CSS added to `index.css`:
+
+```css
+/* Genre research step rail pulse */
+@keyframes step-pulse {
+  0%, 100% { box-shadow: 0 0 8px var(--accent-primary-dim); }
+  50% { box-shadow: 0 0 16px var(--accent-primary-dim); }
+}
+
+.step-active {
+  animation: step-pulse 1.5s ease-in-out infinite;
+}
+
+/* Substep text transition */
+@keyframes substep-fade {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.substep-update {
+  animation: substep-fade 150ms ease-out both;
+}
+```
+
+### 6.8 New CSS Custom Properties
+
+```css
+:root {
+  /* Genre accent palette for dynamically-created genres */
+  --genre-accent-1: #f472b6;  /* pink — assigned to first custom genre */
+  --genre-accent-2: #38bdf8;  /* sky — second */
+  --genre-accent-3: #fb923c;  /* orange — third */
+  --genre-accent-4: #a3e635;  /* lime — fourth */
+  --genre-accent-5: #e879f9;  /* fuchsia — fifth */
+  /* Cycles after 5 — these supplement the existing --genre-dream-pop, --genre-synthwave, --genre-cinematic tokens */
+}
+```
 
 ---
 
