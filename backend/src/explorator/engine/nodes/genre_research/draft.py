@@ -36,6 +36,12 @@ def _normalize_draft(parsed: dict[str, Any], genre_name: str) -> None:
                     applicability[key] = [str(val)]
                 else:
                     applicability[key] = [str(v) for v in val]
+    # Anti-patterns: ensure required fields have defaults
+    for ap in rules_data.get("anti_patterns", []):
+        if "scope" not in ap:
+            ap["scope"] = "general"
+        if "severity" not in ap:
+            ap["severity"] = 0.5
     # Grammar: harmonic_rhythm_defaults values must be floats, not lists
     grammar = parsed.get("grammar", {})
     hrd = grammar.get("harmonic_rhythm_defaults", {})
