@@ -37,6 +37,17 @@ export default function Dashboard() {
           <p className="text-sm tracking-widest uppercase" style={{ color: 'var(--text-muted)' }}>
             Genre-Aware Musical Exploration
           </p>
+          <div className="mt-4">
+            <a
+              href="/genres"
+              className="text-xs tracking-wider uppercase transition-colors"
+              style={{ color: 'var(--text-muted)' }}
+              onMouseOver={(e) => (e.currentTarget.style.color = 'var(--accent-primary)')}
+              onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+            >
+              Manage Genres &rarr;
+            </a>
+          </div>
         </div>
 
         {/* Create session */}

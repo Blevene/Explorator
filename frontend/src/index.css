@@ -40,6 +40,11 @@
   --genre-dream-pop: #a78bfa;
   --genre-synthwave: #f472b6;
   --genre-cinematic: #eab308;
+  --genre-accent-1: #f472b6;
+  --genre-accent-2: #38bdf8;
+  --genre-accent-3: #fb923c;
+  --genre-accent-4: #a3e635;
+  --genre-accent-5: #e879f9;
 
   /* Modal */
   --overlay-backdrop: rgba(0, 0, 0, 0.7);
@@ -116,6 +121,26 @@ body {
 .score-bar-animated {
   animation: score-bar-fill 300ms ease-out both;
   transform-origin: left;
+}
+
+/* Step rail pulse animation */
+@keyframes step-pulse {
+  0%, 100% { box-shadow: 0 0 8px var(--accent-primary-dim); }
+  50% { box-shadow: 0 0 16px var(--accent-primary-dim); }
+}
+
+.step-active {
+  animation: step-pulse 1.5s ease-in-out infinite;
+}
+
+/* Substep text fade-in */
+@keyframes substep-fade {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.substep-update {
+  animation: substep-fade 150ms ease-out both;
 }
 
 /* Subtle noise texture on body */
