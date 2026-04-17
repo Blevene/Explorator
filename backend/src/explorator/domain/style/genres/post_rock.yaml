@@ -1,0 +1,62 @@
+genre: post_rock
+display_name: Post-Rock
+version: 1
+harmonic_vocabulary:
+- sus2
+- sus4
+- add9
+- maj7
+- madd9
+- m11
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: low
+  borrowed_chord_tolerance: medium
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: high
+  register_bias: mid_high
+  extension_density: medium
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: low_medium
+groove_tendencies:
+  comp_density: sparse
+  articulation_style: driving_straight
+  syncopation_level: none
+melodic_tendencies:
+  motion_preference: stepwise
+  range_placement: above_voicing
+  density: sparse
+  phrase_length: high
+  strong_beat_preference: extensions
+  rest_between_phrases: high
+common_devices:
+- tremolo picked melodic crescendos
+- dotted-eighth delay arpeggiations
+- static bass pedal points
+- open-string drone voicings
+- marching snare builds
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.2
+  voicing_deviation_tolerance: 0.4
+  groove_deviation_tolerance: 0.2
+voicing_preferences:
+  default_voicing_type: open
+  default_register: high
+  default_density: sparse
+  default_voice_count: 4
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+  - open
+  - drop2
+bass_preferences:
+  default_bass_mode: pedal
+  default_register: low
+  rhythmic_density: sparse
+  variant_bass_modes:
+  - supportive
+  - pedal

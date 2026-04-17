@@ -1,0 +1,40 @@
+rules:
+- name: parallel_block_planing
+  type: voicing
+  weight: 0.9
+  description: Move entire chord shapes in parallel motion to mimic mechanical sampling
+    or rock guitar riffs.
+  applicability:
+    chord_types:
+    - m
+    - maj
+    - '5'
+    - '7'
+- name: phrygian_tension
+  type: harmonic
+  weight: 0.7
+  description: Use the bII major chord moving to the i minor root to create dark,
+    industrial tension.
+  applicability:
+    modes:
+    - phrygian
+    - minor
+- name: sidechain_ducking_envelope
+  type: groove
+  weight: 0.95
+  description: Apply a rhythmic volume dip to harmonic and melodic elements on every
+    quarter-note kick hit.
+  applicability:
+    scope:
+    - always
+anti_patterns:
+- name: smooth_voice_leading
+  scope: voicing
+  severity: 0.8
+  description: Avoid traditional smooth transitions between chords; the genre demands
+    abrupt, parallel shifts.
+- name: complex_jazz_extensions
+  scope: harmonic
+  severity: 0.9
+  description: Avoid m11, 13, or complex dominant alterations which cause muddy distortion
+    in high-gain synth settings.

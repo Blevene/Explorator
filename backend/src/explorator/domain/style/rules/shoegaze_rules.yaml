@@ -1,0 +1,31 @@
+rules:
+- name: pedal_drone_continuity
+  type: voicing
+  weight: 0.9
+  description: Maintain high open-string drone notes across chord changes to create
+    a static harmonic ceiling
+  applicability:
+    chord_types:
+    - maj7
+    - add9
+    - sus2
+    - sus4
+- name: motorik_foundation
+  type: groove
+  weight: 0.8
+  description: Ensure the bass maintains driving straight-eighth notes to anchor the
+    floating guitar textures
+  applicability:
+    rhythm_section:
+    - bass_and_drums
+anti_patterns:
+- name: functional_v_i_resolution
+  scope: harmonic
+  severity: 0.9
+  description: Avoid strong V-I authentic cadences; they break the ethereal, floating
+    atmosphere
+- name: syncopated_rhythm_deviation
+  scope: groove
+  severity: 0.8
+  description: Avoid complex syncopation or math-rock rhythms which disrupt the hypnotic
+    wall of sound

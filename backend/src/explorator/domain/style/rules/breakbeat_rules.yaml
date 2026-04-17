@@ -1,0 +1,30 @@
+rules:
+- name: sampler_planing
+  type: harmonic
+  weight: 0.9
+  description: Use strict parallel motion (planing) for chord transitions regardless
+    of key signature to mimic hardware sampler logic
+  applicability:
+    chord_types:
+    - m7
+    - '7'
+    - m9
+- name: syncopated_rave_stabs
+  type: voicing
+  weight: 0.8
+  description: Place staccato block voicings on syncopated off-beats and 16th-note
+    anticipations
+  applicability:
+    register:
+    - mid_high
+anti_patterns:
+- name: smooth_voice_leading
+  scope: voicing
+  severity: 0.9
+  description: Avoid stepwise motion in inner voices; breaks the constant-structure
+    sampler aesthetic
+- name: functional_circle_of_fifths
+  scope: harmonic
+  severity: 0.7
+  description: Avoid traditional ii-V-I progressions or strong functional cadences
+    which undermine the static loop-based energy

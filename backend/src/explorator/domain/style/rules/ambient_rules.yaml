@@ -1,0 +1,36 @@
+rules:
+- name: glacial_attack_times
+  type: voicing
+  weight: 0.9
+  description: Remove percussive transients using slow synthesizer envelopes or volume
+    swells to create a floating texture.
+  applicability:
+    chord_types:
+    - maj7
+    - add9
+    - sus2
+    - sus4
+    - maj
+    - min
+    - maj9
+    - m9
+    - m11
+- name: asynchronous_looping
+  type: groove
+  weight: 0.7
+  description: Utilize irregular phrase lengths that overlap asynchronously to create
+    shifting harmonic clouds, avoiding a fixed metronomic grid.
+  applicability:
+    scope:
+    - global
+anti_patterns:
+- name: functional_v_i_cadence
+  scope: harmonic
+  severity: 0.9
+  description: Avoid strong dominant-to-tonic resolutions which create teleological
+    momentum and break the sense of stasis.
+- name: staccato_rhythmic_comping
+  scope: groove
+  severity: 1.0
+  description: Avoid short, rhythmic, or syncopated attacks which imply a metronomic
+    grid or 'groove'.

@@ -1,0 +1,28 @@
+rules:
+- name: motoric_minimalism
+  type: groove
+  weight: 0.9
+  description: Maintain consistent 16th-note arpeggiations or ostinatos to create
+    wave-like momentum
+  applicability:
+    rhythm:
+    - 16th_notes
+- name: smooth_top_voice
+  type: voicing
+  weight: 0.85
+  description: Keep the highest note of chord voicings static or moving by step during
+    harmonic shifts
+  applicability:
+    voice_leading:
+    - stepwise
+anti_patterns:
+- name: authentic_cadence_v_i
+  scope: harmony
+  severity: 0.9
+  description: Avoid strong V-I or V7-I resolutions; these sound too traditional/classical
+    and break the floating aesthetic
+- name: dense_jazz_voicing
+  scope: voicing
+  severity: 0.8
+  description: Avoid 11th and 13th extensions or dominant 7th tensions; keep textures
+    transparent

@@ -1,0 +1,18 @@
+genre_profile_id: genre_techno_01
+preferred_chord_qualities:
+- m
+- '5'
+- sus2
+- m7
+allowed_borrowed_chords:
+- chromatic parallel shifts
+cadence_archetypes:
+- i - i (static pedal)
+- bii - i (parallel chromatic shift)
+- bV - i (tritone drone)
+harmonic_rhythm_defaults:
+  4/4: 8.0
+functional_motion_bias:
+  chromatic: 0.8
+  stepwise_diatonic: 0.2
+  circle_of_fifths: 0.0

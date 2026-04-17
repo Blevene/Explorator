@@ -1,0 +1,62 @@
+genre: neo_classical
+display_name: Neo-Classical
+version: 1
+harmonic_vocabulary:
+- add9
+- sus2
+- sus4
+- m7
+- maj7
+- madd9
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: low
+  borrowed_chord_tolerance: low
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: open
+  register_bias: mid_high
+  extension_density: low_medium
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: sparse
+groove_tendencies:
+  comp_density: sparse
+  articulation_style: floating_pulse
+  syncopation_level: light
+melodic_tendencies:
+  motion_preference: stepwise
+  range_placement: above_voicing
+  density: sparse
+  phrase_length: medium
+  strong_beat_preference: extensions
+  rest_between_phrases: high
+common_devices:
+- diatonic ostinatos
+- add9 cluster voicings
+- static pedal tones
+- sub-bass reinforcement
+- suspended non-resolutions
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.15
+  voicing_deviation_tolerance: 0.3
+  groove_deviation_tolerance: 0.4
+voicing_preferences:
+  default_voicing_type: open
+  default_register: mid_high
+  default_density: sparse
+  default_voice_count: 4
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+  - open
+  - cluster
+bass_preferences:
+  default_bass_mode: pedal
+  default_register: low
+  rhythmic_density: sparse
+  variant_bass_modes:
+  - pedal
+  - supportive

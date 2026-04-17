@@ -1,0 +1,60 @@
+genre: techno
+display_name: Techno
+version: 1
+harmonic_vocabulary:
+- m
+- '5'
+- sus2
+- m7
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: high
+  borrowed_chord_tolerance: high
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: closed
+  register_bias: mid_high
+  extension_density: low
+  top_voice_continuity_importance: low
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: high
+groove_tendencies:
+  comp_density: sparse
+  articulation_style: driving_staccato
+  syncopation_level: heavy
+melodic_tendencies:
+  motion_preference: mixed
+  range_placement: overlapping
+  density: active
+  phrase_length: 1
+  strong_beat_preference: roots
+  rest_between_phrases: true
+common_devices:
+- parallel chord planing
+- reverb-kick rumble
+- acid octave jumps
+- phrygian ostinatos
+- timbral arcs
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.1
+  voicing_deviation_tolerance: 0.2
+  groove_deviation_tolerance: 0.1
+voicing_preferences:
+  default_voicing_type: closed
+  default_register: mid_high
+  default_density: sparse
+  default_voice_count: 2
+  favor_extensions: false
+  top_voice_continuity: low
+  variant_voicing_types:
+  - closed
+  - cluster
+bass_preferences:
+  default_bass_mode: pedal
+  default_register: low
+  rhythmic_density: high
+  variant_bass_modes:
+  - pedal
+  - syncopated

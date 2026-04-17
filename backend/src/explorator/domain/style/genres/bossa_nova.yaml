@@ -1,0 +1,72 @@
+genre: bossa_nova
+display_name: Bossa Nova
+version: 1
+harmonic_vocabulary:
+- maj7
+- maj9
+- m7
+- m9
+- '9'
+- '13'
+- 7b9
+- 7#9
+- 7b13
+- dim7
+- m7b5
+- '6'
+- m6
+- '69'
+harmonic_tendencies:
+  functional_strength: medium_high
+  chromaticism_level: high
+  borrowed_chord_tolerance: high
+  cadence_closure_preference: low_medium
+voicing_tendencies:
+  spacing: mixed
+  register_bias: mid
+  extension_density: high
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: medium
+groove_tendencies:
+  comp_density: moderate
+  articulation_style: relaxed_straight
+  syncopation_level: heavy
+melodic_tendencies:
+  motion_preference: stepwise
+  range_placement: overlapping
+  density: moderate
+  phrase_length: 4
+  strong_beat_preference: extensions
+  rest_between_phrases: true
+common_devices:
+- "viol\xE3o gago comping"
+- anticipated harmonic resolution
+- tonic 6/9 chords
+- "descending minor line clich\xE9s"
+- 'tritone sub with #11'
+- melodic single-note repetition
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.65
+  voicing_deviation_tolerance: 0.3
+  groove_deviation_tolerance: 0.1
+voicing_preferences:
+  default_voicing_type: drop2
+  default_register: mid
+  default_density: medium
+  default_voice_count: 4
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+  - drop2
+  - drop3
+  - closed
+bass_preferences:
+  default_bass_mode: syncopated
+  default_register: low
+  rhythmic_density: moderate
+  variant_bass_modes:
+  - syncopated
+  - pedal

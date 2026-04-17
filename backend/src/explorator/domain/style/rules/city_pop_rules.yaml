@@ -1,0 +1,36 @@
+rules:
+- name: royal_road_cadence
+  type: harmonic
+  weight: 0.9
+  description: Prioritize IVmaj7 - V7 - iiim7 - vim7 progressions in choruses for
+    authentic Japanese AOR feel
+  applicability:
+    section:
+    - chorus
+- name: suspended_soft_resolution
+  type: harmonic
+  weight: 0.7
+  description: Utilize V7sus4 or ii/V clusters instead of dominant 7ths for softer,
+    sophisticated cadences
+  applicability:
+    cadence_type:
+    - authentic
+- name: funk_rhythm_cutting
+  type: rhythm
+  weight: 0.8
+  description: Execute 16th-note syncopated guitar 'cutting' using high-register triad
+    fragments
+  applicability:
+    instrument:
+    - guitar
+anti_patterns:
+- name: basic_triad_dominance
+  scope: voicing
+  severity: 0.8
+  description: Avoid using pure triads without 7th or 9th extensions; breaks the required
+    high-gloss aesthetic
+- name: swing_grid_deviation
+  scope: groove
+  severity: 0.9
+  description: Avoid heavy swing or loose timing; City Pop requires a strict, machine-like
+    16th-note grid

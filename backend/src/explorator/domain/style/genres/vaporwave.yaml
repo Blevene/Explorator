@@ -1,0 +1,67 @@
+genre: vaporwave
+display_name: Vaporwave
+version: 1
+harmonic_vocabulary:
+- maj7
+- maj9
+- m7
+- m9
+- m11
+- sus4
+- '13'
+- iv
+- biimaj7
+- bvimaj7
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: medium_high
+  borrowed_chord_tolerance: high
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: closed
+  register_bias: mid
+  extension_density: high
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: low_medium
+groove_tendencies:
+  comp_density: sparse
+  articulation_style: smeared_loops
+  syncopation_level: moderate
+melodic_tendencies:
+  motion_preference: stepwise
+  range_placement: overlapping
+  density: sparse
+  phrase_length: 4
+  strong_beat_preference: extensions
+  rest_between_phrases: true
+common_devices:
+- tape_wow_and_flutter
+- master_bus_sidechain_pumping
+- loop_based_harmonic_stasis
+- lush_analogue_chorus
+- bit_crushed_aesthetics
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.3
+  voicing_deviation_tolerance: 0.4
+  groove_deviation_tolerance: 0.7
+voicing_preferences:
+  default_voicing_type: drop2
+  default_register: mid
+  default_density: high
+  default_voice_count: 5
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+  - closed
+  - drop2
+bass_preferences:
+  default_bass_mode: supportive
+  default_register: low
+  rhythmic_density: moderate
+  variant_bass_modes:
+  - supportive
+  - pedal
+  - syncopated

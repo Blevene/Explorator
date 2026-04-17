@@ -1,0 +1,64 @@
+genre: downtempo
+display_name: Downtempo
+version: 1
+harmonic_vocabulary:
+- maj7
+- m7
+- m9
+- maj9
+- add9
+- sus2
+- m11
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: low
+  borrowed_chord_tolerance: medium
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: open
+  register_bias: mid
+  extension_density: high
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: medium_high
+groove_tendencies:
+  comp_density: moderate
+  articulation_style: swung_relaxed
+  syncopation_level: heavy
+melodic_tendencies:
+  motion_preference: stepwise
+  range_placement: above_voicing
+  density: sparse
+  phrase_length: 8
+  strong_beat_preference: extensions
+  rest_between_phrases: true
+common_devices:
+- shimmering sus2/add9 ostinatos
+- trip-hop bass syncopation
+- diatonic pedal points
+- plucked acoustic textures over synth beds
+- minor 9th / major 7th vamps
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.2
+  voicing_deviation_tolerance: 0.5
+  groove_deviation_tolerance: 0.8
+voicing_preferences:
+  default_voicing_type: open
+  default_register: mid
+  default_density: medium
+  default_voice_count: 4
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+  - open
+  - drop2
+bass_preferences:
+  default_bass_mode: syncopated
+  default_register: low
+  rhythmic_density: moderate
+  variant_bass_modes:
+  - syncopated
+  - pedal
+  - supportive

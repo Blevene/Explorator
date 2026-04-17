@@ -1,0 +1,29 @@
+rules:
+- name: subterranean_pedal_foundation
+  type: bass
+  weight: 0.95
+  description: Establish a continuous, non-melodic sub-bass pedal tone to ground the
+    atmospheric space
+  applicability:
+    bass_modes:
+    - pedal
+- name: secundal_tension_clusters
+  type: voicing
+  weight: 0.8
+  description: Use tight clusters of minor seconds (m2) in the mid-high register to
+    create psychoacoustic beating
+  applicability:
+    chord_types:
+    - m2
+    - dim7
+anti_patterns:
+- name: rhythmic_syncopation
+  scope: groove
+  severity: 1.0
+  description: Avoid any perceptible beat, meter, or syncopated patterns; the genre
+    must remain ametric
+- name: functional_cadences
+  scope: harmonic
+  severity: 0.9
+  description: Avoid V-I or IV-I cadences which create forward momentum and resolution
+    inconsistent with dark ambient

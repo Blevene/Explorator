@@ -1,0 +1,31 @@
+rules:
+- name: sampler_parallelism
+  type: voicing
+  weight: 0.9
+  description: Move fixed, dense voicings (m9, m11, m13) in parallel motion across
+    the scale to mimic an old-school sampler aesthetic.
+  applicability:
+    chord_types:
+    - m9
+    - m11
+    - m13
+    - maj9
+- name: bass_downbeat_avoidance
+  type: rhythm
+  weight: 0.85
+  description: Avoid placing the bass on beat 1; prioritize syncopated 16th-note off-beats
+    to interact with the 2-step kick pattern.
+  applicability:
+    rhythmic_context:
+    - bassline
+anti_patterns:
+- name: straight_sixteenths
+  scope: groove
+  severity: 1.0
+  description: Avoid straight 16th-note quantization; UK Garage requires heavy swing
+    (60-66%) to maintain its characteristic shuffle.
+- name: triadic_simplicity
+  scope: voicing
+  severity: 0.8
+  description: Avoid basic major or minor triads; the genre requires at least 4-voice
+    extended chords for its soulful character.

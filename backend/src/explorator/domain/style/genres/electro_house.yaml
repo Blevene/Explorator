@@ -1,0 +1,61 @@
+genre: electro_house
+display_name: Electro House
+version: 1
+harmonic_vocabulary:
+- m
+- maj
+- '5'
+- m7
+- '7'
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: medium
+  borrowed_chord_tolerance: medium_high
+  cadence_closure_preference: medium
+voicing_tendencies:
+  spacing: closed
+  register_bias: mid
+  extension_density: low
+  top_voice_continuity_importance: low
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: high
+groove_tendencies:
+  comp_density: moderate
+  articulation_style: pumping_sidechain
+  syncopation_level: high
+melodic_tendencies:
+  motion_preference: leaping
+  range_placement: wide
+  density: sparse
+  phrase_length: 4
+  strong_beat_preference: roots
+  rest_between_phrases: true
+common_devices:
+- parallel power chord planing
+- phrygian bII - i riffs
+- syncopated octave bass jumps
+- rhythmic sidechain pumping
+- micro-edited stabs
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.1
+  voicing_deviation_tolerance: 0.2
+  groove_deviation_tolerance: 0.8
+voicing_preferences:
+  default_voicing_type: closed
+  default_register: mid
+  default_density: medium
+  default_voice_count: 3
+  favor_extensions: false
+  top_voice_continuity: low
+  variant_voicing_types:
+  - closed
+  - cluster
+bass_preferences:
+  default_bass_mode: syncopated
+  default_register: low
+  rhythmic_density: active
+  variant_bass_modes:
+  - syncopated
+  - pedal

@@ -1,0 +1,64 @@
+genre: progressive_house
+display_name: Progressive House
+version: 1
+harmonic_vocabulary:
+- m7
+- maj7
+- sus2
+- add9
+- m9
+- iv
+- bVI
+- bVII
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: low
+  borrowed_chord_tolerance: medium
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: medium
+  register_bias: mid_high
+  extension_density: medium
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: high
+groove_tendencies:
+  comp_density: medium
+  articulation_style: driving_straight
+  syncopation_level: high
+melodic_tendencies:
+  motion_preference: mixed
+  range_placement: overlapping
+  density: moderate
+  phrase_length: 8
+  strong_beat_preference: extensions
+  rest_between_phrases: true
+common_devices:
+- shimmering add9 plucks
+- tension-building bass pedal points
+- evolving arpeggiated ostinatos
+- common-tone voice leading
+- suspended cyclical resolutions
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.2
+  voicing_deviation_tolerance: 0.4
+  groove_deviation_tolerance: 0.1
+voicing_preferences:
+  default_voicing_type: closed
+  default_register: mid_high
+  default_density: medium
+  default_voice_count: 4
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+  - open
+  - drop2
+bass_preferences:
+  default_bass_mode: syncopated
+  default_register: low
+  rhythmic_density: high
+  variant_bass_modes:
+  - pedal
+  - supportive

@@ -1,0 +1,39 @@
+rules:
+- name: half_time_structural_anchor
+  type: groove
+  weight: 1.0
+  description: At 140 BPM, the primary snare or clap must land on beat 3 to define
+    the half-time feel.
+  applicability:
+    tempo_range:
+    - '135'
+    - '145'
+- name: sub_bass_gapping
+  type: voicing
+  weight: 0.9
+  description: Leave the 100Hz to 300Hz range empty to prevent masking of the sub-bass;
+    voice chords above C4.
+  applicability:
+    registers:
+    - mid
+- name: parallel_planing_movement
+  type: harmonic
+  weight: 0.7
+  description: Move extended minor chord shapes in parallel rather than using standard
+    voice leading.
+  applicability:
+    chord_types:
+    - m7
+    - m9
+    - maj7
+anti_patterns:
+- name: four_on_the_floor_kick
+  scope: groove
+  severity: 1.0
+  description: Avoid a steady four-to-the-floor kick pattern; it breaks the syncopated
+    UK heritage of the genre.
+- name: low_mid_chord_voicing
+  scope: voicing
+  severity: 0.8
+  description: Avoid thick chord voicings in the low-mid register; they conflict with
+    sub-bass clarity and system-shaking power.

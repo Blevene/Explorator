@@ -1,0 +1,40 @@
+rules:
+- name: unquantized_microtiming
+  type: groove
+  weight: 0.9
+  description: Apply intentional displacement of drum hits, specifically lagging snares
+    and hats, to achieve the 'Dilla feel'.
+  applicability:
+    tempo_range:
+    - '70'
+    - '90'
+- name: extension_saturated_voicings
+  type: voicing
+  weight: 0.85
+  description: Ensure every harmonic hit includes at least the 7th and one higher
+    extension like the 9th or 11th.
+  applicability:
+    chord_types:
+    - maj7
+    - m9
+    - m11
+    - maj9
+- name: parallel_planing_motion
+  type: voicing
+  weight: 0.7
+  description: Use strict parallel motion when shifting complex voicings by half or
+    whole steps to simulate sampler re-pitching.
+  applicability:
+    harmonic_motion:
+    - chromatic
+anti_patterns:
+- name: strict_grid_quantization
+  scope: groove
+  severity: 0.9
+  description: Avoid perfect 16th note quantization; results in a clinical feel that
+    breaks the genre's lazy, humanized aesthetic.
+- name: perfect_authentic_cadence
+  scope: harmonic
+  severity: 0.7
+  description: Avoid strong V-I resolutions at the end of loops; the harmony should
+    feel circular and unresolved.

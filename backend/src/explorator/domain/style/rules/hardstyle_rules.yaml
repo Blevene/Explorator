@@ -1,0 +1,32 @@
+rules:
+- name: multi_octave_stacking
+  type: voicing
+  weight: 0.9
+  description: Stack triads across multiple octaves, ensuring the top voice doubles
+    the melody for maximum power
+  applicability:
+    chord_types:
+    - min
+    - maj
+    - sus2
+    - sus4
+    - '5'
+- name: pitched_kick_root_sync
+  type: bass
+  weight: 1.0
+  description: During climax/drop sections, the bass/kick tail must strictly track
+    the root of the current chord to maintain low-end impact
+  applicability:
+    scope:
+    - climax
+anti_patterns:
+- name: extension_muddiness
+  scope: voicing
+  severity: 0.9
+  description: Avoid 7ths, 9ths, and 11ths; dense harmonics and distortion make extended
+    chords sound dissonant and muddy
+- name: swing_quantization
+  scope: groove
+  severity: 1.0
+  description: Strict zero-tolerance for swing or shuffle; all elements must be locked
+    to a rigid 16th-note grid at 150 BPM

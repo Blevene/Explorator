@@ -1,0 +1,22 @@
+genre_profile_id: genre_progressive_house_01
+preferred_chord_qualities:
+- m7
+- maj7
+- add9
+- sus2
+- m9
+allowed_borrowed_chords:
+- bVI
+- v
+- iv
+cadence_archetypes:
+- vi - IV - I - V
+- i - VI - III - VII
+- IV - I - vi - V
+- i - VII - v - VI
+harmonic_rhythm_defaults:
+  4/4: 4.0
+functional_motion_bias:
+  stepwise_diatonic: 0.8
+  circle_of_fifths: 0.1
+  chromatic: 0.1

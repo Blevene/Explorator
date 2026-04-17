@@ -1,0 +1,43 @@
+rules:
+- name: static_pedal_tension
+  type: bass
+  weight: 0.9
+  description: Maintain a static bass pedal tone across shifting diatonic chords to
+    build cinematic tension
+  applicability:
+    section:
+    - intro_and_build
+- name: high_register_continuity
+  type: voicing
+  weight: 0.8
+  description: Keep a high-register ostinato or pedal note ringing in the top voice
+    while inner voices move
+  applicability:
+    voice:
+    - top
+- name: diatonic_ambiguity
+  type: harmonic
+  weight: 0.7
+  description: Favor sus2 and add9 chords to avoid clear triadic resolution and maintain
+    a floating atmosphere
+  applicability:
+    chord_types:
+    - sus2
+    - add9
+    - sus4
+anti_patterns:
+- name: functional_v_i_cadence
+  scope: harmonic
+  severity: 0.9
+  description: Avoid strong V-I authentic cadences; these provide too much resolution
+    for the genre's floating style
+- name: swung_groove
+  scope: groove
+  severity: 1.0
+  description: Strictly avoid any swing or shuffle feel; post-rock requires a rigid,
+    straight grid for its hypnotic effect
+- name: virtuosic_melodic_runs
+  scope: melodic
+  severity: 0.8
+  description: Avoid rapid, leaping, or technical melodic lines; melodies must be
+    simple, vulnerable, and conjunct

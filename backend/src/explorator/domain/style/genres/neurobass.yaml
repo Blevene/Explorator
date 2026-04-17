@@ -1,0 +1,61 @@
+genre: neurobass
+display_name: Neurobass
+version: 1
+harmonic_vocabulary:
+- m9
+- dim7
+- m7b5
+- sus2
+- m7
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: high
+  borrowed_chord_tolerance: high
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: open
+  register_bias: high
+  extension_density: low_medium
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: high
+groove_tendencies:
+  comp_density: sparse
+  articulation_style: staccato_sweeps
+  syncopation_level: high
+melodic_tendencies:
+  motion_preference: mixed
+  range_placement: overlapping
+  density: active
+  phrase_length: 2
+  strong_beat_preference: roots
+  rest_between_phrases: true
+common_devices:
+- call-and-response phrasing
+- chromatic pitch glissandi
+- phrygian b2 friction
+- hard-gated rests
+- atonal foley percussion
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.9
+  voicing_deviation_tolerance: 0.7
+  groove_deviation_tolerance: 0.2
+voicing_preferences:
+  default_voicing_type: open
+  default_register: high
+  default_density: sparse
+  default_voice_count: 3
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+  - open
+  - cluster
+bass_preferences:
+  default_bass_mode: syncopated
+  default_register: low
+  rhythmic_density: active
+  variant_bass_modes:
+  - syncopated
+  - pedal

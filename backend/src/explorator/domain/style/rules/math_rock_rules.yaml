@@ -1,0 +1,31 @@
+rules:
+- name: pedal_point_continuity
+  type: voicing
+  weight: 0.9
+  description: Utilize open strings as static pedal points across changing harmony
+    to maintain high-register shimmer.
+  applicability:
+    chord_types:
+    - maj7
+    - add9
+    - sus2
+- name: asymmetrical_bass_counterpoint
+  type: bass
+  weight: 0.8
+  description: Bass must play independent melodic lines that interlock with kick drum
+    subdivisions rather than just doubling guitar roots.
+  applicability:
+    rhythmic_patterns:
+    - 16th_note_syncopation
+    - odd_meter
+anti_patterns:
+- name: functional_dominant_resolutions
+  scope: harmonic
+  severity: 0.8
+  description: Avoid V7 - I cadences; they provide too much closure and break the
+    floating, non-resolving harmonic plateau.
+- name: basic_triad_strumming
+  scope: voicing
+  severity: 0.9
+  description: Avoid dense block-chord strumming of triads; prefers arpeggiated or
+    tapped extended voicings with wide intervals.

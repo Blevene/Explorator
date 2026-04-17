@@ -1,0 +1,33 @@
+rules:
+- name: surdo_anticipation
+  type: rhythm
+  weight: 0.9
+  description: The bass must play the root or fifth with a dotted-quarter followed
+    by an eighth note tied over the bar to anticipate the next downbeat.
+  applicability:
+    instruments:
+    - bass
+- name: smooth_stepwise_top_voice
+  type: voicing
+  weight: 0.8
+  description: Ensure the highest note in the chord progression moves in stepwise
+    motion, ideally creating a chromatic descent.
+  applicability:
+    role:
+    - comping
+anti_patterns:
+- name: swing_feel_eight_notes
+  scope: groove
+  severity: 1.0
+  description: Do not use triplet-based swing; bossa nova requires strictly straight
+    eighth notes played with a relaxed feel.
+- name: walking_bass_lines
+  scope: bass
+  severity: 0.9
+  description: Avoid melodic walking bass lines; the bass must remain root-fifth oriented
+    and rhythmically grounded in the surdo pattern.
+- name: open_stack_power_chords
+  scope: voicing
+  severity: 0.8
+  description: Avoid sparse triads or wide-interval fifth stacks; voicings must be
+    clustered and rich with extensions.

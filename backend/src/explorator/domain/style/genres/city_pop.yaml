@@ -1,0 +1,68 @@
+genre: city_pop
+display_name: City Pop
+version: 1
+harmonic_vocabulary:
+- maj7
+- m7
+- m9
+- maj9
+- 7sus4
+- '11'
+- dim7
+- add9
+- add6
+- m6
+- m7b5
+- '13'
+harmonic_tendencies:
+  functional_strength: high
+  chromaticism_level: medium_high
+  borrowed_chord_tolerance: high
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: closed
+  register_bias: mid_high
+  extension_density: high
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: medium
+  rhythmic_activity: high
+groove_tendencies:
+  comp_density: busy
+  articulation_style: choppy_funk
+  syncopation_level: heavy
+melodic_tendencies:
+  motion_preference: mixed
+  range_placement: above_voicing
+  density: moderate
+  phrase_length: 4
+  strong_beat_preference: extensions
+  rest_between_phrases: true
+common_devices:
+- royal road progression
+- 16th-note funk cutting
+- suspended dominant resolutions
+- parallel chord planing
+- lush fm synth pads
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.4
+  voicing_deviation_tolerance: 0.3
+  groove_deviation_tolerance: 0.1
+voicing_preferences:
+  default_voicing_type: drop2
+  default_register: mid_high
+  default_density: high
+  default_voice_count: 5
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+  - drop2
+  - closed
+bass_preferences:
+  default_bass_mode: syncopated
+  default_register: low
+  rhythmic_density: high
+  variant_bass_modes:
+  - syncopated
+  - supportive

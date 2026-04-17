@@ -1,0 +1,63 @@
+genre: ambient_techno
+display_name: Ambient Techno
+version: 1
+harmonic_vocabulary:
+- m7
+- m9
+- sus2
+- sus4
+- m11
+- maj7
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: medium
+  borrowed_chord_tolerance: low_medium
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: open
+  register_bias: mid_high
+  extension_density: high
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: medium
+groove_tendencies:
+  comp_density: sparse
+  articulation_style: driving_blurred
+  syncopation_level: heavy
+melodic_tendencies:
+  motion_preference: stepwise
+  range_placement: overlapping
+  density: sparse
+  phrase_length: 4
+  strong_beat_preference: extensions
+  rest_between_phrases: true
+common_devices:
+- glacial filter sweeps
+- parallel minor stabs
+- hypnotic phrygian arpeggios
+- sub-bass pedal point
+- granular drones
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.1
+  voicing_deviation_tolerance: 0.4
+  groove_deviation_tolerance: 0.2
+voicing_preferences:
+  default_voicing_type: open
+  default_register: mid_high
+  default_density: medium
+  default_voice_count: 4
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+  - open
+  - drop2
+  - cluster
+bass_preferences:
+  default_bass_mode: pedal
+  default_register: low
+  rhythmic_density: medium
+  variant_bass_modes:
+  - pedal
+  - supportive

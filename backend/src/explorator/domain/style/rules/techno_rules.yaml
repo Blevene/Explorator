@@ -1,0 +1,33 @@
+rules:
+- name: chord_memory_planing
+  type: voicing
+  weight: 0.9
+  description: Maintain identical chord shapes across all pitch shifts to emulate
+    sampler-style parallel voice leading.
+  applicability:
+    chord_types:
+    - m
+    - '5'
+    - sus2
+    - m7
+- name: phrygian_tension
+  type: harmonic
+  weight: 0.8
+  description: Prioritize the minor second (b2) and tritone (b5) intervals in melodic
+    ostinatos to maintain a dark atmosphere.
+  applicability:
+    modes:
+    - phrygian
+    - locrian
+anti_patterns:
+- name: functional_circle_progression
+  scope: harmonic
+  severity: 0.9
+  description: Avoid circle-of-fifths movement or dominant-to-tonic resolutions which
+    introduce unwanted emotional resolution.
+- name: warm_jazz_extensions
+  scope: voicing
+  severity: 0.8
+  description: Avoid 9th, 11th, and 13th extensions; these introduce harmonic warmth
+    that contradicts the cold industrial aesthetic. Note that the m7 is permitted
+    as it maintains a stark, cold character.

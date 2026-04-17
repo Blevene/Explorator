@@ -1,0 +1,31 @@
+rules:
+- name: lush_extension_stacking
+  type: voicing
+  weight: 0.9
+  description: Prioritize 9ths, 11ths, and 13ths to emulate 80s smooth jazz and R&B
+    sample aesthetics
+  applicability:
+    chord_types:
+    - maj7
+    - m7
+    - maj9
+    - m9
+- name: harmonic_vamping
+  type: harmonic
+  weight: 0.8
+  description: Favor short, non-resolving loops (2-4 bars) that avoid the tonic to
+    create a sense of suspended nostalgia
+  applicability:
+    scope:
+    - progression_generation
+anti_patterns:
+- name: strong_functional_resolutions
+  scope: harmonic
+  severity: 0.8
+  description: Avoid assertive V7-I cadences; they provide too much closure and break
+    the 'floating' genre feel
+- name: diatonic_triad_simplicity
+  scope: voicing
+  severity: 0.9
+  description: Avoid simple major or minor triads without extensions; sounds too 'clean'
+    and lacks the required 80s luxury texture

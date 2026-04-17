@@ -1,0 +1,30 @@
+rules:
+- name: sampler_planing_parallelism
+  type: voicing
+  weight: 0.9
+  description: Shift voicings in exact parallel blocks (constant structure) to emulate
+    hardware sampler workflow.
+  applicability:
+    chord_types:
+    - m9
+    - m7
+    - maj7
+- name: mpc_swing_offset
+  type: groove
+  weight: 0.8
+  description: Apply heavy swing (55-60%) and push chord stabs slightly off-grid to
+    create a lazy feel.
+  applicability:
+    scope:
+    - all
+anti_patterns:
+- name: functional_v_i_cadence
+  scope: harmonic
+  severity: 0.8
+  description: Avoid strong V-I cadences; they break the hypnotic, looping trance
+    of the genre.
+- name: smooth_voice_leading
+  scope: voicing
+  severity: 0.6
+  description: Avoid independent voice leading; chords should move as monolithic block
+    stabs.

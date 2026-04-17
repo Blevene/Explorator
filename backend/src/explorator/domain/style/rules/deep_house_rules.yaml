@@ -1,0 +1,43 @@
+rules:
+- name: parallel_constant_structure
+  type: voicing
+  weight: 0.9
+  description: Maintain exact interval relationships (e.g., m9 shape) when moving
+    between chords to simulate keyboard sampling
+  applicability:
+    chord_types:
+    - m7
+    - m9
+    - m11
+- name: sixteenth_note_push
+  type: groove
+  weight: 0.85
+  description: Anticipate the downbeat of bar 1 or beat 3 by a 16th note for chords
+    and bass
+  applicability:
+    scope:
+    - all
+- name: dorian_modal_flavor
+  type: harmonic
+  weight: 0.7
+  description: Prioritize the natural 6th and minor 7th in basslines and melodies
+    over minor tonalities
+  applicability:
+    scope:
+    - minor_keys
+anti_patterns:
+- name: triadic_simplicity
+  scope: voicing
+  severity: 0.9
+  description: Avoid plain major/minor triads; they lack the necessary jazz-influenced
+    sophistication of deep house
+- name: straight_sixteenths
+  scope: groove
+  severity: 0.9
+  description: Avoid robotic, unswung 16th note grids; deep house requires MPC-style
+    swing between 54% and 62%
+- name: wide_orchestral_spacing
+  scope: voicing
+  severity: 0.7
+  description: Avoid spread voicings across multiple octaves; maintain tight, mid-range
+    clusters typical of hardware synths

@@ -1,0 +1,21 @@
+genre_profile_id: genre_neurobass_01
+preferred_chord_qualities:
+- m9
+- dim7
+- m7b5
+- sus2
+allowed_borrowed_chords:
+- bII
+- bV
+- bVII
+- iv
+cadence_archetypes:
+- bII - I (phrygian)
+- bV - I (tritone)
+- Pedal point drone
+harmonic_rhythm_defaults:
+  4/4: 4.0
+functional_motion_bias:
+  chromatic: 0.7
+  stepwise_diatonic: 0.2
+  circle_of_fifths: 0.1

@@ -1,0 +1,64 @@
+genre: deep_house
+display_name: Deep House
+version: 1
+harmonic_vocabulary:
+- m7
+- m9
+- m11
+- maj7
+- maj9
+- sus4
+- 7sus4
+- dim7
+- modal_mixture
+harmonic_tendencies:
+  functional_strength: low_medium
+  chromaticism_level: high
+  borrowed_chord_tolerance: high
+  cadence_closure_preference: low_medium
+voicing_tendencies:
+  spacing: closed
+  register_bias: mid
+  extension_density: high
+  top_voice_continuity_importance: medium
+bass_tendencies:
+  root_emphasis: medium
+  pedal_tone_tolerance: medium
+  rhythmic_activity: high
+groove_tendencies:
+  comp_density: medium
+  articulation_style: swung_driving
+  syncopation_level: high
+melodic_tendencies:
+  motion_preference: mixed
+  range_placement: above_voicing
+  density: moderate
+  phrase_length: 4
+  strong_beat_preference: extensions
+  rest_between_phrases: true
+common_devices:
+- parallel chord planing
+- 16th-note push
+- dorian bass riffs
+- gospel passing chords
+- dub stabs
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.6
+  voicing_deviation_tolerance: 0.3
+  groove_deviation_tolerance: 0.2
+voicing_preferences:
+  default_voicing_type: closed
+  default_register: mid
+  default_density: high
+  default_voice_count: 5
+  favor_extensions: true
+  top_voice_continuity: medium
+  variant_voicing_types:
+  - closed
+  - drop2
+bass_preferences:
+  default_bass_mode: syncopated
+  default_register: low
+  rhythmic_density: high
+  variant_bass_modes:
+  - syncopated

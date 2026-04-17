@@ -1,0 +1,31 @@
+rules:
+- name: static_modal_vamp
+  type: harmonic
+  weight: 0.95
+  description: Maintain a static harmonic center for long durations; focus on timbral
+    evolution of a single chord or a two-chord Phrygian oscillation.
+  applicability:
+    chord_types:
+    - m7
+    - m9
+    - sus2
+    - m11
+- name: sub_bass_pedal_grounding
+  type: bass
+  weight: 0.9
+  description: Prioritize a continuous or repetitive sub-bass pedal point regardless
+    of upper-harmonic dissonance to maintain hypnotic focus.
+  applicability:
+    register:
+    - low
+anti_patterns:
+- name: functional_v_i_cadence
+  scope: harmonic
+  severity: 0.9
+  description: Avoid strong V-I or ii-V-I progressions which break the ambient/trance
+    state and introduce traditional pop/jazz structure.
+- name: foreground_melodic_lead
+  scope: melody
+  severity: 0.8
+  description: Avoid prominent, high-register melodic lines that sit 'in front' of
+    the mix; melodies should be textural layers.

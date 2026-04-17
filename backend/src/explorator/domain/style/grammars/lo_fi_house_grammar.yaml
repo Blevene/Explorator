@@ -1,0 +1,21 @@
+genre_profile_id: genre_lo_fi_house_01
+preferred_chord_qualities:
+- m9
+- m7
+- maj7
+- m11
+- sus4
+allowed_borrowed_chords:
+- parallel chromatic planing
+- dorian modal interchange
+- aeolian modal interchange
+cadence_archetypes:
+- i7 - iv7 (modal loop)
+- vi7 - ivmaj7 (floating vamp)
+- i7 - biii7 (parallel glide)
+harmonic_rhythm_defaults:
+  4/4: 2.0
+functional_motion_bias:
+  stepwise_diatonic: 0.3
+  chromatic: 0.6
+  circle_of_fifths: 0.1

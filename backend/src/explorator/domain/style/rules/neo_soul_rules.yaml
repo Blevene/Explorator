@@ -1,0 +1,39 @@
+rules:
+- name: lush_jazz_extensions
+  type: voicing
+  weight: 0.9
+  description: Prioritize 9th, 11th, and 13th extensions in all keyboard and guitar
+    voicings to maintain genre-standard density.
+  applicability:
+    chord_types:
+    - m7
+    - maj7
+    - '7'
+    - sus4
+- name: behind_the_beat_pocket
+  type: groove
+  weight: 0.85
+  description: Micro-time the kick and bass slightly late relative to the grid, while
+    keeping the snare stable to create the 'Dilla' swing.
+  applicability:
+    scope:
+    - rhythm_section
+- name: parallel_chromatic_planing
+  type: harmonic
+  weight: 0.7
+  description: Use parallel shifts of complex voicings (e.g., m11) up or down a half-step
+    as passing motion between structural chords.
+  applicability:
+    scope:
+    - transition_points
+anti_patterns:
+- name: rigid_quantization
+  scope: groove
+  severity: 0.9
+  description: Avoid perfectly quantized 16th notes; the lack of micro-timed swing
+    destroys the 'drunk' feel essential to the genre.
+- name: simple_triadic_harmony
+  scope: harmonic
+  severity: 0.85
+  description: Avoid root-position major and minor triads without extensions, as they
+    sound too thin and lack the sophisticated jazz vocabulary required.

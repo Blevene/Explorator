@@ -1,0 +1,23 @@
+genre_profile_id: genre_ambient_techno_01
+preferred_chord_qualities:
+- m7
+- m9
+- sus2
+- sus4
+- m11
+allowed_borrowed_chords:
+- bii
+- biii
+- bvi
+- bvii
+cadence_archetypes:
+- i - bii (phrygian oscillation)
+- i - i (static pedal)
+- i - bvii (modal drift)
+harmonic_rhythm_defaults:
+  4/4: 16.0
+functional_motion_bias:
+  stepwise_diatonic: 0.2
+  circle_of_fifths: 0.0
+  chromatic: 0.4
+  static_pedal: 0.4

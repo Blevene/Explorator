@@ -1,0 +1,32 @@
+rules:
+- name: supersaw_stacking
+  type: voicing
+  weight: 0.9
+  description: Double roots and fifths across multiple octaves to simulate high-density
+    detuned synthesizer stacks
+  applicability:
+    chord_types:
+    - m
+    - maj
+    - '5'
+    - sus2
+    - add9
+- name: rolling_bass_rhythm
+  type: groove
+  weight: 0.85
+  description: Utilize 16th-note patterns with the downbeat removed to create forward-driving
+    energy without masking the kick drum
+  applicability:
+    bass_mode:
+    - supportive
+anti_patterns:
+- name: dominant_tonic_resolution
+  scope: harmonic
+  severity: 0.9
+  description: Avoid strong V7 to I functional cadences as they contradict the floating,
+    modal aesthetic of the genre
+- name: swing_quantization
+  scope: groove
+  severity: 1.0
+  description: Never apply swing or shuffle; trance requires rigid, straight 16th-note
+    quantization to maintain hypnotic pulse

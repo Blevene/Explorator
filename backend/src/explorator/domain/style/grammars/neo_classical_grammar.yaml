@@ -1,0 +1,22 @@
+genre_profile_id: genre_neo_classical_01
+preferred_chord_qualities:
+- add9
+- sus2
+- maj7
+- m7
+- sus4
+- madd9
+allowed_borrowed_chords:
+- modal_mixture from relative major/minor
+- minor iv in major
+cadence_archetypes:
+- IV - I (plagal)
+- VII - i (subtonic)
+- vi - IV - I
+- i - VI - III - VII
+harmonic_rhythm_defaults:
+  4/4: 4.0
+functional_motion_bias:
+  stepwise_diatonic: 0.8
+  circle_of_fifths: 0.1
+  chromatic: 0.1

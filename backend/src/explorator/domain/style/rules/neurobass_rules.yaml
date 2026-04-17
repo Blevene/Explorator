@@ -1,0 +1,40 @@
+rules:
+- name: high_register_evacuation
+  type: voicing
+  weight: 0.9
+  description: Keep harmonic elements such as pads and choirs strictly in the high
+    or mid_high registers to preserve low-mid frequency space for neurobass sound
+    design
+  applicability:
+    chord_types:
+    - m9
+    - dim7
+    - sus2
+    - m7
+- name: phrygian_friction_emphasis
+  type: bass
+  weight: 0.8
+  description: Frequently utilize the minor second (b2) against the root pedal to
+    generate sinister, unresolved tension in the bass lead
+  applicability:
+    scope:
+    - bass_lead_lines
+- name: gated_silence_dynamic
+  type: groove
+  weight: 0.85
+  description: Insert hard-gated 16th-note rests immediately before downbeats or snare
+    hits to maximize rhythmic impact and clarity
+  applicability:
+    scope:
+    - all_rhythmic_elements
+anti_patterns:
+- name: functional_major_cadence
+  scope: harmonic
+  severity: 1.0
+  description: Avoid V-I or ii-V-I progressions; traditional functional harmony breaks
+    the dark, high-tech atmosphere
+- name: humanized_swing_timing
+  scope: groove
+  severity: 0.9
+  description: Avoid loose or humanized timing; the genre requires mathematical precision
+    and strict grid-locking to maintain biomechanical energy

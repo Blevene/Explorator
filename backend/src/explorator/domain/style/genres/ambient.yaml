@@ -1,0 +1,65 @@
+genre: ambient
+display_name: Ambient
+version: 2
+harmonic_vocabulary:
+- maj7
+- add9
+- sus2
+- sus4
+- maj
+- min
+- maj9
+- m9
+- m11
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: low
+  borrowed_chord_tolerance: medium
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: open
+  register_bias: mid_high
+  extension_density: medium
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: low
+groove_tendencies:
+  comp_density: sparse
+  articulation_style: sustained_swells
+  syncopation_level: none
+melodic_tendencies:
+  motion_preference: stepwise
+  range_placement: above_voicing
+  density: sparse
+  phrase_length: 32
+  strong_beat_preference: extensions
+  rest_between_phrases: true
+common_devices:
+- slow-attack pad swells
+- pan-diatonic clusters
+- asynchronous generative phrasing
+- suspended pedal points
+- effect-as-instrument blurring
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.4
+  voicing_deviation_tolerance: 0.8
+  groove_deviation_tolerance: 1.0
+voicing_preferences:
+  default_voicing_type: open
+  default_register: mid_high
+  default_density: sparse
+  default_voice_count: 4
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+  - open
+  - cluster
+bass_preferences:
+  default_bass_mode: pedal
+  default_register: low
+  rhythmic_density: sparse
+  variant_bass_modes:
+  - pedal
+  - supportive

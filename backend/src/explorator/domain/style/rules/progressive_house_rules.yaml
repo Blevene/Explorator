@@ -1,0 +1,44 @@
+rules:
+- name: common_tone_anchor
+  type: voicing
+  weight: 0.9
+  description: Maintain a common tone in the highest voice across chord changes to
+    create a hypnotic drone effect
+  applicability:
+    chord_types:
+    - maj7
+    - m7
+    - add9
+    - sus2
+- name: pedal_point_tension
+  type: bass
+  weight: 0.7
+  description: Hold the root of the tonic or first chord as a pedal point across the
+    entire progression to build harmonic tension
+  applicability:
+    progression_length_min:
+    - '4'
+- name: staccato_pluck_quantization
+  type: groove
+  weight: 1.0
+  description: Ensure rhythmic synths use short decay envelopes and are rigidly quantized
+    to the 16th-note grid
+  applicability:
+    instrument_type:
+    - synth_pluck
+anti_patterns:
+- name: perfect_authentic_cadence
+  scope: harmonic
+  severity: 0.9
+  description: Avoid strong V-I resolutions which create too much finality and break
+    the hypnotic flow
+- name: swing_groove
+  scope: groove
+  severity: 1.0
+  description: Never use swing or shuffle; the 16th-note grid must remain straight
+    and driving
+- name: jazz_extension_density
+  scope: voicing
+  severity: 0.6
+  description: Avoid 11th and 13th extensions which introduce unnecessary dissonance;
+    stick to clear 7ths and 9ths

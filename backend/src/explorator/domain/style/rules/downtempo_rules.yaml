@@ -1,0 +1,36 @@
+rules:
+- name: atmospheric_pedal_tones
+  type: harmonic
+  weight: 0.7
+  description: Utilize static bass notes under shifting upper-structure triads to
+    create shimmering ambient textures
+  applicability:
+    bass_mode:
+    - pedal
+- name: extension_anchored_melody
+  type: melodic
+  weight: 0.8
+  description: Target chord extensions (7ths and 9ths) on downbeats to emphasize the
+    nostalgic quality of the genre
+  applicability:
+    beat_placement:
+    - strong
+- name: voice_leading_smoothness
+  type: voicing
+  weight: 0.9
+  description: Prioritize common tones and stepwise motion in the top voice of harmonic
+    layers to maintain a hypnotic state
+  applicability:
+    layer:
+    - harmonic_bed
+anti_patterns:
+- name: functional_dominant_tension
+  scope: harmonic
+  severity: 0.9
+  description: Avoid secondary dominants or altered V7 chords; leading-tone tension
+    breaks the serene, non-functional aesthetic
+- name: low_mid_clutter
+  scope: voicing
+  severity: 0.7
+  description: Avoid dense chord clusters in the C2-C3 range; this space must remain
+    open for sub-bass clarity
