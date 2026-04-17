@@ -1,0 +1,33 @@
+rules:
+- name: extension_enrichment
+  type: voicing
+  weight: 0.9
+  description: Automatically enrich triads and dominant chords with 7ths, 9ths, and
+    13ths to achieve the lush, sophisticated texture characteristic of City Pop.
+  applicability:
+    chord_types:
+    - maj
+    - m
+    - maj7
+    - m7
+    - '7'
+    - '9'
+- name: sample_chop_stutter
+  type: rhythm
+  weight: 0.7
+  description: Introduce rapid 16th-note repetitions of chord stabs to simulate hardware
+    sampler stutter effects
+  applicability:
+    scope:
+    - high_energy_sections
+anti_patterns:
+- name: static_on_beat_bass
+  scope: bass
+  severity: 1.0
+  description: Avoid simple root-on-beat bass patterns; future funk requires syncopated,
+    melodic interaction with the kick
+- name: dry_triadic_harmony
+  scope: harmonic
+  severity: 0.8
+  description: Pure triads lack the necessary sophisticated 'city pop' texture and
+    sound amateurish in this context

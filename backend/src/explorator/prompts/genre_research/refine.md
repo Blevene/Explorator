@@ -23,6 +23,7 @@ You MUST use values from these constrained sets. Do NOT invent new labels.
 **Register bias**: `low`, `mid`, `mid_high`, `high`
 **Comp density**: `sparse`, `moderate`, `busy`
 **Syncopation level**: `none`, `light`, `moderate`, `heavy`
+**Articulation style**: two-word descriptive `snake_case` label (NOT a tendency level). Examples: `floating_pulse`, `arpeggiated_pulse`, `driving_straight`, `bouncy_staccato`, `choppy_funk`
 **Bass mode**: `supportive`, `pedal`, `syncopated`
 **Rhythmic density**: `sparse`, `moderate`, `active`
 **Voicing type**: `open`, `closed`, `drop2`, `quartal`, `cluster`

@@ -118,7 +118,7 @@ You MUST use values from these constrained sets. Do NOT invent new labels.
 
 **Comp density**: `sparse`, `moderate`, `busy`
 **Syncopation level**: `none`, `light`, `moderate`, `heavy`
-**Articulation style**: use short descriptive labels like `floating_pulse`, `driving_straight`, `swung_relaxed`, `bouncy_staccato`
+**Articulation style**: must be a two-word descriptive label in `snake_case` describing the rhythmic feel — NOT a tendency level. Examples from existing genres: `floating_pulse`, `arpeggiated_pulse`, `sustained_swells`. Other valid examples: `driving_straight`, `swung_relaxed`, `bouncy_staccato`, `choppy_funk`, `laid_back_groove`. NEVER use `low`, `medium`, `high` etc. for this field.
 
 **Bass mode** (must be one of): `supportive`, `pedal`, `syncopated`
 **Bass register**: `low`

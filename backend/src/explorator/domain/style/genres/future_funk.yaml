@@ -1,0 +1,64 @@
+genre: future_funk
+display_name: Future Funk
+version: 1
+harmonic_vocabulary:
+- maj7
+- m7
+- '7'
+- '9'
+- m9
+- m11
+- '13'
+- sus4
+harmonic_tendencies:
+  functional_strength: high
+  chromaticism_level: medium_high
+  borrowed_chord_tolerance: high
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: mixed
+  register_bias: mid_high
+  extension_density: high
+  top_voice_continuity_importance: medium
+bass_tendencies:
+  root_emphasis: low_medium
+  pedal_tone_tolerance: low
+  rhythmic_activity: high
+groove_tendencies:
+  comp_density: busy
+  articulation_style: high
+  syncopation_level: heavy
+melodic_tendencies:
+  motion_preference: mixed
+  range_placement: overlapping
+  density: active
+  phrase_length: 4
+  strong_beat_preference: extensions
+  rest_between_phrases: true
+common_devices:
+- royal road progression
+- octave slap bass
+- stutter chops
+- chromatic chord planing
+- sidechain swell
+- pumping
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.4
+  voicing_deviation_tolerance: 0.3
+  groove_deviation_tolerance: 0.1
+voicing_preferences:
+  default_voicing_type: drop2
+  default_register: mid_high
+  default_density: high
+  default_voice_count: 5
+  favor_extensions: true
+  top_voice_continuity: medium
+  variant_voicing_types:
+  - drop2
+  - closed
+bass_preferences:
+  default_bass_mode: syncopated
+  default_register: low
+  rhythmic_density: active
+  variant_bass_modes:
+  - syncopated
