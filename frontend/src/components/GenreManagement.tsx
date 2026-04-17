@@ -276,12 +276,22 @@ export default function GenreManagement() {
     if (activeJobId && activeJobStatus && activeJobStatus !== 'pending_review' && activeJobStatus !== 'failed') {
       setView('progress');
     }
-    if (activeJobStatus === 'pending_review') {
-      setView('library');
-      reset();
-      fetchDrafts().catch(console.error);
+    if (activeJobStatus === 'pending_review' && activeJobId) {
+      // Auto-open review for the just-completed job
+      fetchDraftDetail(activeJobId).then(() => {
+        setRejectMode(false);
+        setRejectReason('');
+        setExpandResearchLog(false);
+        setExpandCritique(false);
+        setView('review');
+      }).catch(() => {
+        // Fallback to library if fetch fails
+        setView('library');
+        reset();
+        fetchDrafts().catch(console.error);
+      });
     }
-  }, [activeJobId, activeJobStatus, reset, fetchDrafts]);
+  }, [activeJobId, activeJobStatus, reset, fetchDrafts, fetchDraftDetail]);
 
   const handleStartResearch = async () => {
     if (!genreName.trim()) return;
