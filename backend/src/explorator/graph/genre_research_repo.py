@@ -26,7 +26,7 @@ def _flatten_for_neo4j(data: dict[str, Any]) -> dict[str, Any]:
 def _unflatten_from_neo4j(props: dict[str, Any]) -> dict[str, Any]:
     """Restore JSON strings back to Python objects."""
     result = dict(props)
-    for key in ("draft_yamls", "critique_trail", "reference_artists"):
+    for key in ("draft_yamls", "critique_trail", "reference_artists", "validation_errors"):
         if key in result and isinstance(result[key], str):
             try:
                 result[key] = json.loads(result[key])

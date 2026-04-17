@@ -672,7 +672,8 @@ export default function GenreManagement() {
     const profile = draft.draft_yamls?.profile ?? {};
     const rules = draft.draft_yamls?.rules ?? {};
     const grammar = draft.draft_yamls?.grammar ?? {};
-    const hasValidationErrors = (draft.validation_errors?.length ?? 0) > 0;
+    const validationErrors = Array.isArray(draft.validation_errors) ? draft.validation_errors : [];
+    const hasValidationErrors = validationErrors.length > 0;
 
     return (
       <div className="min-h-screen px-8 py-12 max-w-5xl mx-auto">
@@ -721,7 +722,7 @@ export default function GenreManagement() {
               Validation Warnings
             </h4>
             <ul className="text-xs space-y-1" style={{ color: 'var(--text-secondary)' }}>
-              {draft.validation_errors!.map((err, i) => (
+              {validationErrors.map((err: string, i: number) => (
                 <li key={i}>• {err}</li>
               ))}
             </ul>
