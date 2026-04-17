@@ -34,6 +34,8 @@ def _normalize_draft(parsed: dict[str, Any], genre_name: str) -> None:
             for key, val in applicability.items():
                 if not isinstance(val, list):
                     applicability[key] = [str(val)]
+                else:
+                    applicability[key] = [str(v) for v in val]
     # Grammar: harmonic_rhythm_defaults values must be floats, not lists
     grammar = parsed.get("grammar", {})
     hrd = grammar.get("harmonic_rhythm_defaults", {})
