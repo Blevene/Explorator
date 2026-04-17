@@ -1,0 +1,60 @@
+genre: drone_metal
+display_name: Drone Metal
+version: 1
+harmonic_vocabulary:
+- '5'
+- m
+- sus2
+- sus4
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: high
+  borrowed_chord_tolerance: high
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: open
+  register_bias: low
+  extension_density: low
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: low
+groove_tendencies:
+  comp_density: low
+  articulation_style: sustained_swells
+  syncopation_level: low
+melodic_tendencies:
+  motion_preference: stepwise
+  range_placement: above_voicing
+  density: sparse
+  phrase_length: 16
+  strong_beat_preference: roots
+  rest_between_phrases: true
+common_devices:
+- sub-bass pedal tones
+- overtone feedback blooming
+- chromatic sludge shifts
+- microtonal beating
+- tremolo-picked walls of sound
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.7
+  voicing_deviation_tolerance: 0.1
+  groove_deviation_tolerance: 0.1
+voicing_preferences:
+  default_voicing_type: open
+  default_register: low
+  default_density: low
+  default_voice_count: 2
+  favor_extensions: false
+  top_voice_continuity: high
+  variant_voicing_types:
+  - open
+  - cluster
+bass_preferences:
+  default_bass_mode: pedal
+  default_register: low
+  rhythmic_density: low
+  variant_bass_modes:
+  - pedal
+  - supportive

@@ -1,0 +1,38 @@
+rules:
+- name: stratified_spacing
+  type: voicing
+  weight: 0.9
+  description: Place voicings in mid-to-high registers to preserve space for sub-bass
+    and delay trails.
+  applicability:
+    register:
+    - mid_high
+    - high
+- name: dub_skank_syncopation
+  type: groove
+  weight: 0.8
+  description: Emphasize offbeats and the 'drop' on beat 3 in half-time feels for
+    chord stabs.
+  applicability:
+    comp_density:
+    - low
+- name: parallel_stab_motion
+  type: voicing
+  weight: 0.7
+  description: Shift chord stabs in parallel blocks to maintain timbral consistency,
+    ignoring traditional voice leading.
+  applicability:
+    chord_types:
+    - m7
+    - m9
+anti_patterns:
+- name: functional_v_i_cadence
+  scope: harmonic
+  severity: 0.9
+  description: Avoid strong V-I or ii-V-I progressions; they break the static, atmospheric
+    suspension of the genre.
+- name: low_mid_congestion
+  scope: voicing
+  severity: 0.8
+  description: Avoid clustering chord tones in the low-mid frequencies to prevent
+    masking of the sub-bass foundation.

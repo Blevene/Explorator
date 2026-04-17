@@ -1,0 +1,29 @@
+rules:
+- name: monolithic_sustain
+  type: groove
+  weight: 0.9
+  description: Notes must be held for extreme durations, often spanning multiple measures
+    to simulate amplifier sustain and glacial tempo.
+  applicability:
+    note_lengths:
+    - breve
+    - longa
+- name: feedback_overtone_continuity
+  type: voicing
+  weight: 0.7
+  description: Ensure a continuous high-register pitch or slowly morphing overtone
+    exists above the low-end drone to simulate feedback.
+  applicability:
+    register:
+    - high
+anti_patterns:
+- name: complex_jazz_extensions
+  scope: voicing
+  severity: 0.9
+  description: Avoid 9ths, 11ths, and 13ths in the low register; high distortion levels
+    will turn these into unmusical harmonic mud.
+- name: syncopated_backbeat
+  scope: groove
+  severity: 1.0
+  description: Introducing syncopation or a standard drum backbeat breaks the glacial,
+    arhythmic essence of drone metal.

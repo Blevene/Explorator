@@ -1,0 +1,28 @@
+rules:
+- name: berlin_school_sequence
+  type: groove
+  weight: 0.7
+  description: Utilize driving 16th-note sequencer patterns jumping between root,
+    fifth, and octave for forward momentum
+  applicability:
+    bass_mode:
+    - supportive
+- name: glacial_voice_leading
+  type: voicing
+  weight: 0.9
+  description: Maintain extreme top-voice continuity where upper voices move only
+    by half or whole steps during harmonic shifts
+  applicability:
+    voicing_type:
+    - open
+anti_patterns:
+- name: avoid_functional_v_i_cadences
+  scope: general
+  severity: 0.7
+  description: Strictly avoid dominant-to-tonic resolutions which create a sense of
+    terrestrial finality; favor modal drifting instead.
+- name: avoid_syncopated_comping
+  scope: general
+  severity: 0.8
+  description: Avoid rhythmic keyboard stabs or syncopated rhythmic 'chops' that interrupt
+    the floating, atmospheric texture.

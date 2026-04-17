@@ -1,0 +1,23 @@
+genre_profile_id: genre_chillwave_01
+preferred_chord_qualities:
+- maj7
+- maj9
+- m7
+- m9
+- sus2
+- add9
+- m6
+allowed_borrowed_chords:
+- iv
+- bVImaj7
+cadence_archetypes:
+- IVmaj7 - iii7 - ii7 - Imaj7
+- IVmaj7 - iv6 - Imaj7
+- Imaj7 - II/I
+- IVmaj7 - Imaj7
+harmonic_rhythm_defaults:
+  4/4: 4.0
+functional_motion_bias:
+  stepwise_diatonic: 0.6
+  plagal: 0.3
+  chromatic: 0.1

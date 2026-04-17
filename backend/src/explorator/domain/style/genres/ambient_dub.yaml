@@ -1,0 +1,63 @@
+genre: ambient_dub
+display_name: Ambient Dub
+version: 1
+harmonic_vocabulary:
+- m7
+- m9
+- m11
+- sus2
+- sus4
+- maj7
+- add9
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: low
+  borrowed_chord_tolerance: low
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: high
+  register_bias: mid_high
+  extension_density: high
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: low
+groove_tendencies:
+  comp_density: low
+  articulation_style: dubby_pulse
+  syncopation_level: high
+melodic_tendencies:
+  motion_preference: stepwise
+  range_placement: above_voicing
+  density: sparse
+  phrase_length: 8
+  strong_beat_preference: extensions
+  rest_between_phrases: true
+common_devices:
+- dub-delayed minor stabs
+- sub-bass pedal points
+- parallel chord planing
+- lfo-modulated floating pads
+- rhythmic silence
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.2
+  voicing_deviation_tolerance: 0.4
+  groove_deviation_tolerance: 0.6
+voicing_preferences:
+  default_voicing_type: open
+  default_register: mid_high
+  default_density: medium
+  default_voice_count: 4
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+  - open
+  - drop2
+bass_preferences:
+  default_bass_mode: pedal
+  default_register: low
+  rhythmic_density: low
+  variant_bass_modes:
+  - pedal
+  - syncopated

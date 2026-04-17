@@ -1,0 +1,29 @@
+rules:
+- name: sidechain_ducking_pumping
+  type: groove
+  weight: 0.9
+  description: Apply a pumping sidechain effect to harmonic pads, ducking volume on
+    the beat to create a rhythmic breathing texture.
+  applicability:
+    groove_patterns:
+    - kick_on_beat
+- name: mid_register_pad_saturation
+  type: voicing
+  weight: 0.85
+  description: Favor closed voicings in the mid register to create a dense, warm harmonic
+    wash.
+  applicability:
+    instrument_roles:
+    - pad
+    - synth
+anti_patterns:
+- name: functional_v_i_resolution
+  scope: harmonic
+  severity: 0.8
+  description: Avoid strong dominant-to-tonic resolutions; they break the floating,
+    loop-based nostalgia central to the genre.
+- name: aggressive_jazz_chromaticism
+  scope: harmonic
+  severity: 0.7
+  description: Avoid highly altered extensions or aggressive chromaticism; keep harmonic
+    palette within nostalgic pop and R&B frameworks.

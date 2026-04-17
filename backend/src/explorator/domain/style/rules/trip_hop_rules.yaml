@@ -1,0 +1,30 @@
+rules:
+- name: spy_movie_tension
+  type: harmonic
+  weight: 0.9
+  description: Utilize mmaj7 and mmaj9 chords to create an eerie, retro-cinematic
+    tension characteristic of the Bristol sound
+  applicability:
+    chord_types:
+    - mmaj7
+    - mmaj9
+- name: moody_jazz_noir_extensions
+  type: voicing
+  weight: 0.8
+  description: Favor m9 and m11 extensions in the mid-to-low register to achieve a
+    dark, sophisticated harmonic texture
+  applicability:
+    chord_types:
+    - m9
+    - m11
+anti_patterns:
+- name: busy_functional_resolutions
+  scope: harmonic
+  severity: 0.8
+  description: Avoid frequent V-I cadences and busy harmonic motion; the genre relies
+    on stagnant, looping modal vamps
+- name: straight_grid_rhythm
+  scope: groove
+  severity: 0.9
+  description: Avoid perfectly quantized or straight 16th-note feels; the groove must
+    feel 'behind-the-beat' or lethargic

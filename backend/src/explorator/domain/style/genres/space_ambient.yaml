@@ -1,0 +1,64 @@
+genre: space_ambient
+display_name: Space Ambient
+version: 1
+harmonic_vocabulary:
+- sus2
+- sus4
+- add9
+- m7
+- maj7
+- maj9
+- m9
+- '9'
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: low_medium
+  borrowed_chord_tolerance: high
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: open
+  register_bias: mid_high
+  extension_density: medium_high
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: low_medium
+groove_tendencies:
+  comp_density: low
+  articulation_style: sustained_swells
+  syncopation_level: low
+melodic_tendencies:
+  motion_preference: stepwise
+  range_placement: above_voicing
+  density: sparse
+  phrase_length: 12
+  strong_beat_preference: extensions
+  rest_between_phrases: true
+common_devices:
+- pedal point drones
+- unresolved sus2 sonorities
+- sequenced 16th note ostinatos
+- parallel chord planing
+- slow-moving diatonic clusters
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.75
+  voicing_deviation_tolerance: 0.3
+  groove_deviation_tolerance: 0.1
+voicing_preferences:
+  default_voicing_type: open
+  default_register: mid_high
+  default_density: low
+  default_voice_count: 3
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+  - open
+  - quartal
+bass_preferences:
+  default_bass_mode: pedal
+  default_register: low
+  rhythmic_density: low_medium
+  variant_bass_modes:
+  - pedal
+  - supportive

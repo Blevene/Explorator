@@ -1,0 +1,66 @@
+genre: trip_hop
+display_name: Trip Hop
+version: 1
+harmonic_vocabulary:
+- m7
+- m9
+- m11
+- sus2
+- sus4
+- m7b5
+- mmaj7
+- mmaj9
+- borrowed_bii
+- modal_mixture
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: medium_high
+  borrowed_chord_tolerance: high
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: medium
+  register_bias: mid
+  extension_density: high
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: low
+groove_tendencies:
+  comp_density: low
+  articulation_style: swung_relaxed
+  syncopation_level: medium
+melodic_tendencies:
+  motion_preference: stepwise
+  range_placement: above_voicing
+  density: sparse
+  phrase_length: 4
+  strong_beat_preference: extensions
+  rest_between_phrases: true
+common_devices:
+- spy movie minor-major voicings
+- dub delay and reverb washes
+- phrygian half-step bass movement
+- vinyl pitch-wobble
+- cinematic string swells
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.6
+  voicing_deviation_tolerance: 0.7
+  groove_deviation_tolerance: 0.3
+voicing_preferences:
+  default_voicing_type: drop2
+  default_register: mid
+  default_density: high
+  default_voice_count: 5
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+  - closed
+  - drop2
+bass_preferences:
+  default_bass_mode: supportive
+  default_register: low
+  rhythmic_density: low
+  variant_bass_modes:
+  - supportive
+  - pedal

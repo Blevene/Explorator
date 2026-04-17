@@ -1,0 +1,22 @@
+genre_profile_id: genre_trip_hop_01
+preferred_chord_qualities:
+- m7
+- m9
+- m11
+- mmaj7
+- m7b5
+allowed_borrowed_chords:
+- bii from phrygian
+- bvi from aeolian
+- modal mixture from dorian
+cadence_archetypes:
+- i - bii (phrygian drift)
+- i - bvi (chromatic mediant)
+- i - iv (modal vamp)
+- i - v (aeolian vamp)
+harmonic_rhythm_defaults:
+  4/4: 2.0
+functional_motion_bias:
+  stepwise_diatonic: 0.4
+  chromatic: 0.4
+  circle_of_fifths: 0.2
