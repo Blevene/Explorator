@@ -1,0 +1,65 @@
+genre: balearic
+display_name: Balearic
+version: 2
+harmonic_vocabulary:
+- maj7
+- m7
+- m9
+- sus2
+- sus4
+- add9
+- iv
+- bvii
+- bvi
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: low
+  borrowed_chord_tolerance: high
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: open
+  register_bias: mid_high
+  extension_density: medium
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: medium_high
+  pedal_tone_tolerance: high
+  rhythmic_activity: low_medium
+groove_tendencies:
+  comp_density: low
+  articulation_style: relaxed_groove
+  syncopation_level: medium
+melodic_tendencies:
+  motion_preference: mixed
+  range_placement: wide
+  density: sparse
+  phrase_length: 8
+  strong_beat_preference: extensions
+  rest_between_phrases: true
+common_devices:
+- lush pad swells
+- dub delay trails
+- mixolydian vamps
+- acoustic textural overlays
+- suspended resolutions
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.3
+  voicing_deviation_tolerance: 0.6
+  groove_deviation_tolerance: 0.8
+voicing_preferences:
+  default_voicing_type: open
+  default_register: mid_high
+  default_density: medium
+  default_voice_count: 4
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+  - open
+  - drop2
+bass_preferences:
+  default_bass_mode: syncopated
+  default_register: low
+  rhythmic_density: medium
+  variant_bass_modes:
+  - syncopated
+  - pedal

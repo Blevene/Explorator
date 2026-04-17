@@ -1,0 +1,63 @@
+genre: psybient
+display_name: Psybient
+version: 1
+harmonic_vocabulary:
+- m9
+- m7
+- sus2
+- sus4
+- add9
+- maj7
+- m11
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: low_medium
+  borrowed_chord_tolerance: high
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: open
+  register_bias: mid_high
+  extension_density: medium
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: medium
+groove_tendencies:
+  comp_density: low
+  articulation_style: dub_float
+  syncopation_level: heavy
+melodic_tendencies:
+  motion_preference: mixed
+  range_placement: above_voicing
+  density: sparse
+  phrase_length: 16
+  strong_beat_preference: extensions
+  rest_between_phrases: true
+common_devices:
+- dub delay throws
+- exotic modal runs
+- polyrhythmic arpeggiations
+- filter sweeps
+- suspended resolutions
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.6
+  voicing_deviation_tolerance: 0.8
+  groove_deviation_tolerance: 0.7
+voicing_preferences:
+  default_voicing_type: open
+  default_register: mid_high
+  default_density: sparse
+  default_voice_count: 4
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+  - open
+  - quartal
+bass_preferences:
+  default_bass_mode: pedal
+  default_register: low
+  rhythmic_density: sparse
+  variant_bass_modes:
+  - pedal
+  - syncopated

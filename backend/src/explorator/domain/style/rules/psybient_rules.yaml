@@ -1,0 +1,38 @@
+rules:
+- name: dub_delay_stabs
+  type: groove
+  weight: 0.9
+  description: Utilize off-beat chord stabs with high feedback delay to fill rhythmic
+    gaps
+  applicability:
+    chord_types:
+    - m9
+    - sus2
+    - m7
+- name: modal_drone_continuity
+  type: harmony
+  weight: 0.8
+  description: Maintain long durations of a single chord or pedal point to allow for
+    timbral evolution
+  applicability:
+    scope:
+    - global
+- name: exotic_scale_ornamentation
+  type: melody
+  weight: 0.7
+  description: Incorporate fast stepwise runs using Phrygian Dominant or Double Harmonic
+    Minor scales
+  applicability:
+    scope:
+    - melodic_lines
+anti_patterns:
+- name: functional_v_i_cadence
+  scope: harmony
+  severity: 0.9
+  description: Avoid strong dominant-to-tonic resolutions which break the hypnotic,
+    non-functional atmosphere
+- name: dense_middle_register_clusters
+  scope: voicing
+  severity: 0.7
+  description: Avoid thick, closed voicings in the C3-C4 range to prevent cluttering
+    the soundstage

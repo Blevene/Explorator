@@ -1,0 +1,38 @@
+rules:
+- name: sunset_modal_vamps
+  type: harmonic
+  weight: 0.9
+  description: Prioritize Mixolydian (I - bVII) and Dorian (i - IV) vamps to maintain
+    a hypnotic, non-functional atmosphere.
+  applicability:
+    vamp_length:
+    - 2_to_4_bars
+- name: melodic_dub_anchoring
+  type: bass
+  weight: 0.7
+  description: Bass must hit the root on the downbeat but include melodic, pentatonic
+    fills or octave leaps in the second half of the phrase.
+  applicability:
+    rhythm:
+    - syncopated
+- name: top_voice_suspension
+  type: voicing
+  weight: 0.8
+  description: Maintain common tones in the top voice across chord changes to enhance
+    the floating, trance-like state.
+  applicability:
+    instruments:
+    - pads
+    - strings
+    - rhodes
+anti_patterns:
+- name: cadential_finality
+  scope: harmonic
+  severity: 0.9
+  description: Avoid strong V7 - I resolutions; they create too much forward motion
+    and break the 'endless horizon' feel.
+- name: mid_range_mud
+  scope: voicing
+  severity: 0.6
+  description: Avoid dense, closed-position triads in the mid register; keep the 3rd
+    higher and the spacing open to leave room for the groove.
