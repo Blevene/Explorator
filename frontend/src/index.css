@@ -143,6 +143,12 @@ body {
   animation: substep-fade 150ms ease-out both;
 }
 
+/* Genre detail drawer slide-in from right */
+@keyframes drawer-slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
 /* Subtle noise texture on body */
 body::before {
   content: '';

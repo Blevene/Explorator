@@ -119,28 +119,46 @@ function DictSection({ title, data }: { title: string; data: Record<string, any>
 function GenreDetailDrawer({ genre, onClose }: { genre: Record<string, any>; onClose: () => void }) {
   const g = genre;
   return (
-    <div className="mt-6 card-animated">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>
-            {g.display_name || g.genre}
-          </h2>
-          <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
-            {g.genre} &middot; v{g.version ?? 1}
-          </span>
-        </div>
-        <button
-          onClick={onClose}
-          className="px-3 py-1 rounded-lg text-xs transition-colors"
-          style={{ background: 'var(--surface-3)', color: 'var(--text-secondary)' }}
-        >
-          Close
-        </button>
-      </div>
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-40"
+        style={{ background: 'var(--overlay-backdrop)' }}
+        onClick={onClose}
+      />
+      {/* Drawer panel — slides in from right */}
+      <div
+        className="fixed top-0 right-0 z-50 h-full overflow-y-auto"
+        style={{
+          width: '480px',
+          maxWidth: '90vw',
+          background: 'var(--surface-1)',
+          borderLeft: '1px solid var(--border-default)',
+          animation: 'drawer-slide-in 200ms ease-out both',
+        }}
+      >
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>
+                {g.display_name || g.genre}
+              </h2>
+              <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+                {g.genre} &middot; v{g.version ?? 1}
+              </span>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg text-xs transition-colors"
+              style={{ background: 'var(--surface-3)', color: 'var(--text-secondary)' }}
+            >
+              &times;
+            </button>
+          </div>
 
-      {/* Grid layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Sections — single column in drawer */}
+          <div className="flex flex-col gap-3">
         {/* Harmonic Vocabulary */}
         {Array.isArray(g.harmonic_vocabulary) && g.harmonic_vocabulary.length > 0 && (
           <SectionCard title="Harmonic Vocabulary">
@@ -219,8 +237,10 @@ function GenreDetailDrawer({ genre, onClose }: { genre: Record<string, any>; onC
             </ul>
           </SectionCard>
         )}
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -519,18 +539,15 @@ export default function GenreManagement() {
           </div>
         )}
 
-        {/* Genre detail drawer */}
-        {selectedGenre && !loadingGenre && (
-          <GenreDetailDrawer genre={selectedGenre} onClose={() => setSelectedGenre(null)} />
-        )}
-        {loadingGenre && (
-          <div className="mt-6 text-sm" style={{ color: 'var(--text-muted)' }}>Loading genre details...</div>
-        )}
-
         {genres.length === 0 && pendingDrafts.length === 0 && !showForm && (
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
             No genres installed yet. Research your first genre to get started.
           </p>
+        )}
+
+        {/* Genre detail drawer — fixed overlay, not inline */}
+        {selectedGenre && !loadingGenre && (
+          <GenreDetailDrawer genre={selectedGenre} onClose={() => setSelectedGenre(null)} />
         )}
       </div>
     );
