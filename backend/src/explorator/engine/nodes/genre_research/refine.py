@@ -63,6 +63,13 @@ async def refine_draft(
         text = text[: text.rfind("```")]
     text = text.strip()
     parsed = json.loads(text)
+
+    # Normalize LLM output quirks (same as draft node)
+    if isinstance(parsed.get("rules"), list):
+        parsed["rules"] = {"rules": parsed["rules"], "anti_patterns": []}
+    if isinstance(parsed.get("grammar"), dict) and "genre_profile_id" not in parsed["grammar"]:
+        parsed["grammar"]["genre_profile_id"] = f"genre_{genre_name}_01"
+
     refined = GenreDraftResponse.model_validate(parsed)
 
     if callback:

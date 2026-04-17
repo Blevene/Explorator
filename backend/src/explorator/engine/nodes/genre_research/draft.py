@@ -58,6 +58,15 @@ async def draft_yamls(
     text = text.strip()
 
     parsed = json.loads(text)
+
+    # Normalize LLM output quirks before Pydantic validation
+    # rules: LLM sometimes returns a flat list instead of {"rules": [...], "anti_patterns": [...]}
+    if isinstance(parsed.get("rules"), list):
+        parsed["rules"] = {"rules": parsed["rules"], "anti_patterns": []}
+    # grammar: ensure grammar has genre_profile_id
+    if isinstance(parsed.get("grammar"), dict) and "genre_profile_id" not in parsed["grammar"]:
+        parsed["grammar"]["genre_profile_id"] = f"genre_{genre_name}_01"
+
     draft = GenreDraftResponse.model_validate(parsed)
 
     if callback:
