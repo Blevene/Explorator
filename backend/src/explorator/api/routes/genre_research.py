@@ -6,7 +6,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any
 
-import ulid
+from ulid import ULID
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
@@ -79,7 +79,7 @@ async def start_research(
     if await repo.job_exists_for_genre(genre_name):
         raise HTTPException(status_code=409, detail=f"Research job already in progress for '{genre_name}'")
 
-    job_id = f"grj_{ulid.new()}"
+    job_id = f"grj_{ULID()}"
     now = datetime.now(tz=timezone.utc)
     job_data = {
         "id": job_id,
