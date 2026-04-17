@@ -40,12 +40,25 @@ async def draft_yamls(
         "Return valid JSON matching the schema exactly."
     )
 
-    draft = await gemini.generate_structured(
+    # Use generate_text + manual parsing because GenreDraftResponse's nested
+    # Pydantic schemas trigger Gemini's "additionalProperties not supported" error
+    # when passed as a structured output schema.
+    raw_text = await gemini.generate_text(
         prompt=user_prompt,
-        response_model=GenreDraftResponse,
         tier=ModelTier.FLASH,
         system_prompt=system_prompt,
     )
+
+    # Strip markdown code fences if present
+    text = raw_text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+    if text.endswith("```"):
+        text = text[: text.rfind("```")]
+    text = text.strip()
+
+    parsed = json.loads(text)
+    draft = GenreDraftResponse.model_validate(parsed)
 
     if callback:
         await callback("genre_research", {"status": "drafting", "detail": "Draft complete"})

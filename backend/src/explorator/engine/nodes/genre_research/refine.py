@@ -50,12 +50,20 @@ async def refine_draft(
         "Return valid JSON with improved profile, rules, and grammar."
     )
 
-    refined = await gemini.generate_structured(
+    # Use generate_text + manual parsing to avoid Gemini additionalProperties error
+    raw_text = await gemini.generate_text(
         prompt=user_prompt,
-        response_model=GenreDraftResponse,
         tier=ModelTier.FLASH,
         system_prompt=system_prompt,
     )
+    text = raw_text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+    if text.endswith("```"):
+        text = text[: text.rfind("```")]
+    text = text.strip()
+    parsed = json.loads(text)
+    refined = GenreDraftResponse.model_validate(parsed)
 
     if callback:
         await callback("genre_research", {"status": "refining", "detail": "Refinement complete"})
