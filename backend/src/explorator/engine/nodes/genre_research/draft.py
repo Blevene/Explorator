@@ -31,6 +31,13 @@ def _normalize_draft(parsed: dict[str, Any], genre_name: str) -> None:
             for key, val in applicability.items():
                 if isinstance(val, str):
                     applicability[key] = [val]
+    # Grammar: harmonic_rhythm_defaults values must be floats, not lists
+    grammar = parsed.get("grammar", {})
+    hrd = grammar.get("harmonic_rhythm_defaults", {})
+    if isinstance(hrd, dict):
+        for key, val in hrd.items():
+            if isinstance(val, list) and val:
+                hrd[key] = float(val[0])  # take first value
 
 
 async def draft_yamls(
