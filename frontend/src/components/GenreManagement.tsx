@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getGenreDetail } from '../services/api';
 import { useGenreResearchStore } from '../stores/genreResearchStore';
 
 const GENRE_COLORS: Record<string, string> = {
@@ -38,6 +39,191 @@ const STATUS_TO_STEP: Record<string, number> = {
 
 type ViewState = 'library' | 'progress' | 'review';
 
+// ─── Helpers for rendering genre detail ─────────────────────────────────
+
+function TagPills({ items, color }: { items: string[]; color?: string }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {items.map((item) => (
+        <span
+          key={item}
+          className="rounded-full px-2 py-0.5 text-[11px] font-mono"
+          style={{ background: 'var(--surface-4)', color: color ?? 'var(--text-secondary)' }}
+        >
+          {item}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function LabeledValue({ label, value }: { label: string; value: string | number | boolean }) {
+  return (
+    <div className="flex justify-between items-center py-1">
+      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</span>
+      <span className="text-xs font-mono" style={{ color: 'var(--text-secondary)' }}>
+        {String(value)}
+      </span>
+    </div>
+  );
+}
+
+function EnvelopeBar({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="py-1">
+      <div className="flex justify-between mb-0.5">
+        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</span>
+        <span className="text-[11px] font-mono" style={{ color: 'var(--text-secondary)' }}>{value.toFixed(2)}</span>
+      </div>
+      <div className="h-1.5 rounded-full" style={{ background: 'var(--surface-4)' }}>
+        <div
+          className="h-full rounded-full score-bar-animated"
+          style={{
+            width: `${Math.min(value * 100, 100)}%`,
+            background: value > 0.6 ? 'var(--score-high)' : value > 0.3 ? 'var(--score-mid)' : 'var(--accent-secondary)',
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div
+      className="rounded-xl p-4"
+      style={{ background: 'var(--surface-2)', border: '1px solid var(--border-subtle)' }}
+    >
+      <h3
+        className="text-[11px] font-semibold uppercase tracking-wider mb-3"
+        style={{ color: 'var(--text-muted)' }}
+      >
+        {title}
+      </h3>
+      {children}
+    </div>
+  );
+}
+
+function DictSection({ title, data }: { title: string; data: Record<string, any> }) {
+  if (!data || typeof data !== 'object') return null;
+  return (
+    <SectionCard title={title}>
+      {Object.entries(data).map(([k, v]) => (
+        <LabeledValue key={k} label={k.replace(/_/g, ' ')} value={v} />
+      ))}
+    </SectionCard>
+  );
+}
+
+function GenreDetailDrawer({ genre, onClose }: { genre: Record<string, any>; onClose: () => void }) {
+  const g = genre;
+  return (
+    <div className="mt-6 card-animated">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>
+            {g.display_name || g.genre}
+          </h2>
+          <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+            {g.genre} &middot; v{g.version ?? 1}
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          className="px-3 py-1 rounded-lg text-xs transition-colors"
+          style={{ background: 'var(--surface-3)', color: 'var(--text-secondary)' }}
+        >
+          Close
+        </button>
+      </div>
+
+      {/* Grid layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Harmonic Vocabulary */}
+        {Array.isArray(g.harmonic_vocabulary) && g.harmonic_vocabulary.length > 0 && (
+          <SectionCard title="Harmonic Vocabulary">
+            <TagPills items={g.harmonic_vocabulary} color="var(--accent-secondary)" />
+          </SectionCard>
+        )}
+
+        {/* Harmonic Tendencies */}
+        {g.harmonic_tendencies && <DictSection title="Harmonic Tendencies" data={g.harmonic_tendencies} />}
+
+        {/* Voicing Tendencies */}
+        {g.voicing_tendencies && <DictSection title="Voicing Tendencies" data={g.voicing_tendencies} />}
+
+        {/* Bass Tendencies */}
+        {g.bass_tendencies && <DictSection title="Bass Tendencies" data={g.bass_tendencies} />}
+
+        {/* Groove Tendencies */}
+        {g.groove_tendencies && <DictSection title="Groove Tendencies" data={g.groove_tendencies} />}
+
+        {/* Melodic Tendencies */}
+        {g.melodic_tendencies && typeof g.melodic_tendencies === 'object' && Object.keys(g.melodic_tendencies).length > 0 && (
+          <DictSection title="Melodic Tendencies" data={g.melodic_tendencies} />
+        )}
+
+        {/* Voicing Preferences */}
+        {g.voicing_preferences && (
+          <SectionCard title="Voicing Preferences">
+            {Object.entries(g.voicing_preferences).map(([k, v]) =>
+              Array.isArray(v) ? (
+                <div key={k} className="py-1">
+                  <span className="text-xs block mb-1" style={{ color: 'var(--text-muted)' }}>{k.replace(/_/g, ' ')}</span>
+                  <TagPills items={v as string[]} />
+                </div>
+              ) : (
+                <LabeledValue key={k} label={k.replace(/_/g, ' ')} value={v as string | number | boolean} />
+              ),
+            )}
+          </SectionCard>
+        )}
+
+        {/* Bass Preferences */}
+        {g.bass_preferences && (
+          <SectionCard title="Bass Preferences">
+            {Object.entries(g.bass_preferences).map(([k, v]) =>
+              Array.isArray(v) ? (
+                <div key={k} className="py-1">
+                  <span className="text-xs block mb-1" style={{ color: 'var(--text-muted)' }}>{k.replace(/_/g, ' ')}</span>
+                  <TagPills items={v as string[]} />
+                </div>
+              ) : (
+                <LabeledValue key={k} label={k.replace(/_/g, ' ')} value={v as string | number | boolean} />
+              ),
+            )}
+          </SectionCard>
+        )}
+
+        {/* Experimentation Envelope */}
+        {g.experimentation_envelope && (
+          <SectionCard title="Experimentation Envelope">
+            {Object.entries(g.experimentation_envelope).map(([k, v]) => (
+              <EnvelopeBar key={k} label={k.replace(/_/g, ' ')} value={v as number} />
+            ))}
+          </SectionCard>
+        )}
+
+        {/* Common Devices */}
+        {Array.isArray(g.common_devices) && g.common_devices.length > 0 && (
+          <SectionCard title="Common Devices">
+            <ul className="space-y-1">
+              {g.common_devices.map((d: string, i: number) => (
+                <li key={i} className="text-xs flex items-start gap-2" style={{ color: 'var(--text-secondary)' }}>
+                  <span style={{ color: 'var(--accent-primary)' }}>&#x2022;</span>
+                  {d}
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function GenreManagement() {
   const {
     genres,
@@ -65,6 +251,20 @@ export default function GenreManagement() {
   const [expandResearchLog, setExpandResearchLog] = useState(false);
   const [expandCritique, setExpandCritique] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [selectedGenre, setSelectedGenre] = useState<Record<string, any> | null>(null);
+  const [loadingGenre, setLoadingGenre] = useState(false);
+
+  const handleGenreClick = async (genreSlug: string) => {
+    setLoadingGenre(true);
+    try {
+      const detail = await getGenreDetail(genreSlug);
+      setSelectedGenre(detail);
+    } catch {
+      setSelectedGenre(null);
+    } finally {
+      setLoadingGenre(false);
+    }
+  };
 
   useEffect(() => {
     fetchGenres().catch(console.error);
@@ -281,10 +481,11 @@ export default function GenreManagement() {
               {genres.map((g, i) => (
                 <div
                   key={g.genre}
-                  className="px-4 py-3 rounded-xl card-animated"
+                  onClick={() => handleGenreClick(g.genre)}
+                  className="px-4 py-3 rounded-xl card-animated cursor-pointer card-interactive"
                   style={{
-                    background: 'var(--surface-2)',
-                    border: '1px solid var(--border-subtle)',
+                    background: selectedGenre?.genre === g.genre ? 'var(--surface-3)' : 'var(--surface-2)',
+                    border: `1px solid ${selectedGenre?.genre === g.genre ? 'var(--border-bright)' : 'var(--border-subtle)'}`,
                     borderLeft: `3px solid ${genreColor(g.genre, i)}`,
                     animationDelay: `${i * 50}ms`,
                   }}
@@ -302,6 +503,14 @@ export default function GenreManagement() {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Genre detail drawer */}
+        {selectedGenre && !loadingGenre && (
+          <GenreDetailDrawer genre={selectedGenre} onClose={() => setSelectedGenre(null)} />
+        )}
+        {loadingGenre && (
+          <div className="mt-6 text-sm" style={{ color: 'var(--text-muted)' }}>Loading genre details...</div>
         )}
 
         {genres.length === 0 && pendingDrafts.length === 0 && !showForm && (

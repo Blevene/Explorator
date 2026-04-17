@@ -50,6 +50,12 @@ export async function listGenres(): Promise<GenreListResponse> {
   return res.json();
 }
 
+export async function getGenreDetail(genreName: string): Promise<Record<string, any>> {
+  const res = await fetch(`${API_BASE}/genres/${genreName}`);
+  if (!res.ok) throw new Error(`Failed to get genre: ${res.status}`);
+  return res.json();
+}
+
 export interface CandidateSummary {
   candidate_id: string;
   type: string;
