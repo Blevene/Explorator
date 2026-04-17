@@ -8,6 +8,7 @@ from neo4j import AsyncDriver
 from explorator.adapters.gemini import GeminiClient
 from explorator.config import settings
 from explorator.graph.connection import get_driver
+from explorator.graph.genre_research_repo import GenreResearchRepository
 from explorator.graph.session_repo import SessionRepository
 from explorator.graph.style_repo import StyleRepository
 
@@ -27,6 +28,12 @@ async def get_style_repo() -> StyleRepository:
     """Get style repository dependency."""
     driver = await get_driver()
     return StyleRepository(driver)
+
+
+async def get_genre_research_repo() -> GenreResearchRepository:
+    """Get genre research repository dependency."""
+    driver = await get_driver()
+    return GenreResearchRepository(driver)
 
 
 @lru_cache
