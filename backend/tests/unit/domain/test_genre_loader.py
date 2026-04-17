@@ -26,3 +26,30 @@ def test_load_cinematic_profile() -> None:
     genres_dir = Path(__file__).parents[3] / "src" / "explorator" / "domain" / "style" / "genres"
     profile = load_genre_from_yaml(genres_dir / "cinematic.yaml")
     assert profile.genre == "cinematic"
+
+
+def test_genre_profile_accepts_melodic_tendencies():
+    data = {
+        "genre": "test_genre",
+        "display_name": "Test Genre",
+        "version": 1,
+        "melodic_tendencies": {
+            "motion_preference": "stepwise",
+            "range_placement": "above_voicing",
+            "density": "sparse",
+        },
+    }
+    from explorator.domain.style.schema import GenreProfileYAML
+    profile = GenreProfileYAML.model_validate(data)
+    assert profile.melodic_tendencies["motion_preference"] == "stepwise"
+
+
+def test_genre_profile_works_without_melodic_tendencies():
+    data = {
+        "genre": "test_genre",
+        "display_name": "Test Genre",
+        "version": 1,
+    }
+    from explorator.domain.style.schema import GenreProfileYAML
+    profile = GenreProfileYAML.model_validate(data)
+    assert profile.melodic_tendencies == {}

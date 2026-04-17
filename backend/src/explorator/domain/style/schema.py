@@ -17,6 +17,7 @@ class GenreProfileYAML(BaseModel):
     voicing_tendencies: dict[str, str] = Field(default_factory=dict)
     bass_tendencies: dict[str, str] = Field(default_factory=dict)
     groove_tendencies: dict[str, str] = Field(default_factory=dict)
+    melodic_tendencies: dict[str, Any] = Field(default_factory=dict)
     common_devices: list[str] = Field(default_factory=list)
     experimentation_envelope: dict[str, float] = Field(default_factory=dict)
     voicing_preferences: dict[str, Any] = Field(default_factory=dict)
