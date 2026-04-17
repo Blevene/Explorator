@@ -12,6 +12,27 @@ from explorator.prompts.genre_research import load_prompt
 logger = logging.getLogger(__name__)
 
 
+def _normalize_draft(parsed: dict[str, Any], genre_name: str) -> None:
+    """Normalize common LLM output quirks in-place before Pydantic validation."""
+    # rules: LLM sometimes returns a flat list instead of {"rules": [...], "anti_patterns": [...]}
+    if isinstance(parsed.get("rules"), list):
+        parsed["rules"] = {"rules": parsed["rules"], "anti_patterns": []}
+    # Ensure anti_patterns exists
+    if isinstance(parsed.get("rules"), dict) and "anti_patterns" not in parsed["rules"]:
+        parsed["rules"]["anti_patterns"] = []
+    # grammar: ensure genre_profile_id present
+    if isinstance(parsed.get("grammar"), dict) and "genre_profile_id" not in parsed["grammar"]:
+        parsed["grammar"]["genre_profile_id"] = f"genre_{genre_name}_01"
+    # Rule applicability: wrap bare strings in lists (schema requires dict[str, list[str]])
+    rules_data = parsed.get("rules", {})
+    for rule in rules_data.get("rules", []):
+        applicability = rule.get("applicability", {})
+        if isinstance(applicability, dict):
+            for key, val in applicability.items():
+                if isinstance(val, str):
+                    applicability[key] = [val]
+
+
 async def draft_yamls(
     state: dict[str, Any],
     *,
@@ -59,14 +80,7 @@ async def draft_yamls(
 
     parsed = json.loads(text)
 
-    # Normalize LLM output quirks before Pydantic validation
-    # rules: LLM sometimes returns a flat list instead of {"rules": [...], "anti_patterns": [...]}
-    if isinstance(parsed.get("rules"), list):
-        parsed["rules"] = {"rules": parsed["rules"], "anti_patterns": []}
-    # grammar: ensure grammar has genre_profile_id
-    if isinstance(parsed.get("grammar"), dict) and "genre_profile_id" not in parsed["grammar"]:
-        parsed["grammar"]["genre_profile_id"] = f"genre_{genre_name}_01"
-
+    _normalize_draft(parsed, genre_name)
     draft = GenreDraftResponse.model_validate(parsed)
 
     if callback:

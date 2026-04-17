@@ -6,6 +6,7 @@ from typing import Any
 
 from explorator.adapters.gemini import GeminiClient, ModelTier
 from explorator.graph.genre_research_repo import GenreResearchRepository
+from explorator.engine.nodes.genre_research.draft import _normalize_draft
 from explorator.models.genre_research import GenreDraftResponse
 from explorator.prompts.genre_research import load_prompt
 
@@ -64,12 +65,7 @@ async def refine_draft(
     text = text.strip()
     parsed = json.loads(text)
 
-    # Normalize LLM output quirks (same as draft node)
-    if isinstance(parsed.get("rules"), list):
-        parsed["rules"] = {"rules": parsed["rules"], "anti_patterns": []}
-    if isinstance(parsed.get("grammar"), dict) and "genre_profile_id" not in parsed["grammar"]:
-        parsed["grammar"]["genre_profile_id"] = f"genre_{genre_name}_01"
-
+    _normalize_draft(parsed, genre_name)
     refined = GenreDraftResponse.model_validate(parsed)
 
     if callback:
