@@ -1,0 +1,65 @@
+genre: chillout
+display_name: Chillout
+version: 1
+harmonic_vocabulary:
+- maj7
+- maj9
+- m7
+- m9
+- m11
+- add9
+- sus2
+- 7sus4
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: medium_high
+  borrowed_chord_tolerance: high
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: open
+  register_bias: mid
+  extension_density: high
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: low_medium
+groove_tendencies:
+  comp_density: sparse
+  articulation_style: relaxed_pocket
+  syncopation_level: high
+melodic_tendencies:
+  motion_preference: stepwise
+  range_placement: overlapping
+  density: sparse
+  phrase_length: 4
+  strong_beat_preference: extensions
+  rest_between_phrases: true
+common_devices:
+- lush electric piano vamps
+- dub-influenced basslines
+- parallel chord planing
+- bossa-nova acoustic guitar
+- analog string beds
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.6
+  voicing_deviation_tolerance: 0.4
+  groove_deviation_tolerance: 0.3
+voicing_preferences:
+  default_voicing_type: open
+  default_register: mid
+  default_density: medium
+  default_voice_count: 5
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+  - open
+  - drop2
+bass_preferences:
+  default_bass_mode: syncopated
+  default_register: low
+  rhythmic_density: sparse
+  variant_bass_modes:
+  - syncopated
+  - pedal
+  - supportive

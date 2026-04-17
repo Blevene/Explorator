@@ -1,0 +1,28 @@
+rules:
+- name: glacial_stasis
+  type: harmonic_rhythm
+  weight: 0.9
+  description: Maintain a single chord or tone for a minimum of 8 to 16 bars to establish
+    timbral focus.
+  applicability:
+    all_sections:
+    - 'True'
+- name: parallel_interval_motion
+  type: voicing
+  weight: 0.7
+  description: Shift voicings in rigid parallel blocks (typically root-fifth) when
+    moving between harmonic centers.
+  applicability:
+    chord_types:
+    - '5'
+anti_patterns:
+- name: functional_resolution
+  scope: harmony
+  severity: 0.9
+  description: Avoid circle-of-fifths resolutions or dominant-to-tonic cadences; these
+    break the suspended, non-narrative atmosphere.
+- name: rhythmic_drive
+  scope: groove
+  severity: 1.0
+  description: Introduction of a clear, syncopated pulse or percussion groove shifts
+    the genre toward doom metal or post-rock.

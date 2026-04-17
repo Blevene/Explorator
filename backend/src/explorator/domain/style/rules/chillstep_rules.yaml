@@ -1,0 +1,29 @@
+rules:
+- name: root_locked_sub_bass
+  type: bass
+  weight: 0.9
+  description: Bass must strictly anchor harmony by playing root notes to support
+    heavy sub-bass presence
+  applicability:
+    bass_modes:
+    - supportive
+- name: open_midrange_transparency
+  type: voicing
+  weight: 0.7
+  description: Maintain open intervals in the mid-register to prevent cluttering the
+    frequency spectrum
+  applicability:
+    register:
+    - mid
+    - mid_high
+anti_patterns:
+- name: tritone_dominance
+  scope: harmonic
+  severity: 0.9
+  description: Avoid dominant 7th chords and strong V-I cadences which introduce unwanted
+    tension
+- name: melodic_complexity
+  scope: melodic
+  severity: 0.8
+  description: Avoid fast runs or virtuosic flurries; melody must remain atmospheric
+    and sparse

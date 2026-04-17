@@ -1,0 +1,20 @@
+genre_profile_id: genre_drone_01
+preferred_chord_qualities:
+- '5'
+- sus2
+- sus4
+- add9
+- cluster
+allowed_borrowed_chords:
+- bII
+- none
+cadence_archetypes:
+- I (infinite sustain)
+- I - bII - I (parallel chromatic shift)
+- I - I (octave displacement)
+harmonic_rhythm_defaults:
+  4/4: 16.0
+functional_motion_bias:
+  stepwise_diatonic: 0.1
+  circle_of_fifths: 0.0
+  chromatic: 0.9

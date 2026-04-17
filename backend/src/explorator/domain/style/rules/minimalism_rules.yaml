@@ -1,0 +1,29 @@
+rules:
+- name: motoric_persistence
+  type: groove
+  weight: 0.95
+  description: Maintain continuous 8th or 16th note streams without rests to preserve
+    the hypnotic effect
+  applicability:
+    rhythmic_subdivision:
+    - 8th
+    - 16th
+- name: stepwise_voice_leading
+  type: voicing
+  weight: 0.9
+  description: Keep top voice motion strictly stepwise or as a static pivot to ensure
+    texture continuity
+  applicability:
+    voice_leading:
+    - parsimonious
+anti_patterns:
+- name: teleological_functional_cadences
+  scope: harmonic
+  severity: 0.9
+  description: Avoid strong V-I resolutions or goal-oriented functional harmony; keep
+    harmony floating or oscillatory
+- name: humanized_swing_variation
+  scope: groove
+  severity: 1.0
+  description: Do not apply swing or rubato; the motoric aesthetic requires absolute
+    grid quantization

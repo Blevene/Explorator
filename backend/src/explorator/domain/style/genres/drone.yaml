@@ -1,0 +1,60 @@
+genre: drone
+display_name: Drone
+version: 1
+harmonic_vocabulary:
+- '5'
+- sus2
+- sus4
+- add9
+- cluster
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: medium_high
+  borrowed_chord_tolerance: low
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: mixed
+  register_bias: low
+  extension_density: low
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: high
+  rhythmic_activity: low
+groove_tendencies:
+  comp_density: sparse
+  articulation_style: sustained_swells
+  syncopation_level: low
+melodic_tendencies:
+  motion_preference: stepwise
+  range_placement: overlapping
+  density: sparse
+  phrase_length: 16
+  strong_beat_preference: roots
+  rest_between_phrases: true
+common_devices:
+- glacial harmonic rhythm
+- psychoacoustic beating
+- sub-harmonic foundation
+- extreme sustain
+- parallel interval shifting
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.8
+  voicing_deviation_tolerance: 0.8
+  groove_deviation_tolerance: 0.0
+voicing_preferences:
+  default_voicing_type: open
+  default_register: low
+  default_density: low
+  default_voice_count: 3
+  favor_extensions: false
+  top_voice_continuity: high
+  variant_voicing_types:
+  - open
+  - cluster
+bass_preferences:
+  default_bass_mode: pedal
+  default_register: low
+  rhythmic_density: low
+  variant_bass_modes:
+  - pedal

@@ -1,0 +1,22 @@
+genre_profile_id: genre_minimalism_01
+preferred_chord_qualities:
+- maj
+- min
+- sus2
+- sus4
+- add9
+- m7
+- maj7
+allowed_borrowed_chords:
+- chromatic mediants
+- parallel modes
+cadence_archetypes:
+- i - bvi - i (mediant oscillation)
+- I - IV - I (plagal oscillation)
+- V - IV - I (non-functional descent)
+harmonic_rhythm_defaults:
+  4/4: 16.0
+functional_motion_bias:
+  stepwise_diatonic: 0.8
+  chromatic: 0.2
+  circle_of_fifths: 0.0

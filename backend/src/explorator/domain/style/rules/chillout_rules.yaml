@@ -1,0 +1,44 @@
+rules:
+- name: lush_extension_focus
+  type: voicing
+  weight: 0.9
+  description: Prioritize 7th, 9th, and 11th extensions in keyboard voicings while
+    omitting the root to allow space for deep bass.
+  applicability:
+    chord_types:
+    - maj9
+    - m9
+    - m11
+    - 7sus4
+- name: smooth_top_voice_leading
+  type: voicing
+  weight: 0.8
+  description: Maintain minimal movement in the highest voice of chordal accompaniment
+    to enhance the floating, atmospheric texture.
+  applicability:
+    scope:
+    - chord_transitions
+- name: dub_style_rest
+  type: groove
+  weight: 0.7
+  description: Deliberately drop the bass or kick on beat 4 to create a spacious,
+    dub-influenced rhythmic pocket.
+  applicability:
+    scope:
+    - bass_patterns
+anti_patterns:
+- name: harsh_tritone_resolution
+  scope: harmony
+  severity: 0.8
+  description: Avoid dominant 7th chords resolving via strong V-I tritone movement;
+    use 7sus4 or modal vamps instead.
+- name: root_position_triad_stacks
+  scope: voicing
+  severity: 0.7
+  description: Avoid simple root-position triads without extensions, as they sound
+    too rigid and lack the required 'lounge' sophistication.
+- name: active_melodic_shredding
+  scope: melody
+  severity: 0.9
+  description: Avoid high-density melodic runs or rapid note changes; melody must
+    remain sparse with significant rests.

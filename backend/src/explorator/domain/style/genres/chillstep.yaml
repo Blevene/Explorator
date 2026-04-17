@@ -1,0 +1,62 @@
+genre: chillstep
+display_name: Chillstep
+version: 1
+harmonic_vocabulary:
+- add9
+- m9
+- maj7
+- sus2
+- sus4
+- m7
+harmonic_tendencies:
+  functional_strength: low
+  chromaticism_level: low
+  borrowed_chord_tolerance: low
+  cadence_closure_preference: low
+voicing_tendencies:
+  spacing: high
+  register_bias: mid_high
+  extension_density: low_medium
+  top_voice_continuity_importance: high
+bass_tendencies:
+  root_emphasis: high
+  pedal_tone_tolerance: medium
+  rhythmic_activity: low
+groove_tendencies:
+  comp_density: sparse
+  articulation_style: sustained_legato
+  syncopation_level: moderate
+melodic_tendencies:
+  motion_preference: mixed
+  range_placement: above_voicing
+  density: sparse
+  phrase_length: 8
+  strong_beat_preference: extensions
+  rest_between_phrases: true
+common_devices:
+- shimmering add9 piano ostinatos
+- sidechained sub-bass swells
+- ethereal vocal chops
+- sweeping low-pass filters
+- suspended textures
+experimentation_envelope:
+  harmonic_deviation_tolerance: 0.1
+  voicing_deviation_tolerance: 0.3
+  groove_deviation_tolerance: 0.4
+voicing_preferences:
+  default_voicing_type: open
+  default_register: mid_high
+  default_density: low_medium
+  default_voice_count: 4
+  favor_extensions: true
+  top_voice_continuity: high
+  variant_voicing_types:
+  - open
+  - drop2
+bass_preferences:
+  default_bass_mode: supportive
+  default_register: low
+  rhythmic_density: sparse
+  variant_bass_modes:
+  - supportive
+  - pedal
