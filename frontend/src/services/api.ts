@@ -277,6 +277,86 @@ export async function getCachedExplanation(candidateId: string): Promise<Candida
   return res.json();
 }
 
+// --- Genre Research ---
+
+export interface GenreResearchJob {
+  id: string;
+  genre_name: string;
+  reference_artists: string[];
+  status: string;
+  research_log: string;
+  critique_trail: any[];
+  draft_yamls: Record<string, any>;
+  validation_errors?: string[];
+  rejection_reason?: string | null;
+  error_message?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DraftSummary {
+  job_id: string;
+  genre_name: string;
+  created_at: string;
+}
+
+export interface DraftListResponse {
+  items: DraftSummary[];
+}
+
+export async function startGenreResearch(
+  genreName: string,
+  referenceArtists: string[] = [],
+): Promise<{ job_id: string }> {
+  const res = await fetch(`${API_BASE}/genres/research`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ genre_name: genreName, reference_artists: referenceArtists }),
+  });
+  if (res.status === 409) {
+    const data = await res.json();
+    throw new Error(data.detail || 'Genre already exists or research in progress');
+  }
+  if (!res.ok) throw new Error(`Failed to start research: ${res.status}`);
+  return res.json();
+}
+
+export async function getResearchStatus(jobId: string): Promise<GenreResearchJob> {
+  const res = await fetch(`${API_BASE}/genres/research/${jobId}`);
+  if (!res.ok) throw new Error(`Failed to get research status: ${res.status}`);
+  return res.json();
+}
+
+export function streamResearchProgress(jobId: string): EventSource {
+  return new EventSource(`${API_BASE}/genres/research/${jobId}/stream`);
+}
+
+export async function listPendingDrafts(): Promise<DraftListResponse> {
+  const res = await fetch(`${API_BASE}/genres/drafts`);
+  if (!res.ok) throw new Error(`Failed to list drafts: ${res.status}`);
+  return res.json();
+}
+
+export async function getDraftDetail(jobId: string): Promise<GenreResearchJob> {
+  const res = await fetch(`${API_BASE}/genres/drafts/${jobId}`);
+  if (!res.ok) throw new Error(`Failed to get draft: ${res.status}`);
+  return res.json();
+}
+
+export async function approveDraft(jobId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/genres/drafts/${jobId}/approve`, { method: 'POST' });
+  if (!res.ok) throw new Error(`Failed to approve: ${res.status}`);
+}
+
+export async function rejectDraft(jobId: string, reason = ''): Promise<void> {
+  const res = await fetch(`${API_BASE}/genres/drafts/${jobId}/reject`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  });
+  if (!res.ok) throw new Error(`Failed to reject: ${res.status}`);
+}
+
 // --- M4b Comparison + Provenance ---
 
 export async function recordComparison(
