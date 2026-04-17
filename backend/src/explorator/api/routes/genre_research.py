@@ -196,13 +196,13 @@ async def approve_draft(
         rules_path = STYLE_DIR / "rules" / f"{genre_name}_rules.yaml"
         grammar_path = STYLE_DIR / "grammars" / f"{genre_name}_grammar.yaml"
 
-        profile_path.write_text(yaml.dump(draft_yamls.get("profile", {}), default_flow_style=False))
+        profile_path.write_text(yaml.dump(draft_yamls.get("profile", {}), default_flow_style=False, sort_keys=False))
         files_written.append(str(profile_path))
 
-        rules_path.write_text(yaml.dump(draft_yamls.get("rules", {}), default_flow_style=False))
+        rules_path.write_text(yaml.dump(draft_yamls.get("rules", {}), default_flow_style=False, sort_keys=False))
         files_written.append(str(rules_path))
 
-        grammar_path.write_text(yaml.dump(draft_yamls.get("grammar", {}), default_flow_style=False))
+        grammar_path.write_text(yaml.dump(draft_yamls.get("grammar", {}), default_flow_style=False, sort_keys=False))
         files_written.append(str(grammar_path))
 
         style_service = StyleService(driver)
