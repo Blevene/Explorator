@@ -23,11 +23,14 @@ def _normalize_draft(parsed: dict[str, Any], genre_name: str) -> None:
     # grammar: ensure genre_profile_id present
     if isinstance(parsed.get("grammar"), dict) and "genre_profile_id" not in parsed["grammar"]:
         parsed["grammar"]["genre_profile_id"] = f"genre_{genre_name}_01"
-    # Rule applicability: wrap bare strings in lists (schema requires dict[str, list[str]])
+    # Rule applicability: must be dict[str, list[str]]
     rules_data = parsed.get("rules", {})
     for rule in rules_data.get("rules", []):
         applicability = rule.get("applicability", {})
-        if isinstance(applicability, dict):
+        if isinstance(applicability, str):
+            # bare string like "global" or "bassline" → wrap in dict
+            rule["applicability"] = {"scope": [applicability]}
+        elif isinstance(applicability, dict):
             for key, val in applicability.items():
                 if isinstance(val, str):
                     applicability[key] = [val]
