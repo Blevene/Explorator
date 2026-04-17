@@ -459,7 +459,9 @@ export default function GenreManagement() {
                   className="flex items-center justify-between px-4 py-3 rounded-xl cursor-pointer transition-colors card-interactive"
                   style={{
                     background: 'var(--surface-2)',
-                    border: '1px solid var(--border-subtle)',
+                    borderTop: '1px solid var(--border-subtle)',
+                    borderRight: '1px solid var(--border-subtle)',
+                    borderBottom: '1px solid var(--border-subtle)',
                     borderLeft: '3px solid var(--accent-primary)',
                   }}
                 >
@@ -495,7 +497,9 @@ export default function GenreManagement() {
                   className="px-4 py-3 rounded-xl card-animated cursor-pointer card-interactive"
                   style={{
                     background: selectedGenre?.genre === g.genre ? 'var(--surface-3)' : 'var(--surface-2)',
-                    border: `1px solid ${selectedGenre?.genre === g.genre ? 'var(--border-bright)' : 'var(--border-subtle)'}`,
+                    borderTop: `1px solid ${selectedGenre?.genre === g.genre ? 'var(--border-bright)' : 'var(--border-subtle)'}`,
+                    borderRight: `1px solid ${selectedGenre?.genre === g.genre ? 'var(--border-bright)' : 'var(--border-subtle)'}`,
+                    borderBottom: `1px solid ${selectedGenre?.genre === g.genre ? 'var(--border-bright)' : 'var(--border-subtle)'}`,
                     borderLeft: `3px solid ${genreColor(g.genre, i)}`,
                     animationDelay: `${i * 50}ms`,
                   }}
