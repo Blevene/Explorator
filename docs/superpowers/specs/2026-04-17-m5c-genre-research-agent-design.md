@@ -508,7 +508,7 @@ New CSS added to `index.css`:
 - No auto-research on session creation — genre library is explicitly managed
 - No genre deletion from UI in M5c — manual file removal if needed
 - `melodic_tendencies` optional — omitted if agent lacks confidence, melody generator uses defaults
-- **Schema prerequisite:** `GenreProfileYAML` in `domain/style/schema.py` must be extended with an optional `melodic_tendencies: dict[str, str] = Field(default_factory=dict)` field before M5c implementation. The field already exists in the YAML files on disk but is not yet in the Pydantic schema — the validate node would reject it without this update.
+- **Schema prerequisite:** `GenreProfileYAML` in `domain/style/schema.py` must be extended with an optional `melodic_tendencies: dict[str, Any] = Field(default_factory=dict)` (uses `Any` not `str` because real YAML files have mixed types: int for phrase_length, bool for rest_between_phrases) field before M5c implementation. The field already exists in the YAML files on disk but is not yet in the Pydantic schema — the validate node would reject it without this update.
 
 ---
 
