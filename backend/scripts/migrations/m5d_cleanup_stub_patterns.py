@@ -31,12 +31,16 @@ async def _count_legacy(driver) -> int:
 
 async def _delete_legacy(driver) -> int:
     async with driver.session() as neo_session:
+        # Count BEFORE delete — a post-DELETE `count(p)` always returns 0
+        # because `p` is bound to the already-deleted rows.
         result = await neo_session.run(
             "MATCH (p:PatternLibraryEntry) WHERE p.source_candidate_id IS NULL "
-            "DETACH DELETE p RETURN count(p) AS removed"
+            "WITH count(p) AS n, collect(p) AS ps "
+            "FOREACH (x IN ps | DETACH DELETE x) "
+            "RETURN n"
         )
         record = await result.single()
-        return int(record["removed"])
+        return int(record["n"])
 
 
 async def main(apply: bool) -> int:

@@ -20,9 +20,12 @@ class PatternLibraryRepo:
     async def upsert(self, entry: PatternLibraryEntry) -> None:
         """Create or update by (source_candidate_id, pattern_type).
 
-        ULID id and created_at are set only on first create; subsequent upserts
-        refresh mutable props in place and stamp a fresh updated_at. This
-        preserves the audit trail of "when was this pattern first harvested."
+        ULID `id` and `created_at` are set only on first create; subsequent
+        upserts refresh mutable props in place. `updated_at` flows passively
+        through `$props` (the entry's fresh `utc_now()` stamp from harvesting,
+        which runs milliseconds before upsert). This preserves the audit trail
+        of "when was this pattern first harvested" while keeping mutation
+        timestamps current.
         """
         payload = entry.model_dump(mode="json")
         weighted_total = float((payload.get("success_metrics") or {}).get("weighted_total") or 0.0)
@@ -32,6 +35,9 @@ class PatternLibraryRepo:
         props = _neo4j_safe({k: v for k, v in payload.items() if k not in immutable_on_match})
         props["weighted_total"] = weighted_total  # denormalized scalar for indexed ORDER BY
 
+        # ON CREATE: `p = $props` runs first, then the subsequent assignments
+        # override the natural-key/create-only fields. Cypher applies the SET
+        # sub-clauses left-to-right, so the id/scid/pt/created_at overrides win.
         query = """
         MERGE (p:PatternLibraryEntry {source_candidate_id: $scid, pattern_type: $pt})
         ON CREATE SET p = $props,
