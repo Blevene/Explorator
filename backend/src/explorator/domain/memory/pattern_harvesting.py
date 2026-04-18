@@ -226,3 +226,40 @@ def harvest_melody_pattern(
         pattern_type="melody", arrangement=arrangement,
         abstracted=abstracted, tags=tags, scorecard=scorecard, genre=genre,
     )
+
+
+# --- Orchestrator ----------------------------------------------------------------
+
+def harvest_finalist(
+    *, arrangement: dict[str, Any], progression: dict[str, Any],
+    voicing_plan: dict[str, Any] | None, bass_line: dict[str, Any] | None,
+    groove: dict[str, Any] | None, melody: dict[str, Any] | None,
+    scorecard: dict[str, Any], genre: str, role: str,
+) -> list[PatternLibraryEntry]:
+    entries: list[PatternLibraryEntry] = [
+        harvest_progression_pattern(
+            arrangement=arrangement, progression=progression,
+            scorecard=scorecard, genre=genre, role=role,
+        )
+    ]
+    if voicing_plan is not None:
+        entries.append(harvest_voicing_pattern(
+            arrangement=arrangement, voicing_plan=voicing_plan,
+            scorecard=scorecard, genre=genre, role=role,
+        ))
+    if bass_line is not None:
+        entries.append(harvest_bass_pattern(
+            arrangement=arrangement, bass_line=bass_line,
+            scorecard=scorecard, genre=genre, role=role,
+        ))
+    if groove is not None:
+        entries.append(harvest_groove_pattern(
+            arrangement=arrangement, groove=groove,
+            scorecard=scorecard, genre=genre, role=role,
+        ))
+    if melody is not None:
+        entries.append(harvest_melody_pattern(
+            arrangement=arrangement, melody=melody,
+            scorecard=scorecard, genre=genre, role=role,
+        ))
+    return entries

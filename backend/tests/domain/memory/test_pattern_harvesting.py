@@ -1,6 +1,7 @@
 """Tests for pattern harvesting abstractions and tag generation."""
 from explorator.domain.memory.pattern_harvesting import (
     harvest_bass_pattern,
+    harvest_finalist,
     harvest_groove_pattern,
     harvest_melody_pattern,
     harvest_progression_pattern,
@@ -160,3 +161,31 @@ def test_harvest_melody_tags_and_abstracted():
     assert entry.pattern_type == "melody"
     assert entry.abstracted_pattern == {"contour_type": "arch", "range_semitones": 14, "rhythmic_density": 0.5}
     assert {"role:most_experimental", "contour:arch", "range:medium", "melody_density:mid"} <= set(entry.tags)
+
+
+def test_harvest_finalist_produces_one_entry_per_present_facet():
+    arr = {
+        "id": "arr_01", "progression_candidate_id": "prog_01",
+        "voicing_plan_id": "vp_01", "bass_line_id": "bl_01",
+        "groove_pattern_id": "gp_01", "melodic_complement_id": "mc_01",
+    }
+    entries = harvest_finalist(
+        arrangement=arr,
+        progression=_progression(),
+        voicing_plan={"id": "vp_01", "strategy": {"register_profile": "mid", "density": "medium", "voice_count": 4}},
+        bass_line={"id": "bl_01", "mode": "walking", "rhythmic_density": 0.6},
+        groove={"id": "gp_01", "swing_level": 0.4, "syncopation_level": 0.5, "density": 0.7, "template_name": "house_basic"},
+        melody={"id": "mc_01", "strategy": {"contour_type": "arch", "range_semitones": 14, "rhythmic_density": 0.5}},
+        scorecard=_scorecard(), genre="house", role="safest",
+    )
+    assert sorted(e.pattern_type for e in entries) == ["bass", "groove", "melody", "progression", "voicing"]
+
+
+def test_harvest_finalist_skips_missing_facets():
+    arr = {"id": "arr_01", "progression_candidate_id": "prog_01"}
+    entries = harvest_finalist(
+        arrangement=arr, progression=_progression(),
+        voicing_plan=None, bass_line=None, groove=None, melody=None,
+        scorecard=_scorecard(), genre="house", role="safest",
+    )
+    assert [e.pattern_type for e in entries] == ["progression"]
