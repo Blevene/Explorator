@@ -49,7 +49,7 @@ def test_harvest_progression_role_and_loopability_tags():
         scorecard=_scorecard(loopability=0.2), genre="house", role="best_loop",
     )
     assert "role:best_loop" in entry.tags
-    assert "loopability_low" in entry.tags
+    assert "loopability:low" in entry.tags
 
 
 def test_harvest_progression_cadence_tag_authentic():

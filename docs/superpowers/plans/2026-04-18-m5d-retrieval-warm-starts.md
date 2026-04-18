@@ -393,16 +393,16 @@ async def test_list_all_filters_by_genre_and_type(neo4j_driver):
 async def test_list_all_filters_by_tags(neo4j_driver):
     repo = PatternLibraryRepo(neo4j_driver)
     e1 = _entry(pattern_id="pl_1", source="arr_1")
-    e1.tags = ["role:safest", "loopability_high"]
+    e1.tags = ["role:safest", "loopability:high"]
     e2 = _entry(pattern_id="pl_2", source="arr_2")
-    e2.tags = ["role:most_experimental", "loopability_high"]
+    e2.tags = ["role:most_experimental", "loopability:high"]
     await repo.upsert(e1)
     await repo.upsert(e2)
 
     safest = await repo.list_all(genre="house", tags=["role:safest"])
     assert len(safest) == 1 and safest[0]["id"] == "pl_1"
 
-    high = await repo.list_all(genre="house", tags=["loopability_high"])
+    high = await repo.list_all(genre="house", tags=["loopability:high"])
     assert len(high) == 2
 
 
@@ -626,7 +626,7 @@ def test_harvest_progression_role_and_loopability_tags():
         scorecard=_scorecard(loopability=0.2), genre="house", role="best_loop",
     )
     assert "role:best_loop" in entry.tags
-    assert "loopability_low" in entry.tags
+    assert "loopability:low" in entry.tags
 
 
 def test_harvest_progression_cadence_tag_authentic():
@@ -717,7 +717,7 @@ def _bucket(value: float, low: float = 0.4, high: float = 0.7) -> str:
 
 
 def _loopability_tag(value: float) -> str:
-    return f"loopability_{_bucket(value)}"
+    return f"loopability:{_bucket(value)}"
 
 
 def _cadence_tag(roman_numerals: list[str]) -> str | None:
@@ -2103,7 +2103,7 @@ async def seed_patterns(neo4j_driver):
             id="pl_seed_a", type="pattern_library_entry",
             created_at=now, updated_at=now, status="active", metadata={},
             pattern_type="progression", genre="house",
-            tags=["role:safest", "loopability_high", "cadence:authentic", "complexity:mid"],
+            tags=["role:safest", "loopability:high", "cadence:authentic", "complexity:mid"],
             source_candidate_id="arr_seed_a",
             abstracted_pattern={"chord_symbols": ["C", "F", "G", "C"], "key_center": "C", "mode": "major", "phrase_length_bars": 4, "roman_numerals": ["I", "IV", "V", "I"]},
             success_metrics={"weighted_total": 0.85, "loopability": 0.9},
@@ -3793,7 +3793,7 @@ Start backend (`cd backend && uv run uvicorn explorator.api.app:app --host 0.0.0
 2. Create a new **house** session (no patterns yet) — verify no WarmStartPanel appears.
 3. Wait for session completion — verify toast: "N house patterns saved to library".
 4. Click "Save finalists to library" — verify toast: "Finalists already saved to library" (idempotent — no new row count).
-5. Navigate to /patterns — verify the entries show with correct tags (role:*, loopability_*, cadence:*, complexity:*).
+5. Navigate to /patterns — verify the entries show with correct tags (role:*, loopability:*, cadence:*, complexity:*).
 6. Return to / and create a **second** house session — verify WarmStartPanel now appears with harvested patterns.
 7. Select one progression warm-start + one groove warm-start; submit.
 8. Verify in the running session: at least one progression candidate has `warm_start_pattern_id` in metadata (inspect via /v1/sessions/{id}/candidates) and at least one groove pattern produces non-empty events.

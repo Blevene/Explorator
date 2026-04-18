@@ -17,7 +17,7 @@ def _bucket(value: float, low: float = 0.4, high: float = 0.7) -> str:
 
 
 def _loopability_tag(value: float) -> str:
-    return f"loopability_{_bucket(value)}"
+    return f"loopability:{_bucket(value)}"
 
 
 def _cadence_tag(roman_numerals: list[str]) -> str | None:

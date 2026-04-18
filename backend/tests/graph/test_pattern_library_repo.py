@@ -74,16 +74,16 @@ async def test_list_all_filters_by_genre_and_type(neo4j_driver):
 async def test_list_all_filters_by_tags(neo4j_driver):
     repo = PatternLibraryRepo(neo4j_driver)
     e1 = _entry(pattern_id="pl_1", source="arr_1")
-    e1.tags = ["role:safest", "loopability_high"]
+    e1.tags = ["role:safest", "loopability:high"]
     e2 = _entry(pattern_id="pl_2", source="arr_2")
-    e2.tags = ["role:most_experimental", "loopability_high"]
+    e2.tags = ["role:most_experimental", "loopability:high"]
     await repo.upsert(e1)
     await repo.upsert(e2)
 
     safest = await repo.list_all(genre="house", tags=["role:safest"])
     assert len(safest) == 1 and safest[0]["id"] == "pl_1"
 
-    high = await repo.list_all(genre="house", tags=["loopability_high"])
+    high = await repo.list_all(genre="house", tags=["loopability:high"])
     assert len(high) == 2
 
 
