@@ -22,6 +22,7 @@ from explorator.engine.nodes.generate import generate
 from explorator.engine.nodes.generate_bass import generate_bass
 from explorator.engine.nodes.generate_groove import generate_groove
 from explorator.engine.nodes.generate_melody import generate_melody
+from explorator.engine.nodes.harvest_patterns import harvest_patterns
 from explorator.engine.nodes.load_context import load_context
 from explorator.engine.nodes.load_genre import load_genre
 from explorator.engine.nodes.load_memory import load_memory
@@ -33,6 +34,7 @@ from explorator.engine.nodes.plan_voicings import plan_voicings
 from explorator.engine.nodes.rank_and_select import rank_and_select
 from explorator.engine.nodes.select_top_progressions import select_top_progressions
 from explorator.engine.state import ExplorationState
+from explorator.graph.pattern_library_repo import PatternLibraryRepo
 
 
 def _add_m2_nodes(
@@ -99,6 +101,10 @@ def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver) -> Any:
     # M2 nodes (shared registration)
     _add_m2_nodes(graph, gemini, driver)
 
+    # M5d-1: auto-harvest finalist patterns between persist_realization and persist_round
+    pattern_repo = PatternLibraryRepo(driver)
+    graph.add_node("harvest_patterns", partial(harvest_patterns, repo=pattern_repo))
+
     # Persistence
     graph.add_node("persist_round", partial(persist_round, driver=driver))
 
@@ -130,7 +136,8 @@ def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver) -> Any:
         "evaluate_arrangements": "evaluate_arrangements",
     })
 
-    graph.add_edge("persist_realization", "persist_round")
+    graph.add_edge("persist_realization", "harvest_patterns")
+    graph.add_edge("harvest_patterns", "persist_round")
     graph.add_edge("persist_round", END)
 
     return graph.compile()
