@@ -71,5 +71,9 @@ class ExplorationState(TypedDict, total=False):
     # --- M4b: Provenance ---
     provenance_events: list[dict[str, Any]]
 
+    # --- M5d-1: Pattern harvest ---
+    # Populated by the harvest_patterns node after the exploration loop terminates.
+    harvested_pattern_ids: list[str]
+
     # Progress callback
     on_progress: ProgressCallback
