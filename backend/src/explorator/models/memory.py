@@ -31,15 +31,18 @@ class UserFeedbackEvent(BaseEntity):
 
 
 class PatternLibraryEntry(BaseEntity):
-    """Reusable discovered pattern. Deferred to M5."""
+    """Reusable pattern harvested from a finalist arrangement."""
 
     pattern_type: str
     genre: str
     tags: list[str] = Field(default_factory=list)
-    source_candidate_id: str | None = None
+    source_candidate_id: str
     abstracted_pattern: dict[str, Any] = Field(default_factory=dict)
     success_metrics: dict[str, float] = Field(default_factory=dict)
     notes: str = ""
+    # TODO(vector): when embeddings ship, populate from an embedder service and
+    # swap GraphRetrieval for a vector-backed retrieval in fetch_warm_starts.
+    embedding: list[float] | None = None
 
 
 class RetrievalQuery(BaseEntity):
