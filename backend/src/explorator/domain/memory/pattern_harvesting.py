@@ -149,3 +149,80 @@ def harvest_progression_pattern(
         pattern_type="progression", arrangement=arrangement,
         abstracted=abstracted, tags=tags, scorecard=scorecard, genre=genre,
     )
+
+
+def harvest_voicing_pattern(
+    *, arrangement: dict[str, Any], voicing_plan: dict[str, Any],
+    scorecard: dict[str, Any], genre: str, role: str,
+) -> PatternLibraryEntry:
+    strategy = voicing_plan.get("strategy") or {}
+    register = strategy.get("register_profile", "mid")
+    density = strategy.get("density", "medium")
+    voice_count = strategy.get("voice_count", 4)
+    tags = [f"role:{role}", f"register:{register}", f"density:{density}", f"voices:{voice_count}"]
+    abstracted = {"register_profile": register, "density": density, "voice_count": voice_count}
+    return _build_entry(
+        pattern_type="voicing", arrangement=arrangement,
+        abstracted=abstracted, tags=tags, scorecard=scorecard, genre=genre,
+    )
+
+
+def harvest_bass_pattern(
+    *, arrangement: dict[str, Any], bass_line: dict[str, Any],
+    scorecard: dict[str, Any], genre: str, role: str,
+) -> PatternLibraryEntry:
+    mode = bass_line.get("mode", "root")
+    density = float(bass_line.get("rhythmic_density", 0.5))
+    tags = [f"role:{role}", f"bass_mode:{mode}", f"rhythmic_density:{_bucket(density)}"]
+    abstracted = {"mode": mode, "rhythmic_density": density}
+    return _build_entry(
+        pattern_type="bass", arrangement=arrangement,
+        abstracted=abstracted, tags=tags, scorecard=scorecard, genre=genre,
+    )
+
+
+def harvest_groove_pattern(
+    *, arrangement: dict[str, Any], groove: dict[str, Any],
+    scorecard: dict[str, Any], genre: str, role: str,
+) -> PatternLibraryEntry:
+    swing = float(groove.get("swing_level", 0.0))
+    sync = float(groove.get("syncopation_level", 0.0))
+    density = float(groove.get("density", 0.5))
+    template = groove.get("template_name", "")
+    tags = [
+        f"role:{role}",
+        f"swing:{_bucket(swing)}",
+        f"syncopation:{_bucket(sync)}",
+        f"density:{_bucket(density)}",
+    ]
+    if template:
+        tags.append(f"template:{template}")
+    abstracted = {
+        "swing_level": swing, "syncopation_level": sync,
+        "density": density, "template_name": template,
+    }
+    return _build_entry(
+        pattern_type="groove", arrangement=arrangement,
+        abstracted=abstracted, tags=tags, scorecard=scorecard, genre=genre,
+    )
+
+
+def harvest_melody_pattern(
+    *, arrangement: dict[str, Any], melody: dict[str, Any],
+    scorecard: dict[str, Any], genre: str, role: str,
+) -> PatternLibraryEntry:
+    strategy = melody.get("strategy") or {}
+    contour = strategy.get("contour_type", "")
+    rng = int(strategy.get("range_semitones", 12))
+    density = float(strategy.get("rhythmic_density", 0.5))
+    tags = [
+        f"role:{role}",
+        f"contour:{contour}",
+        _range_tag(rng),
+        f"melody_density:{_bucket(density)}",
+    ]
+    abstracted = {"contour_type": contour, "range_semitones": rng, "rhythmic_density": density}
+    return _build_entry(
+        pattern_type="melody", arrangement=arrangement,
+        abstracted=abstracted, tags=tags, scorecard=scorecard, genre=genre,
+    )

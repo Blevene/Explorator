@@ -1,5 +1,11 @@
 """Tests for pattern harvesting abstractions and tag generation."""
-from explorator.domain.memory.pattern_harvesting import harvest_progression_pattern
+from explorator.domain.memory.pattern_harvesting import (
+    harvest_bass_pattern,
+    harvest_groove_pattern,
+    harvest_melody_pattern,
+    harvest_progression_pattern,
+    harvest_voicing_pattern,
+)
 
 
 def _arrangement(arr_id: str = "arr_01") -> dict:
@@ -110,3 +116,47 @@ def test_harvest_progression_pareto_tag_propagates():
         scorecard=_scorecard(pareto=True), genre="house", role="safest",
     )
     assert "pareto_front" in entry.tags
+
+
+def test_harvest_voicing_tags_and_abstracted():
+    arr = {"id": "arr_01", "voicing_plan_id": "vp_01"}
+    vp = {"id": "vp_01", "strategy": {"register_profile": "mid", "density": "medium", "voice_count": 4}}
+    entry = harvest_voicing_pattern(
+        arrangement=arr, voicing_plan=vp, scorecard=_scorecard(), genre="house", role="safest",
+    )
+    assert entry.pattern_type == "voicing"
+    assert entry.abstracted_pattern == {"register_profile": "mid", "density": "medium", "voice_count": 4}
+    assert {"role:safest", "register:mid", "density:medium", "voices:4"} <= set(entry.tags)
+
+
+def test_harvest_bass_tags_and_abstracted():
+    arr = {"id": "arr_01", "bass_line_id": "bl_01"}
+    bl = {"id": "bl_01", "mode": "walking", "rhythmic_density": 0.65}
+    entry = harvest_bass_pattern(
+        arrangement=arr, bass_line=bl, scorecard=_scorecard(), genre="house", role="best_loop",
+    )
+    assert entry.pattern_type == "bass"
+    assert entry.abstracted_pattern == {"mode": "walking", "rhythmic_density": 0.65}
+    assert {"role:best_loop", "bass_mode:walking", "rhythmic_density:mid"} <= set(entry.tags)
+
+
+def test_harvest_groove_tags_and_abstracted():
+    arr = {"id": "arr_01", "groove_pattern_id": "gp_01"}
+    g = {"id": "gp_01", "swing_level": 0.4, "syncopation_level": 0.6, "density": 0.7, "template_name": "house_basic"}
+    entry = harvest_groove_pattern(
+        arrangement=arr, groove=g, scorecard=_scorecard(), genre="house", role="safest",
+    )
+    assert entry.pattern_type == "groove"
+    assert entry.abstracted_pattern == {"swing_level": 0.4, "syncopation_level": 0.6, "density": 0.7, "template_name": "house_basic"}
+    assert {"swing:mid", "syncopation:mid", "density:high", "template:house_basic"} <= set(entry.tags)
+
+
+def test_harvest_melody_tags_and_abstracted():
+    arr = {"id": "arr_01", "melodic_complement_id": "mc_01"}
+    m = {"id": "mc_01", "strategy": {"contour_type": "arch", "range_semitones": 14, "rhythmic_density": 0.5}}
+    entry = harvest_melody_pattern(
+        arrangement=arr, melody=m, scorecard=_scorecard(), genre="house", role="most_experimental",
+    )
+    assert entry.pattern_type == "melody"
+    assert entry.abstracted_pattern == {"contour_type": "arch", "range_semitones": 14, "rhythmic_density": 0.5}
+    assert {"role:most_experimental", "contour:arch", "range:medium", "melody_density:mid"} <= set(entry.tags)
