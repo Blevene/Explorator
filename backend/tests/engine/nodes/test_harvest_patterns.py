@@ -44,7 +44,11 @@ async def test_harvest_patterns_persists_one_entry_per_facet():
     result = await harvest_patterns(state, repo=repo)
     assert repo.upsert.await_count == 5
     assert len(result["harvested_pattern_ids"]) == 5
-    state["on_progress"].assert_awaited_with("pattern_harvest", {"count": 5, "genre": "house"})
+    # Lifecycle events (node_started, node_completed) bracket the domain pattern_harvest event
+    progress_calls = [call.args for call in state["on_progress"].await_args_list]
+    assert progress_calls[0] == ("node_started", {"node": "harvest_patterns"})
+    assert ("pattern_harvest", {"count": 5, "genre": "house"}) in progress_calls
+    assert progress_calls[-1] == ("node_completed", {"node": "harvest_patterns", "count": 5})
 
 
 @pytest.mark.asyncio
@@ -67,3 +71,21 @@ async def test_harvest_patterns_skips_when_no_final_selection():
     result = await harvest_patterns(state, repo=repo)
     repo.upsert.assert_not_awaited()
     assert result["harvested_pattern_ids"] == []
+
+
+@pytest.mark.asyncio
+async def test_harvest_patterns_emits_lifecycle_even_when_no_finalists():
+    """Lifecycle events must fire even when there's nothing to harvest,
+    so the UI progress indicator can transition through harvest_patterns correctly."""
+    state = {
+        "session_id": "sess_01", "genre": "house",
+        "final_selection": {"selected_candidate_ids": []},
+        "on_progress": AsyncMock(),
+    }
+    repo = AsyncMock()
+    await harvest_patterns(state, repo=repo)
+    progress_calls = [call.args for call in state["on_progress"].await_args_list]
+    assert progress_calls == [
+        ("node_started", {"node": "harvest_patterns"}),
+        ("node_completed", {"node": "harvest_patterns", "count": 0}),
+    ]

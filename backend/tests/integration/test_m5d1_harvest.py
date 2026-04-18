@@ -116,8 +116,11 @@ async def test_m5d1_harvest_writes_full_facet_coverage(neo4j_driver: AsyncDriver
     # Denormalized weighted_total is written to a top-level scalar
     assert all(r["wt"] is not None and r["wt"] > 0 for r in rows)
 
-    # Progress event emitted with correct count
-    state["on_progress"].assert_awaited_with("pattern_harvest", {"count": 10, "genre": "dream_pop"})
+    # Progress events emitted: node_started, pattern_harvest (domain event), node_completed
+    progress_calls = [call.args for call in state["on_progress"].await_args_list]
+    assert progress_calls[0] == ("node_started", {"node": "harvest_patterns"})
+    assert ("pattern_harvest", {"count": 10, "genre": "dream_pop"}) in progress_calls
+    assert progress_calls[-1] == ("node_completed", {"node": "harvest_patterns", "count": 10})
 
 
 @pytest.mark.asyncio

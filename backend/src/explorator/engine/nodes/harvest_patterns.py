@@ -18,9 +18,15 @@ async def harvest_patterns(
     *,
     repo: PatternLibraryRepo,
 ) -> dict[str, Any]:
+    callback = state.get("on_progress")
+    if callback is not None:
+        await callback("node_started", {"node": "harvest_patterns"})
+
     final_selection = state.get("final_selection") or {}
     selected_ids: list[str] = final_selection.get("selected_candidate_ids") or []
     if not selected_ids:
+        if callback is not None:
+            await callback("node_completed", {"node": "harvest_patterns", "count": 0})
         return {"harvested_pattern_ids": []}
 
     roles: dict[str, str] = final_selection.get("selection_roles") or {}
@@ -69,8 +75,8 @@ async def harvest_patterns(
                     entry.id, entry.pattern_type, entry.source_candidate_id, exc,
                 )
 
-    on_progress = state.get("on_progress")
-    if on_progress is not None:
-        await on_progress("pattern_harvest", {"count": len(harvested_ids), "genre": genre})
+    if callback is not None:
+        await callback("pattern_harvest", {"count": len(harvested_ids), "genre": genre})
+        await callback("node_completed", {"node": "harvest_patterns", "count": len(harvested_ids)})
 
     return {"harvested_pattern_ids": harvested_ids}
