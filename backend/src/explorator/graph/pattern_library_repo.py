@@ -5,7 +5,6 @@ from neo4j import AsyncDriver
 
 from explorator.graph.repository import _neo4j_safe, _neo4j_deserialize
 from explorator.models.memory import PatternLibraryEntry
-from explorator.utils import utc_now
 
 
 class PatternLibraryRepo:
@@ -19,24 +18,35 @@ class PatternLibraryRepo:
         self._driver = driver
 
     async def upsert(self, entry: PatternLibraryEntry) -> None:
-        """Create or update by (source_candidate_id, pattern_type). ULID is set
-        only on first create; subsequent upserts refresh props in place."""
+        """Create or update by (source_candidate_id, pattern_type).
+
+        ULID id and created_at are set only on first create; subsequent upserts
+        refresh mutable props in place and stamp a fresh updated_at. This
+        preserves the audit trail of "when was this pattern first harvested."
+        """
         payload = entry.model_dump(mode="json")
         weighted_total = float((payload.get("success_metrics") or {}).get("weighted_total") or 0.0)
-        props = _neo4j_safe({k: v for k, v in payload.items() if k not in ("id", "source_candidate_id", "pattern_type")})
+        # Exclude natural-key and creation-time fields from the merge-props payload:
+        # id + created_at are CREATE-only; source_candidate_id + pattern_type live in the MERGE key.
+        immutable_on_match = ("id", "source_candidate_id", "pattern_type", "created_at")
+        props = _neo4j_safe({k: v for k, v in payload.items() if k not in immutable_on_match})
         props["weighted_total"] = weighted_total  # denormalized scalar for indexed ORDER BY
 
         query = """
         MERGE (p:PatternLibraryEntry {source_candidate_id: $scid, pattern_type: $pt})
-        ON CREATE SET p = $props, p.id = $id, p.source_candidate_id = $scid, p.pattern_type = $pt
-        ON MATCH  SET p += $props, p.updated_at = $updated_at
+        ON CREATE SET p = $props,
+                      p.id = $id,
+                      p.source_candidate_id = $scid,
+                      p.pattern_type = $pt,
+                      p.created_at = $created_at
+        ON MATCH  SET p += $props
         """
         async with self._driver.session() as neo_session:
             await neo_session.run(
                 query,
                 scid=entry.source_candidate_id, pt=entry.pattern_type,
                 id=entry.id, props=props,
-                updated_at=utc_now().isoformat(),
+                created_at=entry.created_at.isoformat(),
             )
 
     async def get_by_id(self, entry_id: str) -> dict[str, Any] | None:
@@ -55,6 +65,11 @@ class PatternLibraryRepo:
         pattern_type: str | None = None,
         tags: list[str] | None = None,
     ) -> list[dict[str, Any]]:
+        # TODO(scale): this pulls every matching row into Python and filters tags
+        # client-side. Acceptable at current cardinality (hundreds per genre). When
+        # PatternLibraryEntry row count exceeds ~1k per genre, push tag filtering
+        # into Cypher (tags is stored as a native string array in Neo4j; use
+        # `ALL(t IN $tags WHERE t IN p.tags)`) and add LIMIT pagination here.
         clauses: list[str] = []
         params: dict[str, Any] = {}
         if genre is not None:
@@ -75,7 +90,6 @@ class PatternLibraryRepo:
             records = [r async for r in result]
         entries = [_neo4j_deserialize(dict(rec["p"])) for rec in records]
 
-        # Tags are stored as a JSON string; filter in Python at small cardinality.
         if tags:
             entries = [e for e in entries if all(t in (e.get("tags") or []) for t in tags)]
         return entries

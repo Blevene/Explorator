@@ -177,7 +177,10 @@ async def test_m5d1_harvest_progression_cadence_and_complexity_tags(neo4j_driver
 
 @pytest.mark.asyncio
 async def test_m5d1_harvest_is_idempotent_on_rerun(neo4j_driver: AsyncDriver) -> None:
-    """Re-harvesting the same session updates in place — no duplicates, scores refresh."""
+    """Re-harvesting the same session updates in place — no duplicates, scores refresh,
+    created_at audit trail preserved."""
+    import asyncio
+
     state = _state_with_two_finalists()
     repo = PatternLibraryRepo(neo4j_driver)
 
@@ -185,40 +188,46 @@ async def test_m5d1_harvest_is_idempotent_on_rerun(neo4j_driver: AsyncDriver) ->
     result_1 = await harvest_patterns(state, repo=repo)
     assert len(result_1["harvested_pattern_ids"]) == 10
 
-    # Capture the first-round ID for arr_01's progression — should survive idempotent MERGE
+    # Capture the first-round ID and created_at for arr_01's progression
     async with neo4j_driver.session() as neo:
         cypher = await neo.run("""
             MATCH (p:PatternLibraryEntry {source_candidate_id: 'arr_01', pattern_type: 'progression'})
-            RETURN p.id AS id
+            RETURN p.id AS id, p.created_at AS created_at
         """)
         first_row = await cypher.single()
     first_id = first_row["id"]
+    first_created_at = first_row["created_at"]
 
-    # Simulate a second session run that raises arr_01's weighted_total
+    # Force a measurable time delta so a clobbered created_at would be detectable.
+    await asyncio.sleep(0.05)
+
+    # Simulate a second session run that raises arr_01's weighted_total.
     state["scorecards"][0]["weighted_total"] = 0.95
 
     result_2 = await harvest_patterns(state, repo=repo)
-    # Second run also reports 10 harvested IDs (the MERGE still produces a pattern object to upsert;
-    # it's the DB that deduplicates via natural key)
+    # Second run also reports 10 harvested IDs (MERGE still produces an upsert per facet;
+    # the DB deduplicates via the natural-key constraint).
     assert len(result_2["harvested_pattern_ids"]) == 10
 
-    # Row count in Neo4j is still exactly 10 — no duplicates
+    # Row count is still exactly 10 — no duplicates.
     async with neo4j_driver.session() as neo:
         cypher = await neo.run("MATCH (p:PatternLibraryEntry) RETURN count(p) AS n")
         row = await cypher.single()
     assert row["n"] == 10
 
-    # arr_01 progression's weighted_total reflects the refreshed score
+    # arr_01 progression: weighted_total refreshes; id + created_at preserved.
     async with neo4j_driver.session() as neo:
         cypher = await neo.run("""
             MATCH (p:PatternLibraryEntry {source_candidate_id: 'arr_01', pattern_type: 'progression'})
-            RETURN p.id AS id, p.weighted_total AS wt
+            RETURN p.id AS id, p.weighted_total AS wt, p.created_at AS created_at
         """)
         second_row = await cypher.single()
 
     assert second_row["wt"] == pytest.approx(0.95)
-    # The ID is preserved — ON CREATE sets it, ON MATCH does not
+    # ID is preserved — ON CREATE sets it, ON MATCH does not.
     assert second_row["id"] == first_id
+    # created_at is preserved too — audit trail of "when first harvested" intact.
+    assert second_row["created_at"] == first_created_at
 
 
 @pytest.mark.asyncio

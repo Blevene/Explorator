@@ -21,11 +21,12 @@ def _loopability_tag(value: float) -> str:
 
 
 def _cadence_tag(roman_numerals: list[str]) -> str | None:
-    """Classify final two Roman numerals as authentic/plagal/half/deceptive/unknown."""
+    """Classify final two Roman numerals as authentic/plagal/half/deceptive/other."""
     if len(roman_numerals) < 2:
         return None
     penult, final = _root_only(roman_numerals[-2]), _root_only(roman_numerals[-1])
-    if penult in ("V", "v") and final in ("I", "i"):
+    # V → I and vii° → I both function as authentic (leading-tone substitute).
+    if penult in ("V", "v", "vii", "VII") and final in ("I", "i"):
         return "cadence:authentic"
     if penult in ("IV", "iv") and final in ("I", "i"):
         return "cadence:plagal"

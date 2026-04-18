@@ -2,6 +2,8 @@
 import logging
 from typing import Any
 
+from neo4j.exceptions import Neo4jError
+
 from explorator.domain.memory.pattern_harvesting import harvest_finalist
 from explorator.engine.state import ExplorationState
 from explorator.graph.pattern_library_repo import PatternLibraryRepo
@@ -29,8 +31,19 @@ async def harvest_patterns(
             await callback("node_completed", {"node": "harvest_patterns", "count": 0})
         return {"harvested_pattern_ids": []}
 
+    # Genre is load-bearing for retrieval; harvesting into a sentinel "unknown"
+    # genre would pollute the library with unretrievable entries. Skip + warn.
+    genre = state.get("genre")
+    if not genre:
+        logger.warning(
+            "harvest_patterns: no genre in state for session %s; skipping harvest",
+            state.get("session_id", "?"),
+        )
+        if callback is not None:
+            await callback("node_completed", {"node": "harvest_patterns", "count": 0})
+        return {"harvested_pattern_ids": []}
+
     roles: dict[str, str] = final_selection.get("selection_roles") or {}
-    genre = state.get("genre", "unknown")
 
     arrangements = _index_by_id(state.get("arrangement_candidates") or [])
     progressions = _index_by_id(state.get("progression_candidates") or [])
@@ -38,7 +51,11 @@ async def harvest_patterns(
     bass_lines = _index_by_id(state.get("bass_lines") or [])
     grooves = _index_by_id(state.get("groove_patterns") or [])
     melodies = _index_by_id(state.get("melodic_complements") or [])
-    scorecards_by_cand = {s.get("candidate_id"): s for s in (state.get("scorecards") or [])}
+    scorecards_by_cand = {
+        s["candidate_id"]: s
+        for s in (state.get("scorecards") or [])
+        if s.get("candidate_id")
+    }
 
     harvested_ids: list[str] = []
     for arr_id in selected_ids:
@@ -64,12 +81,14 @@ async def harvest_patterns(
             genre=genre,
             role=role,
         )
-        # Per-entry try/except: one failure doesn't block sibling facets or finalists.
+        # Per-entry try/except: one Neo4j failure doesn't block sibling facets or
+        # finalists. The catch is narrowed to Neo4jError so programming errors
+        # (KeyError, AttributeError, etc.) surface loudly instead of hiding.
         for entry in entries:
             try:
                 await repo.upsert(entry)
                 harvested_ids.append(entry.id)
-            except Exception as exc:
+            except Neo4jError as exc:
                 logger.error(
                     "harvest_patterns: failed to upsert entry %s (%s/%s): %s",
                     entry.id, entry.pattern_type, entry.source_candidate_id, exc,
