@@ -1,5 +1,12 @@
 # M5d — Retrieval-Assisted Warm Starts Implementation Plan
 
+> **Execution split (decided 2026-04-18 during implementation):** This plan is being shipped as three sub-milestones, each independently mergeable:
+> - **M5d-1 — Pattern Harvest (complete):** Tasks 1–11. Silent accumulation of finalist patterns into Neo4j after every completed session. No UI, no retrieval. Validates the data layer and auto-harvest node in isolation.
+> - **M5d-2 — Library Browser (planned):** Tasks 20–22, 27, 28–32, plus an E2E. Read/delete API, `/patterns` route, manual "save finalists" button, auto-harvest toast. Lets users see and curate what the system has learned.
+> - **M5d-3 — Warm Starts (planned):** Tasks 12–19, 23–26, 33, 35–39. Retrieval, generation-node injection, Dashboard wiring, E2E. Closes the feedback loop.
+>
+> Tasks are numbered against the original monolithic plan; each sub-milestone carves its own slice. Dependencies are linear (M5d-1 → M5d-2 → M5d-3); each can pause indefinitely without leaving the tree in a half-shipped state.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Harvest reusable patterns (progression, voicing, bass, groove, melody) from finalist arrangements into a Neo4j-backed library, then offer those patterns as optional warm starts when the user creates a new session for the same genre.
