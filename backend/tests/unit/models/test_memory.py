@@ -137,11 +137,12 @@ def test_pattern_library_entry_minimal() -> None:
         status="active",
         pattern_type="chord_color",
         genre="dream_pop",
+        source_candidate_id="prog_01",
     )
     assert entry.pattern_type == "chord_color"
     assert entry.genre == "dream_pop"
     assert entry.tags == []
-    assert entry.source_candidate_id is None
+    assert entry.source_candidate_id == "prog_01"
     assert entry.abstracted_pattern == {}
     assert entry.success_metrics == {}
     assert entry.notes == ""
@@ -184,3 +185,39 @@ def test_pattern_library_entry_requires_genre() -> None:
             status="active",
             pattern_type="voicing",
         )  # type: ignore[call-arg]
+
+
+def test_pattern_library_entry_requires_source_candidate_id() -> None:
+    with pytest.raises(ValidationError):
+        PatternLibraryEntry(
+            id="pl_01",
+            type="pattern_library_entry",
+            status="active",
+            pattern_type="progression",
+            genre="house",
+        )  # type: ignore[call-arg]
+
+
+def test_pattern_library_entry_embedding_defaults_to_none() -> None:
+    entry = PatternLibraryEntry(
+        id="pl_01",
+        type="pattern_library_entry",
+        status="active",
+        pattern_type="progression",
+        genre="house",
+        source_candidate_id="arr_01",
+    )
+    assert entry.embedding is None
+
+
+def test_pattern_library_entry_accepts_embedding_list() -> None:
+    entry = PatternLibraryEntry(
+        id="pl_01",
+        type="pattern_library_entry",
+        status="active",
+        pattern_type="progression",
+        genre="house",
+        source_candidate_id="arr_01",
+        embedding=[0.1, 0.2, 0.3],
+    )
+    assert entry.embedding == [0.1, 0.2, 0.3]
