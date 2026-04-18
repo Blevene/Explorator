@@ -66,8 +66,11 @@ INDEXES = [
     "CREATE INDEX candidate_status IF NOT EXISTS FOR (n:Candidate) ON (n.status)",
     "CREATE INDEX scorecard_weighted_total IF NOT EXISTS"
     " FOR (n:AggregateScorecard) ON (n.weighted_total)",
-    "CREATE INDEX pattern_library_genre IF NOT EXISTS"
-    " FOR (n:PatternLibraryEntry) ON (n.genre)",
+    # M5d: PatternLibraryEntry indexes + natural-key uniqueness
+    "CREATE INDEX pattern_library_genre IF NOT EXISTS FOR (n:PatternLibraryEntry) ON (n.genre)",
+    "CREATE INDEX pattern_library_genre_type IF NOT EXISTS FOR (n:PatternLibraryEntry) ON (n.genre, n.pattern_type)",
+    "CREATE INDEX pattern_library_weighted_total IF NOT EXISTS FOR (n:PatternLibraryEntry) ON (n.weighted_total)",
+    "CREATE CONSTRAINT pattern_library_natural_key IF NOT EXISTS FOR (n:PatternLibraryEntry) REQUIRE (n.source_candidate_id, n.pattern_type) IS UNIQUE",
 ]
 
 
