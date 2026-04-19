@@ -1,10 +1,14 @@
 """Neo4j repository for PatternLibraryEntry (M5d)."""
+from collections.abc import AsyncIterator
 from typing import Any
 
 from neo4j import AsyncDriver
 
 from explorator.graph.repository import _neo4j_safe, _neo4j_deserialize
 from explorator.models.memory import PatternLibraryEntry
+from explorator.services.pattern_library.cursor import Cursor
+from explorator.services.pattern_library.filters import PatternFilters
+from explorator.utils import utc_now
 
 
 class PatternLibraryRepo:
@@ -57,7 +61,11 @@ class PatternLibraryRepo:
             )
 
     async def get_by_id(self, entry_id: str) -> dict[str, Any] | None:
-        query = "MATCH (p:PatternLibraryEntry {id: $id}) RETURN p"
+        query = """
+        MATCH (p:PatternLibraryEntry {id: $id})
+        WHERE p.deleted_at IS NULL
+        RETURN p
+        """
         async with self._driver.session() as neo_session:
             result = await neo_session.run(query, id=entry_id)
             record = await result.single()
@@ -122,3 +130,95 @@ class PatternLibraryRepo:
         for ptype, bucket in grouped.items():
             grouped[ptype] = bucket[:top_k_per_type]
         return grouped
+
+    async def list_page(
+        self,
+        *,
+        filters: PatternFilters | None = None,
+        cursor: Cursor | None = None,
+        limit: int = 50,
+    ) -> tuple[list[dict[str, Any]], Cursor | None]:
+        """Bounded keyset-paginated list of non-deleted patterns.
+
+        Order: weighted_total DESC, id ASC (compound tiebreaker). Emits a
+        Cursor over the last returned row's (weighted_total, id) pair; None
+        when the page is terminal. Caller-supplied `limit` must be bounded —
+        no unbounded sentinel is accepted (use `iter_all` for unbounded reads).
+        """
+        filters = filters or PatternFilters()
+        params: dict[str, Any] = {
+            "genre": filters.genre,
+            "ptype": filters.pattern_type,
+            "after_score": cursor.after_score if cursor else None,
+            "after_id": cursor.after_id if cursor else None,
+            "limit": limit + 1,
+        }
+        query = """
+        MATCH (p:PatternLibraryEntry)
+        WHERE p.deleted_at IS NULL
+          AND ($genre IS NULL OR p.genre = $genre)
+          AND ($ptype IS NULL OR p.pattern_type = $ptype)
+          AND ($after_score IS NULL
+               OR p.weighted_total < $after_score
+               OR (p.weighted_total = $after_score AND p.id > $after_id))
+        RETURN p
+        ORDER BY p.weighted_total DESC, p.id ASC
+        LIMIT $limit
+        """
+        async with self._driver.session() as neo_session:
+            result = await neo_session.run(query, **params)
+            records = [r async for r in result]
+
+        entries = [_neo4j_deserialize(dict(rec["p"])) for rec in records]
+        next_cursor: Cursor | None = None
+        if len(entries) > limit:
+            overflow = entries[limit - 1]  # the last in-window row becomes the cursor
+            next_cursor = Cursor(
+                after_score=float(overflow["success_metrics"].get("weighted_total") or 0.0),
+                after_id=str(overflow["id"]),
+            )
+            entries = entries[:limit]
+        return entries, next_cursor
+
+    async def iter_all(
+        self,
+        *,
+        filters: PatternFilters | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Unbounded internal generator over non-deleted patterns.
+
+        Not exposed via the HTTP API. Used by internal consumers that need to
+        stream the full library (e.g. query_for_warm_starts). Order is the same
+        as list_page (weighted_total DESC, id ASC) for consumer consistency.
+        """
+        filters = filters or PatternFilters()
+        params: dict[str, Any] = {"genre": filters.genre, "ptype": filters.pattern_type}
+        query = """
+        MATCH (p:PatternLibraryEntry)
+        WHERE p.deleted_at IS NULL
+          AND ($genre IS NULL OR p.genre = $genre)
+          AND ($ptype IS NULL OR p.pattern_type = $ptype)
+        RETURN p
+        ORDER BY p.weighted_total DESC, p.id ASC
+        """
+        async with self._driver.session() as neo_session:
+            result = await neo_session.run(query, **params)
+            async for record in result:
+                yield _neo4j_deserialize(dict(record["p"]))
+
+    async def soft_delete(self, entry_id: str) -> bool:
+        """Mark a pattern as deleted by setting deleted_at. Returns False if the
+        row is missing or already deleted — callers translate to HTTP 404.
+        """
+        query = """
+        MATCH (p:PatternLibraryEntry {id: $id})
+        WHERE p.deleted_at IS NULL
+        SET p.deleted_at = $now
+        RETURN p.id AS id
+        """
+        async with self._driver.session() as neo_session:
+            result = await neo_session.run(
+                query, id=entry_id, now=utc_now().isoformat()
+            )
+            record = await result.single()
+            return record is not None
