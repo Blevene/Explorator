@@ -45,7 +45,8 @@ class PatternLibraryRepo:
                       p.source_candidate_id = $scid,
                       p.pattern_type = $pt,
                       p.created_at = $created_at
-        ON MATCH  SET p += $props
+        ON MATCH  SET p += $props,
+                      p.deleted_at = NULL
         """
         async with self._driver.session() as neo_session:
             await neo_session.run(

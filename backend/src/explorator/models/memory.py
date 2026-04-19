@@ -1,5 +1,6 @@
 """Memory, feedback, and user preference models."""
 
+from datetime import datetime
 from typing import Any
 
 from pydantic import Field
@@ -40,6 +41,9 @@ class PatternLibraryEntry(BaseEntity):
     abstracted_pattern: dict[str, Any] = Field(default_factory=dict)
     success_metrics: dict[str, float] = Field(default_factory=dict)
     notes: str = ""
+    # Soft-delete tombstone. Set by soft_delete; cleared unconditionally by upsert ON MATCH.
+    # Rows with deleted_at != None are invisible to list_page / get_by_id / iter_all.
+    deleted_at: datetime | None = None
     # TODO(vector): when embeddings ship, populate from an embedder service and
     # swap GraphRetrieval for a vector-backed retrieval in fetch_warm_starts.
     embedding: list[float] | None = None
