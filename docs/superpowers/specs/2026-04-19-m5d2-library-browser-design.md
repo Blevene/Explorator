@@ -57,7 +57,7 @@ Three layers; one new module in each of domain + API + frontend:
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Refactor risk on M5d-1 code:** The `harvest_patterns` LangGraph node is reduced to an SSE-emitting wrapper around the new helper. This is a *pure extraction* (no behavior change) and must land as a separate commit before any API wiring (see §10).
+**Refactor risk on M5d-1 code:** The `harvest_patterns` LangGraph node is reduced to an SSE-emitting wrapper around the new helper. This is a *pure extraction* (no behavior change) and must land as a separate commit before any API wiring (see §9).
 
 ---
 
@@ -77,9 +77,15 @@ class PatternLibraryEntry:
 - `DELETE /v1/patterns/{id}` sets `deleted_at` to `utcnow()`. UI presents this as a hard delete.
 - `list_page` filters `WHERE p.deleted_at IS NULL`.
 - `GET /v1/patterns/{id}` returns 404 for soft-deleted rows (externally indistinguishable from "never existed").
-- **Re-harvest resurrects.** MERGE on the natural key `(source_candidate_id, pattern_type)` clears `deleted_at` on match (implemented as an `ON MATCH SET p.deleted_at = NULL` clause on the existing upsert query). This preserves the existing upsert contract, requires no change to the natural key itself, and avoids tombstone accumulation. If the user deleted a pattern and then re-ran harvest on the same session, they get the pattern back with its original `id`.
+- **Re-harvest resurrects.** MERGE on the natural key `(source_candidate_id, pattern_type)` clears `deleted_at` *unconditionally* on match. The upsert query uses `ON MATCH SET p.deleted_at = NULL` (no WHERE predicate on the SET) so non-deleted patterns also have their `deleted_at` set to NULL — a no-op in that case, but the unconditional form eliminates any ambiguity with concurrent DELETE. This preserves the existing upsert contract, requires no change to the natural key itself, and avoids tombstone accumulation. If the user deleted a pattern and then re-ran harvest on the same session, they get the pattern back with its original `id`.
 
 Insurance value: if a future "undo delete" UI arrives, no schema migration is needed — the wiring is already there.
+
+**Invariants (the three rules that make soft-delete consistent — all three must hold together):**
+
+1. `list_page` and any derived query that exposes patterns to the API filters `WHERE p.deleted_at IS NULL`.
+2. The upsert query unconditionally clears `deleted_at` on MATCH (`ON MATCH SET p.deleted_at = NULL`).
+3. `get_by_id` returns 404 for any row where `deleted_at IS NOT NULL`; `soft_delete(id)` raises `NotFound` for missing *or* already-deleted rows.
 
 ### 3.2 Neo4j migration
 
@@ -111,13 +117,15 @@ class SkipEntry:
 @dataclass(frozen=True)
 class HarvestReport:
     session_id: str
-    harvested_count: int           # count of successful upserts (MERGE)
-    skipped_count: int             # len(skipped_reasons)
+    upserted_count: int                 # count of successful upserts (MERGE operations)
+    skipped_count: int                  # len(skipped_reasons)
     skipped_reasons: list[SkipEntry]
-    pattern_ids: list[str]         # IDs of harvested entries, for tests and debugging
+    upserted_pattern_ids: list[str]     # IDs of upserted entries, for tests and debugging
 ```
 
-**`harvested_count` semantics:** counts every successful MERGE, whether new or idempotent re-write. Distinguishing new-vs-rewrite would require a pre-existence lookup per pattern, which is overhead for no user benefit — the toast number is informational, not a ledger.
+**`upserted_count` semantics:** counts every successful MERGE operation (write action), whether the row was new or an idempotent re-write. This is *not* a net-new delta against the library. The user-facing toast reads `"Saved N patterns to library"` — truthful because it describes the write action, not the library delta. Distinguishing new-vs-rewrite would require a pre-existence lookup per pattern, which is overhead for no user benefit.
+
+**`upserted_pattern_ids` ordering:** the list is returned in whatever order the harvest loop produces. Consumers (tests, toasts) must not assume stable ordering — treat it as a set.
 
 ### 3.4 `PatternFilters` typed dataclass
 
@@ -177,7 +185,7 @@ New file `backend/src/explorator/api/routes/patterns.py` registered in `app.py`:
 | `GET /v1/patterns` | `?genre=X&pattern_type=Y&after_score=F&after_id=S&limit=N` (default 50, cap 200) | `{items: [PatternItem], next_cursor: {after_score, after_id} \| null}` | 400 on `InvalidCursor` |
 | `GET /v1/patterns/{id}` | — | `PatternItem` | 404 (also for soft-deleted) |
 | `DELETE /v1/patterns/{id}` | — | 204 | 404 |
-| `POST /v1/sessions/{id}/finalists/harvest` | — | `HarvestReport` (200) | 404 if session missing; 200 with `harvested_count=0` if session exists but has no finalists |
+| `POST /v1/sessions/{id}/finalists/harvest` | — | `HarvestReport` (200) | 404 if session missing; 200 with `upserted_count=0` if session exists but has no finalists |
 
 ### 4.3 `PatternItem` response schema
 
@@ -197,9 +205,16 @@ class PatternItem(BaseModel):
     # intentionally drops `embedding` (large, useless in browser) and `deleted_at` (404 masks it)
 ```
 
-### 4.4 Repo: `list_page` replaces `list_all`
+### 4.4 Repo: `list_page` + `iter_all` replace `list_all`
 
-`list_all()` is removed. All internal callers migrate to `list_page(filters=None, cursor=None, limit=None)` where `limit=None` means unbounded (internal-only path, not exposed via API).
+`list_all()` is removed. Two replacement methods:
+
+- `list_page(filters: PatternFilters | None = None, cursor: Cursor | None = None, limit: int = 50) -> tuple[list[PatternLibraryEntry], Cursor | None]` — public, bounded, keyset-paginated. Used by the HTTP API.
+- `iter_all(filters: PatternFilters | None = None) -> Iterator[PatternLibraryEntry]` — internal, unbounded generator. Used by any internal consumer that needs to stream the full library (e.g. the existing `query_for_warm_starts` helper in `pattern_library_repo.py`). Not exposed via the HTTP API.
+
+Splitting these prevents a `limit=None` sentinel from accidentally exporting an unbounded path. `list_page` always has a bounded `limit`.
+
+**Migration note:** `query_for_warm_starts` currently relies on `list_all()` and does in-Python grouping by `pattern_type`. It migrates to `iter_all()` for M5d-2. M5d-3 warm-start retrieval will likely want a top-K-per-type query; introduce that as a new repo method then, rather than piggybacking on `iter_all`.
 
 **Keyset query:**
 
@@ -326,10 +341,10 @@ export type SkipReason = "missing_abstraction" | "unsupported_pattern_type" | "r
 export interface SkipEntry { candidate_id: string; pattern_type: string; reason: SkipReason; }
 export interface HarvestReport {
   session_id: string;
-  harvested_count: number;
+  upserted_count: number;
   skipped_count: number;
   skipped_reasons: SkipEntry[];
-  pattern_ids: string[];
+  upserted_pattern_ids: string[];
 }
 ```
 
@@ -338,14 +353,14 @@ export interface HarvestReport {
 ```ts
 case "harvest_patterns": {
   const report = payload as HarvestReport;
-  toast.success(`Saved ${report.harvested_count} patterns to library`);
+  toast.success(`Saved ${report.upserted_count} patterns to library`);
   break;
 }
 ```
 
 ### 5.6 FinalistPanel button
 
-"Save finalists to library" button on each FinalistPanel. Disabled while in flight. On success → `toast.success("Saved N patterns to library")` (same copy as the SSE toast; N from `HarvestReport.harvested_count`). On error → `toast.error("Failed to save finalists")`.
+"Save finalists to library" button on each FinalistPanel. Disabled while in flight. On success → `toast.success("Saved N patterns to library")` (same copy as the SSE toast; N from `HarvestReport.upserted_count`). On error → `toast.error("Failed to save finalists")`.
 
 ### 5.7 Sonner
 
@@ -369,9 +384,10 @@ All other files import from `lib/toast`, never from `sonner` directly, so a futu
 
 - **400:** `InvalidCursor` (e.g. only one of `after_score`/`after_id` supplied).
 - **404:** pattern not found (including soft-deleted); session not found for harvest endpoint.
+- **DELETE idempotency:** `DELETE /v1/patterns/{id}` returns 204 on first delete of a live row; subsequent DELETEs on the same id return 404 (soft-deleted rows are treated as "not found" at the API boundary, mirroring `GET /v1/patterns/{id}` behavior). Explicit non-idempotent contract: the HTTP spec permits either 204 or 404 for already-deleted resources; this API picks 404 to keep DELETE and GET consistent.
 - **5xx:** unhandled exceptions (bubble up to existing FastAPI error middleware).
 - **Optimistic delete failure:** frontend rolls back by re-inserting the pattern at its prior index; surfaces Sonner error toast. Does not refetch page (keeps cursor stable).
-- **Harvest on empty session:** returns 200 with `harvested_count=0` — not an error. Toast says `"Saved 0 patterns to library"` (explicit, honest feedback).
+- **Harvest on empty session:** returns 200 with `upserted_count=0` — not an error. Toast says `"Saved 0 patterns to library"` (explicit, honest feedback).
 
 ---
 
@@ -383,10 +399,10 @@ All other files import from `lib/toast`, never from `sonner` directly, so a futu
 
 - **`test_harvest_service.py`** — unit tests for `harvest_session_finalists`:
   - Happy path: 3 finalists → 15 pattern upserts, `HarvestReport` fields populated.
-  - Idempotence: running twice on the same session yields identical pattern IDs (MERGE on natural key).
-  - Session without finalists: returns `harvested_count=0`, `skipped_reasons=[]`.
+  - Idempotence: running twice on the same session yields identical `upserted_pattern_ids` (as sets, MERGE on natural key).
+  - Session without finalists: returns `upserted_count=0`, `skipped_reasons=[]`, `upserted_pattern_ids=[]`.
   - Missing-abstraction row: recorded in `skipped_reasons` with correct enum.
-  - Resurrection: soft-deleted pattern is re-harvested, `deleted_at` cleared, same `id`.
+  - Resurrection: soft-deleted pattern is re-harvested, `deleted_at` cleared unconditionally, same `id`.
 
 - **`test_pattern_library_repo_pagination.py`**:
   - First page: N rows inserted, `limit=5`, assert 5 items + `next_cursor` set.
@@ -405,9 +421,9 @@ All other files import from `lib/toast`, never from `sonner` directly, so a futu
 - **`test_patterns_router.py`** (FastAPI TestClient):
   - One test per endpoint covering happy path + 404 + 400 (for cursor).
   - `DELETE` then `GET` → 404; `DELETE` then `DELETE` → 404.
-  - `POST harvest` on missing session → 404; on empty session → 200 + `harvested_count=0`.
+  - `POST harvest` on missing session → 404; on empty session → 200 + `upserted_count=0`.
 
-- **Regression guard:** existing `test_m5d1_harvest.py` runs **unchanged**. Its assertions against the `harvest_patterns` node must still pass after the extraction commit. Additive fields on `HarvestReport` (e.g. `skipped_reasons`) are permitted only if existing assertions are not exhaustive dict-equality.
+- **Regression guard:** existing `test_m5d1_harvest.py` runs **unchanged** after Commit A. Its assertions against the `harvest_patterns` node must still pass. Additive fields on `HarvestReport` (e.g. `skipped_reasons`) and renames (`harvested_count` → `upserted_count`, `pattern_ids` → `upserted_pattern_ids`) are permitted only if existing assertions are field-subset or attribute-wise, not exhaustive dict/dataclass equality. Commit A's first step audits the current file: if any assertion does exhaustive equality, narrow it to field-subset in a precursor commit *before* the extraction lands, so Commit A itself can still be "no behavior change."
 
 ### 7.2 Frontend (Vitest + React Testing Library)
 
@@ -433,7 +449,7 @@ All other files import from `lib/toast`, never from `sonner` directly, so a futu
 `e2e/tests/pattern-library.spec.ts`:
 
 1. Create + complete a session (reuse existing helpers).
-2. Wait for `pattern_harvest` SSE toast; assert count equals expected finalist count × 5.
+2. Wait for the `harvest_patterns` node-completed toast (reuses the existing SSE helper from `e2e/tests/realization.spec.ts`, which handles `\r\n` SSE framing per project convention); assert count equals expected finalist count × 5.
 3. Navigate to `/patterns`; filter by the session's genre.
 4. Assert N cards rendered with source-candidate-id values matching expected finalists.
 5. Click delete on one card; confirm dialog; assert it disappears and list length decrements.
@@ -460,7 +476,8 @@ All other files import from `lib/toast`, never from `sonner` directly, so a futu
 ## 9. Migration + Rollout
 
 1. **Commit A — pure extraction (no behavior change).** Move harvest orchestration from `harvest_patterns` LangGraph node to `harvest_session_finalists()` helper. Node becomes ~10-line wrapper that emits SSE. Existing `test_m5d1_harvest.py` passes unchanged.
-2. **Commit B — library API + frontend.** Adds the patterns router, Neo4j migration (index + `deleted_at` semantics), Pydantic schemas, cursor module, frontend stores/views/toast wrapper, SSE handler, FinalistPanel button.
+   - **Preflight (before Commit A lands):** audit `test_m5d1_harvest.py` and any other existing assertion against `HarvestReport` for exhaustive dict/dataclass equality checks. Narrow any such assertions to field-subset / attribute-wise in a precursor commit. Without this, the Commit B rename (`harvested_count` → `upserted_count`, `pattern_ids` → `upserted_pattern_ids`) will break the "unchanged" regression guard.
+2. **Commit B — library API + frontend.** Adds the patterns router, Neo4j migration (index + `deleted_at` semantics), Pydantic schemas, cursor module, frontend stores/views/toast wrapper, SSE handler, FinalistPanel button. Includes the `HarvestReport` field renames.
 
 Splitting the commits keeps the M5d-1 refactor reviewable in isolation and reduces regression surface on merge.
 
