@@ -48,3 +48,31 @@ def get_gemini_client() -> GeminiClient:
         flash_model=settings.gemini_flash_model,
         timeout_seconds=settings.gemini_timeout_seconds,
     )
+
+
+async def get_pattern_library_repo():
+    """Get pattern library repository dependency."""
+    from explorator.graph.pattern_library_repo import PatternLibraryRepo
+    driver = await get_driver()
+    return PatternLibraryRepo(driver)
+
+
+async def get_harvest_repos():
+    """Compose the HarvestRepos bundle for POST /v1/sessions/{id}/finalists/harvest."""
+    from explorator.graph.arrangement_candidate_repo import ArrangementCandidateRepo
+    from explorator.graph.bass_line_repo import BassLineRepo
+    from explorator.graph.groove_pattern_repo import GroovePatternRepo
+    from explorator.graph.melodic_complement_repo import MelodicComplementRepo
+    from explorator.graph.pattern_library_repo import PatternLibraryRepo
+    from explorator.graph.voicing_plan_repo import VoicingPlanRepo
+    from explorator.services.pattern_library.harvest_service import HarvestRepos
+
+    driver = await get_driver()
+    return HarvestRepos(
+        pattern_library=PatternLibraryRepo(driver),
+        arrangement_candidate=ArrangementCandidateRepo(driver),
+        voicing_plan=VoicingPlanRepo(driver),
+        bass_line=BassLineRepo(driver),
+        groove_pattern=GroovePatternRepo(driver),
+        melodic_complement=MelodicComplementRepo(driver),
+    )
