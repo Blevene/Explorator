@@ -161,3 +161,111 @@ async def harvest_session_finalists_from_state(
         skipped_reasons=skipped,
         upserted_pattern_ids=upserted_ids,
     )
+
+
+# NOTE: HarvestRepos is a composition bundle constructed in deps.py (composition
+# root) and passed to harvest_session_finalists. The helper reads finalists from
+# these repos via session_id — used by the POST /v1/sessions/{id}/finalists/harvest
+# endpoint. The LangGraph node uses harvest_session_finalists_from_state instead
+# (reads from in-memory state to avoid a DB round-trip at realization time).
+
+
+@dataclass(frozen=True)
+class HarvestRepos:
+    """Bundle of repos needed by the session-id-driven harvest path.
+
+    Progression candidates live only on arrangements via progression_candidate_id —
+    ProgressionCandidateRepo is not a separate persistent repo; progression data
+    is reconstructed from state or from the ArrangementCandidateRepo's metadata.
+    """
+    pattern_library: PatternLibraryRepo
+    arrangement_candidate: Any   # ArrangementCandidateRepo (imported at call site)
+    bass_line: Any               # BassLineRepo
+    voicing_plan: Any            # VoicingPlanRepo
+    groove_pattern: Any          # GroovePatternRepo
+    melodic_complement: Any      # MelodicComplementRepo
+
+
+async def harvest_session_finalists(
+    session_id: str,
+    *,
+    repos: HarvestRepos,
+) -> HarvestReport:
+    """Read finalists from repos, harvest patterns, upsert. Idempotent.
+
+    Use from API endpoints (where finalists are already persisted); the
+    LangGraph node uses harvest_session_finalists_from_state.
+    """
+    # Build a state-shaped dict from repo reads, then delegate.
+    state = await _reconstruct_state_from_repos(session_id, repos=repos)
+    return await harvest_session_finalists_from_state(
+        state, pattern_library_repo=repos.pattern_library,
+    )
+
+
+async def _reconstruct_state_from_repos(
+    session_id: str,
+    *,
+    repos: HarvestRepos,
+) -> dict[str, Any]:
+    """Pull finalists + facets from repos into a state-shaped dict.
+
+    This function is the boundary between the repo-indexed world (used by
+    the API endpoint) and the state-indexed world (used by the LangGraph
+    node and the core harvest loop). It queries the arrangement repo for
+    session-scoped arrangements whose metadata carries a finalist role.
+    """
+    # Arrangements with metadata.role stamped by persist_realization are finalists.
+    arrangements = await repos.arrangement_candidate.list_finalists_for_session(session_id)
+
+    selected_ids = [a["id"] for a in arrangements]
+    roles = {a["id"]: a.get("metadata", {}).get("role", "unknown") for a in arrangements}
+
+    # Facet fan-out. Each arrangement has *_id pointers; fetch each facet once.
+    voicing_ids = {a.get("voicing_plan_id") for a in arrangements if a.get("voicing_plan_id")}
+    bass_ids = {a.get("bass_line_id") for a in arrangements if a.get("bass_line_id")}
+    groove_ids = {a.get("groove_pattern_id") for a in arrangements if a.get("groove_pattern_id")}
+    melody_ids = {a.get("melodic_complement_id") for a in arrangements if a.get("melodic_complement_id")}
+    prog_ids = {a.get("progression_candidate_id") for a in arrangements if a.get("progression_candidate_id")}
+
+    voicings = [await repos.voicing_plan.get_by_id(i) for i in voicing_ids]
+    basses = [await repos.bass_line.get_by_id(i) for i in bass_ids]
+    grooves = [await repos.groove_pattern.get_by_id(i) for i in groove_ids]
+    melodies = [await repos.melodic_complement.get_by_id(i) for i in melody_ids]
+    progressions = [
+        await repos.arrangement_candidate.get_progression_candidate(i) for i in prog_ids
+    ]
+
+    # Scorecards: pulled via arrangement_candidate repo if it exposes them;
+    # otherwise the weighted_total on arrangement metadata is the single source.
+    scorecards = [
+        {
+            "candidate_id": a["id"],
+            "weighted_total": a.get("weighted_total", 0.0),
+            "scores": a.get("metadata", {}).get("scores", {}),
+            "pareto_tags": a.get("metadata", {}).get("pareto_tags", []),
+        }
+        for a in arrangements
+    ]
+
+    # Genre: arrangements inherit session genre via metadata or top-level field.
+    genre = None
+    if arrangements:
+        first = arrangements[0]
+        genre = first.get("genre") or first.get("metadata", {}).get("genre")
+
+    return {
+        "session_id": session_id,
+        "genre": genre,
+        "final_selection": {
+            "selected_candidate_ids": selected_ids,
+            "selection_roles": roles,
+        },
+        "arrangement_candidates": arrangements,
+        "progression_candidates": [p for p in progressions if p],
+        "voicing_plans": [v for v in voicings if v],
+        "bass_lines": [b for b in basses if b],
+        "groove_patterns": [g for g in grooves if g],
+        "melodic_complements": [m for m in melodies if m],
+        "scorecards": scorecards,
+    }
