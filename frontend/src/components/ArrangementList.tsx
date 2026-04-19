@@ -9,6 +9,7 @@ interface ArrangementListProps {
   onSelect: (id: string) => void
   genre: string
   finalSelection?: FinalSelection | null
+  sessionId: string
 }
 
 export default function ArrangementList({
@@ -18,6 +19,7 @@ export default function ArrangementList({
   onSelect,
   genre,
   finalSelection,
+  sessionId,
 }: ArrangementListProps) {
   // Build candidate lookup by id
   const candidateLookup = new Map<string, CandidateSummary>(
@@ -53,6 +55,7 @@ export default function ArrangementList({
           arrangements={arrangements}
           selectedId={selectedId}
           onSelect={onSelect}
+          sessionId={sessionId}
         />
       )}
       {[...grouped.entries()].map(([candidateId, group]) => {

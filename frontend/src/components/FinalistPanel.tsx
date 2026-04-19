@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import type { ArrangementSummary, FinalSelection } from '../services/api';
+import { harvestSessionFinalists } from '../api/patterns';
+import { toast } from '../lib/toast';
 
 interface FinalistPanelProps {
   finalSelection: FinalSelection;
   arrangements: ArrangementSummary[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  sessionId: string;
 }
 
 const ROLE_CONFIG: Record<string, { label: string; accent: string }> = {
@@ -24,26 +28,51 @@ export default function FinalistPanel({
   arrangements,
   selectedId,
   onSelect,
+  sessionId,
 }: FinalistPanelProps) {
+  const [saving, setSaving] = useState(false);
   const { selection_roles, selected_candidate_ids } = finalSelection;
   if (selected_candidate_ids.length === 0) return null;
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const report = await harvestSessionFinalists(sessionId);
+      toast.success(`Saved ${report.upserted_count} patterns to library`);
+    } catch {
+      toast.error('Failed to save finalists');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const arrLookup = new Map(arrangements.map((a) => [a.id, a]));
 
   return (
     <div style={{ borderBottom: '1px solid var(--border-default)', background: 'var(--surface-1)' }}>
       <div className="px-3 py-2" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-        <div className="flex items-center gap-2">
-          <div
-            className="w-1.5 h-1.5 rounded-full"
-            style={{ background: 'var(--accent-primary)' }}
-          />
-          <h3
-            className="text-xs font-semibold uppercase tracking-widest"
-            style={{ color: 'var(--accent-primary)' }}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ background: 'var(--accent-primary)' }}
+            />
+            <h3
+              className="text-xs font-semibold uppercase tracking-widest"
+              style={{ color: 'var(--accent-primary)' }}
+            >
+              Finalists
+            </h3>
+          </div>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            data-testid="save-finalists-to-library"
+            className="text-xs px-2 py-1 rounded disabled:opacity-30"
+            style={{ background: 'var(--surface-3)', color: 'var(--text-primary)' }}
           >
-            Finalists
-          </h3>
+            {saving ? 'Saving...' : 'Save to library'}
+          </button>
         </div>
       </div>
       <div className="flex flex-col gap-1 p-2">
