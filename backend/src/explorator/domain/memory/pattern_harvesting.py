@@ -16,6 +16,20 @@ def _bucket(value: float, low: float = 0.4, high: float = 0.7) -> str:
     return "low"
 
 
+_DENSITY_WORD_TO_FLOAT = {
+    "sparse": 0.2, "low": 0.25, "medium": 0.5, "mid": 0.5, "high": 0.75, "dense": 0.8,
+}
+
+
+def _coerce_density(value: Any, default: float = 0.5) -> float:
+    """Accept either a float or a string categorical ('low', 'sparse', 'medium', ...)."""
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        return _DENSITY_WORD_TO_FLOAT.get(value.strip().lower(), default)
+    return default
+
+
 def _loopability_tag(value: float) -> str:
     return f"loopability:{_bucket(value)}"
 
@@ -173,7 +187,7 @@ def harvest_bass_pattern(
     scorecard: dict[str, Any], genre: str, role: str,
 ) -> PatternLibraryEntry:
     mode = bass_line.get("mode", "root")
-    density = float(bass_line.get("rhythmic_density", 0.5))
+    density = _coerce_density(bass_line.get("rhythmic_density", 0.5))
     tags = [f"role:{role}", f"bass_mode:{mode}", f"rhythmic_density:{_bucket(density)}"]
     abstracted = {"mode": mode, "rhythmic_density": density}
     return _build_entry(
@@ -188,7 +202,7 @@ def harvest_groove_pattern(
 ) -> PatternLibraryEntry:
     swing = float(groove.get("swing_level", 0.0))
     sync = float(groove.get("syncopation_level", 0.0))
-    density = float(groove.get("density", 0.5))
+    density = _coerce_density(groove.get("density", 0.5))
     template = groove.get("template_name", "")
     tags = [
         f"role:{role}",
@@ -215,7 +229,7 @@ def harvest_melody_pattern(
     strategy = melody.get("strategy") or {}
     contour = strategy.get("contour_type", "")
     rng = int(strategy.get("range_semitones", 12))
-    density = float(strategy.get("rhythmic_density", 0.5))
+    density = _coerce_density(strategy.get("rhythmic_density", 0.5))
     tags = [
         f"role:{role}",
         f"contour:{contour}",
