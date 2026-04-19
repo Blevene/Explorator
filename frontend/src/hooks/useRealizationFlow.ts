@@ -3,6 +3,7 @@ import { listArrangements, getArrangement, triggerRealizationSSE } from '../serv
 import type { FinalSelection } from '../services/api';
 import { useArrangementStore } from '../stores/arrangementStore';
 import { useCandidateStore } from '../stores/candidateStore';
+import { toast } from '../lib/toast';
 
 /**
  * Reconstruct finalSelection from arrangement metadata roles.
@@ -91,6 +92,10 @@ export function useRealizationFlow(sessionId: string | undefined) {
             const data = JSON.parse(dataStr);
             const node = data.node as string | undefined;
             if (eventType === 'node_started' && node) setCurrentNode(node);
+            else if (eventType === 'node_completed' && node === 'harvest_patterns') {
+              const count = (data.count as number) ?? 0;
+              toast.success(`Saved ${count} patterns to library`);
+            }
             else if (eventType === 'realization_completed') setCurrentNode(null);
           } catch { /* skip */ }
         }
