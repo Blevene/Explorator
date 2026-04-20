@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { listCandidates } from '../services/api';
 import type { FinalSelection } from '../services/api';
 import { useCandidateStore } from '../stores/candidateStore';
+import { toast } from '../lib/toast';
 
 const API_BASE = '/v1';
 
@@ -93,6 +94,9 @@ export function useGenerationFlow(sessionId: string | undefined) {
               setCurrentNode('persist_realization');
             } else if (eventType === 'node_completed' && node === 'rank_and_select' && data.final_selection) {
               setFinalSelection(data.final_selection as FinalSelection);
+            } else if (eventType === 'node_completed' && node === 'harvest_patterns') {
+              const count = (data.count as number) ?? 0;
+              toast.success(`Saved ${count} patterns to library`);
             }
           }
 
