@@ -14,6 +14,7 @@ from explorator.api.routes.exports import router as exports_router
 from explorator.api.routes.feedback import router as feedback_router
 from explorator.api.routes.genre_research import router as genre_research_router
 from explorator.api.routes.mutations import router as mutations_router
+from explorator.api.routes.patterns import router as patterns_router
 from explorator.api.routes.realization_rounds import router as realization_router
 from explorator.graph.connection import close_driver, get_driver
 from explorator.graph.schema import init_schema
@@ -68,5 +69,6 @@ def create_app() -> FastAPI:
     app.include_router(exports_router, prefix="/v1")
     app.include_router(explanations_router, prefix="/v1")
     app.include_router(comparisons_router, prefix="/v1")
+    app.include_router(patterns_router, prefix="/v1")
 
     return app

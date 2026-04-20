@@ -37,7 +37,7 @@ export default function Dashboard() {
           <p className="text-sm tracking-widest uppercase" style={{ color: 'var(--text-muted)' }}>
             Genre-Aware Musical Exploration
           </p>
-          <div className="mt-4">
+          <div className="mt-4 flex gap-4 justify-center">
             <a
               href="/genres"
               className="text-xs tracking-wider uppercase transition-colors"
@@ -46,6 +46,15 @@ export default function Dashboard() {
               onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
             >
               Manage Genres &rarr;
+            </a>
+            <a
+              href="/patterns"
+              className="text-xs tracking-wider uppercase transition-colors"
+              style={{ color: 'var(--text-muted)' }}
+              onMouseOver={(e) => (e.currentTarget.style.color = 'var(--accent-primary)')}
+              onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+            >
+              Pattern Library &rarr;
             </a>
           </div>
         </div>

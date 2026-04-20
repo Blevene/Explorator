@@ -141,6 +141,40 @@ def test_harvest_bass_tags_and_abstracted():
     assert {"role:best_loop", "bass_mode:walking", "rhythmic_density:mid"} <= set(entry.tags)
 
 
+def test_harvest_bass_accepts_string_categorical_density():
+    """Realistic bass_line payloads pass rhythmic_density as a string enum like 'low' or 'sparse'."""
+    arr = {"id": "arr_01", "bass_line_id": "bl_01"}
+    bl = {"id": "bl_01", "mode": "supportive", "rhythmic_density": "low"}
+    entry = harvest_bass_pattern(
+        arrangement=arr, bass_line=bl, scorecard=_scorecard(), genre="dream_pop", role="safest",
+    )
+    assert entry.pattern_type == "bass"
+    assert isinstance(entry.abstracted_pattern["rhythmic_density"], float)
+    assert "rhythmic_density:low" in entry.tags
+
+
+def test_harvest_groove_accepts_string_density():
+    arr = {"id": "arr_01", "groove_pattern_id": "gp_01"}
+    g = {"id": "gp_01", "swing_level": 0.0, "syncopation_level": 0.0, "density": "medium", "template_name": "straight"}
+    entry = harvest_groove_pattern(
+        arrangement=arr, groove=g, scorecard=_scorecard(), genre="dream_pop", role="safest",
+    )
+    assert entry.pattern_type == "groove"
+    assert isinstance(entry.abstracted_pattern["density"], float)
+    assert "density:mid" in entry.tags
+
+
+def test_harvest_melody_accepts_string_density():
+    arr = {"id": "arr_01", "melodic_complement_id": "mc_01"}
+    m = {"id": "mc_01", "strategy": {"contour_type": "arch", "range_semitones": 12, "rhythmic_density": "high"}}
+    entry = harvest_melody_pattern(
+        arrangement=arr, melody=m, scorecard=_scorecard(), genre="dream_pop", role="safest",
+    )
+    assert entry.pattern_type == "melody"
+    assert isinstance(entry.abstracted_pattern["rhythmic_density"], float)
+    assert "melody_density:high" in entry.tags
+
+
 def test_harvest_groove_tags_and_abstracted():
     arr = {"id": "arr_01", "groove_pattern_id": "gp_01"}
     g = {"id": "gp_01", "swing_level": 0.4, "syncopation_level": 0.6, "density": 0.7, "template_name": "house_basic"}

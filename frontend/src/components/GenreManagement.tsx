@@ -581,7 +581,6 @@ export default function GenreManagement() {
             const stepNum = i + 1;
             const isCompleted = stepNum < currentStep;
             const isActive = stepNum === currentStep;
-            const isFutureStep = stepNum > currentStep;
 
             let circleBg = 'var(--surface-3)';
             let circleBorder = 'var(--border-subtle)';
