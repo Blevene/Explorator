@@ -15,5 +15,26 @@ services:
       timeout: 5s
       retries: 5
 
+  # Isolated Neo4j for the pytest suite. conftest fixtures wipe the DB
+  # after every test (MATCH (n) DETACH DELETE n), so this must not share
+  # state with the dev container. Data lives in tmpfs — ephemeral across
+  # restarts, which is correct for a disposable test DB and faster than a
+  # disk-backed volume.
+  neo4j-test:
+    image: neo4j:5-community
+    ports:
+      - "7476:7474"
+      - "7689:7687"
+    environment:
+      NEO4J_AUTH: neo4j/explorator_test
+      NEO4J_PLUGINS: '[]'
+    tmpfs:
+      - /data
+    healthcheck:
+      test: ["CMD", "neo4j", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   neo4j_data:

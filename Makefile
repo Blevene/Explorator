@@ -1,4 +1,4 @@
-.PHONY: dev test lint neo4j-up neo4j-down sync-genres backend frontend e2e e2e-headed
+.PHONY: dev test lint neo4j-up neo4j-down neo4j-test-up neo4j-test-down sync-genres backend frontend e2e e2e-headed
 
 # Infrastructure
 neo4j-up:
@@ -7,17 +7,27 @@ neo4j-up:
 neo4j-down:
 	docker compose down
 
+# Isolated test DB — required by the pytest suite, which wipes all nodes
+# between tests. Never share state with the dev container. Blocks until the
+# container reports `healthy`; otherwise pytest races the Neo4j start-up
+# and the first test hits "connection refused" / auth failures.
+neo4j-test-up:
+	docker compose up -d --wait neo4j-test
+
+neo4j-test-down:
+	docker compose rm -sf neo4j-test
+
 # Backend
 backend:
 	cd backend && uv run uvicorn explorator.api.app:create_app --factory --host 0.0.0.0 --port 8000 --reload
 
-test:
+test: neo4j-test-up
 	cd backend && uv run pytest tests/ -v
 
-test-unit:
+test-unit: neo4j-test-up
 	cd backend && uv run pytest tests/unit/ -v
 
-test-integration:
+test-integration: neo4j-test-up
 	cd backend && uv run pytest tests/integration/ -v
 
 lint:

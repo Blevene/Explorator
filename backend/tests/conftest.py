@@ -1,20 +1,50 @@
-"""Shared test fixtures."""
+"""Shared test fixtures.
 
-from collections.abc import AsyncGenerator
+The pytest suite requires an isolated Neo4j instance — every test's teardown
+runs `MATCH (n) DETACH DELETE n`, so hitting the dev database clears it. The
+`neo4j-test` service in docker-compose.yml binds to port 7689 for exactly
+this; defaults below point there.
 
-import pytest_asyncio
-from neo4j import AsyncDriver, AsyncGraphDatabase
+Override with `NEO4J_TEST_URI` / `NEO4J_TEST_PASSWORD` if you run the test
+Neo4j elsewhere (CI, remote box). Do NOT reuse the app's `NEO4J_URI` env —
+that's the dev/prod database and the teardown will wipe it.
+"""
 
-from explorator.graph.schema import init_schema
+import os
+
+# Redirect the *app's* Neo4j config at the isolated test container, so any
+# code path that goes through `explorator.config.settings` (e.g. `create_app`
+# inside a FastAPI TestClient) writes to the test DB instead of dev.
+# Must run before any `explorator.*` import — pydantic-settings reads env
+# vars when the Settings singleton is instantiated at module load.
+os.environ.setdefault("NEO4J_TEST_URI", "bolt://localhost:7689")
+os.environ.setdefault("NEO4J_TEST_PASSWORD", "explorator_test")
+os.environ["NEO4J_URI"] = os.environ["NEO4J_TEST_URI"]
+os.environ["NEO4J_PASSWORD"] = os.environ["NEO4J_TEST_PASSWORD"]
+
+from collections.abc import AsyncGenerator  # noqa: E402
+
+import pytest_asyncio  # noqa: E402
+from neo4j import AsyncDriver, AsyncGraphDatabase  # noqa: E402
+
+from explorator.graph.schema import init_schema  # noqa: E402
+
+
+def _test_neo4j_uri() -> str:
+    return os.environ["NEO4J_TEST_URI"]
+
+
+def _test_neo4j_auth() -> tuple[str, str]:
+    return (
+        os.getenv("NEO4J_TEST_USER", "neo4j"),
+        os.environ["NEO4J_TEST_PASSWORD"],
+    )
 
 
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def neo4j_driver() -> AsyncGenerator[AsyncDriver, None]:
-    """Connect to test Neo4j instance (session-scoped for efficiency)."""
-    driver = AsyncGraphDatabase.driver(
-        "bolt://localhost:7688",
-        auth=("neo4j", "explorator_dev"),
-    )
+    """Connect to the isolated test Neo4j (session-scoped for efficiency)."""
+    driver = AsyncGraphDatabase.driver(_test_neo4j_uri(), auth=_test_neo4j_auth())
     await init_schema(driver)
     yield driver
     await driver.close()

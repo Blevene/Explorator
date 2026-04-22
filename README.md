@@ -127,10 +127,16 @@ cd frontend && npm run dev -- --host 0.0.0.0 --port 5174
 ### Test
 
 ```bash
-make test        # Full suite (requires Neo4j)
-make test-unit   # Unit tests only (no Neo4j needed)
+make test        # Full suite (auto-starts isolated test Neo4j on :7689)
+make test-unit   # Unit tests only (still uses isolated test Neo4j)
 make lint        # ruff + mypy
 ```
+
+The pytest suite wipes the DB between tests, so it runs against a
+dedicated `neo4j-test` container (port 7689) — the dev DB on 7688 is
+never touched. The `make test*` targets bring it up automatically. If
+you invoke pytest directly, run `make neo4j-test-up` first or override
+`NEO4J_TEST_URI` / `NEO4J_TEST_PASSWORD`.
 
 ## Architecture
 
@@ -191,8 +197,10 @@ explorator/
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| Neo4j Browser | 7475 | Graph visualization |
-| Neo4j Bolt | 7688 | Driver connection |
+| Neo4j Browser (dev) | 7475 | Graph visualization |
+| Neo4j Bolt (dev) | 7688 | Driver connection |
+| Neo4j Browser (test) | 7476 | Isolated test DB browser |
+| Neo4j Bolt (test) | 7689 | Pytest-only — tests wipe between runs |
 | Backend | 8000 | FastAPI API |
 | Frontend | 5174 | Vite dev server (proxies /v1 to backend) |
 
