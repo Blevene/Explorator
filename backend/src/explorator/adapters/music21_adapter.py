@@ -46,8 +46,17 @@ def _normalize_chord_symbol(symbol: str) -> str:
 
     s = symbol.strip()
 
-    # 1. Flatten root: 'Bb' → 'B-', 'Eb' → 'E-' (only at the start)
-    s = re.sub(r'^([A-G])b(?=[A-Za-z0-9]|$)', r'\1-', s)
+    # 1. Flatten root: 'Bb' → 'B-', 'Eb' → 'E-', 'Eb/G' → 'E-/G' (leading only).
+    #    The earlier lookahead `(?=[A-Za-z0-9]|$)` failed for slash chords
+    #    because '/' is not alphanumeric. No valid chord symbol starts with
+    #    [A-G] followed by a non-accidental 'b', so the bare prefix match
+    #    is safe to use without a trailing guard.
+    s = re.sub(r'^([A-G])b', r'\1-', s)
+
+    # 1b. Drop redundant minor marker before 'sus': Gemini emits 'Fmsus2'
+    #     meaning "F sus2" (sus implies no 3rd, so the 'm' is incoherent).
+    #     music21 has no 'msus' abbreviation; rewrite to plain 'sus'.
+    s = re.sub(r'msus(\d)', r'sus\1', s)
 
     # 2. Remove parentheses: 'Dm(maj7)' → 'Dmmaj7'
     s = s.replace("(", "").replace(")", "")
