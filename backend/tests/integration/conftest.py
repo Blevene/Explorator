@@ -12,13 +12,15 @@ from explorator.graph.schema import init_schema
 
 
 def _neo4j_uri() -> str:
-    return os.getenv("NEO4J_URI", "bolt://localhost:7688")
+    # Point at the isolated test Neo4j — reusing the app's NEO4J_URI would
+    # let the autouse `clean_db` wipe the dev database.
+    return os.getenv("NEO4J_TEST_URI", "bolt://localhost:7689")
 
 
 def _neo4j_auth() -> tuple[str, str]:
     return (
-        os.getenv("NEO4J_USER", "neo4j"),
-        os.getenv("NEO4J_PASSWORD", "explorator_dev"),
+        os.getenv("NEO4J_TEST_USER", "neo4j"),
+        os.getenv("NEO4J_TEST_PASSWORD", "explorator_test"),
     )
 
 
