@@ -3,6 +3,7 @@ import logging
 from unittest.mock import AsyncMock
 
 import pytest
+from neo4j.exceptions import TransientError
 
 from explorator.engine.nodes.harvest_patterns import harvest_patterns
 
@@ -56,12 +57,15 @@ async def test_harvest_patterns_continues_after_single_upsert_failure(caplog):
     """A transient Neo4j error on one facet must not abort the other 4."""
     state = _state_with_one_finalist()
     repo = AsyncMock()
-    repo.upsert.side_effect = [RuntimeError("neo4j blip"), None, None, None, None]
+    repo.upsert.side_effect = [
+        TransientError("neo4j blip", "Neo.TransientError.Network.CommunicationError"),
+        None, None, None, None,
+    ]
     with caplog.at_level(logging.ERROR):
         result = await harvest_patterns(state, repo=repo)
     assert repo.upsert.await_count == 5
     assert len(result["harvested_pattern_ids"]) == 4  # one failure excluded
-    assert any("harvest_patterns: failed to upsert" in r.message for r in caplog.records)
+    assert any("failed to upsert" in r.message for r in caplog.records)
 
 
 @pytest.mark.asyncio

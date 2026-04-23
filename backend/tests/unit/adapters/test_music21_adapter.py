@@ -57,3 +57,34 @@ def test_analyze_roman_numerals_minor_key() -> None:
 def test_parse_invalid_chord_returns_unknown() -> None:
     info = parse_chord_symbol("Xqz123")
     assert info.root == "unknown"
+
+
+def test_parse_msus2_normalizes_to_sus2() -> None:
+    """Gemini sometimes emits 'Fmsus2' (minor + sus2). music21 has no such
+    abbreviation; the normalizer should strip the redundant minor marker
+    (sus implies no third) so the chord parses as Fsus2."""
+    info = parse_chord_symbol("Fmsus2")
+    assert info.root == "F"
+    assert info.quality != "unknown"
+
+
+def test_parse_msus4_normalizes_to_sus4() -> None:
+    info = parse_chord_symbol("Dmsus4")
+    assert info.root == "D"
+    assert info.quality != "unknown"
+
+
+def test_parse_slash_chord_with_flat_root() -> None:
+    """Slash chord with a flat root ('Eb/G') previously failed because the
+    flat-normalization lookahead rejected '/' as a trailing char, leaving
+    'Eb/G' which music21 interprets as root 'E' + bogus abbreviation 'b'."""
+    info = parse_chord_symbol("Eb/G")
+    assert info.root in ("E-", "E")  # music21 may name either way
+    assert info.bass_note == "G"
+
+
+def test_parse_slash_chord_preserves_quality() -> None:
+    info = parse_chord_symbol("Bbm7/D")
+    assert info.root in ("B-", "B")
+    assert info.bass_note == "D"
+    assert info.quality != "unknown"
