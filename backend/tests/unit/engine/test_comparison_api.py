@@ -85,7 +85,7 @@ class TestComparisonViewRepo:
 
 
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 
 from explorator.api.routes.comparisons import router
 
@@ -96,10 +96,22 @@ def _make_app() -> FastAPI:
     return app
 
 
+async def _post(app: FastAPI, path: str, body: dict) -> tuple[int, dict]:
+    """POST helper using AsyncClient — compatible with the session-scoped
+    asyncio event loop. Starlette's sync TestClient opens its own BlockingPortal
+    and collides with the session loop when run alongside integration tests.
+    """
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.post(path, json=body)
+        return resp.status_code, (resp.json() if resp.content else {})
+
+
 class TestComparisonRoute:
     """Unit tests for comparison POST endpoint."""
 
-    def test_post_comparison_returns_201(self):
+    @pytest.mark.asyncio
+    async def test_post_comparison_returns_201(self):
         """POST creates a comparison and returns 201 with id."""
         app = _make_app()
 
@@ -107,30 +119,25 @@ class TestComparisonRoute:
             "explorator.api.routes.comparisons.get_neo4j_driver",
             new=AsyncMock(return_value=MagicMock()),
         ):
-            mock_driver = MagicMock()
-            mock_neo_session = AsyncMock()
-            mock_driver.session.return_value.__aenter__ = AsyncMock(return_value=mock_neo_session)
-            mock_driver.session.return_value.__aexit__ = AsyncMock(return_value=False)
-
             with patch(
                 "explorator.api.routes.comparisons.ComparisonViewRepo"
             ) as MockRepo:
                 MockRepo.return_value.create = AsyncMock()
 
-                client = TestClient(app)
-                resp = client.post(
+                status, data = await _post(
+                    app,
                     "/v1/sessions/sess_1/comparisons",
-                    json={
+                    {
                         "candidate_ids": ["arr_1", "arr_2"],
                         "comparison_axes": ["voice_leading", "tension_curve"],
                         "labels": {"arr_1": "A", "arr_2": "B"},
                     },
                 )
-                assert resp.status_code == 201
-                data = resp.json()
+                assert status == 201
                 assert "comparison_id" in data
 
-    def test_post_comparison_requires_two_candidates(self):
+    @pytest.mark.asyncio
+    async def test_post_comparison_requires_two_candidates(self):
         """POST with < 2 candidates returns 422."""
         app = _make_app()
 
@@ -138,13 +145,13 @@ class TestComparisonRoute:
             "explorator.api.routes.comparisons.get_neo4j_driver",
             new=AsyncMock(return_value=MagicMock()),
         ):
-            client = TestClient(app)
-            resp = client.post(
+            status, _ = await _post(
+                app,
                 "/v1/sessions/sess_1/comparisons",
-                json={
+                {
                     "candidate_ids": ["arr_1"],
                     "comparison_axes": [],
                     "labels": {},
                 },
             )
-            assert resp.status_code == 422
+            assert status == 422

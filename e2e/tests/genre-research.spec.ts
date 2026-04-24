@@ -13,12 +13,14 @@ test.describe('Genre Research Agent (M5c)', () => {
 
     // Start research
     await page.getByRole('button', { name: /research new genre/i }).click();
-    await page.locator('input[placeholder*="lo-fi"]').fill('ambient_jazz');
+    await page.locator('input[placeholder*="Shoegaze"]').fill('ambient_jazz');
     await page.getByRole('button', { name: /start research/i }).click();
 
-    // Verify progress view appears with step indicator
-    await expect(page.locator('text=Research')).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('text=Draft')).toBeVisible();
+    // Verify progress view appears with step indicator. Match the exact
+    // step-label text to avoid collisions with "Research New Genre" button
+    // and "Genre library & research" heading.
+    await expect(page.getByText('Research', { exact: true })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Draft', { exact: true })).toBeVisible();
 
     // Wait for job to complete (pending_review)
     await expect(page.locator('text=Ready for review').or(page.locator('text=Pending Review'))).toBeVisible({ timeout: 120_000 });

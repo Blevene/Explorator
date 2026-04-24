@@ -23,8 +23,9 @@ test.describe('Export Modal', () => {
     await page.getByRole('button', { name: /^export$/i }).click();
     await expect(page.getByText('Export Arrangements')).toBeVisible();
 
-    // Click the close button (aria-label="Close", displays ✕)
-    await page.getByRole('button', { name: 'Close' }).click();
+    // Scope to the dialog so Sonner's toast closeButton (also aria-labelled
+    // "Close toast") doesn't make the role match ambiguous under strict mode.
+    await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
     await expect(page.getByText('Export Arrangements')).not.toBeVisible();
   });
 });

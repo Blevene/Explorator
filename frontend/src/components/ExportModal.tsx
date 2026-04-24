@@ -135,6 +135,9 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="export-modal-title"
         className="rounded-xl w-full max-w-lg max-h-[90vh] flex flex-col"
         style={{
           background: "var(--surface-1)",
@@ -147,7 +150,11 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
           className="flex items-center justify-between px-5 py-4"
           style={{ borderBottom: "1px solid var(--border-subtle)" }}
         >
-          <h3 className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>
+          <h3
+            id="export-modal-title"
+            className="font-semibold text-sm"
+            style={{ color: "var(--text-primary)" }}
+          >
             Export Arrangements
           </h3>
           <button
