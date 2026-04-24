@@ -145,3 +145,66 @@ async def test_query_for_warm_starts_applies_tag_filters(neo4j_driver):
         genre="house", top_k_per_type=5, tag_filters=["role:safest"]
     )
     assert [e["id"] for e in grouped.get("progression", [])] == ["pl_1"]
+
+
+def _curated_entry(**overrides):
+    defaults = dict(
+        id="pl_curated_test",
+        type="pattern_library_entry",
+        status="active",
+        pattern_type="progression",
+        genre="jazz",
+        source_candidate_id="cand_curate_preserve",
+        success_metrics={"weighted_total": 0.8},
+    )
+    defaults.update(overrides)
+    return PatternLibraryEntry(**defaults)
+
+
+@pytest.mark.asyncio
+async def test_upsert_on_match_preserves_curation_fields(neo4j_driver):
+    repo = PatternLibraryRepo(neo4j_driver)
+    # First harvest.
+    entry = _curated_entry()
+    await repo.upsert(entry)
+    # Simulate user curation by mutating state directly (the repo.toggle_curation
+    # method lands in Task 5; this test pins the upsert invariant independently).
+    curated_at = datetime(2026, 4, 24, 12, 0, tzinfo=UTC)
+    async with neo4j_driver.session() as s:
+        await s.run(
+            "MATCH (p:PatternLibraryEntry {source_candidate_id: $scid, pattern_type: $pt}) "
+            "SET p.is_curated = true, p.curated_at = $ts",
+            scid=entry.source_candidate_id, pt=entry.pattern_type,
+            ts=curated_at.isoformat(),
+        )
+    # Re-harvest — Pydantic default is_curated=False must NOT wipe curation.
+    reharvested = _curated_entry(success_metrics={"weighted_total": 0.9})
+    await repo.upsert(reharvested)
+
+    async with neo4j_driver.session() as s:
+        result = await s.run(
+            "MATCH (p:PatternLibraryEntry {source_candidate_id: $scid, pattern_type: $pt}) "
+            "RETURN p.is_curated AS is_curated, p.curated_at AS curated_at, "
+            "       p.weighted_total AS weighted_total",
+            scid=entry.source_candidate_id, pt=entry.pattern_type,
+        )
+        record = await result.single()
+    assert record["is_curated"] is True, "curation cleared by re-harvest"
+    assert record["curated_at"] == curated_at.isoformat()
+    assert record["weighted_total"] == pytest.approx(0.9)  # new metrics did land
+
+
+@pytest.mark.asyncio
+async def test_upsert_on_create_defaults_curation(neo4j_driver):
+    repo = PatternLibraryRepo(neo4j_driver)
+    entry = _curated_entry(source_candidate_id="cand_create_default")
+    await repo.upsert(entry)
+    async with neo4j_driver.session() as s:
+        result = await s.run(
+            "MATCH (p:PatternLibraryEntry {source_candidate_id: $scid}) "
+            "RETURN p.is_curated AS is_curated, p.curated_at AS curated_at",
+            scid=entry.source_candidate_id,
+        )
+        record = await result.single()
+    assert record["is_curated"] is False
+    assert record["curated_at"] is None

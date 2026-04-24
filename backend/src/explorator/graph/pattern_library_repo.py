@@ -35,20 +35,31 @@ class PatternLibraryRepo:
         weighted_total = float((payload.get("success_metrics") or {}).get("weighted_total") or 0.0)
         # Exclude natural-key and creation-time fields from the merge-props payload:
         # id + created_at are CREATE-only; source_candidate_id + pattern_type live in the MERGE key.
-        immutable_on_match = ("id", "source_candidate_id", "pattern_type", "created_at")
+        # On re-harvest, these fields must survive untouched:
+        #   id/scid/pt/created_at — natural key + creation audit
+        #   is_curated/curated_at — explicit user intent (M5d-3), would otherwise
+        #                           be wiped by the Pydantic default (False/None).
+        immutable_on_match = (
+            "id", "source_candidate_id", "pattern_type", "created_at",
+            "is_curated", "curated_at",
+        )
         props = _neo4j_safe({k: v for k, v in payload.items() if k not in immutable_on_match})
         props["weighted_total"] = weighted_total  # denormalized scalar for indexed ORDER BY
 
         # ON CREATE: `p = $props` runs first, then the subsequent assignments
         # override the natural-key/create-only fields. Cypher applies the SET
         # sub-clauses left-to-right, so the id/scid/pt/created_at overrides win.
+        # is_curated/curated_at are excluded from $props (immutable_on_match), so
+        # we set their Pydantic defaults explicitly on CREATE only.
         query = """
         MERGE (p:PatternLibraryEntry {source_candidate_id: $scid, pattern_type: $pt})
         ON CREATE SET p = $props,
                       p.id = $id,
                       p.source_candidate_id = $scid,
                       p.pattern_type = $pt,
-                      p.created_at = $created_at
+                      p.created_at = $created_at,
+                      p.is_curated = false,
+                      p.curated_at = null
         ON MATCH  SET p += $props,
                       p.deleted_at = NULL
         """
