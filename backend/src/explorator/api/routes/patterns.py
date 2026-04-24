@@ -37,6 +37,8 @@ def _to_pattern_item(entry: dict) -> PatternItem:
         success_metrics=entry.get("success_metrics") or {},
         notes=entry.get("notes") or "",
         created_at=entry["created_at"],
+        is_curated=bool(entry.get("is_curated") or False),
+        curated_at=entry.get("curated_at"),
     )
 
 

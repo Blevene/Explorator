@@ -147,3 +147,29 @@ async def test_re_upsert_resurrects_soft_deleted(neo4j_driver: AsyncDriver) -> N
     assert restored is not None
     assert restored["id"] == "pat_0001"
     assert restored["success_metrics"]["weighted_total"] == pytest.approx(0.9)
+
+
+@pytest.mark.asyncio
+async def test_list_patterns_response_includes_curation_fields(neo4j_driver: AsyncDriver) -> None:
+    """GET /v1/patterns response items carry is_curated + curated_at."""
+    await _wipe(neo4j_driver)
+    repo = PatternLibraryRepo(neo4j_driver)
+    await repo.upsert(PatternLibraryEntry(
+        id="pl_schema_test",
+        type="pattern_library_entry",
+        status="active",
+        pattern_type="progression",
+        genre="jazz",
+        source_candidate_id="cand_curation_schema",
+        success_metrics={"weighted_total": 0.5},
+    ))
+
+    app = create_app()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/v1/patterns")
+
+    assert response.status_code == 200
+    items = response.json()["items"]
+    match = next(i for i in items if i["source_candidate_id"] == "cand_curation_schema")
+    assert match["is_curated"] is False
+    assert match["curated_at"] is None

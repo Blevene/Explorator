@@ -19,6 +19,8 @@ class PatternItem(BaseModel):
     success_metrics: dict[str, float] = Field(default_factory=dict)
     notes: str = ""
     created_at: datetime
+    is_curated: bool = False
+    curated_at: datetime | None = None
 
 
 class CursorResponse(BaseModel):
