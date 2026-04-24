@@ -32,6 +32,8 @@ export interface PatternItem {
   success_metrics: Record<string, number>;
   notes: string;
   created_at: string;
+  is_curated: boolean;
+  curated_at: string | null;
 }
 
 export interface PatternCursor {
@@ -47,4 +49,5 @@ export interface PatternListResponse {
 export interface PatternFilters {
   genre?: string;
   pattern_type?: string;
+  curated_only?: boolean;
 }
