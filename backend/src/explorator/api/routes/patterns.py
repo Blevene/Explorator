@@ -46,6 +46,7 @@ def _to_pattern_item(entry: dict) -> PatternItem:
 async def list_patterns(
     genre: str | None = Query(None),
     pattern_type: str | None = Query(None),
+    curated_only: bool = Query(False),
     after_score: float | None = Query(None),
     after_id: str | None = Query(None),
     limit: int = Query(50, ge=1, le=200),
@@ -57,7 +58,9 @@ async def list_patterns(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     items, next_cursor = await repo.list_page(
-        filters=PatternFilters(genre=genre, pattern_type=pattern_type),
+        filters=PatternFilters(
+            genre=genre, pattern_type=pattern_type, curated_only=curated_only,
+        ),
         cursor=cursor,
         limit=limit,
     )
