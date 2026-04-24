@@ -208,3 +208,95 @@ async def test_upsert_on_create_defaults_curation(neo4j_driver):
         record = await result.single()
     assert record["is_curated"] is False
     assert record["curated_at"] is None
+
+
+from explorator.utils import utc_now
+
+
+@pytest.mark.asyncio
+async def test_toggle_curation_updates_all_facets(neo4j_driver):
+    repo = PatternLibraryRepo(neo4j_driver)
+    scid = "cand_toggle_multi"
+    # Seed 3 facets for the same arrangement.
+    for ptype in ("progression", "voicing", "bass"):
+        await repo.upsert(_curated_entry(
+            id=f"pl_toggle_{ptype}",
+            source_candidate_id=scid,
+            pattern_type=ptype,
+        ))
+    now = datetime(2026, 4, 24, 13, 0, tzinfo=UTC)
+
+    affected = await repo.toggle_curation(arrangement_id=scid, is_curated=True, now=now)
+
+    assert len(affected) == 3
+    async with neo4j_driver.session() as s:
+        result = await s.run(
+            "MATCH (p:PatternLibraryEntry {source_candidate_id: $scid}) "
+            "RETURN p.id AS id, p.is_curated AS is_curated, p.curated_at AS curated_at",
+            scid=scid,
+        )
+        rows = await result.data()
+    assert all(r["is_curated"] is True for r in rows)
+    assert all(r["curated_at"] == now.isoformat() for r in rows)
+
+
+@pytest.mark.asyncio
+async def test_toggle_curation_uncurate_clears_curated_at(neo4j_driver):
+    repo = PatternLibraryRepo(neo4j_driver)
+    scid = "cand_toggle_uncurate"
+    await repo.upsert(_curated_entry(id="pl_toggle_unc", source_candidate_id=scid))
+    await repo.toggle_curation(
+        arrangement_id=scid, is_curated=True,
+        now=datetime(2026, 4, 24, 13, 0, tzinfo=UTC),
+    )
+    affected = await repo.toggle_curation(
+        arrangement_id=scid, is_curated=False,
+        now=datetime(2026, 4, 24, 13, 5, tzinfo=UTC),
+    )
+    assert len(affected) == 1
+    async with neo4j_driver.session() as s:
+        result = await s.run(
+            "MATCH (p:PatternLibraryEntry {source_candidate_id: $scid}) "
+            "RETURN p.is_curated AS is_curated, p.curated_at AS curated_at",
+            scid=scid,
+        )
+        record = await result.single()
+    assert record["is_curated"] is False
+    assert record["curated_at"] is None
+
+
+@pytest.mark.asyncio
+async def test_toggle_curation_skips_soft_deleted(neo4j_driver):
+    repo = PatternLibraryRepo(neo4j_driver)
+    scid = "cand_toggle_softdel"
+    await repo.upsert(_curated_entry(
+        id="pl_softdel_prog", source_candidate_id=scid, pattern_type="progression",
+    ))
+    await repo.upsert(_curated_entry(
+        id="pl_softdel_voic", source_candidate_id=scid, pattern_type="voicing",
+    ))
+
+    # Soft-delete one facet.
+    async with neo4j_driver.session() as s:
+        result = await s.run(
+            "MATCH (p:PatternLibraryEntry {source_candidate_id: $scid, pattern_type: 'voicing'}) "
+            "RETURN p.id AS id",
+            scid=scid,
+        )
+        deleted_id = (await result.single())["id"]
+    await repo.soft_delete(deleted_id)
+
+    affected = await repo.toggle_curation(
+        arrangement_id=scid, is_curated=True, now=utc_now(),
+    )
+    assert len(affected) == 1
+    assert deleted_id not in affected
+
+
+@pytest.mark.asyncio
+async def test_toggle_curation_empty_arrangement_returns_empty(neo4j_driver):
+    repo = PatternLibraryRepo(neo4j_driver)
+    affected = await repo.toggle_curation(
+        arrangement_id="cand_nonexistent", is_curated=True, now=utc_now(),
+    )
+    assert affected == []

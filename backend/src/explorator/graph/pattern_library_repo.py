@@ -1,5 +1,6 @@
 """Neo4j repository for PatternLibraryEntry (M5d)."""
 from collections.abc import AsyncIterator
+from datetime import datetime
 from typing import Any
 
 from neo4j import AsyncDriver
@@ -203,3 +204,35 @@ class PatternLibraryRepo:
             )
             record = await result.single()
             return record is not None
+
+    async def toggle_curation(
+        self,
+        *,
+        arrangement_id: str,
+        is_curated: bool,
+        now: datetime,
+    ) -> list[str]:
+        """Flip is_curated on every non-deleted facet row for an arrangement.
+
+        Fan-out semantics: one arrangement -> 1-5 facet rows. Returns the IDs
+        of the rows that were updated. Empty list means no matching non-deleted
+        rows exist (caller translates to HTTP 409).
+
+        When is_curated=False, curated_at is cleared to NULL.
+        """
+        query = """
+        MATCH (p:PatternLibraryEntry {source_candidate_id: $aid})
+        WHERE p.deleted_at IS NULL
+        SET p.is_curated = $is_curated,
+            p.curated_at = CASE WHEN $is_curated THEN $now ELSE NULL END
+        RETURN p.id AS id
+        """
+        async with self._driver.session() as neo_session:
+            result = await neo_session.run(
+                query,
+                aid=arrangement_id,
+                is_curated=is_curated,
+                now=now.isoformat(),
+            )
+            records = [r async for r in result]
+        return [r["id"] for r in records]
