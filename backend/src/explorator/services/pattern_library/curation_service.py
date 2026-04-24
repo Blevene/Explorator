@@ -56,47 +56,51 @@ async def curate_arrangement(
     now = utc_now()
     content = "curated" if is_curated else "uncurated"
 
+    # One session, one transaction. The probe runs inside the tx so concurrent
+    # soft-deletes between probe and write cannot leak partial state: if no
+    # non-deleted pattern rows exist at probe time, we roll back without
+    # writing the event. affected_pattern_ids is read from the fan-out's
+    # RETURN, so it reflects actual writes, not a pre-probe snapshot.
     async with driver.session() as neo_session:
-        # Step 1 — resolve arrangement + its session_id; also discover which
-        # non-deleted pattern rows would be affected. This is a read-only
-        # probe; no writes yet. We do it outside the transaction so we can
-        # decide between 404 / 409 before starting one.
-        result = await neo_session.run(
-            "MATCH (a:ArrangementCandidate {id: $aid}) "
-            "OPTIONAL MATCH (p:PatternLibraryEntry) "
-            "  WHERE p.source_candidate_id = a.id AND p.deleted_at IS NULL "
-            "RETURN a.session_id AS session_id, collect(p.id) AS pattern_ids",
-            aid=arrangement_id,
-        )
-        record = await result.single()
-        if record is None:
-            raise ArrangementNotFound(arrangement_id)
-        session_id = record["session_id"]
-        pattern_ids = [pid for pid in record["pattern_ids"] if pid is not None]
-        if not pattern_ids:
-            logger.warning(
-                "curation attempted with no harvested patterns "
-                "(arrangement_id=%s session_id=%s)",
-                arrangement_id, session_id,
-            )
-            raise PatternsNotHarvested(arrangement_id)
-
-        # Step 2 — atomic write: event + fan-out + (Session)-[:HAS_FEEDBACK]->(event).
-        event = UserFeedbackEvent(
-            id=f"fb_{ULID()}",
-            type="user_feedback_event",
-            status="active",
-            session_id=session_id,
-            candidate_id=arrangement_id,
-            feedback_type="pattern_curation",
-            content=content,
-        )
-        event_props = _neo4j_safe(event.model_dump(mode="json"))
-
         tx = await neo_session.begin_transaction()
         try:
+            probe = await tx.run(
+                "MATCH (a:ArrangementCandidate {id: $aid}) "
+                "OPTIONAL MATCH (p:PatternLibraryEntry) "
+                "  WHERE p.source_candidate_id = a.id AND p.deleted_at IS NULL "
+                "RETURN a.session_id AS session_id, collect(p.id) AS pattern_ids",
+                aid=arrangement_id,
+            )
+            record = await probe.single()
+            if record is None:
+                await tx.rollback()
+                raise ArrangementNotFound(arrangement_id)
+            session_id = record["session_id"]
+            probe_pattern_ids = [
+                pid for pid in record["pattern_ids"] if pid is not None
+            ]
+            if not probe_pattern_ids:
+                await tx.rollback()
+                logger.warning(
+                    "curation attempted with no harvested patterns "
+                    "(arrangement_id=%s session_id=%s)",
+                    arrangement_id, session_id,
+                )
+                raise PatternsNotHarvested(arrangement_id)
+
+            event = UserFeedbackEvent(
+                id=f"fb_{ULID()}",
+                type="user_feedback_event",
+                status="active",
+                session_id=session_id,
+                candidate_id=arrangement_id,
+                feedback_type="pattern_curation",
+                content=content,
+            )
+            event_props = _neo4j_safe(event.model_dump(mode="json"))
+
             await tx.run(
-                "CREATE (e:UserFeedbackEvent $props) SET e.id = $props.id",
+                "CREATE (e:UserFeedbackEvent $props)",
                 props=event_props,
             )
             await tx.run(
@@ -105,22 +109,25 @@ async def curate_arrangement(
                 sid=session_id, eid=event.id,
             )
             await tx.run(
-                "MATCH (e:UserFeedbackEvent {id: $eid}), (a {id: $aid}) "
+                "MATCH (e:UserFeedbackEvent {id: $eid}), "
+                "(a:ArrangementCandidate {id: $aid}) "
                 "CREATE (e)-[:ABOUT]->(a)",
                 eid=event.id, aid=arrangement_id,
             )
-            await tx.run(
+            fanout = await tx.run(
                 CURATION_FANOUT_CYPHER,
                 aid=arrangement_id, is_curated=is_curated, now=now.isoformat(),
             )
+            affected_pattern_ids = [r["id"] async for r in fanout]
             await tx.commit()
         except Exception:
-            await tx.rollback()
+            if not tx.closed():
+                await tx.rollback()
             raise
 
     return CurationResult(
         arrangement_id=arrangement_id,
         is_curated=is_curated,
         curated_at=now if is_curated else None,
-        affected_pattern_ids=pattern_ids,
+        affected_pattern_ids=affected_pattern_ids,
     )
