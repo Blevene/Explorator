@@ -17,7 +17,7 @@ export default function PatternLibraryBrowser() {
   useEffect(() => {
     reset();
     void loadMore(filters);
-  }, [filters.genre, filters.pattern_type, reset, loadMore]);
+  }, [filters.genre, filters.pattern_type, filters.curated_only, reset, loadMore]);
 
   const showEmpty = !loading && items.length === 0;
 
