@@ -62,7 +62,13 @@ otherwise re-open during implementation review.
   during M5d-2 manual testing confirmed it reads as "select-and-save" when the
   actual behavior is a bulk op.
 - Add a star icon to each finalist card's top-right corner, next to the
-  weighted-total score. Outlined star = not curated, filled star = curated.
+  weighted-total score. Three visual states:
+  - **Disabled** when `arrangement.is_curated === null` (no library rows yet —
+    `harvest_patterns` hasn't run or produced rows for this arrangement).
+    Outlined star + reduced opacity + `aria-disabled="true"` + tooltip
+    `"Available after the round completes"`. No click handler.
+  - **Outlined** when `is_curated === false`.
+  - **Filled** when `is_curated === true`.
 - Click = toggle. Fires the curation API, updates the denormalized flag on all
   matching facet rows in the library, flashes a subtle toast
   (`"Curated"` / `"Removed from curated"`).
@@ -162,16 +168,18 @@ No new Neo4j labels.
 
 **Errors:**
 - `404 "arrangement not found"` — no `ArrangementCandidate` with that id.
-- `404 "no curatable patterns for this arrangement"` — arrangement exists but
-  no non-deleted `PatternLibraryEntry` rows match. **No event is written in
-  this case** — we don't log intent against empty state.
+- `409 "arrangement not yet harvested"` — arrangement exists but no non-deleted
+  `PatternLibraryEntry` rows match. **No event is written.** The frontend
+  should prevent this state via the disabled-star UX (see "Mid-session
+  timing" in Error handling), so 409 is a defensive server check against an
+  invariant the UI is expected to maintain, not a normal path.
 - `422` — body validation (missing/malformed `curated`).
 
 **Internal flow:**
 
 1. Resolve the arrangement and its originating `session_id`. 404 if missing.
 2. Find all non-deleted `PatternLibraryEntry` rows with matching
-   `source_candidate_id`. 404 if empty.
+   `source_candidate_id`. 409 if empty.
 3. In one transaction: write a `UserFeedbackEvent`, then update `is_curated`
    + `curated_at` on the affected rows.
 4. Return the affected IDs and new state.
@@ -190,14 +198,38 @@ result in the same denormalized state. No dedup in V1.
 ### `GET` on arrangement endpoints — add `is_curated` + `curated_at`
 
 For the `FinalistPanel` to render stars without a second round-trip, the
-`ArrangementSummary` response must carry curation state. Derivation:
-`p.is_curated` on any non-deleted `PatternLibraryEntry` with matching
-`source_candidate_id`. Since fan-out keeps all facet rows in sync, any one row
-can be the source of truth.
+`ArrangementSummary` response must carry curation state.
+
+**Types:** both fields are nullable. `null` is a distinct state from `false`
+and signals "this arrangement has no `PatternLibraryEntry` rows yet" (i.e.,
+`harvest_patterns` has not run or produced zero rows for this arrangement).
+The frontend uses `null` to render a disabled star (see "Mid-session timing"
+below).
+
+**Derivation.** Since fan-out keeps all non-deleted facet rows in sync, any
+one row is the source of truth. Do **not** issue one query per arrangement —
+list endpoints must derive curation state in a single Cypher round-trip using
+a LEFT-JOIN-style `OPTIONAL MATCH` with `head(collect(...))`:
+
+```cypher
+UNWIND $arrangement_ids AS aid
+MATCH (a:ArrangementCandidate {id: aid})
+OPTIONAL MATCH (p:PatternLibraryEntry)
+  WHERE p.source_candidate_id = a.id AND p.deleted_at IS NULL
+WITH a, head(collect(p)) AS p
+RETURN a.id AS arrangement_id,
+       p.is_curated AS is_curated,
+       p.curated_at AS curated_at
+```
+
+`head(collect(p))` is NULL when no non-deleted rows exist, so `is_curated`
+and `curated_at` project as `null` in that case — no `CASE` needed.
 
 This is the one deliberate out-of-scope backend touch (arrangement endpoints
 are not part of the pattern library subsystem). Justified by the UX cost
-avoided.
+avoided. The derivation query belongs in the arrangement repo, not the pattern
+library repo, to keep the dependency direction arrangement → pattern (not the
+reverse).
 
 ### Why not reuse `POST /sessions/{sid}/feedback`?
 
@@ -245,7 +277,9 @@ export async function toggleCuration(
   `pattern.is_curated`. OnClick calls `patternLibraryStore.toggleCuration`.
 - **`FinalistPanel.tsx`** — remove the header `Save to library` button
   entirely. Add a star to each finalist card's top-right corner, using
-  `arrangement.is_curated`. OnClick calls `arrangementStore.toggleCuration`.
+  `arrangement.is_curated` (`null | boolean`). `null` → disabled star with
+  tooltip; `false` → outlined; `true` → filled. OnClick (when not disabled)
+  calls `arrangementStore.toggleCuration`.
 - **`PatternFilters.tsx`** — add a `Curated only` checkbox to the existing
   filter row.
 
@@ -263,6 +297,31 @@ export async function toggleCuration(
 - No animation; pure state change.
 
 ## Error handling & edge cases
+
+**Mid-session timing (arrangement not yet harvested).** Finalists become
+visible in `FinalistPanel` via the `round_complete` SSE event, which fires
+after `persist_round` — which in turn runs after `harvest_patterns`. So the
+intended ordering guarantees library rows exist by the time stars render.
+This edge case manifests only when:
+
+- `harvest_patterns` failed silently for an arrangement (the M5d-1 density
+  coercion bug was an instance — see commit `eaef3b3`), or
+- a race between `round_complete` and the user's first click.
+
+**Handling:** the backend derivation returns `is_curated === null` when no
+non-deleted library rows exist. The frontend treats null as "star disabled
+with tooltip" (see UX section). If the user somehow bypasses the disabled
+state (race, stale client state), the backend returns 409 and the frontend
+surfaces a toast `"Pattern library not ready yet"` without flipping local
+state. No event is written; the 409 is also a signal that upstream harvest
+may have failed and should be investigated — log at WARN level with
+`arrangement_id` + `session_id`.
+
+**Audit-log blind spot.** Because no event is written on 409, the audit log
+does not capture "user tried to curate but couldn't." Accepted tradeoff for
+V1 — the log exists to train future taste models, and failed intent against
+missing state is not useful training signal. Revisit if the taste-model work
+(deferred) needs it.
 
 **Concurrency.** The event log is append-only and ordered by `created_at`.
 Two rapid toggles write two events; denormalized state is last-write-wins.
@@ -303,9 +362,16 @@ curation"`. No retry.
 - **API — `POST /v1/arrangements/{id}/curation`:**
   - 200 happy path (curate + uncurate).
   - 404 for unknown arrangement.
-  - 404 when no non-deleted library rows exist — **and verify no event was
-    written.**
+  - 409 when no non-deleted library rows exist — **and verify no event was
+    written** and that a WARN-level log entry is emitted with arrangement +
+    session IDs.
   - Body validation.
+- **API — arrangement list/summary endpoint:**
+  - `is_curated === null` when no library rows exist for an arrangement.
+  - `is_curated === false` when rows exist but none are curated.
+  - `is_curated === true` after a successful curation toggle.
+  - N+1 guard: listing N arrangements issues one Cypher statement, not N
+    (assert by capturing executed queries in the test harness).
 - **API — `GET /v1/patterns`:**
   - `curated_only=true` filters response.
   - Response items include `is_curated` + `curated_at`.
@@ -321,7 +387,8 @@ curation"`. No retry.
 - **`patternFiltersStore`:** `curated_only` state + action.
 - **`PatternCard`:** star renders correct state, click fires store action.
 - **`FinalistPanel`:** old `Save to library` button is absent; star renders
-  per finalist; click fires store action.
+  per finalist; click fires store action. Disabled-state rendering + no-op
+  click when `is_curated === null`.
 - **`PatternFilters`:** `Curated only` checkbox renders; onChange fires action.
 
 ### E2E — extend `e2e/tests/pattern-library.spec.ts`
