@@ -1,4 +1,6 @@
 import type { PatternItem } from '../../api/types';
+import { usePatternLibraryStore } from '../../stores/patternLibraryStore';
+import { StarButton } from '../StarButton';
 
 interface Props {
   pattern: PatternItem;
@@ -11,6 +13,7 @@ function shortHash(id: string): string {
 
 export function PatternCard({ pattern, onDelete }: Props) {
   const score = pattern.success_metrics.weighted_total ?? 0;
+  const toggleCuration = usePatternLibraryStore((s) => s.toggleCuration);
   const handleDelete = () => {
     if (confirm('Delete this pattern? This cannot be undone.')) {
       onDelete(pattern.id);
@@ -48,16 +51,26 @@ export function PatternCard({ pattern, onDelete }: Props) {
             src: {shortHash(pattern.source_candidate_id)}
           </span>
         </div>
-        <button
-          onClick={handleDelete}
-          aria-label={`Delete ${pattern.id}`}
-          className="text-xs px-2 py-1 rounded transition-colors"
-          style={{ color: 'var(--text-muted)', background: 'transparent' }}
-          onMouseOver={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
-          onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
-        >
-          Delete
-        </button>
+        <div className="flex items-center gap-1">
+          <StarButton
+            isCurated={pattern.is_curated}
+            onToggle={(next) => {
+              void toggleCuration(pattern.source_candidate_id, next).catch(() => {
+                // Store already toasts on failure; swallow.
+              });
+            }}
+          />
+          <button
+            onClick={handleDelete}
+            aria-label={`Delete ${pattern.id}`}
+            className="text-xs px-2 py-1 rounded transition-colors"
+            style={{ color: 'var(--text-muted)', background: 'transparent' }}
+            onMouseOver={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
+            onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+          >
+            Delete
+          </button>
+        </div>
       </div>
       {pattern.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-2">
