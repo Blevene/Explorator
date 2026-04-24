@@ -126,16 +126,9 @@ async def delete_session(
         shutil.rmtree(export_dir)
 
     async with driver.session() as neo_session:
-        # Delete PatternLibraryEntry nodes whose source arrangement belongs to this session.
-        # These nodes reference session data indirectly via source_candidate_id and must
-        # be cleaned up before the ArrangementCandidate nodes are removed.
-        await neo_session.run(
-            "MATCH (a:ArrangementCandidate {session_id: $sid})"
-            "<-[:SOURCES]-(p:PatternLibraryEntry) DETACH DELETE p",
-            sid=session_id,
-        )
-        # Also cover the common case where PatternLibraryEntry stores source_candidate_id
-        # as a plain property (denormalised, no SOURCES relationship).
+        # Delete PatternLibraryEntry nodes whose source arrangement belongs to this
+        # session. These are linked via the denormalised source_candidate_id property
+        # (no edge) and must be cleaned up before the ArrangementCandidate sweep below.
         await neo_session.run(
             "MATCH (a:ArrangementCandidate {session_id: $sid}) "
             "WITH collect(a.id) AS aids "

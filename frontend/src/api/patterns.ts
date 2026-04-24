@@ -1,5 +1,4 @@
 import type {
-  HarvestReport,
   PatternCursor,
   PatternFilters,
   PatternItem,
@@ -37,15 +36,6 @@ export async function getPattern(id: string): Promise<PatternItem> {
 export async function deletePattern(id: string): Promise<void> {
   const res = await fetch(`${API_BASE}/patterns/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Failed to delete pattern: ${res.status}`);
-}
-
-export async function harvestSessionFinalists(sessionId: string): Promise<HarvestReport> {
-  const res = await fetch(
-    `${API_BASE}/sessions/${sessionId}/finalists/harvest`,
-    { method: 'POST' },
-  );
-  if (!res.ok) throw new Error(`Failed to harvest finalists: ${res.status}`);
-  return res.json();
 }
 
 export async function toggleCuration(
