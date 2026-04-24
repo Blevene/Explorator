@@ -20,8 +20,8 @@ describe('StarButton', () => {
 
   it('renders disabled star when isCurated is null', () => {
     render(<StarButton isCurated={null} onToggle={vi.fn()} />);
-    const btn = screen.getByRole('button');
-    expect(btn).toHaveAttribute('aria-disabled', 'true');
+    const btn = screen.getByRole('button') as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
     expect(btn).toHaveAttribute('title', 'Available after the round completes');
   });
 
@@ -37,5 +37,15 @@ describe('StarButton', () => {
     render(<StarButton isCurated={null} onToggle={onToggle} />);
     fireEvent.click(screen.getByRole('button'));
     expect(onToggle).not.toHaveBeenCalled();
+  });
+
+  it('debounces rapid double-clicks to a single onToggle invocation', () => {
+    const onToggle = vi.fn();
+    render(<StarButton isCurated={false} onToggle={onToggle} />);
+    const btn = screen.getByRole('button');
+    fireEvent.click(btn);
+    fireEvent.click(btn);
+    fireEvent.click(btn);
+    expect(onToggle).toHaveBeenCalledTimes(1);
   });
 });

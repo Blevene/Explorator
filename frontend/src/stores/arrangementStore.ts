@@ -30,13 +30,19 @@ export const useArrangementStore = create<ArrangementState>((set, get) => ({
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
   toggleCuration: async (arrangementId, nextState) => {
-    const prev = get().arrangements
+    const prevArrangements = get().arrangements
+    const prevDetail = get().selectedDetail
+    const optimisticTimestamp = nextState ? new Date().toISOString() : null
     set({
-      arrangements: prev.map((a) =>
+      arrangements: prevArrangements.map((a) =>
         a.id === arrangementId
-          ? { ...a, is_curated: nextState, curated_at: nextState ? new Date().toISOString() : null }
+          ? { ...a, is_curated: nextState, curated_at: optimisticTimestamp }
           : a,
       ),
+      selectedDetail:
+        prevDetail && prevDetail.id === arrangementId
+          ? { ...prevDetail, is_curated: nextState, curated_at: optimisticTimestamp }
+          : prevDetail,
     })
     try {
       const resp = await apiToggleCuration(arrangementId, nextState)
@@ -46,10 +52,14 @@ export const useArrangementStore = create<ArrangementState>((set, get) => ({
             ? { ...a, is_curated: resp.is_curated, curated_at: resp.curated_at }
             : a,
         ),
+        selectedDetail:
+          state.selectedDetail && state.selectedDetail.id === arrangementId
+            ? { ...state.selectedDetail, is_curated: resp.is_curated, curated_at: resp.curated_at }
+            : state.selectedDetail,
       }))
       toast.success(nextState ? "Curated" : "Removed from curated")
     } catch (err) {
-      set({ arrangements: prev })
+      set({ arrangements: prevArrangements, selectedDetail: prevDetail })
       toast.error("Failed to update curation")
       throw err
     }

@@ -7,7 +7,6 @@ interface FinalistPanelProps {
   arrangements: ArrangementSummary[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-  sessionId: string;
 }
 
 const ROLE_CONFIG: Record<string, { label: string; accent: string }> = {

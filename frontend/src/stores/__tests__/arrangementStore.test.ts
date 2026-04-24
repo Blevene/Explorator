@@ -51,4 +51,53 @@ describe('arrangementStore.toggleCuration', () => {
     expect(useArrangementStore.getState().arrangements[0].is_curated).toBe(false);
     expect(toast.error).toHaveBeenCalledWith('Failed to update curation');
   });
+
+  it('mirrors optimistic flip onto selectedDetail when it matches', async () => {
+    useArrangementStore.setState({
+      arrangements: [{ id: 'arr_x', is_curated: false, curated_at: null } as any],
+      selectedDetail: { id: 'arr_x', is_curated: false, curated_at: null } as any,
+    });
+    vi.spyOn(api, 'toggleCuration').mockResolvedValue({
+      arrangement_id: 'arr_x', is_curated: true,
+      curated_at: '2026-04-24T12:00:00Z',
+      affected_pattern_ids: ['p1'],
+    });
+
+    await useArrangementStore.getState().toggleCuration('arr_x', true);
+
+    const detail = useArrangementStore.getState().selectedDetail;
+    expect(detail!.is_curated).toBe(true);
+    expect(detail!.curated_at).toBe('2026-04-24T12:00:00Z');
+  });
+
+  it('reverts selectedDetail on API failure', async () => {
+    useArrangementStore.setState({
+      arrangements: [{ id: 'arr_x', is_curated: false, curated_at: null } as any],
+      selectedDetail: { id: 'arr_x', is_curated: false, curated_at: null } as any,
+    });
+    vi.spyOn(api, 'toggleCuration').mockRejectedValue(new Error('bad'));
+
+    await expect(
+      useArrangementStore.getState().toggleCuration('arr_x', true),
+    ).rejects.toThrow();
+
+    expect(useArrangementStore.getState().selectedDetail!.is_curated).toBe(false);
+  });
+
+  it('leaves selectedDetail untouched when it points at a different arrangement', async () => {
+    useArrangementStore.setState({
+      arrangements: [{ id: 'arr_x', is_curated: false, curated_at: null } as any],
+      selectedDetail: { id: 'arr_other', is_curated: false, curated_at: null } as any,
+    });
+    vi.spyOn(api, 'toggleCuration').mockResolvedValue({
+      arrangement_id: 'arr_x', is_curated: true,
+      curated_at: '2026-04-24T12:00:00Z',
+      affected_pattern_ids: ['p1'],
+    });
+
+    await useArrangementStore.getState().toggleCuration('arr_x', true);
+
+    expect(useArrangementStore.getState().selectedDetail!.id).toBe('arr_other');
+    expect(useArrangementStore.getState().selectedDetail!.is_curated).toBe(false);
+  });
 });

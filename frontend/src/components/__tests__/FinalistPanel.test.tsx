@@ -25,7 +25,6 @@ describe('FinalistPanel curation', () => {
         arrangements={arrangements}
         selectedId={null}
         onSelect={vi.fn()}
-        sessionId="sess_1"
       />,
     );
     expect(screen.queryByTestId('save-finalists-to-library')).toBeNull();
@@ -38,7 +37,6 @@ describe('FinalistPanel curation', () => {
         arrangements={arrangements}
         selectedId={null}
         onSelect={vi.fn()}
-        sessionId="sess_1"
       />,
     );
     expect(screen.getByLabelText('Mark as curated')).toBeInTheDocument();
@@ -55,11 +53,10 @@ describe('FinalistPanel curation', () => {
         ]}
         selectedId={null}
         onSelect={vi.fn()}
-        sessionId="sess_1"
       />,
     );
-    const stars = screen.getAllByRole('button', { name: 'Mark as curated' });
-    stars.forEach((s) => expect(s).toHaveAttribute('aria-disabled', 'true'));
+    const stars = screen.getAllByRole('button', { name: 'Mark as curated' }) as HTMLButtonElement[];
+    stars.forEach((s) => expect(s.disabled).toBe(true));
   });
 
   it('clicking star calls arrangementStore.toggleCuration and does not select the card', () => {
@@ -71,7 +68,6 @@ describe('FinalistPanel curation', () => {
         arrangements={arrangements}
         selectedId={null}
         onSelect={onSelect}
-        sessionId="sess_1"
       />,
     );
     fireEvent.click(screen.getByLabelText('Mark as curated'));

@@ -87,8 +87,12 @@ async def test_curate_arrangement_409_when_no_patterns_and_no_event(neo4j_driver
         and e.get("candidate_id") == "arr_svc_noharv"
     ]
     assert curation_events == []
-    # WARN log mentions the arrangement and session.
-    assert any("arr_svc_noharv" in r.message for r in caplog.records)
+    # WARN log mentions both the arrangement and the originating session.
+    warn_messages = [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
+    assert any(
+        "arr_svc_noharv" in msg and "sess_curate" in msg
+        for msg in warn_messages
+    ), f"expected WARN with arr+session, got: {warn_messages}"
 
 
 @pytest.mark.asyncio

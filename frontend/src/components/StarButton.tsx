@@ -1,24 +1,39 @@
+import { useEffect, useRef, useState } from 'react';
+
 interface Props {
   isCurated: boolean | null;
   onToggle: (nextState: boolean) => void;
 }
 
+const DEBOUNCE_MS = 300;
+
 export function StarButton({ isCurated, onToggle }: Props) {
   const disabled = isCurated === null;
   const label = isCurated ? 'Remove from curated' : 'Mark as curated';
   const filled = isCurated === true;
+  const [busy, setBusy] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
 
   const handleClick = () => {
-    if (disabled) return;
+    if (disabled || busy) return;
+    setBusy(true);
     onToggle(!isCurated);
+    // Trailing-edge debounce: ignore rapid second clicks while the first
+    // request is in flight to avoid duplicate UserFeedbackEvent rows.
+    timerRef.current = setTimeout(() => setBusy(false), DEBOUNCE_MS);
   };
 
   return (
     <button
+      type="button"
       onClick={handleClick}
+      disabled={disabled}
       aria-label={label}
       aria-pressed={isCurated === true}
-      aria-disabled={disabled || undefined}
       title={disabled ? 'Available after the round completes' : label}
       className="p-1 rounded transition-opacity"
       style={{
