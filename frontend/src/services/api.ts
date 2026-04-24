@@ -136,8 +136,9 @@ export interface ArrangementSummary {
   rationale: string
   // M5d-3: null = arrangement not yet harvested into library;
   //        false/true = explicit user curation state.
-  is_curated?: boolean | null
-  curated_at?: string | null
+  // Mandatory nullable (not optional) — the backend always emits these fields.
+  is_curated: boolean | null
+  curated_at: string | null
 }
 
 export interface ArrangementDetail extends ArrangementSummary {

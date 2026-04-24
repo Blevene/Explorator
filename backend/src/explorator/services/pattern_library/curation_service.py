@@ -13,6 +13,7 @@ from datetime import datetime
 from neo4j import AsyncDriver
 from ulid import ULID
 
+from explorator.graph.pattern_library_repo import CURATION_FANOUT_CYPHER
 from explorator.graph.repository import _neo4j_safe
 from explorator.models.memory import UserFeedbackEvent
 from explorator.utils import utc_now
@@ -109,10 +110,7 @@ async def curate_arrangement(
                 eid=event.id, aid=arrangement_id,
             )
             await tx.run(
-                "MATCH (p:PatternLibraryEntry {source_candidate_id: $aid}) "
-                "WHERE p.deleted_at IS NULL "
-                "SET p.is_curated = $is_curated, "
-                "    p.curated_at = CASE WHEN $is_curated THEN $now ELSE NULL END",
+                CURATION_FANOUT_CYPHER,
                 aid=arrangement_id, is_curated=is_curated, now=now.isoformat(),
             )
             await tx.commit()

@@ -12,6 +12,19 @@ from explorator.services.pattern_library.filters import PatternFilters
 from explorator.utils import utc_now
 
 
+# Shared by PatternLibraryRepo.toggle_curation (owns its own session) and
+# curation_service.curate_arrangement (runs it inside a multi-statement
+# transaction). Both sites must use this exact query — keep it in sync by
+# referencing the constant, not by copy-pasting the Cypher.
+CURATION_FANOUT_CYPHER = """
+MATCH (p:PatternLibraryEntry {source_candidate_id: $aid})
+WHERE p.deleted_at IS NULL
+SET p.is_curated = $is_curated,
+    p.curated_at = CASE WHEN $is_curated THEN $now ELSE NULL END
+RETURN p.id AS id
+"""
+
+
 class PatternLibraryRepo:
     """CRUD and query access for pattern library entries.
 
@@ -226,17 +239,14 @@ class PatternLibraryRepo:
         rows exist (caller translates to HTTP 409).
 
         When is_curated=False, curated_at is cleared to NULL.
-        """
-        query = """
-        MATCH (p:PatternLibraryEntry {source_candidate_id: $aid})
-        WHERE p.deleted_at IS NULL
-        SET p.is_curated = $is_curated,
-            p.curated_at = CASE WHEN $is_curated THEN $now ELSE NULL END
-        RETURN p.id AS id
+
+        Opens its own session — NOT usable inside an external transaction.
+        The curation service uses the shared CURATION_FANOUT_CYPHER directly
+        within its multi-statement transaction; see curation_service.py.
         """
         async with self._driver.session() as neo_session:
             result = await neo_session.run(
-                query,
+                CURATION_FANOUT_CYPHER,
                 aid=arrangement_id,
                 is_curated=is_curated,
                 now=now.isoformat(),
