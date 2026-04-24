@@ -28,6 +28,7 @@ describe('PatternLibraryBrowser', () => {
         tags: [], source_candidate_id: 'c', abstracted_pattern: {},
         success_metrics: { weighted_total: 0.8 }, notes: '',
         created_at: '2026-04-19T00:00:00Z',
+        is_curated: false, curated_at: null,
       }],
       next_cursor: null,
     });
