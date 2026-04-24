@@ -1,67 +1,77 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import FinalistPanel from '../FinalistPanel';
-import * as patternsApi from '../../api/patterns';
-import type { ArrangementSummary, FinalSelection } from '../../services/api';
+import { useArrangementStore } from '../../stores/arrangementStore';
 
-const finalSelection: FinalSelection = {
-  selected_candidate_ids: ['arr_01'],
-  selection_roles: { arr_01: 'safest' },
-  selection_notes: [],
-};
+const finalSelection = {
+  selected_candidate_ids: ['arr_1', 'arr_2'],
+  selection_roles: { arr_1: 'safest', arr_2: 'best_loop' },
+} as any;
 
-const arrangements: ArrangementSummary[] = [{
-  id: 'arr_01', weighted_total: 0.8, rationale: 'test',
-} as ArrangementSummary];
+const arrangements = [
+  { id: 'arr_1', weighted_total: 8.5, rationale: 'Safe', is_curated: false, curated_at: null } as any,
+  { id: 'arr_2', weighted_total: 7.2, rationale: 'Loopy', is_curated: true, curated_at: '2026-04-24T12:00:00Z' } as any,
+];
 
-beforeEach(() => vi.restoreAllMocks());
-
-describe('FinalistPanel Save to library button', () => {
-  it('fires harvestSessionFinalists and shows success toast', async () => {
-    const spy = vi.spyOn(patternsApi, 'harvestSessionFinalists').mockResolvedValue({
-      session_id: 'sess_01',
-      upserted_count: 5,
-      skipped_count: 0,
-      skipped_reasons: [],
-      upserted_pattern_ids: [],
-    });
-
-    render(
-      <FinalistPanel
-        finalSelection={finalSelection}
-        arrangements={arrangements}
-        selectedId={null}
-        onSelect={vi.fn()}
-        sessionId="sess_01"
-      />,
-    );
-
-    fireEvent.click(screen.getByTestId('save-finalists-to-library'));
-
-    await waitFor(() => expect(spy).toHaveBeenCalledWith('sess_01'));
+describe('FinalistPanel curation', () => {
+  beforeEach(() => {
+    useArrangementStore.getState().reset();
   });
 
-  it('disables button while saving', async () => {
-    vi.spyOn(patternsApi, 'harvestSessionFinalists').mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve({
-        session_id: 'sess_01', upserted_count: 0, skipped_count: 0,
-        skipped_reasons: [], upserted_pattern_ids: [],
-      }), 100)),
-    );
-
+  it('no longer renders the "Save to library" button', () => {
     render(
       <FinalistPanel
         finalSelection={finalSelection}
         arrangements={arrangements}
         selectedId={null}
         onSelect={vi.fn()}
-        sessionId="sess_01"
       />,
     );
+    expect(screen.queryByTestId('save-finalists-to-library')).toBeNull();
+  });
 
-    const button = screen.getByTestId('save-finalists-to-library') as HTMLButtonElement;
-    fireEvent.click(button);
+  it('renders stars per finalist matching their is_curated state', () => {
+    render(
+      <FinalistPanel
+        finalSelection={finalSelection}
+        arrangements={arrangements}
+        selectedId={null}
+        onSelect={vi.fn()}
+      />,
+    );
+    expect(screen.getByLabelText('Mark as curated')).toBeInTheDocument();
+    expect(screen.getByLabelText('Remove from curated')).toBeInTheDocument();
+  });
 
-    expect(button.disabled).toBe(true);
+  it('renders disabled star when arrangement.is_curated is null (not yet harvested)', () => {
+    render(
+      <FinalistPanel
+        finalSelection={finalSelection}
+        arrangements={[
+          { id: 'arr_1', weighted_total: 8.5, rationale: 'x', is_curated: null, curated_at: null } as any,
+          { id: 'arr_2', weighted_total: 7.2, rationale: 'y', is_curated: null, curated_at: null } as any,
+        ]}
+        selectedId={null}
+        onSelect={vi.fn()}
+      />,
+    );
+    const stars = screen.getAllByRole('button', { name: 'Mark as curated' }) as HTMLButtonElement[];
+    stars.forEach((s) => expect(s.disabled).toBe(true));
+  });
+
+  it('clicking star calls arrangementStore.toggleCuration and does not select the card', () => {
+    const spy = vi.spyOn(useArrangementStore.getState(), 'toggleCuration').mockResolvedValue();
+    const onSelect = vi.fn();
+    render(
+      <FinalistPanel
+        finalSelection={finalSelection}
+        arrangements={arrangements}
+        selectedId={null}
+        onSelect={onSelect}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText('Mark as curated'));
+    expect(spy).toHaveBeenCalledWith('arr_1', true);
+    expect(onSelect).not.toHaveBeenCalled();
   });
 });

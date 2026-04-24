@@ -13,6 +13,9 @@ from explorator.adapters.gemini import GeminiClient
 from explorator.api.deps import get_gemini_client, get_neo4j_driver
 from explorator.api.sse import SSEChannel
 from explorator.engine.graph import build_realization_subgraph
+from explorator.graph.arrangement_candidate_repo import (
+    ArrangementCandidateRepo as ArrangementCandidateGraphRepo,
+)
 from explorator.graph.repository import BaseRepository
 from explorator.graph.session_repo import SessionRepository
 
@@ -85,6 +88,15 @@ async def list_arrangements(candidate_id: str, driver: AsyncDriver = Depends(get
             r["weighted_total"] = sc.get("weighted_total", 0.0)
             r["rank_within_round"] = sc.get("rank_within_round", 0)
 
+    # Batch-derive curation state for all returned arrangements in one query.
+    graph_repo = ArrangementCandidateGraphRepo(driver)
+    arr_ids = [r["id"] for r in results if r.get("id")]
+    curation = await graph_repo.fetch_curation_state(arr_ids)
+    for r in results:
+        is_curated, curated_at = curation.get(r.get("id"), (None, None))
+        r["is_curated"] = is_curated
+        r["curated_at"] = curated_at
+
     return results
 
 
@@ -119,5 +131,12 @@ async def get_arrangement(arrangement_id: str, driver: AsyncDriver = Depends(get
     scorecards = await sc_repo.query_by_property("candidate_id", arrangement_id)
     if scorecards:
         arrangement["scorecard"] = scorecards[0]
+
+    # Curation state derivation (M5d-3). Nullable; see spec.
+    graph_repo = ArrangementCandidateGraphRepo(driver)
+    curation = await graph_repo.fetch_curation_state([arrangement_id])
+    is_curated, curated_at = curation.get(arrangement_id, (None, None))
+    arrangement["is_curated"] = is_curated
+    arrangement["curated_at"] = curated_at
 
     return arrangement

@@ -10,3 +10,4 @@ from dataclasses import dataclass
 class PatternFilters:
     genre: str | None = None
     pattern_type: str | None = None
+    curated_only: bool = False

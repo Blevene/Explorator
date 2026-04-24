@@ -125,17 +125,38 @@ async def delete_session(
     if os.path.isdir(export_dir):
         shutil.rmtree(export_dir)
 
+    # All three deletes share one transaction so a transient failure mid-cascade
+    # cannot leave orphaned nodes (e.g. PatternLibraryEntry rows surviving while
+    # their source ArrangementCandidate is gone).
     async with driver.session() as neo_session:
-        # Delete all nodes that reference this session_id
-        await neo_session.run(
-            "MATCH (n) WHERE n.session_id = $sid DETACH DELETE n",
-            sid=session_id,
-        )
-        # Delete the session node itself
-        await neo_session.run(
-            "MATCH (n:Session {id: $sid}) DETACH DELETE n",
-            sid=session_id,
-        )
+        tx = await neo_session.begin_transaction()
+        try:
+            # Delete PatternLibraryEntry nodes whose source arrangement belongs
+            # to this session. These are linked via the denormalised
+            # source_candidate_id property (no edge) and must be cleaned up
+            # before the ArrangementCandidate sweep below.
+            await tx.run(
+                "MATCH (a:ArrangementCandidate {session_id: $sid}) "
+                "WITH collect(a.id) AS aids "
+                "MATCH (p:PatternLibraryEntry) WHERE p.source_candidate_id IN aids "
+                "DETACH DELETE p",
+                sid=session_id,
+            )
+            # Delete all nodes that reference this session_id (ArrangementCandidate, etc.)
+            await tx.run(
+                "MATCH (n) WHERE n.session_id = $sid DETACH DELETE n",
+                sid=session_id,
+            )
+            # Delete the session node itself
+            await tx.run(
+                "MATCH (n:Session {id: $sid}) DETACH DELETE n",
+                sid=session_id,
+            )
+            await tx.commit()
+        except Exception:
+            if not tx.closed():
+                await tx.rollback()
+            raise
 
 
 class ProvenanceResponse(BaseModel):

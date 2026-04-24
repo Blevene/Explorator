@@ -1,17 +1,26 @@
 """Pattern library endpoints: list, get, delete, manual harvest."""
 from fastapi import APIRouter, Depends, HTTPException, Query
+from neo4j import AsyncDriver
 
 from explorator.api.deps import (
     get_harvest_repos,
+    get_neo4j_driver,
     get_pattern_library_repo,
     get_session_repo,
 )
 from explorator.api.schemas.patterns import (
+    CurationRequest,
+    CurationResponse,
     CursorResponse,
     HarvestReportResponse,
     PatternItem,
     PatternListResponse,
     SkipEntryResponse,
+)
+from explorator.services.pattern_library.curation_service import (
+    ArrangementNotFound,
+    PatternsNotHarvested,
+    curate_arrangement,
 )
 from explorator.graph.pattern_library_repo import PatternLibraryRepo
 from explorator.graph.session_repo import SessionRepository
@@ -37,6 +46,8 @@ def _to_pattern_item(entry: dict) -> PatternItem:
         success_metrics=entry.get("success_metrics") or {},
         notes=entry.get("notes") or "",
         created_at=entry["created_at"],
+        is_curated=bool(entry.get("is_curated") or False),
+        curated_at=entry.get("curated_at"),
     )
 
 
@@ -44,6 +55,7 @@ def _to_pattern_item(entry: dict) -> PatternItem:
 async def list_patterns(
     genre: str | None = Query(None),
     pattern_type: str | None = Query(None),
+    curated_only: bool = Query(False),
     after_score: float | None = Query(None),
     after_id: str | None = Query(None),
     limit: int = Query(50, ge=1, le=200),
@@ -55,7 +67,9 @@ async def list_patterns(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     items, next_cursor = await repo.list_page(
-        filters=PatternFilters(genre=genre, pattern_type=pattern_type),
+        filters=PatternFilters(
+            genre=genre, pattern_type=pattern_type, curated_only=curated_only,
+        ),
         cursor=cursor,
         limit=limit,
     )
@@ -117,4 +131,34 @@ async def harvest_session_finalists_endpoint(
             for e in report.skipped_reasons
         ],
         upserted_pattern_ids=list(report.upserted_pattern_ids),
+    )
+
+
+@router.post(
+    "/arrangements/{arrangement_id}/curation",
+    response_model=CurationResponse,
+)
+async def post_curation(
+    arrangement_id: str,
+    request: CurationRequest,
+    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+) -> CurationResponse:
+    try:
+        result = await curate_arrangement(
+            driver=driver,
+            arrangement_id=arrangement_id,
+            is_curated=request.curated,
+        )
+    except ArrangementNotFound as exc:
+        raise HTTPException(status_code=404, detail="arrangement not found") from exc
+    except PatternsNotHarvested as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="arrangement not yet harvested",
+        ) from exc
+    return CurationResponse(
+        arrangement_id=result.arrangement_id,
+        is_curated=result.is_curated,
+        curated_at=result.curated_at,
+        affected_pattern_ids=result.affected_pattern_ids,
     )

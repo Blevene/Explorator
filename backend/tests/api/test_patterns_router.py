@@ -147,3 +147,65 @@ async def test_re_upsert_resurrects_soft_deleted(neo4j_driver: AsyncDriver) -> N
     assert restored is not None
     assert restored["id"] == "pat_0001"
     assert restored["success_metrics"]["weighted_total"] == pytest.approx(0.9)
+
+
+@pytest.mark.asyncio
+async def test_list_patterns_response_includes_curation_fields(neo4j_driver: AsyncDriver) -> None:
+    """GET /v1/patterns response items carry is_curated + curated_at."""
+    await _wipe(neo4j_driver)
+    repo = PatternLibraryRepo(neo4j_driver)
+    await repo.upsert(PatternLibraryEntry(
+        id="pl_schema_test",
+        type="pattern_library_entry",
+        status="active",
+        pattern_type="progression",
+        genre="jazz",
+        source_candidate_id="cand_curation_schema",
+        success_metrics={"weighted_total": 0.5},
+    ))
+
+    app = create_app()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/v1/patterns")
+
+    assert response.status_code == 200
+    items = response.json()["items"]
+    match = next(i for i in items if i["source_candidate_id"] == "cand_curation_schema")
+    assert match["is_curated"] is False
+    assert match["curated_at"] is None
+
+
+@pytest.mark.asyncio
+async def test_list_patterns_curated_only_filter(neo4j_driver: AsyncDriver) -> None:
+    await _wipe(neo4j_driver)
+    from datetime import timezone
+    repo = PatternLibraryRepo(neo4j_driver)
+    await repo.upsert(PatternLibraryEntry(
+        id="pl_api_curated",
+        type="pattern_library_entry",
+        status="active",
+        pattern_type="progression", genre="jazz",
+        source_candidate_id="cand_api_curated",
+        success_metrics={"weighted_total": 0.5},
+    ))
+    await repo.upsert(PatternLibraryEntry(
+        id="pl_api_uncurated",
+        type="pattern_library_entry",
+        status="active",
+        pattern_type="progression", genre="jazz",
+        source_candidate_id="cand_api_uncurated",
+        success_metrics={"weighted_total": 0.4},
+    ))
+    await repo.toggle_curation(
+        arrangement_id="cand_api_curated",
+        is_curated=True,
+        now=datetime(2026, 4, 24, 15, 0, tzinfo=timezone.utc),
+    )
+
+    app = create_app()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/v1/patterns?curated_only=true")
+    assert response.status_code == 200
+    ids = {i["source_candidate_id"] for i in response.json()["items"]}
+    assert "cand_api_curated" in ids
+    assert "cand_api_uncurated" not in ids

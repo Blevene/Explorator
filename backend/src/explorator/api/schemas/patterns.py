@@ -19,6 +19,8 @@ class PatternItem(BaseModel):
     success_metrics: dict[str, float] = Field(default_factory=dict)
     notes: str = ""
     created_at: datetime
+    is_curated: bool = False
+    curated_at: datetime | None = None
 
 
 class CursorResponse(BaseModel):
@@ -43,3 +45,14 @@ class HarvestReportResponse(BaseModel):
     skipped_count: int
     skipped_reasons: list[SkipEntryResponse] = Field(default_factory=list)
     upserted_pattern_ids: list[str] = Field(default_factory=list)
+
+
+class CurationRequest(BaseModel):
+    curated: bool
+
+
+class CurationResponse(BaseModel):
+    arrangement_id: str
+    is_curated: bool
+    curated_at: datetime | None = None
+    affected_pattern_ids: list[str] = Field(default_factory=list)

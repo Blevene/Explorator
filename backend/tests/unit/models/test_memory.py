@@ -221,3 +221,36 @@ def test_pattern_library_entry_accepts_embedding_list() -> None:
         embedding=[0.1, 0.2, 0.3],
     )
     assert entry.embedding == [0.1, 0.2, 0.3]
+
+
+def test_pattern_library_entry_curation_defaults() -> None:
+    entry = PatternLibraryEntry(
+        id="ple_05",
+        type="pattern_library_entry",
+        status="active",
+        pattern_type="progression",
+        genre="jazz",
+        source_candidate_id="cand_x",
+    )
+    assert entry.is_curated is False
+    assert entry.curated_at is None
+
+
+def test_pattern_library_entry_curation_roundtrip() -> None:
+    from datetime import datetime, timezone
+
+    now = datetime(2026, 4, 24, 12, 0, tzinfo=timezone.utc)
+    entry = PatternLibraryEntry(
+        id="ple_06",
+        type="pattern_library_entry",
+        status="active",
+        pattern_type="progression",
+        genre="jazz",
+        source_candidate_id="cand_x",
+        is_curated=True,
+        curated_at=now,
+    )
+    payload = entry.model_dump(mode="json")
+    assert payload["is_curated"] is True
+    # Pydantic serializes UTC as Z notation
+    assert payload["curated_at"] == "2026-04-24T12:00:00Z"

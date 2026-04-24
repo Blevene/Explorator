@@ -1,5 +1,6 @@
 """Neo4j repository for PatternLibraryEntry (M5d)."""
 from collections.abc import AsyncIterator
+from datetime import datetime
 from typing import Any
 
 from neo4j import AsyncDriver
@@ -9,6 +10,19 @@ from explorator.models.memory import PatternLibraryEntry
 from explorator.services.pattern_library.cursor import Cursor
 from explorator.services.pattern_library.filters import PatternFilters
 from explorator.utils import utc_now
+
+
+# Shared by PatternLibraryRepo.toggle_curation (owns its own session) and
+# curation_service.curate_arrangement (runs it inside a multi-statement
+# transaction). Both sites must use this exact query — keep it in sync by
+# referencing the constant, not by copy-pasting the Cypher.
+CURATION_FANOUT_CYPHER = """
+MATCH (p:PatternLibraryEntry {source_candidate_id: $aid})
+WHERE p.deleted_at IS NULL
+SET p.is_curated = $is_curated,
+    p.curated_at = CASE WHEN $is_curated THEN $now ELSE NULL END
+RETURN p.id AS id
+"""
 
 
 class PatternLibraryRepo:
@@ -35,20 +49,31 @@ class PatternLibraryRepo:
         weighted_total = float((payload.get("success_metrics") or {}).get("weighted_total") or 0.0)
         # Exclude natural-key and creation-time fields from the merge-props payload:
         # id + created_at are CREATE-only; source_candidate_id + pattern_type live in the MERGE key.
-        immutable_on_match = ("id", "source_candidate_id", "pattern_type", "created_at")
+        # On re-harvest, these fields must survive untouched:
+        #   id/scid/pt/created_at — natural key + creation audit
+        #   is_curated/curated_at — explicit user intent (M5d-3), would otherwise
+        #                           be wiped by the Pydantic default (False/None).
+        immutable_on_match = (
+            "id", "source_candidate_id", "pattern_type", "created_at",
+            "is_curated", "curated_at",
+        )
         props = _neo4j_safe({k: v for k, v in payload.items() if k not in immutable_on_match})
         props["weighted_total"] = weighted_total  # denormalized scalar for indexed ORDER BY
 
         # ON CREATE: `p = $props` runs first, then the subsequent assignments
         # override the natural-key/create-only fields. Cypher applies the SET
         # sub-clauses left-to-right, so the id/scid/pt/created_at overrides win.
+        # is_curated/curated_at are excluded from $props (immutable_on_match), so
+        # we set their Pydantic defaults explicitly on CREATE only.
         query = """
         MERGE (p:PatternLibraryEntry {source_candidate_id: $scid, pattern_type: $pt})
         ON CREATE SET p = $props,
                       p.id = $id,
                       p.source_candidate_id = $scid,
                       p.pattern_type = $pt,
-                      p.created_at = $created_at
+                      p.created_at = $created_at,
+                      p.is_curated = false,
+                      p.curated_at = null
         ON MATCH  SET p += $props,
                       p.deleted_at = NULL
         """
@@ -119,6 +144,7 @@ class PatternLibraryRepo:
         params: dict[str, Any] = {
             "genre": filters.genre,
             "ptype": filters.pattern_type,
+            "curated_only": filters.curated_only,
             "after_score": cursor.after_score if cursor else None,
             "after_id": cursor.after_id if cursor else None,
             "limit": limit + 1,
@@ -128,6 +154,7 @@ class PatternLibraryRepo:
         WHERE p.deleted_at IS NULL
           AND ($genre IS NULL OR p.genre = $genre)
           AND ($ptype IS NULL OR p.pattern_type = $ptype)
+          AND (NOT $curated_only OR p.is_curated = true)
           AND ($after_score IS NULL
                OR p.weighted_total < $after_score
                OR (p.weighted_total = $after_score AND p.id > $after_id))
@@ -162,12 +189,17 @@ class PatternLibraryRepo:
         as list_page (weighted_total DESC, id ASC) for consumer consistency.
         """
         filters = filters or PatternFilters()
-        params: dict[str, Any] = {"genre": filters.genre, "ptype": filters.pattern_type}
+        params: dict[str, Any] = {
+            "genre": filters.genre,
+            "ptype": filters.pattern_type,
+            "curated_only": filters.curated_only,
+        }
         query = """
         MATCH (p:PatternLibraryEntry)
         WHERE p.deleted_at IS NULL
           AND ($genre IS NULL OR p.genre = $genre)
           AND ($ptype IS NULL OR p.pattern_type = $ptype)
+          AND (NOT $curated_only OR p.is_curated = true)
         RETURN p
         ORDER BY p.weighted_total DESC, p.id ASC
         """
@@ -192,3 +224,32 @@ class PatternLibraryRepo:
             )
             record = await result.single()
             return record is not None
+
+    async def toggle_curation(
+        self,
+        *,
+        arrangement_id: str,
+        is_curated: bool,
+        now: datetime,
+    ) -> list[str]:
+        """Flip is_curated on every non-deleted facet row for an arrangement.
+
+        Fan-out semantics: one arrangement -> 1-5 facet rows. Returns the IDs
+        of the rows that were updated. Empty list means no matching non-deleted
+        rows exist (caller translates to HTTP 409).
+
+        When is_curated=False, curated_at is cleared to NULL.
+
+        Opens its own session — NOT usable inside an external transaction.
+        The curation service uses the shared CURATION_FANOUT_CYPHER directly
+        within its multi-statement transaction; see curation_service.py.
+        """
+        async with self._driver.session() as neo_session:
+            result = await neo_session.run(
+                CURATION_FANOUT_CYPHER,
+                aid=arrangement_id,
+                is_curated=is_curated,
+                now=now.isoformat(),
+            )
+            records = [r async for r in result]
+        return [r["id"] for r in records]

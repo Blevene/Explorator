@@ -21,7 +21,15 @@ class UserPreferenceProfile(BaseEntity):
 
 
 class UserFeedbackEvent(BaseEntity):
-    """Explicit user reaction."""
+    """Explicit user reaction.
+
+    feedback_type discriminator values:
+      - "text_reaction" (default, legacy) — LLM-interpreted reaction,
+        populates interpreted_adjustments and weight_deltas.
+      - "pattern_curation" (M5d-3) — explicit star/unstar on an arrangement.
+        content = "curated" | "uncurated"; candidate_id = arrangement_id;
+        interpreted_adjustments/weight_deltas unused (empty dict).
+    """
 
     session_id: str
     candidate_id: str
@@ -44,6 +52,10 @@ class PatternLibraryEntry(BaseEntity):
     # Soft-delete tombstone. Set by soft_delete; cleared unconditionally by upsert ON MATCH.
     # Rows with deleted_at != None are invisible to list_page / get_by_id / iter_all.
     deleted_at: datetime | None = None
+    # Explicit user curation (M5d-3). Preserved across re-harvest: upsert's
+    # ON MATCH excludes these fields from $props. See curation_service.
+    is_curated: bool = False
+    curated_at: datetime | None = None
     # TODO(vector): when embeddings ship, populate from an embedder service and
     # swap GraphRetrieval for a vector-backed retrieval in fetch_warm_starts.
     embedding: list[float] | None = None

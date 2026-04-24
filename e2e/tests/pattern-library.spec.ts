@@ -33,4 +33,63 @@ test.describe('Pattern Library', () => {
     await expect(page.locator('[data-testid^="pattern-card-"]').first()).toBeVisible({ timeout: 15_000 });
     await expect(page.locator(`[data-testid="${deletedTestId}"]`)).toHaveCount(0, { timeout: 10_000 });
   });
+
+  test('curate a pattern, filter to curated-only, persist across reload', async ({ page, testSession }) => {
+    test.setTimeout(120_000);
+
+    // 1. Run a session to seed patterns.
+    await goToWorkspace(page, testSession.sessionId);
+    await generateCandidates(page, testSession.prompt);
+    await realizeFirstCandidate(page);
+    await expect(page.locator('text=/Saved \\d+ patterns to library/').first())
+      .toBeVisible({ timeout: 60_000 });
+
+    // 2. Go to library, wait for first card.
+    await page.goto('/patterns');
+    await expect(page.locator('[data-testid^="pattern-card-"]').first()).toBeVisible({ timeout: 15_000 });
+
+    // Find a card that is not yet curated (the first card may already be curated from a prior run).
+    const targetCard = page.locator('[data-testid^="pattern-card-"]')
+      .filter({ has: page.getByRole('button', { name: 'Mark as curated' }) })
+      .first();
+    await expect(targetCard).toBeVisible({ timeout: 10_000 });
+    const starredTestId = await targetCard.getAttribute('data-testid');
+    expect(starredTestId).toBeTruthy();
+
+    // 3. Click its star; expect the button to flip and the Curated toast to fire.
+    await targetCard.getByRole('button', { name: 'Mark as curated' }).click();
+    // Optimistic update: button flips to "Remove from curated" immediately.
+    await expect(
+      page.locator(`[data-testid="${starredTestId}"]`)
+        .getByRole('button', { name: 'Remove from curated' }),
+    ).toBeVisible({ timeout: 10_000 });
+    // Sonner renders each toast as <li data-sonner-toast data-type="success"> with a
+    // nested <div data-title> containing the message text "Curated".
+    await expect(
+      page.locator('[data-sonner-toast][data-type="success"] [data-title]')
+        .filter({ hasText: /^Curated$/ })
+        .first(),
+    ).toBeVisible({ timeout: 15_000 });
+
+    // 4. Toggle the Curated-only filter on.
+    await page.getByLabel('Curated only').check();
+
+    // 5. Only curated items visible; our starred card is one of them.
+    await expect(page.locator(`[data-testid="${starredTestId}"]`)).toBeVisible();
+    await expect(
+      page.locator(`[data-testid="${starredTestId}"]`)
+        .getByRole('button', { name: 'Remove from curated' }),
+    ).toBeVisible();
+
+    // 6. Reload — data persists across reload, filter state may or may not; we verify
+    //    by re-enabling the filter and checking the starred card is still there with filled star.
+    await page.reload();
+    const cardAfterReload = page.locator(`[data-testid="${starredTestId}"]`);
+    await expect(cardAfterReload).toBeVisible({ timeout: 15_000 });
+    await expect(
+      cardAfterReload.getByRole('button', { name: 'Remove from curated' }),
+    ).toBeVisible();
+    await page.getByLabel('Curated only').check();
+    await expect(cardAfterReload).toBeVisible();
+  });
 });
