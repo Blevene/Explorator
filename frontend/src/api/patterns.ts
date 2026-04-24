@@ -16,6 +16,7 @@ export async function listPatterns(
   const params = new URLSearchParams();
   if (filters.genre) params.set('genre', filters.genre);
   if (filters.pattern_type) params.set('pattern_type', filters.pattern_type);
+  if (filters.curated_only === true) params.set('curated_only', 'true');
   if (cursor) {
     params.set('after_score', String(cursor.after_score));
     params.set('after_id', cursor.after_id);
@@ -44,5 +45,25 @@ export async function harvestSessionFinalists(sessionId: string): Promise<Harves
     { method: 'POST' },
   );
   if (!res.ok) throw new Error(`Failed to harvest finalists: ${res.status}`);
+  return res.json();
+}
+
+export async function toggleCuration(
+  arrangementId: string,
+  curated: boolean,
+): Promise<{
+  arrangement_id: string;
+  is_curated: boolean;
+  curated_at: string | null;
+  affected_pattern_ids: string[];
+}> {
+  const res = await fetch(`${API_BASE}/arrangements/${arrangementId}/curation`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ curated }),
+  });
+  if (!res.ok) {
+    throw new Error(`toggleCuration ${res.status}: ${await res.text()}`);
+  }
   return res.json();
 }
