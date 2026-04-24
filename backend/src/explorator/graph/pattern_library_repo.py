@@ -131,6 +131,7 @@ class PatternLibraryRepo:
         params: dict[str, Any] = {
             "genre": filters.genre,
             "ptype": filters.pattern_type,
+            "curated_only": filters.curated_only,
             "after_score": cursor.after_score if cursor else None,
             "after_id": cursor.after_id if cursor else None,
             "limit": limit + 1,
@@ -140,6 +141,7 @@ class PatternLibraryRepo:
         WHERE p.deleted_at IS NULL
           AND ($genre IS NULL OR p.genre = $genre)
           AND ($ptype IS NULL OR p.pattern_type = $ptype)
+          AND (NOT $curated_only OR p.is_curated = true)
           AND ($after_score IS NULL
                OR p.weighted_total < $after_score
                OR (p.weighted_total = $after_score AND p.id > $after_id))
@@ -174,12 +176,17 @@ class PatternLibraryRepo:
         as list_page (weighted_total DESC, id ASC) for consumer consistency.
         """
         filters = filters or PatternFilters()
-        params: dict[str, Any] = {"genre": filters.genre, "ptype": filters.pattern_type}
+        params: dict[str, Any] = {
+            "genre": filters.genre,
+            "ptype": filters.pattern_type,
+            "curated_only": filters.curated_only,
+        }
         query = """
         MATCH (p:PatternLibraryEntry)
         WHERE p.deleted_at IS NULL
           AND ($genre IS NULL OR p.genre = $genre)
           AND ($ptype IS NULL OR p.pattern_type = $ptype)
+          AND (NOT $curated_only OR p.is_curated = true)
         RETURN p
         ORDER BY p.weighted_total DESC, p.id ASC
         """

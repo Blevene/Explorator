@@ -300,3 +300,73 @@ async def test_toggle_curation_empty_arrangement_returns_empty(neo4j_driver):
         arrangement_id="cand_nonexistent", is_curated=True, now=utc_now(),
     )
     assert affected == []
+
+
+from explorator.services.pattern_library.filters import PatternFilters
+
+
+@pytest.mark.asyncio
+async def test_list_page_curated_only_filter(neo4j_driver):
+    repo = PatternLibraryRepo(neo4j_driver)
+    # Seed: one curated arrangement, one uncurated.
+    for scid, curate in (("cand_filter_c1", True), ("cand_filter_c2", False)):
+        await repo.upsert(_curated_entry(
+            id=f"pl_filter_{scid}",
+            source_candidate_id=scid, pattern_type="progression",
+        ))
+        if curate:
+            await repo.toggle_curation(
+                arrangement_id=scid, is_curated=True, now=utc_now(),
+            )
+
+    # curated_only=False -> both visible.
+    all_items, _ = await repo.list_page(filters=PatternFilters(), limit=50)
+    ids_all = {e["source_candidate_id"] for e in all_items}
+    assert "cand_filter_c1" in ids_all
+    assert "cand_filter_c2" in ids_all
+
+    # curated_only=True -> only curated.
+    curated_items, _ = await repo.list_page(
+        filters=PatternFilters(curated_only=True), limit=50,
+    )
+    ids_curated = {e["source_candidate_id"] for e in curated_items}
+    assert "cand_filter_c1" in ids_curated
+    assert "cand_filter_c2" not in ids_curated
+
+
+@pytest.mark.asyncio
+async def test_list_page_cursor_stable_across_curated_only_toggle(neo4j_driver):
+    """Cursor emitted under one filter regime is still valid under the other.
+
+    The cursor encodes (weighted_total, id) only; it does not embed the filter
+    set, so paginating with the same cursor across a filter toggle must just
+    re-apply the new filter — never 500 or produce inconsistent ordering.
+    """
+    repo = PatternLibraryRepo(neo4j_driver)
+    # Seed 6 entries, alternating curated/uncurated, strictly-descending score.
+    for i in range(6):
+        scid = f"cand_cursor_{i}"
+        await repo.upsert(_curated_entry(
+            id=f"pl_cursor_{i}",
+            source_candidate_id=scid,
+            pattern_type="progression",
+            success_metrics={"weighted_total": 0.9 - (i * 0.1)},
+        ))
+        if i % 2 == 0:
+            await repo.toggle_curation(
+                arrangement_id=scid, is_curated=True, now=utc_now(),
+            )
+
+    # Page 1 with no filter -> 2 items, cursor returned.
+    items1, cursor1 = await repo.list_page(
+        filters=PatternFilters(), limit=2,
+    )
+    assert cursor1 is not None
+    assert len(items1) == 2
+
+    # Page 2 with curated_only=True using the same cursor -> no crash, only
+    # curated items that come AFTER the cursor returned.
+    items2, _ = await repo.list_page(
+        filters=PatternFilters(curated_only=True), cursor=cursor1, limit=10,
+    )
+    assert all(i["is_curated"] is True for i in items2)
