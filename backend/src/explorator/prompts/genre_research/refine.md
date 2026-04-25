@@ -1,3 +1,4 @@
+<!-- stage: refine -->
 # Genre Refinement: {genre_name}
 
 You are refining genre data based on an independent critique. You have access to the original research to make informed corrections.

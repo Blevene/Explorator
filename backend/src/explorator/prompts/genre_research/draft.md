@@ -1,3 +1,4 @@
+<!-- stage: draft -->
 # Genre Draft: {genre_name}
 
 You are synthesizing research into structured genre data for a music generation system.

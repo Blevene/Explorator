@@ -1,3 +1,4 @@
+<!-- stage: critique -->
 # Genre Critique: {genre_name}
 
 You are an independent music theory reviewer. You have NOT seen the research that produced these drafts — you are reviewing them fresh.

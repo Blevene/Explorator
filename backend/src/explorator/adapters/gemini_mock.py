@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 from collections import defaultdict
 from typing import TypeVar
 
@@ -76,26 +77,37 @@ def _genre_critique_pass_json() -> str:
     return json.dumps({"issues": [], "passed": True})
 
 
+_STAGE_TAG_RE = re.compile(r"<!--\s*stage:\s*(\w+)\s*-->")
+_GENRE_HEADER_RE = re.compile(r"^#\s+Genre\s+\w+:\s+(.+?)\s*$", re.MULTILINE)
+
+_STAGE_HANDLERS = {
+    "research": lambda g: _genre_research_log(g),
+    "draft": lambda g: _genre_draft_json(g),
+    "refine": lambda g: _genre_draft_json(g),
+    "critique": lambda _g: _genre_critique_pass_json(),
+}
+
+
 def _genre_research_text(prompt: str) -> str | None:
     """Return a stage-appropriate string if `prompt` is a genre-research prompt.
 
-    Prompt templates start with a distinctive header line:
-      "# Genre Research: <name>"      -> free text research log
-      "# Genre Draft: <name>"          -> draft JSON
-      "# Genre Refinement: <name>"     -> draft JSON (same shape)
-      "# Genre Critique: <name>"       -> critique JSON ({issues, passed})
+    Each genre-research template carries a stable machine-readable tag near the
+    top, e.g. `<!-- stage: research -->`. Matching on that (rather than on the
+    human-readable header) means the mock survives template renames or
+    reformatting — only the tag is load-bearing.
+
+    Stages: research -> free-text log; draft / refine -> draft JSON;
+    critique -> {issues, passed} JSON.
     """
-    first_line = prompt.lstrip().split("\n", 1)[0].strip()
-    for header, handler in (
-        ("# Genre Research:", lambda g: _genre_research_log(g)),
-        ("# Genre Draft:", lambda g: _genre_draft_json(g)),
-        ("# Genre Refinement:", lambda g: _genre_draft_json(g)),
-        ("# Genre Critique:", lambda _g: _genre_critique_pass_json()),
-    ):
-        if first_line.startswith(header):
-            genre = first_line.removeprefix(header).strip()
-            return handler(genre)
-    return None
+    tag = _STAGE_TAG_RE.search(prompt)
+    if tag is None:
+        return None
+    handler = _STAGE_HANDLERS.get(tag.group(1))
+    if handler is None:
+        return None
+    header = _GENRE_HEADER_RE.search(prompt)
+    genre = header.group(1) if header else "unknown_genre"
+    return handler(genre)
 
 # Lazy-initialized fixture map (avoids circular imports at module level)
 _BUILDERS: dict[str, object] = {}
