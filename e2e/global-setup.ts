@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import { writeFileSync } from 'fs';
+import { readdirSync, unlinkSync, writeFileSync } from 'fs';
 import path from 'path';
 
 const BACKEND_PORT = 8100;
@@ -35,6 +35,54 @@ async function cleanTestSessions(): Promise<void> {
     }
   } catch {
     // Backend not ready yet or no sessions — fine
+  }
+}
+
+/**
+ * Wipe research jobs and approved test genres from Neo4j AND the on-disk
+ * catalog. Genre-research tests create jobs (`ambient_jazz`, `test_*`) and
+ * the approve flow leaves a GenreProfile node in Neo4j *plus* three YAML
+ * files in `backend/src/explorator/domain/style/{genres,rules,grammars}/`.
+ * Without this cleanup the duplicate-prevention check 409s on subsequent
+ * runs and the polling loops time out (no `job_id`, no progression to
+ * `pending_review`).
+ */
+async function cleanGenreResearchState(): Promise<void> {
+  // 1. Neo4j: research jobs + any test genre nodes
+  const queries = [
+    'MATCH (n:GenreResearchJob) DETACH DELETE n',
+    'MATCH (n) WHERE n.genre IS NOT NULL AND (n.genre =~ "test_.*" OR n.genre = "ambient_jazz") DETACH DELETE n',
+  ];
+  for (const cypher of queries) {
+    const proc = spawn('docker', [
+      'exec', '-i', 'explorator-neo4j-1',
+      'cypher-shell', '-u', 'neo4j', '-p', 'explorator_dev', '-d', 'neo4j',
+      cypher,
+    ], { stdio: 'pipe' });
+    await new Promise<void>((resolve) => proc.on('close', () => resolve()));
+  }
+
+  // 2. Filesystem: YAMLs leaked by the approve endpoint. (Real fix: make the
+  //    catalog path configurable so e2e can point at a temp dir; for now,
+  //    just sweep test_* and ambient_jazz* files from the three subdirs.)
+  const styleRoot = path.join(ROOT, 'backend/src/explorator/domain/style');
+  const subdirs = ['genres', 'rules', 'grammars'];
+  const matchPrefix = (name: string) =>
+    name.startsWith('test_') || name.startsWith('ambient_jazz');
+  let deleted = 0;
+  for (const sub of subdirs) {
+    const dir = path.join(styleRoot, sub);
+    try {
+      for (const name of readdirSync(dir)) {
+        if (matchPrefix(name) && name.endsWith('.yaml')) {
+          unlinkSync(path.join(dir, name));
+          deleted += 1;
+        }
+      }
+    } catch { /* dir missing — fine */ }
+  }
+  if (deleted > 0) {
+    console.log(`[e2e] Removed ${deleted} stale test genre YAMLs from on-disk catalog`);
   }
 }
 
@@ -74,6 +122,9 @@ export default async function globalSetup() {
 
   // Clean stale sessions from prior test runs to avoid strict mode violations
   await cleanTestSessions();
+  // Clean stale genre-research state so the duplicate-prevention check in the
+  // research API doesn't 409 on the second run of this suite.
+  await cleanGenreResearchState();
 
   await waitForHealth(`http://localhost:${FRONTEND_PORT}`);
   console.log('[e2e] Frontend ready');
