@@ -20,4 +20,13 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  // Test files often need `any` for partial mocks of complex shapes (vi.fn,
+  // store mocks, etc). Relaxing the rule here is cheaper than typing every
+  // mock fixture, and tests don't ship to users.
+  {
+    files: ['**/*.test.{ts,tsx}', '**/__tests__/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
 ])

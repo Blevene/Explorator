@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import type { ArrangementDetail } from "../services/api"
 import { pitchToMidi, midiToPitchLabel } from "../services/midiUtils"
 import { useAudioStore } from "../stores/audioStore"
@@ -64,9 +64,20 @@ export default function PianoRoll({
   const BAR_WIDTH = barWidthProp ?? DEFAULT_BAR_WIDTH
   const ROW_HEIGHT = compact ? COMPACT_ROW_HEIGHT : DEFAULT_ROW_HEIGHT
 
-  const voicingEvents = arrangement.voicing_plan?.voicing_events ?? []
-  const bassEvents = arrangement.bass_line?.note_events ?? []
-  const melodyEvents = arrangement.melodic_complement?.note_events ?? []
+  // Memoized so dependent useEffect (canvas redraw at line 252) doesn't
+  // re-run every render — these arrays come from object spreads further up.
+  const voicingEvents = useMemo(
+    () => arrangement.voicing_plan?.voicing_events ?? [],
+    [arrangement.voicing_plan?.voicing_events],
+  )
+  const bassEvents = useMemo(
+    () => arrangement.bass_line?.note_events ?? [],
+    [arrangement.bass_line?.note_events],
+  )
+  const melodyEvents = useMemo(
+    () => arrangement.melodic_complement?.note_events ?? [],
+    [arrangement.melodic_complement?.note_events],
+  )
   const hasEvents = voicingEvents.length > 0 || bassEvents.length > 0 || melodyEvents.length > 0
 
   useEffect(() => {

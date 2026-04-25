@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type { ProvenanceEvent } from "../services/api"
 import { getProvenance } from "../services/api"
 
@@ -58,7 +58,7 @@ export default function SessionHistory({ sessionId }: SessionHistoryProps) {
   const [loading, setLoading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     setLoading(true)
     try {
       const data = await getProvenance(sessionId)
@@ -68,11 +68,11 @@ export default function SessionHistory({ sessionId }: SessionHistoryProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [sessionId])
 
   useEffect(() => {
     fetchEvents()
-  }, [sessionId])
+  }, [fetchEvents])
 
   // Auto-scroll to newest
   useEffect(() => {

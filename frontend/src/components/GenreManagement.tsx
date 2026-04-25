@@ -3,6 +3,7 @@ import { useGenreResearchStore } from '../stores/genreResearchStore';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useGenreDetailDrawer } from '../hooks/useGenreDetailDrawer';
 import { logError } from '../lib/log';
+import type { GenreDetail } from '../services/api';
 import Dialog from './Dialog';
 
 const GENRE_COLORS: Record<string, string> = {
@@ -108,18 +109,18 @@ function SectionCard({ title, children }: { title: string; children: React.React
   );
 }
 
-function DictSection({ title, data }: { title: string; data: Record<string, any> }) {
+function DictSection({ title, data }: { title: string; data: unknown }) {
   if (!data || typeof data !== 'object') return null;
   return (
     <SectionCard title={title}>
-      {Object.entries(data).map(([k, v]) => (
-        <LabeledValue key={k} label={k.replace(/_/g, ' ')} value={v} />
+      {Object.entries(data as Record<string, unknown>).map(([k, v]) => (
+        <LabeledValue key={k} label={k.replace(/_/g, ' ')} value={v as string | number | boolean} />
       ))}
     </SectionCard>
   );
 }
 
-function GenreDetailDrawer({ genre, onClose }: { genre: Record<string, any>; onClose: () => void }) {
+function GenreDetailDrawer({ genre, onClose }: { genre: GenreDetail; onClose: () => void }) {
   const g = genre;
   return (
     <Dialog
@@ -170,16 +171,16 @@ function GenreDetailDrawer({ genre, onClose }: { genre: Record<string, any>; onC
         )}
 
         {/* Harmonic Tendencies */}
-        {g.harmonic_tendencies && <DictSection title="Harmonic Tendencies" data={g.harmonic_tendencies} />}
+        {g.harmonic_tendencies ? <DictSection title="Harmonic Tendencies" data={g.harmonic_tendencies} /> : null}
 
         {/* Voicing Tendencies */}
-        {g.voicing_tendencies && <DictSection title="Voicing Tendencies" data={g.voicing_tendencies} />}
+        {g.voicing_tendencies ? <DictSection title="Voicing Tendencies" data={g.voicing_tendencies} /> : null}
 
         {/* Bass Tendencies */}
-        {g.bass_tendencies && <DictSection title="Bass Tendencies" data={g.bass_tendencies} />}
+        {g.bass_tendencies ? <DictSection title="Bass Tendencies" data={g.bass_tendencies} /> : null}
 
         {/* Groove Tendencies */}
-        {g.groove_tendencies && <DictSection title="Groove Tendencies" data={g.groove_tendencies} />}
+        {g.groove_tendencies ? <DictSection title="Groove Tendencies" data={g.groove_tendencies} /> : null}
 
         {/* Melodic Tendencies */}
         {g.melodic_tendencies && typeof g.melodic_tendencies === 'object' && Object.keys(g.melodic_tendencies).length > 0 && (
@@ -283,7 +284,10 @@ export default function GenreManagement() {
     fetchDrafts().catch((err) => logError('GenreManagement.fetchDrafts', err));
   }, [fetchGenres, fetchDrafts]);
 
-  // Auto-transition to progress view when research starts
+  // Auto-transition to progress view when research starts.
+  // Syncs an external (store-owned) job-status flag into our local `view` —
+  // legitimate "external -> UI" sync that the rule's docs explicitly allow.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (activeJobId && activeJobStatus && activeJobStatus !== 'pending_review' && activeJobStatus !== 'failed') {
       setView('progress');
@@ -304,6 +308,7 @@ export default function GenreManagement() {
       });
     }
   }, [activeJobId, activeJobStatus, reset, fetchDrafts, fetchDraftDetail]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleStartResearch = async () => {
     if (!genreName.trim()) return;
@@ -317,8 +322,8 @@ export default function GenreManagement() {
       setShowForm(false);
       setGenreName('');
       setRefArtists('');
-    } catch (err: any) {
-      setSubmitError(err.message || 'Failed to start research');
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to start research');
     }
   };
 
@@ -804,7 +809,7 @@ export default function GenreManagement() {
                 <span className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: 'var(--text-muted)' }}>
                   Tendencies
                 </span>
-                {Object.entries(profile.tendencies as Record<string, any>).map(([k, v]) => (
+                {Object.entries(profile.tendencies as Record<string, unknown>).map(([k, v]) => (
                   <div key={k} className="flex justify-between text-xs mb-0.5">
                     <span style={{ color: 'var(--text-secondary)' }}>{k}</span>
                     <span className="font-mono" style={{ color: 'var(--text-primary)' }}>{String(v)}</span>
@@ -866,6 +871,8 @@ export default function GenreManagement() {
             {/* Rules list */}
             {rules.rules && (
               <div className="mb-4">
+                {/* rule shape is LLM-generated draft YAML; pre-validation. */}
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {(Array.isArray(rules.rules) ? rules.rules : []).map((rule: any, i: number) => (
                   <div key={i} className="mb-2">
                     <div className="flex items-center justify-between mb-0.5">
@@ -899,6 +906,8 @@ export default function GenreManagement() {
                 <span className="text-[10px] uppercase tracking-wider block mb-1" style={{ color: 'var(--text-muted)' }}>
                   Anti-patterns
                 </span>
+                {/* anti-pattern shape is LLM-generated draft YAML; pre-validation. */}
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {(Array.isArray(rules.anti_patterns) ? rules.anti_patterns : []).map((ap: any, i: number) => (
                   <div key={i} className="flex items-center gap-2 text-xs mb-1">
                     <span
@@ -1039,7 +1048,7 @@ export default function GenreManagement() {
                 className="mt-2 rounded-xl p-4 card-animated"
                 style={{ background: 'var(--surface-2)', border: '1px solid var(--border-subtle)' }}
               >
-                {draft.critique_trail.map((entry: any, i: number) => (
+                {draft.critique_trail.map((entry: unknown, i: number) => (
                   <div key={i} className="mb-3 last:mb-0">
                     <pre
                       className="text-xs whitespace-pre-wrap font-mono"
