@@ -273,6 +273,7 @@ export default function GenreManagement() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectedGenre, setSelectedGenre] = useState<Record<string, any> | null>(null);
   const [loadingGenre, setLoadingGenre] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleGenreClick = async (genreSlug: string) => {
     setLoadingGenre(true);
@@ -362,7 +363,7 @@ export default function GenreManagement() {
 
   if (view === 'library') {
     return (
-      <div className="min-h-screen px-8 py-12 max-w-4xl mx-auto">
+      <div className="min-h-dvh px-8 py-12 max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-10">
           <h1
@@ -498,16 +499,48 @@ export default function GenreManagement() {
         )}
 
         {/* Genre library cards */}
-        {genres.length > 0 && (
+        {genres.length > 0 && (() => {
+          const q = searchQuery.trim().toLowerCase();
+          const filtered = q
+            ? genres.filter((g) =>
+                g.display_name.toLowerCase().includes(q) || g.genre.toLowerCase().includes(q),
+              )
+            : genres;
+          return (
           <div>
-            <h2
-              className="text-xs font-medium uppercase tracking-widest mb-3"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              Installed Genres
-            </h2>
+            <div className="flex items-baseline justify-between mb-3 gap-4">
+              <h2
+                className="text-xs font-medium uppercase tracking-widest"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                Installed Genres
+                {q && (
+                  <span className="ml-2 normal-case tracking-normal" style={{ color: 'var(--text-muted)' }}>
+                    ({filtered.length} of {genres.length})
+                  </span>
+                )}
+              </h2>
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search genres…"
+                aria-label="Search genres"
+                className="w-64 max-w-full px-3 py-1.5 rounded-lg text-sm focus:outline-none"
+                style={{
+                  background: 'var(--surface-1)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-primary)',
+                }}
+              />
+            </div>
+            {filtered.length === 0 ? (
+              <p className="text-sm py-3" style={{ color: 'var(--text-muted)' }}>
+                No genres match “{searchQuery}”.
+              </p>
+            ) : (
             <div className="flex flex-col gap-2">
-              {genres.map((g, i) => (
+              {filtered.map((g, i) => (
                 <div
                   key={g.genre}
                   onClick={() => handleGenreClick(g.genre)}
@@ -533,8 +566,10 @@ export default function GenreManagement() {
                 </div>
               ))}
             </div>
+            )}
           </div>
-        )}
+          );
+        })()}
 
         {genres.length === 0 && pendingDrafts.length === 0 && !showForm && (
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
