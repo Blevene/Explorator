@@ -1,15 +1,12 @@
 import { readFileSync, unlinkSync } from 'fs';
 import path from 'path';
-import { cleanGenreResearchState } from './global-setup';
+import { cleanGenreResearchState, removeTempCatalog } from './global-setup';
 
 const PID_FILE = path.join(__dirname, '.server-pids.json');
 
 export default async function globalTeardown() {
-  // Clean leaked test artifacts before stopping the backend, so anyone running
-  // tests outside our setup script (e.g. `git status` after a successful run)
-  // doesn't see the YAML/Neo4j leftovers. global-setup also cleans on start
-  // for safety against abnormal exits — the two together make the suite
-  // idempotent regardless of how the previous run ended.
+  // Wipe Neo4j leftovers (dev-shared DB persists between runs). The on-disk
+  // catalog is the temp dir, removed below — no per-file cleanup needed any more.
   try {
     await cleanGenreResearchState();
   } catch (err) {
@@ -26,4 +23,6 @@ export default async function globalTeardown() {
     }
     unlinkSync(PID_FILE);
   } catch { /* no PID file */ }
+
+  removeTempCatalog();
 }

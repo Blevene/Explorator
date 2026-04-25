@@ -1,5 +1,6 @@
 """Genre profile retrieval and rule lookup service."""
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -13,7 +14,23 @@ from explorator.domain.style.loader import (
 )
 from explorator.graph.style_repo import StyleRepository
 
-STYLE_DIR = Path(__file__).parent
+
+def _resolve_style_dir() -> Path:
+    """Source-of-truth for the genre catalog directory.
+
+    Defaults to the bundled style/ folder, overridable via
+    EXPLORATOR_STYLE_DIR. The override exists so e2e tests can point
+    at a temp directory and the approve endpoint won't mutate
+    source-controlled paths. Resolved once at import; the env var
+    must be set before the process starts.
+    """
+    override = os.environ.get("EXPLORATOR_STYLE_DIR")
+    if override:
+        return Path(override).resolve()
+    return Path(__file__).parent.resolve()
+
+
+STYLE_DIR = _resolve_style_dir()
 
 
 class StyleService:
