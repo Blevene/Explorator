@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { listCandidates, getSession, listArrangements, getArrangement, dismissCandidate } from '../services/api';
 import type { SessionSummary, ArrangementDetail } from '../services/api';
 import { useCandidateStore } from '../stores/candidateStore';
@@ -17,11 +17,13 @@ import ExportModal from '../components/ExportModal';
 import ComparisonView from '../components/ComparisonView';
 import SessionHistory from '../components/SessionHistory';
 import { useExportStore } from '../stores/exportStore';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import * as audioEngine from '../services/audioEngine';
 
 export default function SessionWorkspace() {
   const { id } = useParams<{ id: string }>();
   const [session, setSession] = useState<SessionSummary | null>(null);
+  useDocumentTitle(session?.prompt ?? 'Session');
   const [prompt, setPrompt] = useState('');
   const [generationMode, setGenerationMode] = useState('balanced');
   const [viewMode, setViewMode] = useState<'generation' | 'realization'>('generation');
@@ -152,9 +154,6 @@ export default function SessionWorkspace() {
     <div data-testid="session-workspace" className="max-w-6xl mx-auto p-8 flex flex-col gap-5">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link to="/" data-testid="dashboard-link" className="text-xs font-medium transition-colors" style={{ color: 'var(--text-muted)' }}>
-          &larr; Dashboard
-        </Link>
         <div className="flex-1 min-w-0">
           <h1 data-testid="session-title" className="text-lg font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
             {session?.prompt || <span className="font-mono text-sm" style={{ color: 'var(--text-muted)' }}>{id}</span>}

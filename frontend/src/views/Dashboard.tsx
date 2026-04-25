@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createSession, listSessions } from '../services/api';
 import { useSessionStore } from '../stores/sessionStore';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export default function Dashboard() {
+  useDocumentTitle(null);
   const { sessions, setSessions } = useSessionStore();
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
