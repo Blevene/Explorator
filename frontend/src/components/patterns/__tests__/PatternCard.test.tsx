@@ -29,20 +29,24 @@ describe('PatternCard', () => {
     expect(screen.getByText('ii-V-I with tritone sub')).toBeInTheDocument();
   });
 
-  it('calls onDelete when confirmed', () => {
+  it('opens a confirm dialog and calls onDelete when Delete is clicked', () => {
     const onDelete = vi.fn();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     render(<PatternCard pattern={item} onDelete={onDelete} />);
     fireEvent.click(screen.getByLabelText('Delete pat_0001'));
+    // Dialog opened
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(onDelete).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(onDelete).toHaveBeenCalledWith('pat_0001');
   });
 
-  it('does not call onDelete when cancelled', () => {
+  it('does not call onDelete when Cancel is clicked in the confirm dialog', () => {
     const onDelete = vi.fn();
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
     render(<PatternCard pattern={item} onDelete={onDelete} />);
     fireEvent.click(screen.getByLabelText('Delete pat_0001'));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
 
