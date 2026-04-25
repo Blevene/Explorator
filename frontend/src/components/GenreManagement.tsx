@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { getGenreDetail } from '../services/api';
 import { useGenreResearchStore } from '../stores/genreResearchStore';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useGenreDetailDrawer } from '../hooks/useGenreDetailDrawer';
 import Dialog from './Dialog';
 
 const GENRE_COLORS: Record<string, string> = {
@@ -274,58 +273,9 @@ export default function GenreManagement() {
   const [expandResearchLog, setExpandResearchLog] = useState(false);
   const [expandCritique, setExpandCritique] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  // Drawer state lives in the URL (?detail=<genre_slug>) so it's shareable,
-  // restoreable on reload, and closes naturally with browser-back.
-  const [searchParams, setSearchParams] = useSearchParams();
-  const detailSlug = searchParams.get('detail');
-  const [selectedGenre, setSelectedGenre] = useState<Record<string, any> | null>(null);
-  const [loadingGenre, setLoadingGenre] = useState(false);
+  // Drawer state lives in the URL (?detail=<genre_slug>) — see hook for details.
+  const { genre: selectedGenre, loading: loadingGenre, open: handleGenreClick, close: handleCloseDrawer } = useGenreDetailDrawer();
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Hydrate (or clear) the drawer detail whenever ?detail changes.
-  useEffect(() => {
-    let cancelled = false;
-    if (!detailSlug) {
-      setSelectedGenre(null);
-      setLoadingGenre(false);
-      return;
-    }
-    setLoadingGenre(true);
-    getGenreDetail(detailSlug)
-      .then((detail) => { if (!cancelled) setSelectedGenre(detail); })
-      .catch(() => {
-        if (!cancelled) {
-          setSelectedGenre(null);
-          // Strip the bad slug from the URL so the user isn't stuck on a 404.
-          // replace: true so the broken URL doesn't pollute Browser-Back history
-          // (a user clicking Back after a 404 should land on whatever page they
-          // came from, not on the bad URL again).
-          setSearchParams((prev) => {
-            const next = new URLSearchParams(prev);
-            next.delete('detail');
-            return next;
-          }, { replace: true });
-        }
-      })
-      .finally(() => { if (!cancelled) setLoadingGenre(false); });
-    return () => { cancelled = true; };
-  }, [detailSlug, setSearchParams]);
-
-  const handleGenreClick = (genreSlug: string) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set('detail', genreSlug);
-      return next;
-    });
-  };
-
-  const handleCloseDrawer = () => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.delete('detail');
-      return next;
-    });
-  };
 
   useEffect(() => {
     fetchGenres().catch(console.error);
