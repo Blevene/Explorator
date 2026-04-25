@@ -36,9 +36,9 @@ test.describe('Pipeline & SSE', () => {
   test('16: generation-mode-switching', async ({ page, testSession }) => {
     await goToWorkspace(page, testSession.sessionId);
 
-    await page.getByRole('button', { name: /exploratory/i }).click();
+    await page.getByRole('radio', { name: /exploratory/i }).click();
     await generateCandidates(page, testSession.prompt);
 
-    await expect(page.getByRole('button', { name: /exploratory/i })).toBeVisible();
+    await expect(page.getByRole('radio', { name: /exploratory/i })).toBeVisible();
   });
 });
