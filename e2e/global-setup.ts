@@ -1,11 +1,13 @@
 import { spawn } from 'child_process';
-import { readdirSync, unlinkSync, writeFileSync } from 'fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
 import path from 'path';
 
 const BACKEND_PORT = 8100;
 const FRONTEND_PORT = 5199;
 const ROOT = path.resolve(__dirname, '..');
 const PID_FILE = path.join(__dirname, '.server-pids.json');
+const STYLE_DIR_FILE = path.join(__dirname, '.style-dir.txt');
 
 async function waitForHealth(url: string, timeoutMs = 30_000): Promise<void> {
   const start = Date.now();
@@ -39,30 +41,14 @@ async function cleanTestSessions(): Promise<void> {
 }
 
 /**
- * Wipe research jobs and approved test genres from Neo4j AND the on-disk
- * catalog. Genre-research tests create jobs (`ambient_jazz`, `test_*`) and
- * the approve flow leaves a GenreProfile node in Neo4j *plus* YAML files
- * in `backend/src/explorator/domain/style/{genres,rules,grammars}/`.
- * Without this cleanup the duplicate-prevention check 409s on subsequent
- * runs and the polling loops time out (no `job_id`, no progression to
- * `pending_review`).
+ * Wipe research jobs and approved test genres from Neo4j.
  *
- * NOTE: this is a stopgap. Real fix is to make the catalog directory
- * configurable so the approve endpoint writes to a temp dir under e2e
- * instead of mutating tracked source paths. Tracked separately.
+ * Test genres are written to a temp catalog directory (via
+ * EXPLORATOR_STYLE_DIR set on the spawned backend), so disk leaks
+ * disappear at teardown when we rm the temp dir. Neo4j leaks need
+ * explicit cleanup since the dev-shared DB persists.
  */
-const GENRE_PROFILE_NAMES = ['ambient_jazz', 'test_review_genre', 'test_approve_genre', 'test_reject_genre', 'test_dup_genre'] as const;
-
-// The exact YAML filenames the approve flow writes per genre name.
-// Keep in sync with the genre-research approve endpoint.
-const ARTIFACT_SUFFIXES_BY_DIR: Record<string, readonly string[]> = {
-  genres: ['.yaml'],
-  rules: ['_rules.yaml'],
-  grammars: ['_grammar.yaml'],
-};
-
 export async function cleanGenreResearchState(): Promise<void> {
-  // 1. Neo4j: research jobs + any test genre nodes
   const container = process.env.NEO4J_CONTAINER ?? 'explorator-neo4j-1';
   const queries = [
     'MATCH (n:GenreResearchJob) DETACH DELETE n',
@@ -75,7 +61,7 @@ export async function cleanGenreResearchState(): Promise<void> {
       cypher,
     ], { stdio: ['ignore', 'ignore', 'pipe'] });
     let stderr = '';
-    proc.stderr?.on('data', (chunk) => { stderr += chunk.toString(); });
+    proc.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
     const code = await new Promise<number | null>((resolve) =>
       proc.on('close', (c) => resolve(c)),
     );
@@ -86,47 +72,43 @@ export async function cleanGenreResearchState(): Promise<void> {
       );
     }
   }
+}
 
-  // 2. Filesystem: YAMLs leaked by the approve endpoint. Allowlist the exact
-  //    filenames each test genre would produce; never sweep by prefix (a real
-  //    genre named `test_drum_machine` would not exist today, but defending
-  //    against future foot-guns is cheaper than recovering from one).
-  const styleRoot = path.join(ROOT, 'backend/src/explorator/domain/style');
-  let deleted = 0;
-  for (const [sub, suffixes] of Object.entries(ARTIFACT_SUFFIXES_BY_DIR)) {
-    const dir = path.join(styleRoot, sub);
-    let names: string[];
-    try {
-      names = readdirSync(dir);
-    } catch (err) {
-      // Only ENOENT is "fine" (dir doesn't exist on a fresh checkout);
-      // anything else (perms, EIO) is a real problem worth surfacing.
-      if ((err as NodeJS.ErrnoException).code === 'ENOENT') continue;
-      throw err;
-    }
-    for (const name of names) {
-      const matches = GENRE_PROFILE_NAMES.some((g) =>
-        suffixes.some((s) => name === `${g}${s}`),
-      );
-      if (matches) {
-        unlinkSync(path.join(dir, name));
-        deleted += 1;
-      }
-    }
+/**
+ * Stage a temp genre catalog and return its path. The spawned backend
+ * is pointed at this dir via EXPLORATOR_STYLE_DIR, so the approve
+ * endpoint writes test YAMLs *here* rather than mutating the
+ * source-controlled `domain/style/` tree. The path is recorded in
+ * .style-dir.txt for global-teardown to remove.
+ */
+function prepareTempCatalog(): string {
+  const sourceCatalog = path.join(ROOT, 'backend/src/explorator/domain/style');
+  const tmpRoot = mkdtempSync(path.join(tmpdir(), 'explorator-e2e-style-'));
+  // Copy only the YAML-bearing subdirs — runtime ignores everything else, and
+  // pulling in loader.py / __pycache__ / CLAUDE.md would just be noise.
+  for (const sub of ['genres', 'rules', 'grammars']) {
+    mkdirSync(path.join(tmpRoot, sub), { recursive: true });
+    cpSync(path.join(sourceCatalog, sub), path.join(tmpRoot, sub), { recursive: true });
   }
-  if (deleted > 0) {
-    console.log(`[e2e] Removed ${deleted} stale test genre YAMLs from on-disk catalog`);
-  }
+  writeFileSync(STYLE_DIR_FILE, tmpRoot);
+  return tmpRoot;
 }
 
 export default async function globalSetup() {
+  const styleDir = prepareTempCatalog();
+  console.log(`[e2e] Catalog staged at ${styleDir}`);
+
   console.log(`[e2e] Starting backend on port ${BACKEND_PORT} (GEMINI_MOCK=true)`);
   const backend = spawn(
     'uv', ['run', 'uvicorn', 'explorator.api.app:create_app', '--factory',
            '--host', '0.0.0.0', '--port', String(BACKEND_PORT)],
     {
       cwd: path.join(ROOT, 'backend'),
-      env: { ...process.env, GEMINI_MOCK: 'true' },
+      env: {
+        ...process.env,
+        GEMINI_MOCK: 'true',
+        EXPLORATOR_STYLE_DIR: styleDir,
+      },
       stdio: 'pipe',
       detached: true,
     },
@@ -155,10 +137,35 @@ export default async function globalSetup() {
 
   // Clean stale sessions from prior test runs to avoid strict mode violations
   await cleanTestSessions();
-  // Clean stale genre-research state so the duplicate-prevention check in the
-  // research API doesn't 409 on the second run of this suite.
+  // Wipe stale Neo4j research-job/genre nodes from the dev-shared DB.
+  // (Disk catalog leaks are handled by the temp dir + teardown rm.)
   await cleanGenreResearchState();
 
   await waitForHealth(`http://localhost:${FRONTEND_PORT}`);
   console.log('[e2e] Frontend ready');
+}
+
+/**
+ * Best-effort recovery of the temp catalog path written by setup, so
+ * teardown can remove it. Returns null if the file is missing or
+ * unreadable — teardown will warn rather than fail.
+ */
+export function readTempCatalogPath(): string | null {
+  try {
+    return readFileSync(STYLE_DIR_FILE, 'utf-8').trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+export function removeTempCatalog(): void {
+  const dir = readTempCatalogPath();
+  if (!dir) return;
+  try {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(STYLE_DIR_FILE, { force: true });
+    console.log(`[e2e] Removed temp catalog at ${dir}`);
+  } catch (err) {
+    console.warn(`[e2e] Could not remove temp catalog ${dir}:`, err);
+  }
 }

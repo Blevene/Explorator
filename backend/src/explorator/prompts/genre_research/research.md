@@ -1,3 +1,4 @@
+<!-- stage: research -->
 # Genre Research: {genre_name}
 
 You are a musicologist researching the genre **{genre_name}** for a music generation system.
