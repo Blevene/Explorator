@@ -126,7 +126,7 @@ async def test_fake_gemini_rejects_unknown_model() -> None:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/adapters/test_gemini_mock.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/adapters/test_gemini_mock.py -v`
 
 - [ ] **Step 3: Implement FakeGeminiClient**
 
@@ -336,12 +336,12 @@ def get_gemini_client() -> GeminiClient:
 
 - [ ] **Step 5: Run tests**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/adapters/test_gemini_mock.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/adapters/test_gemini_mock.py -v`
 Expected: ALL PASS (8 tests)
 
 - [ ] **Step 6: Verify mock works E2E**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && GEMINI_MOCK=true uv run python -c "
+Run: `cd backend && GEMINI_MOCK=true uv run python -c "
 import asyncio
 from explorator.api.deps import get_gemini_client
 client = get_gemini_client()
@@ -352,7 +352,7 @@ Expected: `FakeGeminiClient`
 - [ ] **Step 7: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add backend/src/explorator/adapters/gemini_mock.py backend/src/explorator/api/deps.py backend/tests/unit/adapters/test_gemini_mock.py && git commit -m "feat(e2e): FakeGeminiClient mock with deterministic fixtures and GEMINI_MOCK env toggle"
+cd <repo-root> && git add backend/src/explorator/adapters/gemini_mock.py backend/src/explorator/api/deps.py backend/tests/unit/adapters/test_gemini_mock.py && git commit -m "feat(e2e): FakeGeminiClient mock with deterministic fixtures and GEMINI_MOCK env toggle"
 ```
 
 ---
@@ -584,12 +584,12 @@ export { expect } from '@playwright/test';
 
 - [ ] **Step 7: Install dependencies**
 
-Run: `cd /home/angel/Documents/code/Explorator/e2e && npm install && npx playwright install chromium`
+Run: `cd e2e && npm install && npx playwright install chromium`
 
 - [ ] **Step 8: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add e2e/ && git commit -m "feat(e2e): Playwright infrastructure — config, global setup/teardown, test fixtures"
+cd <repo-root> && git add e2e/ && git commit -m "feat(e2e): Playwright infrastructure — config, global setup/teardown, test fixtures"
 ```
 
 ---
@@ -655,12 +655,12 @@ test.describe('Happy Path', () => {
 
 - [ ] **Step 2: Run**
 
-Run: `cd /home/angel/Documents/code/Explorator/e2e && npx playwright test tests/happy-path.spec.ts --headed`
+Run: `cd e2e && npx playwright test tests/happy-path.spec.ts --headed`
 
 - [ ] **Step 3: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add e2e/tests/happy-path.spec.ts && git commit -m "test(e2e): happy path tests — dashboard, generation, realization"
+cd <repo-root> && git add e2e/tests/happy-path.spec.ts && git commit -m "test(e2e): happy path tests — dashboard, generation, realization"
 ```
 
 ---
@@ -762,12 +762,12 @@ test.describe('M3 Features', () => {
 
 - [ ] **Step 2: Run**
 
-Run: `cd /home/angel/Documents/code/Explorator/e2e && npx playwright test tests/m3-features.spec.ts --headed`
+Run: `cd e2e && npx playwright test tests/m3-features.spec.ts --headed`
 
 - [ ] **Step 3: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add e2e/tests/m3-features.spec.ts && git commit -m "test(e2e): M3 feature tests — feedback, mutation, finalists, caching"
+cd <repo-root> && git add e2e/tests/m3-features.spec.ts && git commit -m "test(e2e): M3 feature tests — feedback, mutation, finalists, caching"
 ```
 
 ---
@@ -817,10 +817,10 @@ test.describe('Error & Edge Cases', () => {
 
 - [ ] **Step 2: Run and commit**
 
-Run: `cd /home/angel/Documents/code/Explorator/e2e && npx playwright test tests/error-edge.spec.ts --headed`
+Run: `cd e2e && npx playwright test tests/error-edge.spec.ts --headed`
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add e2e/tests/error-edge.spec.ts && git commit -m "test(e2e): error and edge case tests — not-found, empty state, progressive disclosure"
+cd <repo-root> && git add e2e/tests/error-edge.spec.ts && git commit -m "test(e2e): error and edge case tests — not-found, empty state, progressive disclosure"
 ```
 
 ---
@@ -934,10 +934,10 @@ test.describe('UX Coherence', () => {
 
 - [ ] **Step 2: Run and commit**
 
-Run: `cd /home/angel/Documents/code/Explorator/e2e && npx playwright test tests/ux-coherence.spec.ts --headed`
+Run: `cd e2e && npx playwright test tests/ux-coherence.spec.ts --headed`
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add e2e/tests/ux-coherence.spec.ts && git commit -m "test(e2e): UX coherence tests — navigation, state consistency, affordances"
+cd <repo-root> && git add e2e/tests/ux-coherence.spec.ts && git commit -m "test(e2e): UX coherence tests — navigation, state consistency, affordances"
 ```
 
 ---
@@ -1085,10 +1085,10 @@ test.describe('Audio & Feedback Integration', () => {
 
 - [ ] **Step 3: Run and commit**
 
-Run: `cd /home/angel/Documents/code/Explorator/e2e && npx playwright test tests/pipeline.spec.ts tests/audio.spec.ts --headed`
+Run: `cd e2e && npx playwright test tests/pipeline.spec.ts tests/audio.spec.ts --headed`
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add e2e/tests/pipeline.spec.ts e2e/tests/audio.spec.ts && git commit -m "test(e2e): pipeline/SSE tests and audio/feedback integration tests"
+cd <repo-root> && git add e2e/tests/pipeline.spec.ts e2e/tests/audio.spec.ts && git commit -m "test(e2e): pipeline/SSE tests and audio/feedback integration tests"
 ```
 
 ---
@@ -1114,11 +1114,11 @@ e2e-headed:  ## Run E2E tests with browser visible
 
 - [ ] **Step 2: Run the full suite**
 
-Run: `cd /home/angel/Documents/code/Explorator && make e2e`
+Run: `cd <repo-root> && make e2e`
 Expected: 18 tests pass
 
 - [ ] **Step 3: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add Makefile && git commit -m "feat(e2e): add make e2e and make e2e-headed targets"
+cd <repo-root> && git add Makefile && git commit -m "feat(e2e): add make e2e and make e2e-headed targets"
 ```

@@ -83,7 +83,7 @@ class TestBassPreferencesVariantModes:
 
 - [ ] **Step 2: Run test — expect fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && .venv/bin/python -m pytest tests/unit/models/test_realization.py::TestBassPreferencesVariantModes -v --tb=short`
+Run: `cd backend && .venv/bin/python -m pytest tests/unit/models/test_realization.py::TestBassPreferencesVariantModes -v --tb=short`
 Expected: AttributeError — field doesn't exist
 
 - [ ] **Step 3: Add variant_bass_modes to BassPreferences**
@@ -187,7 +187,7 @@ class TestSyncopatedBassMode:
 
 - [ ] **Step 2: Run tests — expect fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && .venv/bin/python -m pytest tests/unit/domain/test_bass_syncopated.py -v --tb=short`
+Run: `cd backend && .venv/bin/python -m pytest tests/unit/domain/test_bass_syncopated.py -v --tb=short`
 
 - [ ] **Step 3: Implement syncopated mode in bass.py**
 
@@ -235,7 +235,7 @@ The bass lines list in state grows from N (one per progression) to N × M (one p
 
 - [ ] **Step 2: Run existing tests — no regressions**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && .venv/bin/python -m pytest tests/unit/ -q --tb=short`
+Run: `cd backend && .venv/bin/python -m pytest tests/unit/ -q --tb=short`
 
 - [ ] **Step 3: Commit**
 
@@ -1460,7 +1460,7 @@ for ac_data in state.get("arrangement_candidates", []):
 
 - [ ] **Step 4: Run full test suite**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && .venv/bin/python -m pytest tests/unit/ -q --tb=short`
+Run: `cd backend && .venv/bin/python -m pytest tests/unit/ -q --tb=short`
 
 - [ ] **Step 5: Commit**
 
@@ -1545,7 +1545,7 @@ def test_realization_graph_has_evaluation_nodes(gemini, driver):
 
 - [ ] **Step 2: Run full test suite**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && .venv/bin/python -m pytest tests/unit/ tests/integration/test_realization_flow.py -v --tb=short`
+Run: `cd backend && .venv/bin/python -m pytest tests/unit/ tests/integration/test_realization_flow.py -v --tb=short`
 Expected: All tests PASS
 
 - [ ] **Step 3: Verify file structure**

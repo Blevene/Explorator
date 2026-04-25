@@ -95,7 +95,7 @@ Add these to the `dependencies` list in `backend/pyproject.toml`:
 - [ ] **Step 2: Install**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv sync --all-extras
 ```
 
@@ -108,7 +108,7 @@ uv run python -c "import langgraph; import music21; import sse_starlette; print(
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add backend/pyproject.toml backend/uv.lock
 git commit -m "feat(m1): add langgraph, music21, sse-starlette dependencies"
 ```
@@ -284,7 +284,7 @@ class GeminiClient:
 - [ ] **Step 3: Run unit tests (skip integration if no API key)**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/unit/adapters/test_gemini.py -v
 ```
 
@@ -297,7 +297,7 @@ uv run ruff check src/explorator/adapters/ && uv run mypy src/explorator/adapter
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add backend/src/explorator/adapters/ backend/tests/unit/adapters/
 git commit -m "feat(m1): implement Gemini adapter with google-genai structured output"
 ```
@@ -379,7 +379,7 @@ def test_parse_invalid_chord_returns_unknown() -> None:
 - [ ] **Step 2: Run tests to verify they fail**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/unit/adapters/test_music21_adapter.py -v
 ```
 
@@ -510,7 +510,7 @@ def _quality_suffix(rn) -> str:
 - [ ] **Step 4: Run tests**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/unit/adapters/test_music21_adapter.py -v
 ```
 
@@ -526,7 +526,7 @@ uv run mypy src/explorator/adapters/
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add backend/src/explorator/adapters/music21_adapter.py backend/tests/unit/adapters/test_music21_adapter.py
 git commit -m "feat(m1): add music21 adapter for Roman numeral analysis and chord parsing"
 ```
@@ -597,7 +597,7 @@ def test_defaults_when_not_specified() -> None:
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/unit/domain/test_intent_parser.py -v
 ```
 
@@ -750,7 +750,7 @@ class IntentParser:
 - [ ] **Step 4: Run tests**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/unit/domain/test_intent_parser.py -v
 ```
 
@@ -759,7 +759,7 @@ Expected: All 5 tests PASS (deterministic extraction tests don't need Gemini).
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add backend/src/explorator/domain/intent/ backend/tests/unit/domain/test_intent_parser.py
 git commit -m "feat(m1): add intent parser with hybrid regex + Gemini extraction"
 ```
@@ -904,7 +904,7 @@ Expected: Returns 3 genres (dream_pop, synthwave, cinematic).
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add backend/src/explorator/domain/style/service.py backend/src/explorator/api/app.py
 git commit -m "feat(m1): add style service with genre YAML → Neo4j sync on startup"
 ```
@@ -1146,14 +1146,14 @@ class HarmonyGenerator:
 - [ ] **Step 3: Run tests**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/unit/domain/test_harmony_generator.py -v
 ```
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add backend/src/explorator/domain/harmony/ backend/tests/unit/domain/test_harmony_generator.py
 git commit -m "feat(m1): add harmony generator with Gemini Pro progression generation"
 ```
@@ -1500,14 +1500,14 @@ def select_top_k(
 - [ ] **Step 5: Run all tests**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/unit/domain/test_theory_evaluator.py tests/unit/domain/test_ranking.py -v
 ```
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add backend/src/explorator/domain/evaluation/ backend/tests/unit/domain/test_theory_evaluator.py backend/tests/unit/domain/test_ranking.py
 git commit -m "feat(m1): add theory evaluator (hybrid deterministic + Gemini) and ranking service"
 ```
@@ -1880,14 +1880,14 @@ async def persist_round(state: ExplorationState, *, driver: AsyncDriver) -> dict
 - [ ] **Step 4: Run tests**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/unit/engine/ -v
 ```
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add backend/src/explorator/engine/ backend/tests/unit/engine/
 git commit -m "feat(m1): add LangGraph engine state and all M1 nodes"
 ```
@@ -2014,14 +2014,14 @@ async def test_m1_full_flow(neo4j_driver: AsyncDriver) -> None:
 - [ ] **Step 3: Run integration test (requires API key)**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 GEMINI_API_KEY=$(grep GEMINI_API_KEY .env | cut -d= -f2) uv run pytest tests/integration/test_engine_flow.py -v -s
 ```
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add backend/src/explorator/engine/graph.py backend/tests/integration/test_engine_flow.py
 git commit -m "feat(m1): add LangGraph M1 graph definition with full flow integration test"
 ```
@@ -2310,7 +2310,7 @@ async def get_neo4j_driver():
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add backend/src/explorator/api/
 git commit -m "feat(m1): add rounds API with SSE progress and candidates endpoints"
 ```
@@ -2675,14 +2675,14 @@ export default function SessionWorkspace() {
 - [ ] **Step 6: Build frontend**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend
+cd frontend
 npm run build
 ```
 
 - [ ] **Step 7: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add frontend/
 git commit -m "feat(m1): add candidate card grid, prompt bar with mode toggle, SSE progress"
 ```
@@ -2694,7 +2694,7 @@ git commit -m "feat(m1): add candidate card grid, prompt bar with mode toggle, S
 - [ ] **Step 1: Run full test suite**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 make test
 make lint
 ```
@@ -2738,7 +2738,7 @@ Expected: Progression candidates with chord_symbols and roman_numerals.
 - [ ] **Step 6: Final commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add -A
 git commit -m "feat(m1): complete M1 Harmonic MVP — end-to-end verified"
 ```

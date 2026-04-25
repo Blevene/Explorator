@@ -86,7 +86,7 @@ export const OVERLAY_BACKDROP = "rgba(0, 0, 0, 0.7)";
 
 - [ ] **Step 2: Verify frontend builds**
 
-Run: `cd /home/angel/Documents/code/Explorator/frontend && npm run build`
+Run: `cd frontend && npm run build`
 
 - [ ] **Step 3: Commit**
 
@@ -174,7 +174,7 @@ The explanation display section (lines 134-171) uses:
 
 - [ ] **Step 5: Verify frontend builds**
 
-Run: `cd /home/angel/Documents/code/Explorator/frontend && npm run build`
+Run: `cd frontend && npm run build`
 
 - [ ] **Step 6: Commit**
 
@@ -208,7 +208,7 @@ Also replace `text-slate-500` (line 67) with `style={{ color: 'var(--text-muted)
 
 - [ ] **Step 2: Verify frontend builds**
 
-Run: `cd /home/angel/Documents/code/Explorator/frontend && npm run build`
+Run: `cd frontend && npm run build`
 
 - [ ] **Step 3: Commit**
 
@@ -248,7 +248,7 @@ Read the file first to identify the exact hex values used.
 
 - [ ] **Step 3: Verify frontend builds**
 
-Run: `cd /home/angel/Documents/code/Explorator/frontend && npm run build`
+Run: `cd frontend && npm run build`
 
 - [ ] **Step 4: Commit**
 
@@ -310,7 +310,7 @@ With `className="... card-interactive"` on the root div.
 
 - [ ] **Step 6: Verify frontend builds**
 
-Run: `cd /home/angel/Documents/code/Explorator/frontend && npm run build`
+Run: `cd frontend && npm run build`
 
 - [ ] **Step 7: Commit**
 
@@ -360,7 +360,7 @@ animation: score-bar-fill 200ms ease-out;
 
 - [ ] **Step 4: Verify frontend builds**
 
-Run: `cd /home/angel/Documents/code/Explorator/frontend && npm run build`
+Run: `cd frontend && npm run build`
 
 - [ ] **Step 5: Commit**
 

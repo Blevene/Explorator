@@ -268,7 +268,7 @@ class TestBassLineTypedEvents:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/models/test_realization.py -v --tb=short 2>&1 | tail -30`
+Run: `cd backend && python -m pytest tests/unit/models/test_realization.py -v --tb=short 2>&1 | tail -30`
 Expected: ImportError — new classes don't exist yet
 
 - [ ] **Step 3: Implement model changes in realization.py**
@@ -474,12 +474,12 @@ Note: Keep these as `dict[str, Any]` in the YAML schema to allow flexible YAML i
 
 - [ ] **Step 6: Run tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/models/test_realization.py -v --tb=short 2>&1 | tail -40`
+Run: `cd backend && python -m pytest tests/unit/models/test_realization.py -v --tb=short 2>&1 | tail -40`
 Expected: All tests PASS
 
 - [ ] **Step 7: Run full test suite for regressions**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/ -v --tb=short 2>&1 | tail -20`
+Run: `cd backend && python -m pytest tests/ -v --tb=short 2>&1 | tail -20`
 Expected: All existing tests still pass (the VoicingPlan/BassLine field type change from `list[dict]` to `list[VoicingEvent]`/`list[BassNoteEvent]` may break existing tests that construct with raw dicts — fix those by using the new model types)
 
 - [ ] **Step 8: Commit**
@@ -570,7 +570,7 @@ bass_preferences:
 
 - [ ] **Step 4: Verify YAML loads correctly**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -c "from explorator.domain.style.loader import load_genre_from_yaml; from pathlib import Path; p = load_genre_from_yaml(Path('src/explorator/domain/style/genres/dream_pop.yaml')); print(p.voicing_preferences)"`
+Run: `cd backend && python -c "from explorator.domain.style.loader import load_genre_from_yaml; from pathlib import Path; p = load_genre_from_yaml(Path('src/explorator/domain/style/genres/dream_pop.yaml')); print(p.voicing_preferences)"`
 Expected: Prints the voicing_preferences dict
 
 - [ ] **Step 5: Commit**
@@ -690,7 +690,7 @@ class TestRealizeVoicingRegisters:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/adapters/test_music21_voicing.py -v --tb=short 2>&1 | tail -20`
+Run: `cd backend && python -m pytest tests/unit/adapters/test_music21_voicing.py -v --tb=short 2>&1 | tail -20`
 Expected: ImportError — `realize_voicing` doesn't exist yet
 
 - [ ] **Step 3: Implement realize_voicing in music21_adapter.py**
@@ -892,7 +892,7 @@ def _clamp_to_register(pitches: list, lo: int, hi: int) -> list:
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/adapters/test_music21_voicing.py -v --tb=short 2>&1 | tail -30`
+Run: `cd backend && python -m pytest tests/unit/adapters/test_music21_voicing.py -v --tb=short 2>&1 | tail -30`
 Expected: All tests PASS
 
 - [ ] **Step 5: Commit**
@@ -966,7 +966,7 @@ class TestCheckVoiceLeading:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/adapters/test_music21_voicing.py::TestCheckVoiceLeading -v --tb=short 2>&1 | tail -15`
+Run: `cd backend && python -m pytest tests/unit/adapters/test_music21_voicing.py::TestCheckVoiceLeading -v --tb=short 2>&1 | tail -15`
 Expected: ImportError — `check_voice_leading` doesn't exist yet
 
 - [ ] **Step 3: Implement check_voice_leading**
@@ -1043,7 +1043,7 @@ def check_voice_leading(
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/adapters/test_music21_voicing.py -v --tb=short 2>&1 | tail -30`
+Run: `cd backend && python -m pytest tests/unit/adapters/test_music21_voicing.py -v --tb=short 2>&1 | tail -30`
 Expected: All tests PASS
 
 - [ ] **Step 5: Commit**
@@ -1162,7 +1162,7 @@ class TestVoicingGeneratorRealize:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/domain/test_voicing_generator.py -v --tb=short 2>&1 | tail -15`
+Run: `cd backend && python -m pytest tests/unit/domain/test_voicing_generator.py -v --tb=short 2>&1 | tail -15`
 Expected: ImportError
 
 - [ ] **Step 3: Create domain/realization/__init__.py**
@@ -1308,7 +1308,7 @@ class VoicingGenerator:
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/domain/test_voicing_generator.py -v --tb=short 2>&1 | tail -20`
+Run: `cd backend && python -m pytest tests/unit/domain/test_voicing_generator.py -v --tb=short 2>&1 | tail -20`
 Expected: All tests PASS
 
 - [ ] **Step 6: Commit**
@@ -1412,7 +1412,7 @@ class TestBassLineGeneratorSupportive:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/domain/test_bass_generator.py -v --tb=short 2>&1 | tail -15`
+Run: `cd backend && python -m pytest tests/unit/domain/test_bass_generator.py -v --tb=short 2>&1 | tail -15`
 Expected: ImportError
 
 - [ ] **Step 3: Implement BassLineGenerator**
@@ -1534,7 +1534,7 @@ class BassLineGenerator:
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/domain/test_bass_generator.py -v --tb=short 2>&1 | tail -20`
+Run: `cd backend && python -m pytest tests/unit/domain/test_bass_generator.py -v --tb=short 2>&1 | tail -20`
 Expected: All tests PASS
 
 - [ ] **Step 5: Commit**
@@ -1629,7 +1629,7 @@ class TestArrangementAssembler:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/domain/test_assembly.py -v --tb=short 2>&1 | tail -15`
+Run: `cd backend && python -m pytest tests/unit/domain/test_assembly.py -v --tb=short 2>&1 | tail -15`
 Expected: ImportError
 
 - [ ] **Step 3: Implement ArrangementAssembler**
@@ -1716,7 +1716,7 @@ class ArrangementAssembler:
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/domain/test_assembly.py -v --tb=short 2>&1 | tail -15`
+Run: `cd backend && python -m pytest tests/unit/domain/test_assembly.py -v --tb=short 2>&1 | tail -15`
 Expected: All tests PASS
 
 - [ ] **Step 5: Commit**
@@ -1791,7 +1791,7 @@ class TestVoicingStrategyPrompt:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/prompts/test_voicing_prompt.py -v --tb=short 2>&1 | tail -15`
+Run: `cd backend && python -m pytest tests/unit/prompts/test_voicing_prompt.py -v --tb=short 2>&1 | tail -15`
 Expected: ImportError
 
 - [ ] **Step 3: Implement voicing prompt**
@@ -1853,7 +1853,7 @@ def voicing_strategy_prompt(
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/prompts/test_voicing_prompt.py -v --tb=short 2>&1 | tail -15`
+Run: `cd backend && python -m pytest tests/unit/prompts/test_voicing_prompt.py -v --tb=short 2>&1 | tail -15`
 Expected: All tests PASS
 
 - [ ] **Step 5: Commit**
@@ -2676,12 +2676,12 @@ async def test_realization_flow_end_to_end(gemini, driver):
 
 - [ ] **Step 2: Run integration test**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/integration/test_realization_flow.py -v --tb=short -m integration 2>&1 | tail -15`
+Run: `cd backend && python -m pytest tests/integration/test_realization_flow.py -v --tb=short -m integration 2>&1 | tail -15`
 Expected: PASS (graph compilation test)
 
 - [ ] **Step 3: Run full test suite**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/ -v --tb=short 2>&1 | tail -30`
+Run: `cd backend && python -m pytest tests/ -v --tb=short 2>&1 | tail -30`
 Expected: All tests PASS
 
 - [ ] **Step 4: Commit**
@@ -2697,7 +2697,7 @@ git commit -m "feat(m2a): add realization flow integration test"
 
 - [ ] **Step 1: Run full test suite one last time**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/ -v --tb=short 2>&1 | tail -40`
+Run: `cd backend && python -m pytest tests/ -v --tb=short 2>&1 | tail -40`
 Expected: All tests PASS, no regressions
 
 - [ ] **Step 2: Verify file structure matches spec**
