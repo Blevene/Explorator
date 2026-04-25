@@ -12,7 +12,6 @@ from explorator.engine.nodes.rank_and_select import (
     rank_and_select,
 )
 
-
 # ---------------------------------------------------------------------------
 # _compute_weighted_total
 # ---------------------------------------------------------------------------
@@ -87,8 +86,8 @@ def test_rank_family_rejects_below_threshold() -> None:
 def test_rank_family_selects_top_2() -> None:
     """Top 2 highest-scoring candidates are returned."""
     scores_a = {**_perfect_scores(), "voice_leading": 10.0}  # best
-    scores_b = {**_perfect_scores(), "voice_leading": 8.0}   # second
-    scores_c = {**_perfect_scores(), "voice_leading": 6.0}   # third
+    scores_b = {**_perfect_scores(), "voice_leading": 8.0}  # second
+    scores_c = {**_perfect_scores(), "voice_leading": 6.0}  # third
 
     cands = [
         _make_candidate("c", scores_c),
@@ -133,9 +132,33 @@ def test_rank_family_empty_input() -> None:
 def test_identify_pareto_front_basic() -> None:
     """Non-dominated candidates identified correctly."""
     candidates = [
-        {"id": "a", "merged_scores": {"genre_fit": 9.0, "novelty": 3.0, "loopability": 5.0, "playability": 5.0}},
-        {"id": "b", "merged_scores": {"genre_fit": 3.0, "novelty": 9.0, "loopability": 5.0, "playability": 5.0}},
-        {"id": "c", "merged_scores": {"genre_fit": 5.0, "novelty": 5.0, "loopability": 5.0, "playability": 5.0}},
+        {
+            "id": "a",
+            "merged_scores": {
+                "genre_fit": 9.0,
+                "novelty": 3.0,
+                "loopability": 5.0,
+                "playability": 5.0,
+            },
+        },
+        {
+            "id": "b",
+            "merged_scores": {
+                "genre_fit": 3.0,
+                "novelty": 9.0,
+                "loopability": 5.0,
+                "playability": 5.0,
+            },
+        },
+        {
+            "id": "c",
+            "merged_scores": {
+                "genre_fit": 5.0,
+                "novelty": 5.0,
+                "loopability": 5.0,
+                "playability": 5.0,
+            },
+        },
     ]
     front = _identify_pareto_front(candidates)
     assert set(front) == {"a", "b", "c"}
@@ -159,12 +182,30 @@ async def test_rank_and_select_uses_state_weights() -> None:
     prog_a = {
         "id": "prog_a",
         "chord_symbols": ["C", "G"],
-        "metadata": {"scores": {"genre_fit": 3.0, "novelty": 9.5, "emotional_fit": 5.0, "theoretical_coherence": 5.0, "cadence_quality": 5.0, "loopability": 5.0}},
+        "metadata": {
+            "scores": {
+                "genre_fit": 3.0,
+                "novelty": 9.5,
+                "emotional_fit": 5.0,
+                "theoretical_coherence": 5.0,
+                "cadence_quality": 5.0,
+                "loopability": 5.0,
+            }
+        },
     }
     prog_b = {
         "id": "prog_b",
         "chord_symbols": ["Am", "F"],
-        "metadata": {"scores": {"genre_fit": 9.5, "novelty": 3.0, "emotional_fit": 5.0, "theoretical_coherence": 5.0, "cadence_quality": 5.0, "loopability": 5.0}},
+        "metadata": {
+            "scores": {
+                "genre_fit": 9.5,
+                "novelty": 3.0,
+                "emotional_fit": 5.0,
+                "theoretical_coherence": 5.0,
+                "cadence_quality": 5.0,
+                "loopability": 5.0,
+            }
+        },
     }
 
     arr_a = {"id": "arr_a", "progression_candidate_id": "prog_a", "status": "draft"}
@@ -206,8 +247,16 @@ async def test_rank_and_select_produces_final_selection() -> None:
     prog = {
         "id": "prog_1",
         "chord_symbols": ["C", "G", "Am", "F"],
-        "metadata": {"scores": {"genre_fit": 9.0, "novelty": 5.0, "emotional_fit": 7.0,
-                                  "theoretical_coherence": 7.0, "cadence_quality": 7.0, "loopability": 8.0}},
+        "metadata": {
+            "scores": {
+                "genre_fit": 9.0,
+                "novelty": 5.0,
+                "emotional_fit": 7.0,
+                "theoretical_coherence": 7.0,
+                "cadence_quality": 7.0,
+                "loopability": 8.0,
+            }
+        },
     }
     arr = {"id": "arr_1", "progression_candidate_id": "prog_1", "status": "draft"}
     ev = {

@@ -69,14 +69,21 @@ async def validate_draft(
     await repo.update_job(job_id, {"status": "validating"})
 
     if callback:
-        await callback("genre_research", {"status": "validating", "detail": "Validating against schemas..."})
+        await callback(
+            "genre_research", {"status": "validating", "detail": "Validating against schemas..."}
+        )
 
     errors = _validate_draft_yamls(draft_yamls)
 
     if callback:
         if errors:
-            await callback("genre_research", {"status": "validating", "detail": f"Found {len(errors)} validation warning(s)"})
+            await callback(
+                "genre_research",
+                {"status": "validating", "detail": f"Found {len(errors)} validation warning(s)"},
+            )
         else:
-            await callback("genre_research", {"status": "validating", "detail": "Validation passed"})
+            await callback(
+                "genre_research", {"status": "validating", "detail": "Validation passed"}
+            )
 
     return {"validation_errors": errors, "status": "pending_review"}

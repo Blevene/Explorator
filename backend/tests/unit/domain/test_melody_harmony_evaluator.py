@@ -1,10 +1,8 @@
 """Tests for MelodyHarmonyEvaluator."""
 
 from explorator.domain.evaluation.melody_harmony import MelodyHarmonyEvaluator
-from explorator.models.evaluation import MelodyHarmonyEvaluation
 from explorator.models.melody import MelodicComplement, MelodicNoteEvent
 from explorator.models.realization import VoicingEvent
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -21,7 +19,9 @@ def _make_complement(events: list[MelodicNoteEvent]) -> MelodicComplement:
     )
 
 
-def _make_voicing_event(bar: int, pitches: list[str], chord_symbol: str, beat: float = 1.0) -> VoicingEvent:
+def _make_voicing_event(
+    bar: int, pitches: list[str], chord_symbol: str, beat: float = 1.0
+) -> VoicingEvent:
     return VoicingEvent(bar=bar, beat=beat, pitches=pitches, chord_symbol=chord_symbol)
 
 
@@ -92,7 +92,9 @@ class TestMelodySupportScore:
             _note(1, 3.0, "G5"),
         ]
         complement_ct = _make_complement(notes_ct)
-        result_ct = ev.evaluate(complement_ct, ["Cmaj7"], voicings, "stepwise", "cand_chord_tones_cmaj7")
+        result_ct = ev.evaluate(
+            complement_ct, ["Cmaj7"], voicings, "stepwise", "cand_chord_tones_cmaj7"
+        )
         assert result_non.melody_support_score < result_ct.melody_support_score
 
     def test_stepwise_motion_scores_high_smoothness(self) -> None:
@@ -124,7 +126,9 @@ class TestMelodySupportScore:
         voicings = [_make_voicing_event(1, ["C3", "E3", "G3"], "C")]
         ev = MelodyHarmonyEvaluator()
         result_leaping = ev.evaluate(complement, ["C"], voicings, "leaping", "cand_leaping")
-        result_stepwise = ev.evaluate(complement, ["C"], voicings, "stepwise", "cand_stepwise_big_leaps")
+        result_stepwise = ev.evaluate(
+            complement, ["C"], voicings, "stepwise", "cand_stepwise_big_leaps"
+        )
         # With leaping preference, 7-semitone interval is within threshold → higher score
         assert result_leaping.melody_support_score >= result_stepwise.melody_support_score
 

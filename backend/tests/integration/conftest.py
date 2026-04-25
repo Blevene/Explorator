@@ -4,7 +4,6 @@ import os
 from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock
 
-import pytest
 import pytest_asyncio
 from neo4j import AsyncDriver, AsyncGraphDatabase
 

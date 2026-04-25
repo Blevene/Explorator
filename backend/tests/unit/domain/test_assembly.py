@@ -1,6 +1,11 @@
 from explorator.domain.realization.assembly import ArrangementAssembler
 from explorator.models.realization import (
-    ArrangementCandidate, ArrangementFamily, BassLine, BassNoteEvent, VoicingEvent, VoicingPlan,
+    ArrangementCandidate,
+    ArrangementFamily,
+    BassLine,
+    BassNoteEvent,
+    VoicingEvent,
+    VoicingPlan,
 )
 
 

@@ -1,7 +1,8 @@
 """Tests for ComparisonView repo and API route."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from explorator.graph.comparison_view_repo import ComparisonViewRepo
 from explorator.models.export import ComparisonView
@@ -118,23 +119,22 @@ class TestComparisonRoute:
         with patch(
             "explorator.api.routes.comparisons.get_neo4j_driver",
             new=AsyncMock(return_value=MagicMock()),
-        ):
-            with patch(
-                "explorator.api.routes.comparisons.ComparisonViewRepo"
-            ) as MockRepo:
-                MockRepo.return_value.create = AsyncMock()
+        ), patch(
+            "explorator.api.routes.comparisons.ComparisonViewRepo"
+        ) as MockRepo:
+            MockRepo.return_value.create = AsyncMock()
 
-                status, data = await _post(
-                    app,
-                    "/v1/sessions/sess_1/comparisons",
-                    {
-                        "candidate_ids": ["arr_1", "arr_2"],
-                        "comparison_axes": ["voice_leading", "tension_curve"],
-                        "labels": {"arr_1": "A", "arr_2": "B"},
-                    },
-                )
-                assert status == 201
-                assert "comparison_id" in data
+            status, data = await _post(
+                app,
+                "/v1/sessions/sess_1/comparisons",
+                {
+                    "candidate_ids": ["arr_1", "arr_2"],
+                    "comparison_axes": ["voice_leading", "tension_curve"],
+                    "labels": {"arr_1": "A", "arr_2": "B"},
+                },
+            )
+            assert status == 201
+            assert "comparison_id" in data
 
     @pytest.mark.asyncio
     async def test_post_comparison_requires_two_candidates(self):

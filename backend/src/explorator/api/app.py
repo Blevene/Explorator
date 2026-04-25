@@ -59,7 +59,9 @@ def create_app() -> FastAPI:
     app.add_middleware(AuthStubMiddleware)
 
     app.include_router(sessions.router, prefix="/v1")
-    app.include_router(genre_research_router, prefix="/v1")  # before genres — /genres/research, /genres/drafts must match before /genres/{name}
+    app.include_router(
+        genre_research_router, prefix="/v1"
+    )  # before genres — /genres/research, /genres/drafts must match before /genres/{name}
     app.include_router(genres.router, prefix="/v1")
     app.include_router(rounds.router, prefix="/v1")
     app.include_router(candidates.router, prefix="/v1")

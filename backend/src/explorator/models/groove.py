@@ -4,7 +4,6 @@ from pydantic import BaseModel, Field
 
 from explorator.models.base import BaseEntity
 
-
 # ---------------------------------------------------------------------------
 # Event models
 # ---------------------------------------------------------------------------

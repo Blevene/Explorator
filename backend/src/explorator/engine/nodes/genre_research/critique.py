@@ -28,7 +28,9 @@ async def critique_draft(
     await repo.update_job(job_id, {"status": "critiquing"})
 
     if callback:
-        await callback("genre_research", {"status": "critiquing", "detail": "Reviewing draft for accuracy..."})
+        await callback(
+            "genre_research", {"status": "critiquing", "detail": "Reviewing draft for accuracy..."}
+        )
 
     # Fresh context: only draft + genre name, no research log
     user_prompt = load_prompt(
@@ -57,7 +59,9 @@ async def critique_draft(
     critique = GenreCritiqueResponse.model_validate(parsed)
 
     if callback:
-        detail = "No major issues found" if critique.passed else f"Found {len(critique.issues)} issue(s)"
+        detail = (
+            "No major issues found" if critique.passed else f"Found {len(critique.issues)} issue(s)"
+        )
         await callback("genre_research", {"status": "critiquing", "detail": detail})
 
     # Build critique trail entry

@@ -4,12 +4,12 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from explorator.domain.evaluation.ranking import CANONICAL_DEFAULT_WEIGHTS
 from explorator.domain.intent.feedback import (
     FeedbackInterpretation,
     FeedbackInterpreter,
     apply_weight_deltas,
 )
-from explorator.domain.evaluation.ranking import CANONICAL_DEFAULT_WEIGHTS
 
 
 def test_feedback_interpretation_model() -> None:

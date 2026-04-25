@@ -8,11 +8,9 @@ CONSTRAINTS = [
     " FOR (n:SessionContext) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT creative_brief_id IF NOT EXISTS"
     " FOR (n:CreativeBrief) REQUIRE n.id IS UNIQUE",
-    "CREATE CONSTRAINT genre_profile_id IF NOT EXISTS"
-    " FOR (n:GenreProfile) REQUIRE n.id IS UNIQUE",
+    "CREATE CONSTRAINT genre_profile_id IF NOT EXISTS FOR (n:GenreProfile) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT genre_rule_id IF NOT EXISTS FOR (n:GenreRule) REQUIRE n.id IS UNIQUE",
-    "CREATE CONSTRAINT anti_pattern_id IF NOT EXISTS"
-    " FOR (n:AntiPattern) REQUIRE n.id IS UNIQUE",
+    "CREATE CONSTRAINT anti_pattern_id IF NOT EXISTS FOR (n:AntiPattern) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT harmonic_grammar_id IF NOT EXISTS"
     " FOR (n:HarmonicGrammar) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT search_plan_id IF NOT EXISTS FOR (n:SearchPlan) REQUIRE n.id IS UNIQUE",
@@ -30,17 +28,15 @@ CONSTRAINTS = [
     " FOR (n:ArrangementCandidate) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT arrangement_family_id IF NOT EXISTS"
     " FOR (n:ArrangementFamily) REQUIRE n.id IS UNIQUE",
-    "CREATE CONSTRAINT voicing_plan_id IF NOT EXISTS"
-    " FOR (n:VoicingPlan) REQUIRE n.id IS UNIQUE",
+    "CREATE CONSTRAINT voicing_plan_id IF NOT EXISTS FOR (n:VoicingPlan) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT bass_line_id IF NOT EXISTS FOR (n:BassLine) REQUIRE n.id IS UNIQUE",
-    "CREATE CONSTRAINT groove_pattern_id IF NOT EXISTS FOR (n:GroovePattern) REQUIRE n.id IS UNIQUE",
+    "CREATE CONSTRAINT groove_pattern_id IF NOT EXISTS FOR (n:GroovePattern) REQUIRE n.id IS UNIQUE",  # noqa: E501
     "CREATE CONSTRAINT evaluation_bundle_id IF NOT EXISTS"
     " FOR (n:EvaluationBundle) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT evaluation_id IF NOT EXISTS FOR (n:Evaluation) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT aggregate_scorecard_id IF NOT EXISTS"
     " FOR (n:AggregateScorecard) REQUIRE n.id IS UNIQUE",
-    "CREATE CONSTRAINT search_round_id IF NOT EXISTS"
-    " FOR (n:SearchRound) REQUIRE n.id IS UNIQUE",
+    "CREATE CONSTRAINT search_round_id IF NOT EXISTS FOR (n:SearchRound) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT mutation_record_id IF NOT EXISTS"
     " FOR (n:MutationRecord) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT pareto_front_snapshot_id IF NOT EXISTS"
@@ -68,9 +64,9 @@ INDEXES = [
     " FOR (n:AggregateScorecard) ON (n.weighted_total)",
     # M5d: PatternLibraryEntry indexes + natural-key uniqueness
     "CREATE INDEX pattern_library_genre IF NOT EXISTS FOR (n:PatternLibraryEntry) ON (n.genre)",
-    "CREATE INDEX pattern_library_genre_type IF NOT EXISTS FOR (n:PatternLibraryEntry) ON (n.genre, n.pattern_type)",
-    "CREATE INDEX pattern_library_weighted_total IF NOT EXISTS FOR (n:PatternLibraryEntry) ON (n.weighted_total)",
-    "CREATE CONSTRAINT pattern_library_natural_key IF NOT EXISTS FOR (n:PatternLibraryEntry) REQUIRE (n.source_candidate_id, n.pattern_type) IS UNIQUE",
+    "CREATE INDEX pattern_library_genre_type IF NOT EXISTS FOR (n:PatternLibraryEntry) ON (n.genre, n.pattern_type)",  # noqa: E501
+    "CREATE INDEX pattern_library_weighted_total IF NOT EXISTS FOR (n:PatternLibraryEntry) ON (n.weighted_total)",  # noqa: E501
+    "CREATE CONSTRAINT pattern_library_natural_key IF NOT EXISTS FOR (n:PatternLibraryEntry) REQUIRE (n.source_candidate_id, n.pattern_type) IS UNIQUE",  # noqa: E501
 ]
 
 

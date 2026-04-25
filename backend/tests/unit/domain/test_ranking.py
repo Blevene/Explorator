@@ -1,6 +1,10 @@
 """Tests for candidate ranking."""
 
-from explorator.domain.evaluation.ranking import CANONICAL_DEFAULT_WEIGHTS, select_top_k, weighted_score
+from explorator.domain.evaluation.ranking import (
+    CANONICAL_DEFAULT_WEIGHTS,
+    select_top_k,
+    weighted_score,
+)
 from explorator.models.evaluation import AggregateScorecard, ObjectiveWeights
 
 

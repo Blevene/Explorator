@@ -18,12 +18,16 @@ def _make_strategy() -> VoicingStrategyResponse:
         voice_count=4,
         per_chord=[
             ChordVoicingInstruction(
-                chord_symbol="Cmaj7", voicing_type="open",
-                target_register="mid_high", extensions_to_include=[],
+                chord_symbol="Cmaj7",
+                voicing_type="open",
+                target_register="mid_high",
+                extensions_to_include=[],
             ),
             ChordVoicingInstruction(
-                chord_symbol="Am7", voicing_type="open",
-                target_register="mid_high", extensions_to_include=[],
+                chord_symbol="Am7",
+                voicing_type="open",
+                target_register="mid_high",
+                extensions_to_include=[],
             ),
         ],
     )
@@ -33,7 +37,8 @@ class TestVoicingGeneratorRealize:
     def test_produces_voicing_plan(self):
         gen = VoicingGenerator()
         plan = gen.realize(
-            _make_strategy(), ["Cmaj7", "Am7"],
+            _make_strategy(),
+            ["Cmaj7", "Am7"],
             VoicingPreferences(default_register="mid_high"),
             VariantConfig(voicing_type="open"),
         )
@@ -45,7 +50,8 @@ class TestVoicingGeneratorRealize:
     def test_events_have_correct_pitches(self):
         gen = VoicingGenerator()
         plan = gen.realize(
-            _make_strategy(), ["Cmaj7", "Am7"],
+            _make_strategy(),
+            ["Cmaj7", "Am7"],
             VoicingPreferences(default_register="mid_high"),
             VariantConfig(voicing_type="close"),
         )
@@ -58,8 +64,12 @@ class TestVoicingGeneratorRealize:
     def test_variant_overrides_voicing_type(self):
         gen = VoicingGenerator()
         prefs = VoicingPreferences()
-        plan_open = gen.realize(_make_strategy(), ["Cmaj7", "Am7"], prefs, VariantConfig(voicing_type="open"))
-        plan_close = gen.realize(_make_strategy(), ["Cmaj7", "Am7"], prefs, VariantConfig(voicing_type="close"))
+        plan_open = gen.realize(
+            _make_strategy(), ["Cmaj7", "Am7"], prefs, VariantConfig(voicing_type="open")
+        )
+        plan_close = gen.realize(
+            _make_strategy(), ["Cmaj7", "Am7"], prefs, VariantConfig(voicing_type="close")
+        )
         assert plan_open.voicing_events[0].pitches != plan_close.voicing_events[0].pitches
 
     def test_generate_variants_produces_multiple(self):
@@ -74,8 +84,10 @@ class TestVoicingGeneratorRealize:
     def test_entity_fields(self):
         gen = VoicingGenerator()
         plan = gen.realize(
-            _make_strategy(), ["Cmaj7"],
-            VoicingPreferences(), VariantConfig(voicing_type="open"),
+            _make_strategy(),
+            ["Cmaj7"],
+            VoicingPreferences(),
+            VariantConfig(voicing_type="open"),
         )
         assert plan.id.startswith("vp_")
         assert plan.type == "voicing_plan"
@@ -85,7 +97,8 @@ class TestVoicingGeneratorRealize:
         """Strategy has 2 per_chord entries but we pass 3 chord symbols."""
         gen = VoicingGenerator()
         plan = gen.realize(
-            _make_strategy(), ["Cmaj7", "Am7", "Fmaj7"],
+            _make_strategy(),
+            ["Cmaj7", "Am7", "Fmaj7"],
             VoicingPreferences(default_register="mid_high", default_voicing_type="open"),
             VariantConfig(voicing_type="open"),
         )

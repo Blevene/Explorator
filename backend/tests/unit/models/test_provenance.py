@@ -1,6 +1,6 @@
 """Tests for ProvenanceEvent and ProvenanceTrace models."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from pydantic import ValidationError
@@ -13,7 +13,7 @@ class TestProvenanceEvent:
 
     def test_minimal_event(self):
         ev = ProvenanceEvent(
-            timestamp=datetime(2026, 4, 12, tzinfo=timezone.utc),
+            timestamp=datetime(2026, 4, 12, tzinfo=UTC),
             action="generate",
             object_id="pc_abc123",
         )
@@ -23,7 +23,7 @@ class TestProvenanceEvent:
 
     def test_full_event(self):
         ev = ProvenanceEvent(
-            timestamp=datetime(2026, 4, 12, tzinfo=timezone.utc),
+            timestamp=datetime(2026, 4, 12, tzinfo=UTC),
             action="mutate",
             object_id="pc_abc123",
             round_number=2,
@@ -38,7 +38,7 @@ class TestProvenanceEvent:
 
     def test_serialization_roundtrip(self):
         ev = ProvenanceEvent(
-            timestamp=datetime(2026, 4, 12, tzinfo=timezone.utc),
+            timestamp=datetime(2026, 4, 12, tzinfo=UTC),
             action="rank_and_select",
             object_id="session_123",
             round_number=1,
@@ -119,7 +119,11 @@ class TestProvenanceTraceRepo:
 
         new_events = [
             {"timestamp": "2026-04-12T00:01:00Z", "action": "mutate", "object_id": "pc_2"},
-            {"timestamp": "2026-04-12T00:02:00Z", "action": "rank_and_select", "object_id": "sess_test2"},
+            {
+                "timestamp": "2026-04-12T00:02:00Z",
+                "action": "rank_and_select",
+                "object_id": "sess_test2",
+            },
         ]
         await repo.append_events("pt_test2", new_events)
 

@@ -1,7 +1,6 @@
 """Explanation API routes — generate and cache candidate explanations."""
 
 import logging
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from neo4j import AsyncDriver

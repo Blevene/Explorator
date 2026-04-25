@@ -2,13 +2,15 @@
 
 from explorator.domain.realization.bass import BassLineGenerator
 from explorator.models.groove import GrooveEvent, GroovePattern
-from explorator.models.realization import BassLine, BassNoteEvent, BassPreferences
+from explorator.models.realization import BassLine, BassPreferences
 
 
 class TestBassLineGeneratorSupportive:
     def test_dream_pop_supportive(self):
         gen = BassLineGenerator()
-        prefs = BassPreferences(default_bass_mode="supportive", default_register="low", rhythmic_density="sparse")
+        prefs = BassPreferences(
+            default_bass_mode="supportive", default_register="low", rhythmic_density="sparse"
+        )
         bl = gen.generate(["Cmaj7", "Am7", "Fmaj7", "G7"], prefs, genre="dream_pop")
         assert isinstance(bl, BassLine)
         assert bl.style_mode == "supportive"
@@ -19,14 +21,18 @@ class TestBassLineGeneratorSupportive:
 
     def test_synthwave_supportive(self):
         gen = BassLineGenerator()
-        prefs = BassPreferences(default_bass_mode="supportive", default_register="low", rhythmic_density="moderate")
+        prefs = BassPreferences(
+            default_bass_mode="supportive", default_register="low", rhythmic_density="moderate"
+        )
         bl = gen.generate(["Cm", "Fm"], prefs, genre="synthwave")
         assert isinstance(bl, BassLine)
         assert len(bl.note_events) == 4  # moderate = root + octave per bar = 2 events × 2 chords
 
     def test_cinematic_pedal(self):
         gen = BassLineGenerator()
-        prefs = BassPreferences(default_bass_mode="pedal", default_register="low", rhythmic_density="sparse")
+        prefs = BassPreferences(
+            default_bass_mode="pedal", default_register="low", rhythmic_density="sparse"
+        )
         bl = gen.generate(["Cmaj7", "Am7", "Fmaj7", "G7"], prefs, genre="cinematic")
         assert bl.style_mode == "pedal"
         assert len(bl.note_events) >= 4
@@ -69,12 +75,14 @@ class TestBassLineGeneratorGroove:
         prefs = BassPreferences(default_register="low")
 
         # Absolute beats: bar 0 gets 1.0, 3.0; bar 1 gets 5.0, 7.0
-        groove = _make_groove_pattern([
-            GrooveEvent(beat=1.0, duration_beats=2.0, velocity=100, accent=True),
-            GrooveEvent(beat=3.0, duration_beats=2.0, velocity=80, accent=False),
-            GrooveEvent(beat=5.0, duration_beats=2.0, velocity=100, accent=True),
-            GrooveEvent(beat=7.0, duration_beats=2.0, velocity=80, accent=False),
-        ])
+        groove = _make_groove_pattern(
+            [
+                GrooveEvent(beat=1.0, duration_beats=2.0, velocity=100, accent=True),
+                GrooveEvent(beat=3.0, duration_beats=2.0, velocity=80, accent=False),
+                GrooveEvent(beat=5.0, duration_beats=2.0, velocity=100, accent=True),
+                GrooveEvent(beat=7.0, duration_beats=2.0, velocity=80, accent=False),
+            ]
+        )
 
         # 2 chords = 2 bars, each bar gets 2 groove events
         bl = gen.generate(["Cmaj7", "Am7"], prefs, genre="dream_pop", groove_pattern=groove)
@@ -101,10 +109,12 @@ class TestBassLineGeneratorGroove:
         gen = BassLineGenerator()
         prefs = BassPreferences(default_register="low")
 
-        groove = _make_groove_pattern([
-            GrooveEvent(beat=1.0, duration_beats=2.0, velocity=100, accent=True),
-            GrooveEvent(beat=3.0, duration_beats=2.0, velocity=70, accent=False),
-        ])
+        groove = _make_groove_pattern(
+            [
+                GrooveEvent(beat=1.0, duration_beats=2.0, velocity=100, accent=True),
+                GrooveEvent(beat=3.0, duration_beats=2.0, velocity=70, accent=False),
+            ]
+        )
 
         bl = gen.generate(["C"], prefs, genre="dream_pop", groove_pattern=groove)
 
@@ -117,7 +127,9 @@ class TestBassLineGeneratorGroove:
     def test_no_groove_preserves_existing_behavior(self):
         """Calling generate() without groove_pattern should produce normal BassLine."""
         gen = BassLineGenerator()
-        prefs = BassPreferences(default_bass_mode="supportive", default_register="low", rhythmic_density="sparse")
+        prefs = BassPreferences(
+            default_bass_mode="supportive", default_register="low", rhythmic_density="sparse"
+        )
 
         bl = gen.generate(["Cmaj7", "Am7", "Fmaj7", "G7"], prefs, genre="dream_pop")
 
@@ -130,7 +142,9 @@ class TestBassLineGeneratorGroove:
     def test_empty_groove_pattern_falls_back_to_existing(self):
         """A GroovePattern with no events should fall back to normal generation."""
         gen = BassLineGenerator()
-        prefs = BassPreferences(default_bass_mode="supportive", default_register="low", rhythmic_density="sparse")
+        prefs = BassPreferences(
+            default_bass_mode="supportive", default_register="low", rhythmic_density="sparse"
+        )
 
         empty_groove = _make_groove_pattern([])
         bl = gen.generate(["C"], prefs, genre="dream_pop", groove_pattern=empty_groove)
@@ -143,9 +157,11 @@ class TestBassLineGeneratorGroove:
         gen = BassLineGenerator()
         prefs = BassPreferences(default_register="low")
 
-        groove = _make_groove_pattern([
-            GrooveEvent(beat=1.0, duration_beats=1.0, velocity=127, accent=True),
-        ])
+        groove = _make_groove_pattern(
+            [
+                GrooveEvent(beat=1.0, duration_beats=1.0, velocity=127, accent=True),
+            ]
+        )
 
         bl = gen.generate(["C"], prefs, genre="dream_pop", groove_pattern=groove)
         assert bl.note_events[0].velocity == 127

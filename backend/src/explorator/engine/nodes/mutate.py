@@ -26,7 +26,7 @@ def _select_candidates_to_mutate(
     selected: list[str] = []
     seen: set[str] = set()
 
-    for cid in (user_targeted or []):
+    for cid in user_targeted or []:
         if cid not in seen and len(selected) < budget:
             selected.append(cid)
             seen.add(cid)
@@ -160,7 +160,9 @@ async def mutate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, 
                 {
                     "field": f"chord_symbols[{m.position}]" if m.position >= 0 else "progression",
                     "operation": m.operation,
-                    "description": m.description or f"{m.original_value} → {m.new_value}" if m.original_value else m.reason,
+                    "description": m.description or f"{m.original_value} → {m.new_value}"
+                    if m.original_value
+                    else m.reason,
                 }
                 for m in response.mutations
             ],
@@ -174,17 +176,21 @@ async def mutate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, 
     existing_events = list(state.get("provenance_events", []))
     now_iso = now.isoformat()
     for rec in new_records:
-        existing_events.append({
-            "timestamp": now_iso,
-            "action": "mutate",
-            "object_id": rec["result_candidate_id"],
-            "round_number": round_number + 1,
-            "details": {
-                "source_candidate_id": rec["source_candidate_id"],
-                "mutation_type": rec["changes"][0]["operation"] if rec.get("changes") else "unknown",
-                "result_candidate_id": rec["result_candidate_id"],
-            },
-        })
+        existing_events.append(
+            {
+                "timestamp": now_iso,
+                "action": "mutate",
+                "object_id": rec["result_candidate_id"],
+                "round_number": round_number + 1,
+                "details": {
+                    "source_candidate_id": rec["source_candidate_id"],
+                    "mutation_type": rec["changes"][0]["operation"]
+                    if rec.get("changes")
+                    else "unknown",
+                    "result_candidate_id": rec["result_candidate_id"],
+                },
+            }
+        )
 
     history_snapshot = [
         {"id": p["id"], "round": round_number, "scores": prog_scores.get(p["id"], {})}
@@ -192,10 +198,13 @@ async def mutate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, 
     ]
 
     if callback:
-        await callback("mutation_completed", {
-            "mutations_count": len(new_records),
-            "round": round_number + 1,
-        })
+        await callback(
+            "mutation_completed",
+            {
+                "mutations_count": len(new_records),
+                "round": round_number + 1,
+            },
+        )
 
     return {
         "progression_candidates": existing_progs + new_progs,

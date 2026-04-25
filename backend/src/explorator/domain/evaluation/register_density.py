@@ -86,8 +86,7 @@ class RegisterDensityEvaluator:
 
             # 1. Mud zone check: count pitches in [36, 52]
             mud_count = sum(
-                1 for m in all_voicing_midi + bass_midi_list
-                if _MUD_ZONE_LOW <= m <= _MUD_ZONE_HIGH
+                1 for m in all_voicing_midi + bass_midi_list if _MUD_ZONE_LOW <= m <= _MUD_ZONE_HIGH
             )
             if mud_count > 2:
                 mud_bars += 1
@@ -97,7 +96,9 @@ class RegisterDensityEvaluator:
             if all_voicing_midi:
                 sorted_midi = sorted(all_voicing_midi)
                 if len(sorted_midi) >= 3:
-                    gaps = [sorted_midi[i + 1] - sorted_midi[i] for i in range(len(sorted_midi) - 1)]
+                    gaps = [
+                        sorted_midi[i + 1] - sorted_midi[i] for i in range(len(sorted_midi) - 1)
+                    ]
                     has_wide = any(g > 19 for g in gaps)
                     has_tight = any(g < 3 for g in gaps)
                     if has_wide and has_tight:
@@ -145,5 +146,3 @@ class RegisterDensityEvaluator:
             evaluation.spacing_quality,
         ]
         return round(sum(fields) / len(fields), 3)
-
-

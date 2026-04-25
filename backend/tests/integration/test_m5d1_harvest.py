@@ -26,52 +26,98 @@ def _state_with_two_finalists() -> dict:
         },
         "arrangement_candidates": [
             {
-                "id": "arr_01", "progression_candidate_id": "prog_01",
-                "voicing_plan_id": "vp_01", "bass_line_id": "bl_01",
-                "groove_pattern_id": "gp_01", "melodic_complement_id": "mc_01",
+                "id": "arr_01",
+                "progression_candidate_id": "prog_01",
+                "voicing_plan_id": "vp_01",
+                "bass_line_id": "bl_01",
+                "groove_pattern_id": "gp_01",
+                "melodic_complement_id": "mc_01",
             },
             {
-                "id": "arr_02", "progression_candidate_id": "prog_02",
-                "voicing_plan_id": "vp_02", "bass_line_id": "bl_02",
-                "groove_pattern_id": "gp_02", "melodic_complement_id": "mc_02",
+                "id": "arr_02",
+                "progression_candidate_id": "prog_02",
+                "voicing_plan_id": "vp_02",
+                "bass_line_id": "bl_02",
+                "groove_pattern_id": "gp_02",
+                "melodic_complement_id": "mc_02",
             },
         ],
         "progression_candidates": [
             {
-                "id": "prog_01", "key_center": "A", "mode": "major",
-                "chord_symbols": ["Amaj7", "F#m7", "Dmaj7", "E7"], "phrase_length_bars": 4,
+                "id": "prog_01",
+                "key_center": "A",
+                "mode": "major",
+                "chord_symbols": ["Amaj7", "F#m7", "Dmaj7", "E7"],
+                "phrase_length_bars": 4,
                 "metadata": {"roman_numerals": ["Imaj7", "vi7", "IVmaj7", "V7"]},
             },
             {
-                "id": "prog_02", "key_center": "A", "mode": "major",
-                "chord_symbols": ["Amaj7", "C#m7", "F#m7", "Dmaj7"], "phrase_length_bars": 4,
+                "id": "prog_02",
+                "key_center": "A",
+                "mode": "major",
+                "chord_symbols": ["Amaj7", "C#m7", "F#m7", "Dmaj7"],
+                "phrase_length_bars": 4,
                 "metadata": {"roman_numerals": ["Imaj7", "iii7", "vi7", "IVmaj7"]},
             },
         ],
         "voicing_plans": [
-            {"id": "vp_01", "strategy": {"register_profile": "mid_high", "density": "medium", "voice_count": 4}},
-            {"id": "vp_02", "strategy": {"register_profile": "mid_high", "density": "medium", "voice_count": 4}},
+            {
+                "id": "vp_01",
+                "strategy": {"register_profile": "mid_high", "density": "medium", "voice_count": 4},
+            },
+            {
+                "id": "vp_02",
+                "strategy": {"register_profile": "mid_high", "density": "medium", "voice_count": 4},
+            },
         ],
         "bass_lines": [
             {"id": "bl_01", "mode": "root", "rhythmic_density": 0.4},
             {"id": "bl_02", "mode": "walking", "rhythmic_density": 0.6},
         ],
         "groove_patterns": [
-            {"id": "gp_01", "swing_level": 0.3, "syncopation_level": 0.2, "density": 0.5, "template_name": "dream_pop_basic"},
-            {"id": "gp_02", "swing_level": 0.5, "syncopation_level": 0.4, "density": 0.7, "template_name": "dream_pop_dense"},
+            {
+                "id": "gp_01",
+                "swing_level": 0.3,
+                "syncopation_level": 0.2,
+                "density": 0.5,
+                "template_name": "dream_pop_basic",
+            },
+            {
+                "id": "gp_02",
+                "swing_level": 0.5,
+                "syncopation_level": 0.4,
+                "density": 0.7,
+                "template_name": "dream_pop_dense",
+            },
         ],
         "melodic_complements": [
-            {"id": "mc_01", "strategy": {"contour_type": "arch", "range_semitones": 12, "rhythmic_density": 0.4}},
-            {"id": "mc_02", "strategy": {"contour_type": "descending", "range_semitones": 19, "rhythmic_density": 0.5}},
+            {
+                "id": "mc_01",
+                "strategy": {
+                    "contour_type": "arch",
+                    "range_semitones": 12,
+                    "rhythmic_density": 0.4,
+                },
+            },
+            {
+                "id": "mc_02",
+                "strategy": {
+                    "contour_type": "descending",
+                    "range_semitones": 19,
+                    "rhythmic_density": 0.5,
+                },
+            },
         ],
         "scorecards": [
             {
-                "candidate_id": "arr_01", "weighted_total": 0.82,
+                "candidate_id": "arr_01",
+                "weighted_total": 0.82,
                 "scores": {"loopability": 0.85, "cadence_quality": 0.8},
                 "pareto_tags": ["pareto_front"],
             },
             {
-                "candidate_id": "arr_02", "weighted_total": 0.75,
+                "candidate_id": "arr_02",
+                "weighted_total": 0.75,
                 "scores": {"loopability": 0.7, "cadence_quality": 0.72},
                 "pareto_tags": [],
             },
@@ -150,7 +196,9 @@ async def test_m5d1_harvest_role_and_pareto_tag_propagation(neo4j_driver: AsyncD
 
 
 @pytest.mark.asyncio
-async def test_m5d1_harvest_progression_cadence_and_complexity_tags(neo4j_driver: AsyncDriver) -> None:
+async def test_m5d1_harvest_progression_cadence_and_complexity_tags(
+    neo4j_driver: AsyncDriver,
+) -> None:
     """Progression harvester emits cadence:* and complexity:* tags from roman numerals."""
     state = _state_with_two_finalists()
     repo = PatternLibraryRepo(neo4j_driver)
@@ -160,13 +208,13 @@ async def test_m5d1_harvest_progression_cadence_and_complexity_tags(neo4j_driver
         cypher = await neo.run("""
             MATCH (p:PatternLibraryEntry {pattern_type: 'progression', source_candidate_id: 'arr_01'})
             RETURN p.tags AS tags
-        """)
+        """)  # noqa: E501
         row = await cypher.single()
 
     tags = set(row["tags"])
     # Roman numerals end Imaj7 → vi7 → IVmaj7 → V7: penult=IV, final=V7 → half cadence.
     # Actually with roman_numerals=["Imaj7","vi7","IVmaj7","V7"], penult=IVmaj7 (_root_only → "IV"),
-    # final=V7 (_root_only → "V"). penult=IV, final=V → falls to "cadence:half" (final in V, V-family).
+    # final=V7 (_root_only → "V"). penult=IV, final=V → falls to "cadence:half" (final in V, V-family).  # noqa: E501
     cadence_tags = [t for t in tags if t.startswith("cadence:")]
     assert len(cadence_tags) == 1, f"Expected exactly one cadence tag, got {cadence_tags}"
     # 4 distinct chord symbols → complexity:mid
@@ -193,7 +241,7 @@ async def test_m5d1_harvest_is_idempotent_on_rerun(neo4j_driver: AsyncDriver) ->
         cypher = await neo.run("""
             MATCH (p:PatternLibraryEntry {source_candidate_id: 'arr_01', pattern_type: 'progression'})
             RETURN p.id AS id, p.created_at AS created_at
-        """)
+        """)  # noqa: E501
         first_row = await cypher.single()
     first_id = first_row["id"]
     first_created_at = first_row["created_at"]
@@ -220,7 +268,7 @@ async def test_m5d1_harvest_is_idempotent_on_rerun(neo4j_driver: AsyncDriver) ->
         cypher = await neo.run("""
             MATCH (p:PatternLibraryEntry {source_candidate_id: 'arr_01', pattern_type: 'progression'})
             RETURN p.id AS id, p.weighted_total AS wt, p.created_at AS created_at
-        """)
+        """)  # noqa: E501
         second_row = await cypher.single()
 
     assert second_row["wt"] == pytest.approx(0.95)
@@ -231,8 +279,10 @@ async def test_m5d1_harvest_is_idempotent_on_rerun(neo4j_driver: AsyncDriver) ->
 
 
 @pytest.mark.asyncio
-async def test_m5d1_harvest_natural_key_constraint_prevents_duplicates(neo4j_driver: AsyncDriver) -> None:
-    """The DB-level uniqueness constraint enforces (source_candidate_id, pattern_type) uniqueness."""
+async def test_m5d1_harvest_natural_key_constraint_prevents_duplicates(
+    neo4j_driver: AsyncDriver,
+) -> None:
+    """The DB-level uniqueness constraint enforces (source_candidate_id, pattern_type) uniqueness."""  # noqa: E501
     state = _state_with_two_finalists()
     repo = PatternLibraryRepo(neo4j_driver)
     await harvest_patterns(state, repo=repo)

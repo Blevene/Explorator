@@ -56,12 +56,17 @@ async def check_stop(state: ExplorationState) -> dict[str, Any]:
         latest_fb = feedback_history[-1]
         adjustments = latest_fb.get("interpreted_adjustments", {})
         if adjustments.get("satisfaction") == "positive":
-            logger.info("Stop: user expressed satisfaction in feedback %s", latest_fb.get("id", "?"))
+            logger.info(
+                "Stop: user expressed satisfaction in feedback %s", latest_fb.get("id", "?")
+            )
             return {"stop_condition_met": True, "stop_reason": "satisfaction"}
 
-    logger.info("Continue: no stop condition met (round %d, top=%.2f)",
-                round_number, max(
-                    (sc.get("weighted_total", 0.0) for sc in scorecards),
-                    default=0.0,
-                ))
+    logger.info(
+        "Continue: no stop condition met (round %d, top=%.2f)",
+        round_number,
+        max(
+            (sc.get("weighted_total", 0.0) for sc in scorecards),
+            default=0.0,
+        ),
+    )
     return {"stop_condition_met": False, "stop_reason": ""}

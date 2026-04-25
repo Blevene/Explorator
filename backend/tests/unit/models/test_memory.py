@@ -1,5 +1,7 @@
 """Tests for memory, feedback, and user preference models."""
 
+from datetime import UTC
+
 import pytest
 from pydantic import ValidationError
 
@@ -237,9 +239,9 @@ def test_pattern_library_entry_curation_defaults() -> None:
 
 
 def test_pattern_library_entry_curation_roundtrip() -> None:
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    now = datetime(2026, 4, 24, 12, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 4, 24, 12, 0, tzinfo=UTC)
     entry = PatternLibraryEntry(
         id="ple_06",
         type="pattern_library_entry",

@@ -53,8 +53,8 @@ def mutation_prompt(
         "- reason: why this mutation should improve the progression",
         "- predicted_score_changes: list of strings like 'novelty: +1.0', 'genre_fit: -0.5'",
         "",
-        f"Return mutated_chord_symbols (the COMPLETE mutated progression — must have exactly {len(chord_symbols)} chords, same length as input) and mutations (the list of changes).",
-        f"CRITICAL: mutated_chord_symbols must contain exactly {len(chord_symbols)} chord symbols. Do NOT truncate or shorten the progression.",
+        f"Return mutated_chord_symbols (the COMPLETE mutated progression — must have exactly {len(chord_symbols)} chords, same length as input) and mutations (the list of changes).",  # noqa: E501
+        f"CRITICAL: mutated_chord_symbols must contain exactly {len(chord_symbols)} chord symbols. Do NOT truncate or shorten the progression.",  # noqa: E501
     ]
 
     system_prompt = (

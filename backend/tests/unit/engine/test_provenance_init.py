@@ -1,8 +1,10 @@
 """Tests for provenance_events initialization in the exploration graph."""
 
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
-from explorator.engine.state import ExplorationState
+if TYPE_CHECKING:
+    from explorator.engine.state import ExplorationState
 
 
 class TestProvenanceStateField:

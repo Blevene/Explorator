@@ -36,13 +36,19 @@ class TestBuildFilename:
 class TestRenderAndWriteArtifacts:
     def test_writes_combined_midi_to_disk(self, tmp_path):
         vp = VoicingPlan(
-            id="vp-1", type="VoicingPlan", status="active",
+            id="vp-1",
+            type="VoicingPlan",
+            status="active",
             voicing_events=[
-                VoicingEvent(bar=0, beat=1.0, duration_beats=4.0, pitches=["C3", "E3"], chord_symbol="C"),
+                VoicingEvent(
+                    bar=0, beat=1.0, duration_beats=4.0, pitches=["C3", "E3"], chord_symbol="C"
+                ),
             ],
         )
         bl = BassLine(
-            id="bl-1", type="BassLine", status="active",
+            id="bl-1",
+            type="BassLine",
+            status="active",
             note_events=[
                 BassNoteEvent(bar=0, beat=1.0, duration_beats=4.0, pitch="C2", velocity=80),
             ],
@@ -65,13 +71,17 @@ class TestRenderAndWriteArtifacts:
 
     def test_writes_all_formats(self, tmp_path):
         vp = VoicingPlan(
-            id="vp-1", type="VoicingPlan", status="active",
+            id="vp-1",
+            type="VoicingPlan",
+            status="active",
             voicing_events=[
                 VoicingEvent(bar=0, beat=1.0, duration_beats=4.0, pitches=["C3"], chord_symbol="C"),
             ],
         )
         bl = BassLine(
-            id="bl-1", type="BassLine", status="active",
+            id="bl-1",
+            type="BassLine",
+            status="active",
             note_events=[
                 BassNoteEvent(bar=0, beat=1.0, duration_beats=4.0, pitch="C2", velocity=80),
             ],

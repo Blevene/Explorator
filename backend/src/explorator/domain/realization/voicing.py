@@ -4,7 +4,6 @@ from ulid import ULID
 
 from explorator.adapters.music21_adapter import (
     _REGISTER_BOUNDS,
-    _clamp_to_register,
     check_voice_leading,
     realize_voicing,
 )

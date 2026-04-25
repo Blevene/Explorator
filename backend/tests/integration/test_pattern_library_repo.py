@@ -1,21 +1,31 @@
 """Tests for PatternLibraryRepo."""
-from datetime import datetime, UTC
+
+from datetime import UTC, datetime
+
 import pytest
 
-from explorator.models.memory import PatternLibraryEntry
 from explorator.graph.pattern_library_repo import PatternLibraryRepo
+from explorator.models.memory import PatternLibraryEntry
 
 
 def _entry(
-    *, pattern_id: str = "pl_abc", source: str = "arr_01",
-    ptype: str = "progression", genre: str = "house",
+    *,
+    pattern_id: str = "pl_abc",
+    source: str = "arr_01",
+    ptype: str = "progression",
+    genre: str = "house",
     weighted_total: float = 0.82,
 ) -> PatternLibraryEntry:
     now = datetime.now(UTC)
     return PatternLibraryEntry(
-        id=pattern_id, type="pattern_library_entry",
-        created_at=now, updated_at=now, status="active", metadata={},
-        pattern_type=ptype, genre=genre,
+        id=pattern_id,
+        type="pattern_library_entry",
+        created_at=now,
+        updated_at=now,
+        status="active",
+        metadata={},
+        pattern_type=ptype,
+        genre=genre,
         tags=["role:safest"],
         source_candidate_id=source,
         abstracted_pattern={"chord_symbols": ["C", "F", "G", "C"]},
@@ -72,7 +82,9 @@ async def test_iter_all_filters_by_genre_and_type(neo4j_driver):
     repo = PatternLibraryRepo(neo4j_driver)
     await repo.upsert(_entry(pattern_id="pl_1", source="arr_1", ptype="progression", genre="house"))
     await repo.upsert(_entry(pattern_id="pl_2", source="arr_2", ptype="voicing", genre="house"))
-    await repo.upsert(_entry(pattern_id="pl_3", source="arr_3", ptype="progression", genre="techno"))
+    await repo.upsert(
+        _entry(pattern_id="pl_3", source="arr_3", ptype="progression", genre="techno")
+    )
 
     # Test genre filter
     house_entries = []
@@ -82,7 +94,9 @@ async def test_iter_all_filters_by_genre_and_type(neo4j_driver):
 
     # Test genre + pattern_type filter
     progression_entries = []
-    async for entry in repo.iter_all(filters=PatternFilters(genre="house", pattern_type="progression")):
+    async for entry in repo.iter_all(
+        filters=PatternFilters(genre="house", pattern_type="progression")
+    ):
         progression_entries.append(entry)
     assert len(progression_entries) == 1
 
@@ -174,7 +188,8 @@ async def test_upsert_on_match_preserves_curation_fields(neo4j_driver):
         await s.run(
             "MATCH (p:PatternLibraryEntry {source_candidate_id: $scid, pattern_type: $pt}) "
             "SET p.is_curated = true, p.curated_at = $ts",
-            scid=entry.source_candidate_id, pt=entry.pattern_type,
+            scid=entry.source_candidate_id,
+            pt=entry.pattern_type,
             ts=curated_at.isoformat(),
         )
     # Re-harvest — Pydantic default is_curated=False must NOT wipe curation.
@@ -186,7 +201,8 @@ async def test_upsert_on_match_preserves_curation_fields(neo4j_driver):
             "MATCH (p:PatternLibraryEntry {source_candidate_id: $scid, pattern_type: $pt}) "
             "RETURN p.is_curated AS is_curated, p.curated_at AS curated_at, "
             "       p.weighted_total AS weighted_total",
-            scid=entry.source_candidate_id, pt=entry.pattern_type,
+            scid=entry.source_candidate_id,
+            pt=entry.pattern_type,
         )
         record = await result.single()
     assert record["is_curated"] is True, "curation cleared by re-harvest"
@@ -219,11 +235,13 @@ async def test_toggle_curation_updates_all_facets(neo4j_driver):
     scid = "cand_toggle_multi"
     # Seed 3 facets for the same arrangement.
     for ptype in ("progression", "voicing", "bass"):
-        await repo.upsert(_curated_entry(
-            id=f"pl_toggle_{ptype}",
-            source_candidate_id=scid,
-            pattern_type=ptype,
-        ))
+        await repo.upsert(
+            _curated_entry(
+                id=f"pl_toggle_{ptype}",
+                source_candidate_id=scid,
+                pattern_type=ptype,
+            )
+        )
     now = datetime(2026, 4, 24, 13, 0, tzinfo=UTC)
 
     affected = await repo.toggle_curation(arrangement_id=scid, is_curated=True, now=now)
@@ -246,11 +264,13 @@ async def test_toggle_curation_uncurate_clears_curated_at(neo4j_driver):
     scid = "cand_toggle_uncurate"
     await repo.upsert(_curated_entry(id="pl_toggle_unc", source_candidate_id=scid))
     await repo.toggle_curation(
-        arrangement_id=scid, is_curated=True,
+        arrangement_id=scid,
+        is_curated=True,
         now=datetime(2026, 4, 24, 13, 0, tzinfo=UTC),
     )
     affected = await repo.toggle_curation(
-        arrangement_id=scid, is_curated=False,
+        arrangement_id=scid,
+        is_curated=False,
         now=datetime(2026, 4, 24, 13, 5, tzinfo=UTC),
     )
     assert len(affected) == 1
@@ -269,12 +289,20 @@ async def test_toggle_curation_uncurate_clears_curated_at(neo4j_driver):
 async def test_toggle_curation_skips_soft_deleted(neo4j_driver):
     repo = PatternLibraryRepo(neo4j_driver)
     scid = "cand_toggle_softdel"
-    await repo.upsert(_curated_entry(
-        id="pl_softdel_prog", source_candidate_id=scid, pattern_type="progression",
-    ))
-    await repo.upsert(_curated_entry(
-        id="pl_softdel_voic", source_candidate_id=scid, pattern_type="voicing",
-    ))
+    await repo.upsert(
+        _curated_entry(
+            id="pl_softdel_prog",
+            source_candidate_id=scid,
+            pattern_type="progression",
+        )
+    )
+    await repo.upsert(
+        _curated_entry(
+            id="pl_softdel_voic",
+            source_candidate_id=scid,
+            pattern_type="voicing",
+        )
+    )
 
     # Soft-delete one facet.
     async with neo4j_driver.session() as s:
@@ -287,7 +315,9 @@ async def test_toggle_curation_skips_soft_deleted(neo4j_driver):
     await repo.soft_delete(deleted_id)
 
     affected = await repo.toggle_curation(
-        arrangement_id=scid, is_curated=True, now=utc_now(),
+        arrangement_id=scid,
+        is_curated=True,
+        now=utc_now(),
     )
     assert len(affected) == 1
     assert deleted_id not in affected
@@ -297,7 +327,9 @@ async def test_toggle_curation_skips_soft_deleted(neo4j_driver):
 async def test_toggle_curation_empty_arrangement_returns_empty(neo4j_driver):
     repo = PatternLibraryRepo(neo4j_driver)
     affected = await repo.toggle_curation(
-        arrangement_id="cand_nonexistent", is_curated=True, now=utc_now(),
+        arrangement_id="cand_nonexistent",
+        is_curated=True,
+        now=utc_now(),
     )
     assert affected == []
 
@@ -310,13 +342,18 @@ async def test_list_page_curated_only_filter(neo4j_driver):
     repo = PatternLibraryRepo(neo4j_driver)
     # Seed: one curated arrangement, one uncurated.
     for scid, curate in (("cand_filter_c1", True), ("cand_filter_c2", False)):
-        await repo.upsert(_curated_entry(
-            id=f"pl_filter_{scid}",
-            source_candidate_id=scid, pattern_type="progression",
-        ))
+        await repo.upsert(
+            _curated_entry(
+                id=f"pl_filter_{scid}",
+                source_candidate_id=scid,
+                pattern_type="progression",
+            )
+        )
         if curate:
             await repo.toggle_curation(
-                arrangement_id=scid, is_curated=True, now=utc_now(),
+                arrangement_id=scid,
+                is_curated=True,
+                now=utc_now(),
             )
 
     # curated_only=False -> both visible.
@@ -327,7 +364,8 @@ async def test_list_page_curated_only_filter(neo4j_driver):
 
     # curated_only=True -> only curated.
     curated_items, _ = await repo.list_page(
-        filters=PatternFilters(curated_only=True), limit=50,
+        filters=PatternFilters(curated_only=True),
+        limit=50,
     )
     ids_curated = {e["source_candidate_id"] for e in curated_items}
     assert "cand_filter_c1" in ids_curated
@@ -346,20 +384,25 @@ async def test_list_page_cursor_stable_across_curated_only_toggle(neo4j_driver):
     # Seed 6 entries, alternating curated/uncurated, strictly-descending score.
     for i in range(6):
         scid = f"cand_cursor_{i}"
-        await repo.upsert(_curated_entry(
-            id=f"pl_cursor_{i}",
-            source_candidate_id=scid,
-            pattern_type="progression",
-            success_metrics={"weighted_total": 0.9 - (i * 0.1)},
-        ))
+        await repo.upsert(
+            _curated_entry(
+                id=f"pl_cursor_{i}",
+                source_candidate_id=scid,
+                pattern_type="progression",
+                success_metrics={"weighted_total": 0.9 - (i * 0.1)},
+            )
+        )
         if i % 2 == 0:
             await repo.toggle_curation(
-                arrangement_id=scid, is_curated=True, now=utc_now(),
+                arrangement_id=scid,
+                is_curated=True,
+                now=utc_now(),
             )
 
     # Page 1 with no filter -> 2 items, cursor returned.
     items1, cursor1 = await repo.list_page(
-        filters=PatternFilters(), limit=2,
+        filters=PatternFilters(),
+        limit=2,
     )
     assert cursor1 is not None
     assert len(items1) == 2
@@ -367,6 +410,8 @@ async def test_list_page_cursor_stable_across_curated_only_toggle(neo4j_driver):
     # Page 2 with curated_only=True using the same cursor -> no crash, only
     # curated items that come AFTER the cursor returned.
     items2, _ = await repo.list_page(
-        filters=PatternFilters(curated_only=True), cursor=cursor1, limit=10,
+        filters=PatternFilters(curated_only=True),
+        cursor=cursor1,
+        limit=10,
     )
     assert all(i["is_curated"] is True for i in items2)

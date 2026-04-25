@@ -3,6 +3,7 @@
 Uses the same state-shape fixture as test_m5d1_harvest.py but at the helper level,
 so the helper is exercised without any LangGraph or SSE plumbing.
 """
+
 from unittest.mock import AsyncMock
 
 import pytest
@@ -24,44 +25,102 @@ def _state_with_two_finalists() -> dict:
             "selection_roles": {"arr_01": "safest", "arr_02": "best_loop"},
         },
         "arrangement_candidates": [
-            {"id": "arr_01", "progression_candidate_id": "prog_01",
-             "voicing_plan_id": "vp_01", "bass_line_id": "bl_01",
-             "groove_pattern_id": "gp_01", "melodic_complement_id": "mc_01"},
-            {"id": "arr_02", "progression_candidate_id": "prog_02",
-             "voicing_plan_id": "vp_02", "bass_line_id": "bl_02",
-             "groove_pattern_id": "gp_02", "melodic_complement_id": "mc_02"},
+            {
+                "id": "arr_01",
+                "progression_candidate_id": "prog_01",
+                "voicing_plan_id": "vp_01",
+                "bass_line_id": "bl_01",
+                "groove_pattern_id": "gp_01",
+                "melodic_complement_id": "mc_01",
+            },
+            {
+                "id": "arr_02",
+                "progression_candidate_id": "prog_02",
+                "voicing_plan_id": "vp_02",
+                "bass_line_id": "bl_02",
+                "groove_pattern_id": "gp_02",
+                "melodic_complement_id": "mc_02",
+            },
         ],
         "progression_candidates": [
-            {"id": "prog_01", "key_center": "A", "mode": "major",
-             "chord_symbols": ["Amaj7", "F#m7", "Dmaj7", "E7"], "phrase_length_bars": 4,
-             "metadata": {"roman_numerals": ["Imaj7", "vi7", "IVmaj7", "V7"]}},
-            {"id": "prog_02", "key_center": "A", "mode": "major",
-             "chord_symbols": ["Amaj7", "C#m7", "F#m7", "Dmaj7"], "phrase_length_bars": 4,
-             "metadata": {"roman_numerals": ["Imaj7", "iii7", "vi7", "IVmaj7"]}},
+            {
+                "id": "prog_01",
+                "key_center": "A",
+                "mode": "major",
+                "chord_symbols": ["Amaj7", "F#m7", "Dmaj7", "E7"],
+                "phrase_length_bars": 4,
+                "metadata": {"roman_numerals": ["Imaj7", "vi7", "IVmaj7", "V7"]},
+            },
+            {
+                "id": "prog_02",
+                "key_center": "A",
+                "mode": "major",
+                "chord_symbols": ["Amaj7", "C#m7", "F#m7", "Dmaj7"],
+                "phrase_length_bars": 4,
+                "metadata": {"roman_numerals": ["Imaj7", "iii7", "vi7", "IVmaj7"]},
+            },
         ],
         "voicing_plans": [
-            {"id": "vp_01", "strategy": {"register_profile": "mid_high", "density": "medium", "voice_count": 4}},
-            {"id": "vp_02", "strategy": {"register_profile": "mid_high", "density": "medium", "voice_count": 4}},
+            {
+                "id": "vp_01",
+                "strategy": {"register_profile": "mid_high", "density": "medium", "voice_count": 4},
+            },
+            {
+                "id": "vp_02",
+                "strategy": {"register_profile": "mid_high", "density": "medium", "voice_count": 4},
+            },
         ],
         "bass_lines": [
             {"id": "bl_01", "mode": "root", "rhythmic_density": 0.4},
             {"id": "bl_02", "mode": "walking", "rhythmic_density": 0.6},
         ],
         "groove_patterns": [
-            {"id": "gp_01", "swing_level": 0.3, "syncopation_level": 0.2, "density": 0.5, "template_name": "dream_pop_basic"},
-            {"id": "gp_02", "swing_level": 0.5, "syncopation_level": 0.4, "density": 0.7, "template_name": "dream_pop_dense"},
+            {
+                "id": "gp_01",
+                "swing_level": 0.3,
+                "syncopation_level": 0.2,
+                "density": 0.5,
+                "template_name": "dream_pop_basic",
+            },
+            {
+                "id": "gp_02",
+                "swing_level": 0.5,
+                "syncopation_level": 0.4,
+                "density": 0.7,
+                "template_name": "dream_pop_dense",
+            },
         ],
         "melodic_complements": [
-            {"id": "mc_01", "strategy": {"contour_type": "arch", "range_semitones": 12, "rhythmic_density": 0.4}},
-            {"id": "mc_02", "strategy": {"contour_type": "descending", "range_semitones": 19, "rhythmic_density": 0.5}},
+            {
+                "id": "mc_01",
+                "strategy": {
+                    "contour_type": "arch",
+                    "range_semitones": 12,
+                    "rhythmic_density": 0.4,
+                },
+            },
+            {
+                "id": "mc_02",
+                "strategy": {
+                    "contour_type": "descending",
+                    "range_semitones": 19,
+                    "rhythmic_density": 0.5,
+                },
+            },
         ],
         "scorecards": [
-            {"candidate_id": "arr_01", "weighted_total": 0.82,
-             "scores": {"loopability": 0.85, "cadence_quality": 0.8},
-             "pareto_tags": ["pareto_front"]},
-            {"candidate_id": "arr_02", "weighted_total": 0.75,
-             "scores": {"loopability": 0.7, "cadence_quality": 0.72},
-             "pareto_tags": []},
+            {
+                "candidate_id": "arr_01",
+                "weighted_total": 0.82,
+                "scores": {"loopability": 0.85, "cadence_quality": 0.8},
+                "pareto_tags": ["pareto_front"],
+            },
+            {
+                "candidate_id": "arr_02",
+                "weighted_total": 0.75,
+                "scores": {"loopability": 0.7, "cadence_quality": 0.72},
+                "pareto_tags": [],
+            },
         ],
     }
 
@@ -92,9 +151,7 @@ async def test_no_finalists_returns_empty_report() -> None:
     state = _state_with_two_finalists()
     state["final_selection"]["selected_candidate_ids"] = []
 
-    report = await harvest_session_finalists_from_state(
-        state, pattern_library_repo=repo
-    )
+    report = await harvest_session_finalists_from_state(state, pattern_library_repo=repo)
 
     assert report.upserted_count == 0
     assert report.upserted_pattern_ids == []
@@ -103,14 +160,12 @@ async def test_no_finalists_returns_empty_report() -> None:
 
 @pytest.mark.asyncio
 async def test_missing_genre_skips_harvest() -> None:
-    """No genre → skip harvest (polluting the library with 'unknown' genre is worse than skipping)."""
+    """No genre → skip harvest (polluting the library with 'unknown' genre is worse than skipping)."""  # noqa: E501
     repo = AsyncMock()
     state = _state_with_two_finalists()
     del state["genre"]
 
-    report = await harvest_session_finalists_from_state(
-        state, pattern_library_repo=repo
-    )
+    report = await harvest_session_finalists_from_state(state, pattern_library_repo=repo)
 
     assert report.upserted_count == 0
     assert report.skipped_count >= 1
@@ -126,9 +181,7 @@ async def test_missing_arrangement_records_skip_reason() -> None:
     state["arrangement_candidates"] = [state["arrangement_candidates"][0]]
     # arr_02 selected but not present in arrangement_candidates
 
-    report = await harvest_session_finalists_from_state(
-        state, pattern_library_repo=repo
-    )
+    report = await harvest_session_finalists_from_state(state, pattern_library_repo=repo)
 
     # arr_01 still produces 5 upserts
     assert report.upserted_count == 5
@@ -148,7 +201,8 @@ async def test_missing_progression_records_skip_reason() -> None:
     state["progression_candidates"] = [state["progression_candidates"][0]]
 
     report = await harvest_session_finalists_from_state(
-        state, pattern_library_repo=repo,
+        state,
+        pattern_library_repo=repo,
     )
 
     # arr_01 still produces 5 upserts (its progression is present)
@@ -177,7 +231,8 @@ async def test_upsert_failure_recorded_in_skip_reasons() -> None:
     repo.upsert = flaky_upsert
 
     report = await harvest_session_finalists_from_state(
-        _state_with_two_finalists(), pattern_library_repo=repo,
+        _state_with_two_finalists(),
+        pattern_library_repo=repo,
     )
 
     # One failure, 9 successes
@@ -200,13 +255,15 @@ async def test_idempotence_via_repo_upsert() -> None:
     repo_a = AsyncMock()
     repo_a.upsert = AsyncMock()
     report_a = await harvest_session_finalists_from_state(
-        state, pattern_library_repo=repo_a,
+        state,
+        pattern_library_repo=repo_a,
     )
 
     repo_b = AsyncMock()
     repo_b.upsert = AsyncMock()
     report_b = await harvest_session_finalists_from_state(
-        state, pattern_library_repo=repo_b,
+        state,
+        pattern_library_repo=repo_b,
     )
 
     assert report_a.upserted_count == report_b.upserted_count == 10

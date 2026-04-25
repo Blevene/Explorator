@@ -7,10 +7,14 @@ from typing import Any
 from explorator.adapters.gemini import GeminiClient, ModelTier
 from explorator.domain.realization.voicing import VoicingGenerator
 from explorator.engine.state import ExplorationState
-from explorator.utils import parse_json_field, parse_json_or_dict
 from explorator.models.harmony import ProgressionCandidate
-from explorator.models.realization import ChordVoicingInstruction, VoicingPreferences, VoicingStrategyResponse
+from explorator.models.realization import (
+    ChordVoicingInstruction,
+    VoicingPreferences,
+    VoicingStrategyResponse,
+)
 from explorator.prompts.voicing import voicing_strategy_prompt
+from explorator.utils import parse_json_field, parse_json_or_dict
 
 logger = logging.getLogger(__name__)
 
@@ -39,12 +43,14 @@ def _default_strategy(
             # suggest adding a 7th to fill the voice count
             has_extension = any(ext in symbol for ext in ("7", "9", "11", "13"))
             extensions = [] if has_extension else ["7"]
-            per_chord.append(ChordVoicingInstruction(
-                chord_symbol=symbol,
-                voicing_type=prefs.default_voicing_type,
-                target_register=prefs.default_register,
-                extensions_to_include=extensions,
-            ))
+            per_chord.append(
+                ChordVoicingInstruction(
+                    chord_symbol=symbol,
+                    voicing_type=prefs.default_voicing_type,
+                    target_register=prefs.default_register,
+                    extensions_to_include=extensions,
+                )
+            )
 
     return VoicingStrategyResponse(
         global_strategy=f"{prefs.default_voicing_type} voicing, {prefs.default_register} register",
@@ -72,7 +78,9 @@ async def plan_voicings(state: ExplorationState, *, gemini: GeminiClient) -> dic
 
     generator = VoicingGenerator()
 
-    async def _process_candidate(candidate_data: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    async def _process_candidate(
+        candidate_data: dict[str, Any],
+    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         """Process one candidate: LLM strategy → voicing plan variants."""
         candidate = ProgressionCandidate.model_validate(candidate_data)
         chord_symbols = [e.symbol for e in candidate.chord_events]

@@ -1,8 +1,9 @@
 """Tests: GET /v1/candidates/{id}/arrangements and GET /v1/arrangements/{id}
 expose is_curated and curated_at derived from PatternLibraryEntry state.
 """
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, UTC
 
 from explorator.graph.pattern_library_repo import PatternLibraryRepo
 from explorator.models.memory import PatternLibraryEntry

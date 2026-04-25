@@ -3,7 +3,8 @@
 Uses a real Neo4j test container (via the neo4j_driver fixture). Each test
 wipes and seeds PatternLibraryEntry rows, then exercises the router.
 """
-from datetime import datetime
+
+from datetime import UTC, datetime
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -14,7 +15,9 @@ from explorator.graph.pattern_library_repo import PatternLibraryRepo
 from explorator.models.memory import PatternLibraryEntry
 
 
-def _entry(idx: int, score: float, genre: str = "dream_pop", ptype: str = "progression") -> PatternLibraryEntry:
+def _entry(
+    idx: int, score: float, genre: str = "dream_pop", ptype: str = "progression"
+) -> PatternLibraryEntry:
     return PatternLibraryEntry(
         id=f"pat_{idx:04d}",
         type="pattern_library_entry",
@@ -154,15 +157,17 @@ async def test_list_patterns_response_includes_curation_fields(neo4j_driver: Asy
     """GET /v1/patterns response items carry is_curated + curated_at."""
     await _wipe(neo4j_driver)
     repo = PatternLibraryRepo(neo4j_driver)
-    await repo.upsert(PatternLibraryEntry(
-        id="pl_schema_test",
-        type="pattern_library_entry",
-        status="active",
-        pattern_type="progression",
-        genre="jazz",
-        source_candidate_id="cand_curation_schema",
-        success_metrics={"weighted_total": 0.5},
-    ))
+    await repo.upsert(
+        PatternLibraryEntry(
+            id="pl_schema_test",
+            type="pattern_library_entry",
+            status="active",
+            pattern_type="progression",
+            genre="jazz",
+            source_candidate_id="cand_curation_schema",
+            success_metrics={"weighted_total": 0.5},
+        )
+    )
 
     app = create_app()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -178,28 +183,33 @@ async def test_list_patterns_response_includes_curation_fields(neo4j_driver: Asy
 @pytest.mark.asyncio
 async def test_list_patterns_curated_only_filter(neo4j_driver: AsyncDriver) -> None:
     await _wipe(neo4j_driver)
-    from datetime import timezone
     repo = PatternLibraryRepo(neo4j_driver)
-    await repo.upsert(PatternLibraryEntry(
-        id="pl_api_curated",
-        type="pattern_library_entry",
-        status="active",
-        pattern_type="progression", genre="jazz",
-        source_candidate_id="cand_api_curated",
-        success_metrics={"weighted_total": 0.5},
-    ))
-    await repo.upsert(PatternLibraryEntry(
-        id="pl_api_uncurated",
-        type="pattern_library_entry",
-        status="active",
-        pattern_type="progression", genre="jazz",
-        source_candidate_id="cand_api_uncurated",
-        success_metrics={"weighted_total": 0.4},
-    ))
+    await repo.upsert(
+        PatternLibraryEntry(
+            id="pl_api_curated",
+            type="pattern_library_entry",
+            status="active",
+            pattern_type="progression",
+            genre="jazz",
+            source_candidate_id="cand_api_curated",
+            success_metrics={"weighted_total": 0.5},
+        )
+    )
+    await repo.upsert(
+        PatternLibraryEntry(
+            id="pl_api_uncurated",
+            type="pattern_library_entry",
+            status="active",
+            pattern_type="progression",
+            genre="jazz",
+            source_candidate_id="cand_api_uncurated",
+            success_metrics={"weighted_total": 0.4},
+        )
+    )
     await repo.toggle_curation(
         arrangement_id="cand_api_curated",
         is_curated=True,
-        now=datetime(2026, 4, 24, 15, 0, tzinfo=timezone.utc),
+        now=datetime(2026, 4, 24, 15, 0, tzinfo=UTC),
     )
 
     app = create_app()

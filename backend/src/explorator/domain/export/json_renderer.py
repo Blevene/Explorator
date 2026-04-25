@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from explorator.models.melody import MelodicComplement
-from explorator.models.realization import ArrangementCandidate, BassLine, VoicingPlan
-from explorator.models.session import CreativeBrief, Session
-from explorator.models.harmony import ProgressionCandidate
+if TYPE_CHECKING:
+    from explorator.models.harmony import ProgressionCandidate
+    from explorator.models.melody import MelodicComplement
+    from explorator.models.realization import ArrangementCandidate, BassLine, VoicingPlan
+    from explorator.models.session import CreativeBrief, Session
 
 _VERSION = "0.4.0"
 

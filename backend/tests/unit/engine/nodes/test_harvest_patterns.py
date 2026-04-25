@@ -1,4 +1,5 @@
 """Tests for harvest_patterns LangGraph node."""
+
 import logging
 from unittest.mock import AsyncMock
 
@@ -16,24 +17,60 @@ def _state_with_one_finalist() -> dict:
             "selected_candidate_ids": ["arr_01"],
             "selection_roles": {"arr_01": "safest"},
         },
-        "arrangement_candidates": [{
-            "id": "arr_01",
-            "progression_candidate_id": "prog_01",
-            "voicing_plan_id": "vp_01",
-            "bass_line_id": "bl_01",
-            "groove_pattern_id": "gp_01",
-            "melodic_complement_id": "mc_01",
-        }],
-        "progression_candidates": [{
-            "id": "prog_01", "key_center": "C", "mode": "major",
-            "chord_symbols": ["C", "F", "G", "C"], "phrase_length_bars": 4,
-            "metadata": {"roman_numerals": ["I", "IV", "V", "I"]},
-        }],
-        "voicing_plans": [{"id": "vp_01", "strategy": {"register_profile": "mid", "density": "medium", "voice_count": 4}}],
+        "arrangement_candidates": [
+            {
+                "id": "arr_01",
+                "progression_candidate_id": "prog_01",
+                "voicing_plan_id": "vp_01",
+                "bass_line_id": "bl_01",
+                "groove_pattern_id": "gp_01",
+                "melodic_complement_id": "mc_01",
+            }
+        ],
+        "progression_candidates": [
+            {
+                "id": "prog_01",
+                "key_center": "C",
+                "mode": "major",
+                "chord_symbols": ["C", "F", "G", "C"],
+                "phrase_length_bars": 4,
+                "metadata": {"roman_numerals": ["I", "IV", "V", "I"]},
+            }
+        ],
+        "voicing_plans": [
+            {
+                "id": "vp_01",
+                "strategy": {"register_profile": "mid", "density": "medium", "voice_count": 4},
+            }
+        ],
         "bass_lines": [{"id": "bl_01", "mode": "walking", "rhythmic_density": 0.6}],
-        "groove_patterns": [{"id": "gp_01", "swing_level": 0.3, "syncopation_level": 0.4, "density": 0.6, "template_name": "house_basic"}],
-        "melodic_complements": [{"id": "mc_01", "strategy": {"contour_type": "arch", "range_semitones": 14, "rhythmic_density": 0.5}}],
-        "scorecards": [{"candidate_id": "arr_01", "weighted_total": 0.8, "scores": {"loopability": 0.8}, "pareto_tags": []}],
+        "groove_patterns": [
+            {
+                "id": "gp_01",
+                "swing_level": 0.3,
+                "syncopation_level": 0.4,
+                "density": 0.6,
+                "template_name": "house_basic",
+            }
+        ],
+        "melodic_complements": [
+            {
+                "id": "mc_01",
+                "strategy": {
+                    "contour_type": "arch",
+                    "range_semitones": 14,
+                    "rhythmic_density": 0.5,
+                },
+            }
+        ],
+        "scorecards": [
+            {
+                "candidate_id": "arr_01",
+                "weighted_total": 0.8,
+                "scores": {"loopability": 0.8},
+                "pareto_tags": [],
+            }
+        ],
         "on_progress": AsyncMock(),
     }
 
@@ -59,7 +96,10 @@ async def test_harvest_patterns_continues_after_single_upsert_failure(caplog):
     repo = AsyncMock()
     repo.upsert.side_effect = [
         TransientError("neo4j blip", "Neo.TransientError.Network.CommunicationError"),
-        None, None, None, None,
+        None,
+        None,
+        None,
+        None,
     ]
     with caplog.at_level(logging.ERROR):
         result = await harvest_patterns(state, repo=repo)
@@ -70,7 +110,11 @@ async def test_harvest_patterns_continues_after_single_upsert_failure(caplog):
 
 @pytest.mark.asyncio
 async def test_harvest_patterns_skips_when_no_final_selection():
-    state = {"session_id": "sess_01", "genre": "house", "final_selection": {"selected_candidate_ids": []}}
+    state = {
+        "session_id": "sess_01",
+        "genre": "house",
+        "final_selection": {"selected_candidate_ids": []},
+    }
     repo = AsyncMock()
     result = await harvest_patterns(state, repo=repo)
     repo.upsert.assert_not_awaited()
@@ -82,7 +126,8 @@ async def test_harvest_patterns_emits_lifecycle_even_when_no_finalists():
     """Lifecycle events must fire even when there's nothing to harvest,
     so the UI progress indicator can transition through harvest_patterns correctly."""
     state = {
-        "session_id": "sess_01", "genre": "house",
+        "session_id": "sess_01",
+        "genre": "house",
         "final_selection": {"selected_candidate_ids": []},
         "on_progress": AsyncMock(),
     }

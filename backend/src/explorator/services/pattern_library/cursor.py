@@ -7,7 +7,7 @@ DevTools-legibility beats API-contract opacity. Router emits `after_score` /
 from dataclasses import dataclass
 
 
-class InvalidCursor(Exception):
+class InvalidCursor(Exception):  # noqa: N818 — semantic name, not all exceptions are errors
     """Raised when exactly one of (after_score, after_id) is set."""
 
 

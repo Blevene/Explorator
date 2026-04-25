@@ -3,7 +3,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
 from explorator.domain.harmony.mutator import MutationResponse, MutationResponseItem
-from explorator.engine.nodes.mutate import mutate, _select_candidates_to_mutate
+from explorator.engine.nodes.mutate import _select_candidates_to_mutate, mutate
 
 
 def test_select_candidates_prioritizes_pareto() -> None:
@@ -66,7 +66,13 @@ async def test_mutate_returns_merged_candidates() -> None:
         "round_number": 1,
         "progression_candidates": [existing_prog],
         "top_progressions": [existing_prog],
-        "scorecards": [{"candidate_id": "arr_01", "weighted_total": 7.0, "scores": {"genre_fit": 7.0, "novelty": 5.0}}],
+        "scorecards": [
+            {
+                "candidate_id": "arr_01",
+                "weighted_total": 7.0,
+                "scores": {"genre_fit": 7.0, "novelty": 5.0},
+            }
+        ],
         "pareto_front": {"candidate_ids": ["arr_01"]},
         "mutation_records": [],
         "all_candidates_history": [],

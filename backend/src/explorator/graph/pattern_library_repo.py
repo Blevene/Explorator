@@ -5,12 +5,11 @@ from typing import Any
 
 from neo4j import AsyncDriver
 
-from explorator.graph.repository import _neo4j_safe, _neo4j_deserialize
+from explorator.graph.repository import _neo4j_deserialize, _neo4j_safe
 from explorator.models.memory import PatternLibraryEntry
 from explorator.services.pattern_library.cursor import Cursor
 from explorator.services.pattern_library.filters import PatternFilters
 from explorator.utils import utc_now
-
 
 # Shared by PatternLibraryRepo.toggle_curation (owns its own session) and
 # curation_service.curate_arrangement (runs it inside a multi-statement

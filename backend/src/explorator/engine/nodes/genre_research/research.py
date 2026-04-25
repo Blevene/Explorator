@@ -49,7 +49,10 @@ async def research_genre(
     )
 
     if callback:
-        await callback("genre_research", {"status": "researching", "detail": "Researching harmonic vocabulary..."})
+        await callback(
+            "genre_research",
+            {"status": "researching", "detail": "Researching harmonic vocabulary..."},
+        )
 
     research_log = await gemini.generate_text(
         prompt=user_prompt,

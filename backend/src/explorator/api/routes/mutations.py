@@ -8,7 +8,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from neo4j import AsyncDriver
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
-
 from ulid import ULID
 
 from explorator.adapters.gemini import GeminiClient
@@ -25,7 +24,6 @@ router = APIRouter(tags=["mutations"])
 
 # Simple in-memory concurrency guard: tracks sessions with in-flight mutations
 _busy_sessions: set[str] = set()
-
 
 
 class TriggerMutationRequest(BaseModel):
@@ -54,7 +52,9 @@ async def trigger_mutation(
         raise HTTPException(status_code=422, detail="At least one candidate_id required")
 
     if session_id in _busy_sessions:
-        raise HTTPException(status_code=409, detail="A mutation or round is already in-flight for this session")
+        raise HTTPException(
+            status_code=409, detail="A mutation or round is already in-flight for this session"
+        )
     _busy_sessions.add(session_id)
 
     channel = SSEChannel()
@@ -76,6 +76,7 @@ async def trigger_mutation(
                 raw_events = candidate.get("chord_events", [])
                 if isinstance(raw_events, str):
                     import json as _json
+
                     try:
                         raw_events = _json.loads(raw_events)
                     except (ValueError, TypeError):
@@ -122,6 +123,7 @@ async def trigger_mutation(
 
                 # Re-serialize chord_events from mutated symbols
                 import json
+
                 original_events = candidate.get("chord_events", [])
                 if isinstance(original_events, str):
                     try:
@@ -133,10 +135,19 @@ async def trigger_mutation(
                     if i < len(original_events) and isinstance(original_events[i], dict):
                         new_events.append({**original_events[i], "symbol": sym})
                     else:
-                        new_events.append({"bar": i + 1, "beat": 1.0, "duration_beats": 4.0, "symbol": sym, "function_label": ""})
+                        new_events.append(
+                            {
+                                "bar": i + 1,
+                                "beat": 1.0,
+                                "duration_beats": 4.0,
+                                "symbol": sym,
+                                "function_label": "",
+                            }
+                        )
                 new_candidate_data["chord_events"] = new_events
 
                 from explorator.graph.repository import _neo4j_safe
+
                 safe_data = _neo4j_safe(new_candidate_data)
                 async with driver.session() as neo_session:
                     await neo_session.run(
@@ -144,12 +155,14 @@ async def trigger_mutation(
                         props=safe_data,
                     )
 
-                results.append({
-                    "source_id": cid,
-                    "new_candidate_id": new_id,
-                    "mutated_chord_symbols": response.mutated_chord_symbols,
-                    "mutations": [m.model_dump() for m in response.mutations],
-                })
+                results.append(
+                    {
+                        "source_id": cid,
+                        "new_candidate_id": new_id,
+                        "mutated_chord_symbols": response.mutated_chord_symbols,
+                        "mutations": [m.model_dump() for m in response.mutations],
+                    }
+                )
 
             await channel.send("mutation_completed", {"results": results})
 
@@ -167,12 +180,8 @@ async def trigger_mutation(
                         {"recursion_limit": 100},
                     )
                 except Exception as real_err:
-                    logger.exception(
-                        "Realization failed for mutated candidates %s", new_ids
-                    )
-                    await channel.send(
-                        "realization_error", {"error": str(real_err)}
-                    )
+                    logger.exception("Realization failed for mutated candidates %s", new_ids)
+                    await channel.send("realization_error", {"error": str(real_err)})
 
         except Exception as e:
             logger.exception("Mutation failed for session %s", session_id)

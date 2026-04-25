@@ -228,7 +228,7 @@ def assign_selection_roles(
     all_roles: dict[str, str] = {}
     all_notes: list[str] = []
 
-    for prog_id, group in groups.items():
+    for _prog_id, group in groups.items():
         roles, notes = _assign_roles_for_group(group)
         all_roles.update(roles)
         all_notes.extend(notes)

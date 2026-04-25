@@ -1,11 +1,12 @@
 # backend/tests/unit/engine/test_load_memory.py
 """Tests for load_memory node."""
 
-import pytest
 from unittest.mock import AsyncMock, patch
 
-from explorator.engine.nodes.load_memory import load_memory
+import pytest
+
 from explorator.domain.evaluation.ranking import CANONICAL_DEFAULT_WEIGHTS
+from explorator.engine.nodes.load_memory import load_memory
 
 
 def _make_state(session_id: str = "sess_1") -> dict:

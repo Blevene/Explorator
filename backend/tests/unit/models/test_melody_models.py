@@ -39,7 +39,10 @@ class TestMelodicComplement:
         assert mc.source_strategy == ""
 
     def test_with_events(self) -> None:
-        events = [MelodicNoteEvent(bar=1, pitch="C5"), MelodicNoteEvent(bar=1, beat=2.0, pitch="D5")]
+        events = [
+            MelodicNoteEvent(bar=1, pitch="C5"),
+            MelodicNoteEvent(bar=1, beat=2.0, pitch="D5"),
+        ]
         mc = MelodicComplement(
             id="mc_test",
             type="melodic_complement",
@@ -77,8 +80,12 @@ class TestMelodicStrategyResponse:
             overall_contour="arch",
             phrase_instructions=[
                 PhraseInstruction(
-                    start_bar=1, end_bar=4, contour="arch",
-                    density="moderate", strong_beat_targets=["root"], rest_after=False,
+                    start_bar=1,
+                    end_bar=4,
+                    contour="arch",
+                    density="moderate",
+                    strong_beat_targets=["root"],
+                    rest_after=False,
                 ),
             ],
         )
@@ -88,7 +95,9 @@ class TestMelodicStrategyResponse:
 
     def test_rationale_max_length(self) -> None:
         import pytest
-        with pytest.raises(Exception):
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
             MelodicStrategyResponse(
                 range_low="C5",
                 range_high="C6",

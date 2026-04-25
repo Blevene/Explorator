@@ -83,6 +83,7 @@ def test_exploration_graph_has_conditional_edges() -> None:
 def test_load_memory_node_exists_in_graph() -> None:
     """load_memory is registered between load_genre and generate."""
     from unittest.mock import AsyncMock
+
     from explorator.engine.graph import build_exploration_graph
 
     gemini = AsyncMock()

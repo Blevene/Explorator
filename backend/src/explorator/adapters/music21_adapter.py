@@ -5,9 +5,12 @@ No music21 types leak outside this module.
 """
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from explorator.models.realization import VoiceLeadingCheck
 
 logger = logging.getLogger(__name__)
 
@@ -51,12 +54,12 @@ def _normalize_chord_symbol(symbol: str) -> str:
     #    because '/' is not alphanumeric. No valid chord symbol starts with
     #    [A-G] followed by a non-accidental 'b', so the bare prefix match
     #    is safe to use without a trailing guard.
-    s = re.sub(r'^([A-G])b', r'\1-', s)
+    s = re.sub(r"^([A-G])b", r"\1-", s)
 
     # 1b. Drop redundant minor marker before 'sus': Gemini emits 'Fmsus2'
     #     meaning "F sus2" (sus implies no 3rd, so the 'm' is incoherent).
     #     music21 has no 'msus' abbreviation; rewrite to plain 'sus'.
-    s = re.sub(r'msus(\d)', r'sus\1', s)
+    s = re.sub(r"msus(\d)", r"sus\1", s)
 
     # 2. Remove parentheses: 'Dm(maj7)' → 'Dmmaj7'
     s = s.replace("(", "").replace(")", "")
@@ -64,21 +67,21 @@ def _normalize_chord_symbol(symbol: str) -> str:
     # 3. Normalize extended chords music21 doesn't support directly
     #    Strip extensions beyond 7th — music21 handles up to 7th chords.
     #    maj9 → maj7, maj11 → maj7, maj13 → maj7 (extensions handled separately)
-    s = re.sub(r'maj(9|11|13)\b', 'maj7', s)
+    s = re.sub(r"maj(9|11|13)\b", "maj7", s)
     #    m9 → m7, m11 → m7, m13 → m7
-    s = re.sub(r'm(9|11|13)\b', 'm7', s)
+    s = re.sub(r"m(9|11|13)\b", "m7", s)
     #    9 → 7 (dominant 9th → dominant 7th), 11 → 7, 13 → 7
-    s = re.sub(r'(?<=[A-G\-#])(?:dom)?(9|11|13)\b', '7', s)
+    s = re.sub(r"(?<=[A-G\-#])(?:dom)?(9|11|13)\b", "7", s)
 
-    # 4. Normalize augmented: '7aug' → '7#5', 'aug7' → '7#5', 'aug' → 'aug' (keep as-is, music21 supports 'augmented-seventh')
-    s = re.sub(r'7aug\b', '7#5', s)
-    s = re.sub(r'aug7\b', '7#5', s)
+    # 4. Normalize augmented: '7aug' → '7#5', 'aug7' → '7#5', 'aug' → 'aug' (keep as-is, music21 supports 'augmented-seventh')  # noqa: E501
+    s = re.sub(r"7aug\b", "7#5", s)
+    s = re.sub(r"aug7\b", "7#5", s)
 
     # 5. Normalize 6/9 → 6 (music21 doesn't support 6/9)
-    s = re.sub(r'6/9\b', '6', s)
+    s = re.sub(r"6/9\b", "6", s)
 
     # 6. Normalize minor-major 7th: 'mmaj7' → 'mM7' (music21 format)
-    s = re.sub(r'mmaj7\b', 'mM7', s, flags=re.IGNORECASE)
+    s = re.sub(r"mmaj7\b", "mM7", s, flags=re.IGNORECASE)
 
     return s
 
@@ -180,28 +183,46 @@ def analyze_roman_numerals(
 
 # Semitone → (numeral, accidental) for fallback analysis
 _MAJOR_DEGREES: dict[int, tuple[str, str]] = {
-    0: ("I", ""), 1: ("bII", ""), 2: ("II", ""), 3: ("bIII", ""),
-    4: ("III", ""), 5: ("IV", ""), 6: ("bV", ""), 7: ("V", ""),
-    8: ("bVI", ""), 9: ("VI", ""), 10: ("bVII", ""), 11: ("VII", ""),
+    0: ("I", ""),
+    1: ("bII", ""),
+    2: ("II", ""),
+    3: ("bIII", ""),
+    4: ("III", ""),
+    5: ("IV", ""),
+    6: ("bV", ""),
+    7: ("V", ""),
+    8: ("bVI", ""),
+    9: ("VI", ""),
+    10: ("bVII", ""),
+    11: ("VII", ""),
 }
 _MINOR_DEGREES: dict[int, tuple[str, str]] = {
-    0: ("i", ""), 1: ("bII", ""), 2: ("ii", ""), 3: ("III", ""),
-    4: ("#III", ""), 5: ("iv", ""), 6: ("bV", ""), 7: ("v", ""),
-    8: ("VI", ""), 9: ("#VI", ""), 10: ("VII", ""), 11: ("#VII", ""),
+    0: ("i", ""),
+    1: ("bII", ""),
+    2: ("ii", ""),
+    3: ("III", ""),
+    4: ("#III", ""),
+    5: ("iv", ""),
+    6: ("bV", ""),
+    7: ("v", ""),
+    8: ("VI", ""),
+    9: ("#VI", ""),
+    10: ("VII", ""),
+    11: ("#VII", ""),
 }
 
 
 # Register bounds: (midi_low, midi_high, center_midi)
 _REGISTER_BOUNDS: dict[str, tuple[int, int, int]] = {
-    "low":      (36, 60, 48),   # C2–C4, center C3
-    "mid":      (48, 72, 60),   # C3–C5, center C4
-    "mid_high": (60, 84, 72),   # C4–C6, center C5
-    "high":     (72, 96, 84),   # C5–C7, center C6
+    "low": (36, 60, 48),  # C2–C4, center C3
+    "mid": (48, 72, 60),  # C3–C5, center C4
+    "mid_high": (60, 84, 72),  # C4–C6, center C5
+    "high": (72, 96, 84),  # C5–C7, center C6
 }
 
 # Extension interval offsets in semitones above root
 _EXTENSION_SEMITONES: dict[str, int] = {
-    "9":  14,
+    "9": 14,
     "11": 17,
     "13": 21,
 }
@@ -228,7 +249,8 @@ def realize_voicing(
     -------
     List of named pitches low-to-high, e.g. ["C3", "G3", "E4", "B4"]
     """
-    from music21 import harmony, pitch as m21pitch
+    from music21 import harmony
+    from music21 import pitch as m21pitch
 
     midi_low, midi_high, midi_center = _REGISTER_BOUNDS.get(register, _REGISTER_BOUNDS["mid"])
 
@@ -242,17 +264,17 @@ def realize_voicing(
 
     # Assign priority to each scale degree position
     pitch_priority: list[tuple[int, int]] = []  # (priority, pitch_class)
-    for i, p in enumerate(base_pitches):
+    for _i, p in enumerate(base_pitches):
         pc = p.pitchClass
         interval = (pc - root_pc) % 12
         if interval == 0:
-            pri = 0   # root
+            pri = 0  # root
         elif interval in (4, 3, 11, 10):
-            pri = 1   # 3rd or 7th (major/minor variants)
+            pri = 1  # 3rd or 7th (major/minor variants)
         elif interval in (7, 6, 8):
-            pri = 2   # 5th (perfect, diminished, augmented)
+            pri = 2  # 5th (perfect, diminished, augmented)
         else:
-            pri = 3   # other chord tones
+            pri = 3  # other chord tones
         pitch_priority.append((pri, pc))
 
     # --- 2. Add extension pitch classes ---
@@ -309,10 +331,9 @@ def realize_voicing(
         if len(midi_notes) >= 3:
             midi_notes[-2] -= 12
 
-    elif voicing_type == "drop3":
+    elif voicing_type == "drop3" and len(midi_notes) >= 4:
         # Drop the third voice from TOP down one octave
-        if len(midi_notes) >= 4:
-            midi_notes[-3] -= 12
+        midi_notes[-3] -= 12
 
     # --- 6. Clamp to register bounds ---
     # Shift the whole voicing by octaves until the centroid falls within bounds.
@@ -388,6 +409,7 @@ def check_voice_leading(prev_pitches: list[str], next_pitches: list[str]) -> "Vo
     Assumes voices are paired by index (sorted low to high).
     """
     from music21 import pitch as m21pitch
+
     from explorator.models.realization import VoiceLeadingCheck
 
     def parse_sorted(pitches: list[str]) -> list[int]:

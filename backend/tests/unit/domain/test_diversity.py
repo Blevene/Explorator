@@ -1,6 +1,5 @@
 """Tests for diversity distance functions."""
 
-import math
 
 from explorator.domain.evaluation.ranking import (
     chord_edit_distance,

@@ -5,11 +5,17 @@ import logging
 from pydantic import BaseModel, Field
 
 from explorator.adapters.gemini import GeminiClient, ModelTier
-from explorator.prompts.mutation import MUTATION_OPERATIONS, mutation_prompt
+from explorator.prompts.mutation import mutation_prompt
 
 logger = logging.getLogger(__name__)
 
-HARMONIC_OPS = ["substitute_chord", "reharmonize_cadence", "modal_interchange", "alter_density", "experimental"]
+HARMONIC_OPS = [
+    "substitute_chord",
+    "reharmonize_cadence",
+    "modal_interchange",
+    "alter_density",
+    "experimental",
+]
 ARRANGEMENT_OPS = ["swap_voicing_type", "swap_bass_mode", "shift_register", "experimental"]
 
 
@@ -70,16 +76,17 @@ class HarmonyMutator:
         return response
 
     def _ensure_length(self, response: MutationResponse, original: list[str]) -> MutationResponse:
-        """Ensure mutated progression has same length as original. Pad with originals if too short."""
+        """Ensure mutated progression has same length as original. Pad with originals if too short."""  # noqa: E501
         mutated = list(response.mutated_chord_symbols)
         if len(mutated) < len(original):
             logger.warning(
                 "Gemini returned %d chords, expected %d — padding with originals",
-                len(mutated), len(original),
+                len(mutated),
+                len(original),
             )
-            mutated.extend(original[len(mutated):])
+            mutated.extend(original[len(mutated) :])
         return MutationResponse(
-            mutated_chord_symbols=mutated[:len(original)],
+            mutated_chord_symbols=mutated[: len(original)],
             mutations=response.mutations,
         )
 

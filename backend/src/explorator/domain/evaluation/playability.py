@@ -5,6 +5,8 @@ arrangement is physically comfortable to play on a keyboard instrument.
 Guitar playability is deferred to a later milestone.
 """
 
+import contextlib
+
 from ulid import ULID
 
 from explorator.models.evaluation import PlayabilityEvaluation
@@ -119,8 +121,6 @@ def _pitches_to_midi(pitches: list[str]) -> list[int]:
 
     result = []
     for p in pitches:
-        try:
+        with contextlib.suppress(Exception):
             result.append(m21pitch.Pitch(p).midi)
-        except Exception:
-            pass
     return result

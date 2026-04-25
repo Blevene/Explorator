@@ -43,7 +43,9 @@ class TestGrooveGeneratorBasic:
     def test_default_prefs_straight_eighths(self):
         """Default prefs (unknown genre) → straight_eighths template."""
         gen = GrooveGenerator()
-        prefs = GroovePreferences()  # defaults: comp_density=medium, articulation_style=straight, syncopation_level=light
+        prefs = (
+            GroovePreferences()
+        )  # defaults: comp_density=medium, articulation_style=straight, syncopation_level=light
         pattern = gen.generate(prefs, genre="unknown_genre", session_id="sess_default")
         assert pattern.source_template == "straight_eighths"
 
@@ -61,11 +63,12 @@ class TestGrooveTemplates:
         assert pattern.source_template == "syncopated"
         # At least one accented event must be on an off-beat (not 1.0 or 3.0)
         offbeat_accents = [
-            e for e in pattern.pattern_events
+            e
+            for e in pattern.pattern_events
             if e.accent and (e.beat % 1.0 != 0.0 or e.beat not in (1.0, 3.0, 5.0, 7.0))
         ]
         assert len(offbeat_accents) >= 1, (
-            f"Expected off-beat accents; events: {[(e.beat, e.accent) for e in pattern.pattern_events]}"
+            f"Expected off-beat accents; events: {[(e.beat, e.accent) for e in pattern.pattern_events]}"  # noqa: E501
         )
 
     def test_triplet_feel_shuffle_articulation(self):
@@ -147,7 +150,9 @@ class TestGrooveVariants:
         )
         variants = gen.generate_variants(prefs, genre="synthwave", session_id="sess_templ", count=3)
         templates = [v.source_template for v in variants]
-        assert len(set(templates)) == 1, f"Expected same template for all variants; got: {templates}"
+        assert len(set(templates)) == 1, (
+            f"Expected same template for all variants; got: {templates}"
+        )
 
     def test_generate_variants_default_count(self):
         """generate_variants default count is 3."""

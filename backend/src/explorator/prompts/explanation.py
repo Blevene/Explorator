@@ -42,7 +42,7 @@ def explanation_prompt(
         "- summary: A single sentence describing the character and feel of this progression",
         "- why_it_works: 2-4 bullet points explaining what makes it effective in this genre",
         "- what_is_experimental: 1-3 bullet points about what is unconventional or risky",
-        "- recommended_use_cases: 2-3 suggestions for where to use it (intro, verse, bridge, chorus, etc.)",
+        "- recommended_use_cases: 2-3 suggestions for where to use it (intro, verse, bridge, chorus, etc.)",  # noqa: E501
     ]
 
     system_prompt = (

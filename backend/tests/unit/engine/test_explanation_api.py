@@ -1,8 +1,8 @@
 """Tests for CandidateExplanation repo and API route."""
 
-import pytest
-import pytest_asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from explorator.graph.candidate_explanation_repo import CandidateExplanationRepo
 from explorator.models.export import CandidateExplanation
@@ -119,15 +119,14 @@ class TestExplanationRoute:
         with patch(
             "explorator.api.routes.explanations.get_neo4j_driver",
             new=AsyncMock(return_value=MagicMock()),
-        ):
-            with patch(
-                "explorator.api.routes.explanations.CandidateExplanationRepo"
-            ) as MockRepo:
-                MockRepo.return_value.get_by_candidate_id = AsyncMock(return_value=None)
+        ), patch(
+            "explorator.api.routes.explanations.CandidateExplanationRepo"
+        ) as MockRepo:
+            MockRepo.return_value.get_by_candidate_id = AsyncMock(return_value=None)
 
-                client = TestClient(app)
-                resp = client.get("/v1/candidates/arr_x/explanation")
-                assert resp.status_code == 404
+            client = TestClient(app)
+            resp = client.get("/v1/candidates/arr_x/explanation")
+            assert resp.status_code == 404
 
     def test_get_cached_explanation_200(self):
         """GET returns cached explanation."""
@@ -146,14 +145,13 @@ class TestExplanationRoute:
         with patch(
             "explorator.api.routes.explanations.get_neo4j_driver",
             new=AsyncMock(return_value=MagicMock()),
-        ):
-            with patch(
-                "explorator.api.routes.explanations.CandidateExplanationRepo"
-            ) as MockRepo:
-                MockRepo.return_value.get_by_candidate_id = AsyncMock(return_value=cached)
+        ), patch(
+            "explorator.api.routes.explanations.CandidateExplanationRepo"
+        ) as MockRepo:
+            MockRepo.return_value.get_by_candidate_id = AsyncMock(return_value=cached)
 
-                client = TestClient(app)
-                resp = client.get("/v1/candidates/arr_x/explanation")
-                assert resp.status_code == 200
-                data = resp.json()
-                assert data["summary"] == "Dreamy"
+            client = TestClient(app)
+            resp = client.get("/v1/candidates/arr_x/explanation")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data["summary"] == "Dreamy"

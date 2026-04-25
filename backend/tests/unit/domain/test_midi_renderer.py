@@ -17,8 +17,12 @@ def _make_voicing_plan() -> VoicingPlan:
         type="VoicingPlan",
         status="active",
         voicing_events=[
-            VoicingEvent(bar=0, beat=1.0, duration_beats=4.0, pitches=["C3", "E3", "G3"], chord_symbol="C"),
-            VoicingEvent(bar=1, beat=1.0, duration_beats=4.0, pitches=["F3", "A3", "C4"], chord_symbol="F"),
+            VoicingEvent(
+                bar=0, beat=1.0, duration_beats=4.0, pitches=["C3", "E3", "G3"], chord_symbol="C"
+            ),
+            VoicingEvent(
+                bar=1, beat=1.0, duration_beats=4.0, pitches=["F3", "A3", "C4"], chord_symbol="F"
+            ),
         ],
     )
 
@@ -43,12 +47,14 @@ class TestRenderCombinedMidi:
 
     def test_parseable_by_pretty_midi(self):
         import io
+
         result = render_combined_midi(_make_voicing_plan(), _make_bass_line(), bpm=120.0)
         midi = pretty_midi.PrettyMIDI(io.BytesIO(result))
         assert len(midi.instruments) == 2
 
     def test_chord_track_has_correct_notes(self):
         import io
+
         result = render_combined_midi(_make_voicing_plan(), _make_bass_line(), bpm=120.0)
         midi = pretty_midi.PrettyMIDI(io.BytesIO(result))
         chord_track = midi.instruments[0]
@@ -57,6 +63,7 @@ class TestRenderCombinedMidi:
 
     def test_bass_track_has_correct_notes(self):
         import io
+
         result = render_combined_midi(_make_voicing_plan(), _make_bass_line(), bpm=120.0)
         midi = pretty_midi.PrettyMIDI(io.BytesIO(result))
         bass_track = midi.instruments[1]
@@ -64,6 +71,7 @@ class TestRenderCombinedMidi:
 
     def test_chord_velocity_is_80(self):
         import io
+
         result = render_combined_midi(_make_voicing_plan(), _make_bass_line(), bpm=120.0)
         midi = pretty_midi.PrettyMIDI(io.BytesIO(result))
         for note in midi.instruments[0].notes:
@@ -71,6 +79,7 @@ class TestRenderCombinedMidi:
 
     def test_bass_velocity_from_event(self):
         import io
+
         result = render_combined_midi(_make_voicing_plan(), _make_bass_line(), bpm=120.0)
         midi = pretty_midi.PrettyMIDI(io.BytesIO(result))
         bass_notes = sorted(midi.instruments[1].notes, key=lambda n: n.start)
@@ -80,6 +89,7 @@ class TestRenderCombinedMidi:
     def test_time_conversion_at_120bpm(self):
         """Bar 0, beat 1 at 120 BPM = 0.0 seconds. Bar 1, beat 1 = 2.0 seconds."""
         import io
+
         result = render_combined_midi(_make_voicing_plan(), _make_bass_line(), bpm=120.0)
         midi = pretty_midi.PrettyMIDI(io.BytesIO(result))
         chord_notes = sorted(midi.instruments[0].notes, key=lambda n: n.start)
@@ -88,9 +98,10 @@ class TestRenderCombinedMidi:
 
     def test_gm_programs(self):
         import io
+
         result = render_combined_midi(_make_voicing_plan(), _make_bass_line(), bpm=120.0)
         midi = pretty_midi.PrettyMIDI(io.BytesIO(result))
-        assert midi.instruments[0].program == 0   # Acoustic Grand Piano
+        assert midi.instruments[0].program == 0  # Acoustic Grand Piano
         assert midi.instruments[1].program == 33  # Electric Bass Finger
 
 
@@ -103,6 +114,7 @@ class TestRenderSeparateMidi:
 
     def test_each_file_has_one_instrument(self):
         import io
+
         result = render_separate_midi(_make_voicing_plan(), _make_bass_line(), bpm=120.0)
         chords_midi = pretty_midi.PrettyMIDI(io.BytesIO(result["chords"]))
         bass_midi = pretty_midi.PrettyMIDI(io.BytesIO(result["bass"]))

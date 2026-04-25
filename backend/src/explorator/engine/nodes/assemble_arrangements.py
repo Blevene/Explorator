@@ -64,7 +64,7 @@ async def assemble_arrangements(state: ExplorationState) -> dict[str, Any]:
                     voicing_plan=vp,
                     bass_line=bl,
                     intent_tags=intent_tags,
-                    rationale=f"{vp.metadata.get('voicing_type', 'voicing')} + {bl.style_mode} bass",
+                    rationale=f"{vp.metadata.get('voicing_type', 'voicing')} + {bl.style_mode} bass",  # noqa: E501
                 )
                 family_candidates.append(ac)
 
