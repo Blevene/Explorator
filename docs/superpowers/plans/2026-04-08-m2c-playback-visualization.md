@@ -55,7 +55,7 @@ frontend/
 - [ ] **Step 1: Install Tone.js**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npm install tone
+cd frontend && npm install tone
 ```
 
 - [ ] **Step 2: Create midiUtils.ts**
@@ -102,7 +102,7 @@ export function midiToPitchLabel(midi: number): string {
 - [ ] **Step 3: Verify TypeScript compiles**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npx tsc --noEmit src/services/midiUtils.ts 2>&1 || true
+cd frontend && npx tsc --noEmit src/services/midiUtils.ts 2>&1 || true
 ```
 
 - [ ] **Step 4: Commit**
@@ -1435,7 +1435,7 @@ Add a "Back to progressions" link at the top of the realization view:
 - [ ] **Step 2: Verify the app builds**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npm run build 2>&1 | tail -20
+cd frontend && npm run build 2>&1 | tail -20
 ```
 
 Fix any TypeScript errors.
@@ -1454,7 +1454,7 @@ git commit -m "feat(m2c): add realization view mode with split-panel layout"
 - [ ] **Step 1: Build check**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npm run build 2>&1 | tail -20
+cd frontend && npm run build 2>&1 | tail -20
 ```
 Expected: Build succeeds with no errors.
 
@@ -1467,13 +1467,13 @@ ls frontend/src/components/Arrangement*.tsx frontend/src/components/PianoRoll.ts
 - [ ] **Step 3: Check for type errors**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npx tsc --noEmit 2>&1 | tail -20
+cd frontend && npx tsc --noEmit 2>&1 | tail -20
 ```
 
 - [ ] **Step 4: Run backend tests to ensure no regressions**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend && .venv/bin/python -m pytest tests/unit/ -q --tb=short 2>&1 | tail -5
+cd backend && .venv/bin/python -m pytest tests/unit/ -q --tb=short 2>&1 | tail -5
 ```
 
 - [ ] **Step 5: Commit any fixups**

@@ -226,3 +226,7 @@ Each arrangement is scored across **12 dimensions**, aggregated into a single `w
 - [`docs/decisions/`](./docs/decisions/) — ADRs for the load-bearing architectural decisions
 - [`docs/superpowers/specs/`](./docs/superpowers/specs/) and [`docs/superpowers/plans/`](./docs/superpowers/plans/) — point-in-time milestone records (preserved, not maintained)
 - [`product_documents/archive/`](./product_documents/archive/) — pre-implementation product docs (time capsule)
+
+## License
+
+[MIT](./LICENSE) © Lightforge Ventures

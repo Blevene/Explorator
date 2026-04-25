@@ -46,7 +46,7 @@
 - [ ] **Step 1: Install vitest**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npm install -D vitest
+cd frontend && npm install -D vitest
 ```
 
 - [ ] **Step 2: Create vitest config**
@@ -76,7 +76,7 @@ In `frontend/package.json`, add to `"scripts"`:
 - [ ] **Step 4: Verify vitest runs (empty test suite)**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npm run test:unit
+cd frontend && npm run test:unit
 ```
 
 Expected: `No test files found` (success, not an error).
@@ -172,7 +172,7 @@ export function dispose(): void {
 - [ ] **Step 3: Verify the app builds**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npx tsc --noEmit
+cd frontend && npx tsc --noEmit
 ```
 
 Expected: No errors.
@@ -287,7 +287,7 @@ import { getPreset, buildPolySynth, buildMonoSynth } from "./audioPresets"
 - [ ] **Step 3: Verify the app builds**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npx tsc --noEmit
+cd frontend && npx tsc --noEmit
 ```
 
 Expected: No errors.
@@ -459,7 +459,7 @@ describe("comparisonAudioStore", () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npx vitest run src/stores/__tests__/comparisonAudioStore.test.ts
+cd frontend && npx vitest run src/stores/__tests__/comparisonAudioStore.test.ts
 ```
 
 Expected: FAIL — module `../comparisonAudioStore` not found.
@@ -521,7 +521,7 @@ export const useComparisonAudioStore = create<ComparisonAudioState>((set) => ({
 - [ ] **Step 4: Run tests to verify they pass**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npx vitest run src/stores/__tests__/comparisonAudioStore.test.ts
+cd frontend && npx vitest run src/stores/__tests__/comparisonAudioStore.test.ts
 ```
 
 Expected: All tests PASS.
@@ -805,7 +805,7 @@ comparisonAudioEngine.stop()
 - [ ] **Step 3: Verify the app builds**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npx tsc --noEmit
+cd frontend && npx tsc --noEmit
 ```
 
 Expected: No errors.
@@ -918,7 +918,7 @@ Replace the return statement (lines 227-235):
 - [ ] **Step 6: Verify the app builds**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npx tsc --noEmit
+cd frontend && npx tsc --noEmit
 ```
 
 Expected: No errors.
@@ -1013,7 +1013,7 @@ export default function LaneSidebar({ candidateId, label, score, audible }: Lane
 - [ ] **Step 2: Verify the app builds**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npx tsc --noEmit
+cd frontend && npx tsc --noEmit
 ```
 
 Expected: No errors.
@@ -1201,7 +1201,7 @@ export default function ComparisonTransportBar({ arrangements, genre, onClose }:
 - [ ] **Step 2: Verify the app builds**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npx tsc --noEmit
+cd frontend && npx tsc --noEmit
 ```
 
 Expected: No errors.
@@ -1364,7 +1364,7 @@ Replace the stacked piano rolls section (lines 122-151):
 - [ ] **Step 5: Verify the app builds**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npx tsc --noEmit
+cd frontend && npx tsc --noEmit
 ```
 
 Expected: No errors.
@@ -1372,7 +1372,7 @@ Expected: No errors.
 - [ ] **Step 6: Manual smoke test**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && make dev
+cd <repo-root> && make dev
 ```
 
 Open the app in a browser. Navigate to a session with candidates. Select 2+ candidates for comparison. Verify:
@@ -1512,7 +1512,7 @@ test.describe('Comparison Playback (M4c)', () => {
 - [ ] **Step 2: Run E2E tests**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/e2e && npx playwright test tests/comparison-playback.spec.ts
+cd e2e && npx playwright test tests/comparison-playback.spec.ts
 ```
 
 Expected: All tests pass. If any fail, fix the selectors or timing.
@@ -1520,7 +1520,7 @@ Expected: All tests pass. If any fail, fix the selectors or timing.
 - [ ] **Step 3: Run full E2E suite to check for regressions**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/e2e && npx playwright test
+cd e2e && npx playwright test
 ```
 
 Expected: All existing tests pass (no regressions from the refactoring or new features).
@@ -1539,7 +1539,7 @@ git commit -m "test: E2E tests for M4c comparison playback"
 - [ ] **Step 1: Run unit tests**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npm run test:unit
+cd frontend && npm run test:unit
 ```
 
 Expected: All tests pass.
@@ -1547,7 +1547,7 @@ Expected: All tests pass.
 - [ ] **Step 2: Run type check**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend && npx tsc --noEmit
+cd frontend && npx tsc --noEmit
 ```
 
 Expected: No errors.
@@ -1555,7 +1555,7 @@ Expected: No errors.
 - [ ] **Step 3: Run full E2E suite**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/e2e && npx playwright test
+cd e2e && npx playwright test
 ```
 
 Expected: All tests pass.
@@ -1565,7 +1565,7 @@ Expected: All tests pass.
 Check for and remove any CLAUDE.md files added by subagents in working directories:
 
 ```bash
-find /home/angel/Documents/code/Explorator -name "CLAUDE.md" -path "*/src/*" -newer /home/angel/Documents/code/Explorator/docs/superpowers/specs/2026-04-14-m4c-comparison-playback-design.md
+find <repo-root> -name "CLAUDE.md" -path "*/src/*" -newer docs/superpowers/specs/2026-04-14-m4c-comparison-playback-design.md
 ```
 
 Remove any that were auto-generated during this implementation.

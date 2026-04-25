@@ -89,7 +89,7 @@ def test_score_space_distance_missing_dims() -> None:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/domain/test_diversity.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/domain/test_diversity.py -v`
 Expected: FAIL — functions not found
 
 - [ ] **Step 3: Implement the distance functions**
@@ -132,13 +132,13 @@ Note: Add `import math` at the top of `ranking.py` if not already present.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/domain/test_diversity.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/domain/test_diversity.py -v`
 Expected: ALL PASS (8 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add backend/src/explorator/domain/evaluation/ranking.py backend/tests/unit/domain/test_diversity.py && git commit -m "feat(m3c): chord_edit_distance and score_space_distance functions"
+cd <repo-root> && git add backend/src/explorator/domain/evaluation/ranking.py backend/tests/unit/domain/test_diversity.py && git commit -m "feat(m3c): chord_edit_distance and score_space_distance functions"
 ```
 
 ---
@@ -196,7 +196,7 @@ def test_diversity_penalty_empty_input() -> None:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/domain/test_diversity.py::test_diversity_penalty_demotes_near_duplicates -v`
+Run: `cd backend && uv run python -m pytest tests/unit/domain/test_diversity.py::test_diversity_penalty_demotes_near_duplicates -v`
 Expected: FAIL
 
 - [ ] **Step 3: Implement**
@@ -259,13 +259,13 @@ def apply_diversity_penalty(
 
 - [ ] **Step 4: Run tests**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/domain/test_diversity.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/domain/test_diversity.py -v`
 Expected: ALL PASS (11 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add backend/src/explorator/domain/evaluation/ranking.py backend/tests/unit/domain/test_diversity.py && git commit -m "feat(m3c): apply_diversity_penalty function"
+cd <repo-root> && git add backend/src/explorator/domain/evaluation/ranking.py backend/tests/unit/domain/test_diversity.py && git commit -m "feat(m3c): apply_diversity_penalty function"
 ```
 
 ---
@@ -332,7 +332,7 @@ def test_empty_candidates() -> None:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/domain/test_selection_roles.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/domain/test_selection_roles.py -v`
 
 - [ ] **Step 3: Implement**
 
@@ -403,13 +403,13 @@ def assign_selection_roles(
 
 - [ ] **Step 4: Run tests**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/domain/test_selection_roles.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/domain/test_selection_roles.py -v`
 Expected: ALL PASS (5 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add backend/src/explorator/domain/evaluation/ranking.py backend/tests/unit/domain/test_selection_roles.py && git commit -m "feat(m3c): assign_selection_roles function"
+cd <repo-root> && git add backend/src/explorator/domain/evaluation/ranking.py backend/tests/unit/domain/test_selection_roles.py && git commit -m "feat(m3c): assign_selection_roles function"
 ```
 
 ---
@@ -468,7 +468,7 @@ async def test_rank_and_select_produces_final_selection() -> None:
 
 - [ ] **Step 3: Run test to verify it fails**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_rank_and_select.py::test_rank_and_select_produces_final_selection -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_rank_and_select.py::test_rank_and_select_produces_final_selection -v`
 
 - [ ] **Step 4: Integrate into rank_and_select**
 
@@ -529,13 +529,13 @@ Add `"final_selection": final_selection,` to the return dict.
 
 - [ ] **Step 5: Run all rank_and_select tests**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_rank_and_select.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_rank_and_select.py -v`
 Expected: ALL PASS
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add backend/src/explorator/engine/state.py backend/src/explorator/engine/nodes/rank_and_select.py backend/tests/unit/engine/test_rank_and_select.py && git commit -m "feat(m3c): integrate diversity penalty and selection roles into rank_and_select"
+cd <repo-root> && git add backend/src/explorator/engine/state.py backend/src/explorator/engine/nodes/rank_and_select.py backend/tests/unit/engine/test_rank_and_select.py && git commit -m "feat(m3c): integrate diversity penalty and selection roles into rank_and_select"
 ```
 
 ---
@@ -581,7 +581,7 @@ Update the `reset` action to also clear `finalSelection: null`.
 - [ ] **Step 3: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add frontend/src/services/api.ts frontend/src/stores/arrangementStore.ts && git commit -m "feat(m3c): FinalSelection type and store field"
+cd <repo-root> && git add frontend/src/services/api.ts frontend/src/stores/arrangementStore.ts && git commit -m "feat(m3c): FinalSelection type and store field"
 ```
 
 ---
@@ -673,7 +673,7 @@ export default function FinalistPanel({
 - [ ] **Step 2: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add frontend/src/components/FinalistPanel.tsx && git commit -m "feat(m3c): FinalistPanel component with role badges"
+cd <repo-root> && git add frontend/src/components/FinalistPanel.tsx && git commit -m "feat(m3c): FinalistPanel component with role badges"
 ```
 
 ---
@@ -747,13 +747,13 @@ In `frontend/src/views/SessionWorkspace.tsx`, pass the prop to ArrangementList:
 
 - [ ] **Step 3: Verify frontend compiles**
 
-Run: `cd /home/angel/Documents/code/Explorator/frontend && npx tsc --noEmit`
+Run: `cd frontend && npx tsc --noEmit`
 Expected: No errors
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add frontend/src/components/ArrangementList.tsx frontend/src/views/SessionWorkspace.tsx && git commit -m "feat(m3c): integrate FinalistPanel into ArrangementList"
+cd <repo-root> && git add frontend/src/components/ArrangementList.tsx frontend/src/views/SessionWorkspace.tsx && git commit -m "feat(m3c): integrate FinalistPanel into ArrangementList"
 ```
 
 ---
@@ -764,10 +764,10 @@ cd /home/angel/Documents/code/Explorator && git add frontend/src/components/Arra
 
 - [ ] **Step 1: Run complete backend test suite**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/ -v`
+Run: `cd backend && uv run python -m pytest tests/ -v`
 Expected: ALL PASS (except pre-existing serialization test)
 
 - [ ] **Step 2: Run frontend build**
 
-Run: `cd /home/angel/Documents/code/Explorator/frontend && npx tsc --noEmit && npm run build`
+Run: `cd frontend && npx tsc --noEmit && npm run build`
 Expected: No errors

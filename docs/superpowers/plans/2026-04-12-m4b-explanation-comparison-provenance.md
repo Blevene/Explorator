@@ -104,7 +104,7 @@ class TestProvenanceTraceModel:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/models/test_provenance.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/models/test_provenance.py -v`
 Expected: FAIL with `ImportError` (ProvenanceEvent not yet in models/export.py).
 
 - [ ] **Step 3: Add ProvenanceEvent to models/export.py**
@@ -129,7 +129,7 @@ Place this class **before** the existing `ProvenanceTrace` class.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/models/test_provenance.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/models/test_provenance.py -v`
 Expected: All 6 tests pass.
 
 - [ ] **Step 5: Write failing tests for ProvenanceTraceRepo**
@@ -214,7 +214,7 @@ class TestProvenanceTraceRepo:
 
 - [ ] **Step 6: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/models/test_provenance.py::TestProvenanceTraceRepo -v`
+Run: `cd backend && uv run python -m pytest tests/unit/models/test_provenance.py::TestProvenanceTraceRepo -v`
 Expected: FAIL with `ImportError` (ProvenanceTraceRepo does not exist yet).
 
 - [ ] **Step 7: Implement ProvenanceTraceRepo**
@@ -272,7 +272,7 @@ class ProvenanceTraceRepo(BaseRepository):
 
 - [ ] **Step 8: Run all provenance tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/models/test_provenance.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/models/test_provenance.py -v`
 Expected: All tests pass.
 
 - [ ] **Step 9: Commit**
@@ -323,7 +323,7 @@ class TestProvenanceStateField:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_provenance_init.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_provenance_init.py -v`
 Expected: FAIL with TypedDict key error (field not yet defined).
 
 - [ ] **Step 3: Add provenance_events to ExplorationState**
@@ -337,7 +337,7 @@ In `backend/src/explorator/engine/state.py`, add after the `feedback_history` / 
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_provenance_init.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_provenance_init.py -v`
 Expected: Both tests pass.
 
 - [ ] **Step 5: Write test verifying graph initialization sets provenance_events**
@@ -437,7 +437,7 @@ Read `backend/src/explorator/api/routes/rounds.py` to find the graph invocation 
 
 - [ ] **Step 8: Run full test to verify**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_provenance_init.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_provenance_init.py -v`
 Expected: All tests pass.
 
 - [ ] **Step 9: Commit**
@@ -689,7 +689,7 @@ class TestLoadMemoryProvenance:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_provenance_instrumentation.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_provenance_instrumentation.py -v`
 Expected: FAIL (nodes don't yet return provenance_events).
 
 - [ ] **Step 3: Instrument generate node**
@@ -856,12 +856,12 @@ The full return statement becomes:
 
 - [ ] **Step 7: Run all provenance instrumentation tests**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_provenance_instrumentation.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_provenance_instrumentation.py -v`
 Expected: All tests pass.
 
 - [ ] **Step 8: Run existing node tests to verify no regressions**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/ -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/ -v`
 Expected: All existing tests pass (new return keys are additive — callers ignore unknown keys).
 
 - [ ] **Step 9: Commit**
@@ -1027,7 +1027,7 @@ class TestPersistRoundProvenance:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_persist_provenance.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_persist_provenance.py -v`
 Expected: FAIL (ProvenanceTraceRepo not imported in persist_round.py).
 
 - [ ] **Step 3: Add provenance persistence to persist_round.py**
@@ -1065,12 +1065,12 @@ Then, at the end of the `persist_round` function, before the final callback bloc
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_persist_provenance.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_persist_provenance.py -v`
 Expected: All 3 tests pass.
 
 - [ ] **Step 5: Run existing persist_round tests**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/ -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/ -v`
 Expected: All tests pass.
 
 - [ ] **Step 6: Commit**
@@ -1202,7 +1202,7 @@ class TestExplanationPrompt:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/prompts/test_explanation_prompt.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/prompts/test_explanation_prompt.py -v`
 Expected: FAIL with `ImportError`.
 
 - [ ] **Step 3: Implement explanation_prompt**
@@ -1271,7 +1271,7 @@ def explanation_prompt(
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/prompts/test_explanation_prompt.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/prompts/test_explanation_prompt.py -v`
 Expected: All 7 tests pass.
 
 - [ ] **Step 5: Commit**
@@ -1354,7 +1354,7 @@ class TestCandidateExplanationRepo:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_explanation_api.py::TestCandidateExplanationRepo -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_explanation_api.py::TestCandidateExplanationRepo -v`
 Expected: FAIL with `ImportError`.
 
 - [ ] **Step 3: Implement CandidateExplanationRepo**
@@ -1382,7 +1382,7 @@ class CandidateExplanationRepo(BaseRepository):
 
 - [ ] **Step 4: Run repo tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_explanation_api.py::TestCandidateExplanationRepo -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_explanation_api.py::TestCandidateExplanationRepo -v`
 Expected: All 3 tests pass.
 
 - [ ] **Step 5: Write failing tests for the explanation API route**
@@ -1454,7 +1454,7 @@ class TestExplanationRoute:
 
 - [ ] **Step 6: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_explanation_api.py::TestExplanationRoute -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_explanation_api.py::TestExplanationRoute -v`
 Expected: FAIL with `ImportError` (route does not exist).
 
 - [ ] **Step 7: Implement explanation API route**
@@ -1683,7 +1683,7 @@ And add this line after the existing `app.include_router(exports_router, prefix=
 
 - [ ] **Step 9: Run all explanation tests**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_explanation_api.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_explanation_api.py -v`
 Expected: All tests pass.
 
 - [ ] **Step 10: Commit**
@@ -1760,7 +1760,7 @@ class TestComparisonViewRepo:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_comparison_api.py::TestComparisonViewRepo -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_comparison_api.py::TestComparisonViewRepo -v`
 Expected: FAIL with `ImportError`.
 
 - [ ] **Step 3: Implement ComparisonViewRepo**
@@ -1781,7 +1781,7 @@ class ComparisonViewRepo(BaseRepository):
 
 - [ ] **Step 4: Run repo tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_comparison_api.py::TestComparisonViewRepo -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_comparison_api.py::TestComparisonViewRepo -v`
 Expected: All 2 tests pass.
 
 - [ ] **Step 5: Write failing tests for comparison API route**
@@ -1857,7 +1857,7 @@ class TestComparisonRoute:
 
 - [ ] **Step 6: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_comparison_api.py::TestComparisonRoute -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_comparison_api.py::TestComparisonRoute -v`
 Expected: FAIL with `ImportError`.
 
 - [ ] **Step 7: Implement comparison API route**
@@ -1958,7 +1958,7 @@ And add this line after the explanations router:
 
 - [ ] **Step 9: Run all comparison tests**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_comparison_api.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_comparison_api.py -v`
 Expected: All tests pass.
 
 - [ ] **Step 10: Commit**
@@ -2048,7 +2048,7 @@ class TestProvenanceEndpoint:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_provenance_api.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_provenance_api.py -v`
 Expected: FAIL (endpoint does not exist yet).
 
 - [ ] **Step 3: Add provenance endpoint to sessions.py**
@@ -2091,12 +2091,12 @@ async def get_provenance(
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/engine/test_provenance_api.py -v`
+Run: `cd backend && uv run python -m pytest tests/unit/engine/test_provenance_api.py -v`
 Expected: All 2 tests pass.
 
 - [ ] **Step 5: Run full backend test suite**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/ -v --timeout=30`
+Run: `cd backend && uv run python -m pytest tests/unit/ -v --timeout=30`
 Expected: All tests pass, no regressions.
 
 - [ ] **Step 6: Commit**
@@ -2375,7 +2375,7 @@ export default function ArrangementCard({
 
 - [ ] **Step 4: Build frontend to verify**
 
-Run: `cd /home/angel/Documents/code/Explorator/frontend && npm run build`
+Run: `cd frontend && npm run build`
 Expected: Build succeeds with no type errors.
 
 - [ ] **Step 5: Commit**
@@ -3112,7 +3112,7 @@ At the bottom of the JSX (before the final closing `</div>`), add the SessionHis
 
 - [ ] **Step 6: Build frontend to verify**
 
-Run: `cd /home/angel/Documents/code/Explorator/frontend && npm run build`
+Run: `cd frontend && npm run build`
 Expected: Build succeeds with no type errors.
 
 - [ ] **Step 7: Commit**
@@ -3128,12 +3128,12 @@ git commit -m "feat(m4b): add ComparisonView, SessionHistory, PianoRoll compact 
 
 - [ ] **Step 1: Run full backend test suite**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && uv run python -m pytest tests/unit/ -v --timeout=30`
+Run: `cd backend && uv run python -m pytest tests/unit/ -v --timeout=30`
 Expected: All tests pass.
 
 - [ ] **Step 2: Run frontend build**
 
-Run: `cd /home/angel/Documents/code/Explorator/frontend && npm run build`
+Run: `cd frontend && npm run build`
 Expected: Clean build, no errors.
 
 - [ ] **Step 3: Verify git log shows all M4b commits**

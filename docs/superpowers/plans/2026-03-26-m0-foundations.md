@@ -116,7 +116,7 @@
 - [ ] **Step 1: Initialize backend with uv**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 mkdir -p backend/src/explorator
 cd backend
 uv init --lib --name explorator
@@ -182,7 +182,7 @@ testpaths = ["tests"]
 - [ ] **Step 3: Install dependencies**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv sync --all-extras
 ```
 
@@ -235,7 +235,7 @@ settings = Settings()
 - [ ] **Step 6: Verify ruff and mypy work**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run ruff check src/
 uv run mypy src/
 ```
@@ -245,7 +245,7 @@ Expected: Both pass with no errors.
 - [ ] **Step 7: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add backend/
 git commit -m "feat(m0): scaffold backend project with uv, ruff, mypy"
 ```
@@ -341,7 +341,7 @@ def test_evaluation_base_extends_base_entity():
 - [ ] **Step 3: Run tests to verify they fail**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/unit/models/test_base.py -v
 ```
 
@@ -408,7 +408,7 @@ class EvaluationBase(BaseEntity):
 - [ ] **Step 5: Run tests to verify they pass**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/unit/models/test_base.py -v
 ```
 
@@ -417,7 +417,7 @@ Expected: All 4 tests PASS.
 - [ ] **Step 6: Run ruff and mypy**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run ruff check src/ tests/
 uv run mypy src/
 ```
@@ -427,7 +427,7 @@ Expected: Both pass.
 - [ ] **Step 7: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add backend/src/explorator/models/ backend/tests/
 git commit -m "feat(m0): add Pydantic base models (BaseEntity, CandidateBase, EvaluationBase)"
 ```
@@ -590,7 +590,7 @@ def test_harmonic_grammar_creation():
 - [ ] **Step 3: Run tests to verify they fail**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/unit/models/ -v
 ```
 
@@ -1164,7 +1164,7 @@ class InstrumentRealizationPlan(BaseEntity):
 - [ ] **Step 7: Run all model tests**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/unit/models/ -v
 ```
 
@@ -1173,7 +1173,7 @@ Expected: All tests PASS.
 - [ ] **Step 8: Run ruff and mypy**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run ruff check src/ tests/
 uv run mypy src/
 ```
@@ -1183,7 +1183,7 @@ Expected: Both pass.
 - [ ] **Step 9: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add backend/src/explorator/models/ backend/tests/
 git commit -m "feat(m0): add all Pydantic domain models (session, style, harmony, evaluation, search, memory, export)"
 ```
@@ -1343,7 +1343,7 @@ async def init_schema(driver: AsyncDriver) -> None:
 - [ ] **Step 5: Start Neo4j and verify**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 docker compose up -d neo4j
 # Wait for healthcheck
 sleep 10
@@ -1355,7 +1355,7 @@ Expected: neo4j service is healthy.
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add docker-compose.yml .env.example backend/src/explorator/graph/
 git commit -m "feat(m0): add Docker Compose with Neo4j and graph schema initialization"
 ```
@@ -1480,7 +1480,7 @@ async def test_update_session_status(neo4j_driver: AsyncDriver):
 - [ ] **Step 3: Run tests to verify they fail**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/integration/test_session_repo.py -v
 ```
 
@@ -1573,7 +1573,7 @@ class SessionRepository(BaseRepository):
 - [ ] **Step 6: Run integration tests**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/integration/test_session_repo.py -v
 ```
 
@@ -1582,7 +1582,7 @@ Expected: All 3 tests PASS (requires Neo4j running via Docker Compose).
 - [ ] **Step 7: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add backend/src/explorator/graph/ backend/tests/
 git commit -m "feat(m0): add Neo4j base repository and session repository with integration tests"
 ```
@@ -1644,7 +1644,7 @@ def test_load_cinematic_profile():
 - [ ] **Step 2: Run tests to verify they fail**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/unit/domain/test_genre_loader.py -v
 ```
 
@@ -2083,7 +2083,7 @@ functional_motion_bias:
 - [ ] **Step 8: Run YAML loading tests**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/unit/domain/test_genre_loader.py -v
 ```
 
@@ -2235,7 +2235,7 @@ async def test_list_genres_after_sync(neo4j_driver: AsyncDriver):
 - [ ] **Step 11: Run integration tests**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/integration/ -v
 ```
 
@@ -2244,7 +2244,7 @@ Expected: All integration tests PASS.
 - [ ] **Step 12: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add backend/src/explorator/domain/ backend/src/explorator/graph/style_repo.py backend/tests/
 git commit -m "feat(m0): add genre YAML system with 3 curated profiles and Neo4j sync"
 ```
@@ -2289,7 +2289,7 @@ def test_client_initialization():
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/unit/adapters/test_gemini.py -v
 ```
 
@@ -2386,7 +2386,7 @@ class GeminiClient:
 - [ ] **Step 4: Run test to verify it passes**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/unit/adapters/test_gemini.py -v
 ```
 
@@ -2395,7 +2395,7 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add backend/src/explorator/adapters/ backend/tests/unit/adapters/
 git commit -m "feat(m0): add Gemini adapter with Pro/Flash model routing interface"
 ```
@@ -2486,7 +2486,7 @@ async def test_list_genres(client: AsyncClient):
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/integration/test_session_api.py -v
 ```
 
@@ -2780,7 +2780,7 @@ async def list_genres(
 - [ ] **Step 5: Run API integration tests**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/backend
+cd backend
 uv run pytest tests/integration/test_session_api.py -v
 ```
 
@@ -2789,7 +2789,7 @@ Expected: All 4 tests PASS (requires Neo4j running).
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add backend/src/explorator/api/ backend/tests/integration/test_session_api.py
 git commit -m "feat(m0): add FastAPI app with session CRUD and genre list endpoints"
 ```
@@ -2856,7 +2856,7 @@ GEMINI_API_KEY=placeholder-replace-with-real-key
 - [ ] **Step 3: Verify full workflow**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 make neo4j-up
 sleep 10
 make test
@@ -2868,7 +2868,7 @@ Expected: All tests pass, lint is clean.
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add Makefile backend/.env
 git commit -m "feat(m0): add Makefile with dev workflow commands"
 ```
@@ -2883,7 +2883,7 @@ git commit -m "feat(m0): add Makefile with dev workflow commands"
 - [ ] **Step 1: Initialize Vite + React + TypeScript project**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 npm create vite@latest frontend -- --template react-ts
 cd frontend
 npm install
@@ -3161,14 +3161,14 @@ createRoot(document.getElementById('root')!).render(
 - [ ] **Step 7: Delete Vite boilerplate files**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend
+cd frontend
 rm -f src/App.css src/assets/react.svg public/vite.svg
 ```
 
 - [ ] **Step 8: Verify frontend builds**
 
 ```bash
-cd /home/angel/Documents/code/Explorator/frontend
+cd frontend
 npm run build
 ```
 
@@ -3177,7 +3177,7 @@ Expected: Build succeeds with no errors.
 - [ ] **Step 9: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add frontend/ Makefile
 git commit -m "feat(m0): scaffold React frontend with Dashboard, session creation, and dark theme"
 ```
@@ -3189,7 +3189,7 @@ git commit -m "feat(m0): scaffold React frontend with Dashboard, session creatio
 - [ ] **Step 1: Start all services**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 make neo4j-up
 sleep 10
 ```
@@ -3232,7 +3232,7 @@ Open `http://localhost:5173` in browser. Verify:
 - [ ] **Step 5: Run full test suite**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 make test
 make lint
 ```
@@ -3242,7 +3242,7 @@ Expected: All tests pass, lint is clean.
 - [ ] **Step 6: Final commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator
+cd <repo-root>
 git add -A
 git commit -m "feat(m0): complete M0 foundations — end-to-end session CRUD verified"
 ```

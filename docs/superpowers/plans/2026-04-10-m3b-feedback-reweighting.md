@@ -65,7 +65,7 @@ def test_feedback_fields_in_state() -> None:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/engine/test_state.py::test_feedback_fields_in_state -v`
+Run: `cd backend && python -m pytest tests/unit/engine/test_state.py::test_feedback_fields_in_state -v`
 Expected: FAIL — `feedback_history` is not a valid key for ExplorationState
 
 - [ ] **Step 3: Add fields to ExplorationState**
@@ -81,13 +81,13 @@ Add to `backend/src/explorator/engine/state.py`, after the M3a block (line 57):
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/engine/test_state.py -v`
+Run: `cd backend && python -m pytest tests/unit/engine/test_state.py -v`
 Expected: ALL PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add backend/src/explorator/engine/state.py backend/tests/unit/engine/test_state.py && git commit -m "feat(m3b): add feedback_history, objective_weights, user_preference_profile to ExplorationState"
+cd <repo-root> && git add backend/src/explorator/engine/state.py backend/tests/unit/engine/test_state.py && git commit -m "feat(m3b): add feedback_history, objective_weights, user_preference_profile to ExplorationState"
 ```
 
 ---
@@ -122,7 +122,7 @@ def test_user_feedback_event_has_weight_deltas() -> None:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/models/test_memory.py::test_user_feedback_event_has_weight_deltas -v`
+Run: `cd backend && python -m pytest tests/unit/models/test_memory.py::test_user_feedback_event_has_weight_deltas -v`
 Expected: FAIL — `weight_deltas` unexpected keyword argument
 
 - [ ] **Step 3: Add weight_deltas field**
@@ -143,13 +143,13 @@ class UserFeedbackEvent(BaseEntity):
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/models/test_memory.py -v`
+Run: `cd backend && python -m pytest tests/unit/models/test_memory.py -v`
 Expected: ALL PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add backend/src/explorator/models/memory.py backend/tests/unit/models/test_memory.py && git commit -m "feat(m3b): add weight_deltas field to UserFeedbackEvent"
+cd <repo-root> && git add backend/src/explorator/models/memory.py backend/tests/unit/models/test_memory.py && git commit -m "feat(m3b): add weight_deltas field to UserFeedbackEvent"
 ```
 
 ---
@@ -210,7 +210,7 @@ def test_prompt_lists_all_weight_dimensions() -> None:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/prompts/test_feedback_prompt.py -v`
+Run: `cd backend && python -m pytest tests/unit/prompts/test_feedback_prompt.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'explorator.prompts.feedback'`
 
 - [ ] **Step 3: Implement the prompt builder**
@@ -288,13 +288,13 @@ Return interpreted_adjustments (semantic map), weight_deltas (numerical), and sa
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/prompts/test_feedback_prompt.py -v`
+Run: `cd backend && python -m pytest tests/unit/prompts/test_feedback_prompt.py -v`
 Expected: ALL PASS (3 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add backend/src/explorator/prompts/feedback.py backend/tests/unit/prompts/test_feedback_prompt.py && git commit -m "feat(m3b): feedback interpretation prompt builder"
+cd <repo-root> && git add backend/src/explorator/prompts/feedback.py backend/tests/unit/prompts/test_feedback_prompt.py && git commit -m "feat(m3b): feedback interpretation prompt builder"
 ```
 
 ---
@@ -383,15 +383,15 @@ async def test_interpret_returns_feedback_interpretation() -> None:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/domain/test_feedback_interpreter.py -v`
+Run: `cd backend && python -m pytest tests/unit/domain/test_feedback_interpreter.py -v`
 Expected: FAIL — `ModuleNotFoundError`
 
 - [ ] **Step 3: Check if domain/intent directory exists**
 
-Run: `ls /home/angel/Documents/code/Explorator/backend/src/explorator/domain/intent/ 2>/dev/null || echo "MISSING"`
+Run: `ls backend/src/explorator/domain/intent/ 2>/dev/null || echo "MISSING"`
 
 If missing, create `__init__.py`:
-Run: `mkdir -p /home/angel/Documents/code/Explorator/backend/src/explorator/domain/intent && touch /home/angel/Documents/code/Explorator/backend/src/explorator/domain/intent/__init__.py`
+Run: `mkdir -p backend/src/explorator/domain/intent && touch backend/src/explorator/domain/intent/__init__.py`
 
 - [ ] **Step 4: Implement FeedbackInterpreter**
 
@@ -477,13 +477,13 @@ class FeedbackInterpreter:
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/domain/test_feedback_interpreter.py -v`
+Run: `cd backend && python -m pytest tests/unit/domain/test_feedback_interpreter.py -v`
 Expected: ALL PASS (5 tests)
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add backend/src/explorator/domain/intent/ backend/tests/unit/domain/test_feedback_interpreter.py && git commit -m "feat(m3b): FeedbackInterpreter service with apply_weight_deltas"
+cd <repo-root> && git add backend/src/explorator/domain/intent/ backend/tests/unit/domain/test_feedback_interpreter.py && git commit -m "feat(m3b): FeedbackInterpreter service with apply_weight_deltas"
 ```
 
 ---
@@ -549,7 +549,7 @@ class ObjectiveWeightsRepo(BaseRepository):
 - [ ] **Step 2: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add backend/src/explorator/graph/feedback_repo.py && git commit -m "feat(m3b): FeedbackEventRepo and ObjectiveWeightsRepo"
+cd <repo-root> && git add backend/src/explorator/graph/feedback_repo.py && git commit -m "feat(m3b): FeedbackEventRepo and ObjectiveWeightsRepo"
 ```
 
 ---
@@ -647,7 +647,7 @@ async def test_load_memory_timeout_returns_defaults() -> None:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/engine/test_load_memory.py -v`
+Run: `cd backend && python -m pytest tests/unit/engine/test_load_memory.py -v`
 Expected: FAIL — `ModuleNotFoundError`
 
 - [ ] **Step 3: Implement load_memory node**
@@ -726,13 +726,13 @@ async def load_memory(
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/engine/test_load_memory.py -v`
+Run: `cd backend && python -m pytest tests/unit/engine/test_load_memory.py -v`
 Expected: ALL PASS (3 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add backend/src/explorator/engine/nodes/load_memory.py backend/tests/unit/engine/test_load_memory.py && git commit -m "feat(m3b): load_memory node with timeout fallback"
+cd <repo-root> && git add backend/src/explorator/engine/nodes/load_memory.py backend/tests/unit/engine/test_load_memory.py && git commit -m "feat(m3b): load_memory node with timeout fallback"
 ```
 
 ---
@@ -813,7 +813,7 @@ async def test_rank_and_select_uses_state_weights() -> None:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/engine/test_rank_and_select.py::test_rank_and_select_uses_state_weights -v`
+Run: `cd backend && python -m pytest tests/unit/engine/test_rank_and_select.py::test_rank_and_select_uses_state_weights -v`
 Expected: FAIL — rank_and_select ignores state weights, uses DEFAULT_WEIGHTS
 
 - [ ] **Step 3: Modify rank_and_select to read weights from state**
@@ -846,13 +846,13 @@ Add near the top of `rank_and_select()`, after reading state fields:
 
 - [ ] **Step 4: Run full rank_and_select tests**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/engine/test_rank_and_select.py -v`
+Run: `cd backend && python -m pytest tests/unit/engine/test_rank_and_select.py -v`
 Expected: ALL PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add backend/src/explorator/engine/nodes/rank_and_select.py backend/tests/unit/engine/test_rank_and_select.py && git commit -m "feat(m3b): rank_and_select reads objective_weights from state"
+cd <repo-root> && git add backend/src/explorator/engine/nodes/rank_and_select.py backend/tests/unit/engine/test_rank_and_select.py && git commit -m "feat(m3b): rank_and_select reads objective_weights from state"
 ```
 
 ---
@@ -903,7 +903,7 @@ async def test_no_stop_on_neutral_feedback() -> None:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/engine/test_check_stop.py::test_stop_on_user_satisfaction -v`
+Run: `cd backend && python -m pytest tests/unit/engine/test_check_stop.py::test_stop_on_user_satisfaction -v`
 Expected: FAIL — check_stop doesn't check feedback_history
 
 - [ ] **Step 3: Add satisfaction check to check_stop**
@@ -922,13 +922,13 @@ In `backend/src/explorator/engine/nodes/check_stop.py`, add after condition 3 (b
 
 - [ ] **Step 4: Run all check_stop tests**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/engine/test_check_stop.py -v`
+Run: `cd backend && python -m pytest tests/unit/engine/test_check_stop.py -v`
 Expected: ALL PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add backend/src/explorator/engine/nodes/check_stop.py backend/tests/unit/engine/test_check_stop.py && git commit -m "feat(m3b): add user satisfaction stop condition to check_stop"
+cd <repo-root> && git add backend/src/explorator/engine/nodes/check_stop.py backend/tests/unit/engine/test_check_stop.py && git commit -m "feat(m3b): add user satisfaction stop condition to check_stop"
 ```
 
 ---
@@ -965,7 +965,7 @@ def test_load_memory_node_exists_in_graph() -> None:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/engine/test_unified_graph.py::test_load_memory_node_exists_in_graph -v`
+Run: `cd backend && python -m pytest tests/unit/engine/test_unified_graph.py::test_load_memory_node_exists_in_graph -v`
 Expected: FAIL — `load_memory` not in graph
 
 - [ ] **Step 3: Add load_memory to graph**
@@ -996,13 +996,13 @@ With:
 
 - [ ] **Step 4: Run unified graph tests**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/engine/test_unified_graph.py -v`
+Run: `cd backend && python -m pytest tests/unit/engine/test_unified_graph.py -v`
 Expected: ALL PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add backend/src/explorator/engine/graph.py backend/tests/unit/engine/test_unified_graph.py && git commit -m "feat(m3b): wire load_memory node between load_genre and generate"
+cd <repo-root> && git add backend/src/explorator/engine/graph.py backend/tests/unit/engine/test_unified_graph.py && git commit -m "feat(m3b): wire load_memory node between load_genre and generate"
 ```
 
 ---
@@ -1171,13 +1171,13 @@ Add after the mutations router line:
 
 - [ ] **Step 3: Run the existing test suite to verify no regressions**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/unit/ -v --timeout=30`
+Run: `cd backend && python -m pytest tests/unit/ -v --timeout=30`
 Expected: ALL PASS
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add backend/src/explorator/api/routes/feedback.py backend/src/explorator/api/app.py && git commit -m "feat(m3b): POST /v1/sessions/{session_id}/feedback endpoint"
+cd <repo-root> && git add backend/src/explorator/api/routes/feedback.py backend/src/explorator/api/app.py && git commit -m "feat(m3b): POST /v1/sessions/{session_id}/feedback endpoint"
 ```
 
 ---
@@ -1234,7 +1234,7 @@ export const useFeedbackStore = create<FeedbackState>((set) => ({
 - [ ] **Step 2: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add frontend/src/stores/feedbackStore.ts && git commit -m "feat(m3b): Zustand feedback store"
+cd <repo-root> && git add frontend/src/stores/feedbackStore.ts && git commit -m "feat(m3b): Zustand feedback store"
 ```
 
 ---
@@ -1299,7 +1299,7 @@ export type SSEEventType =
 - [ ] **Step 3: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add frontend/src/services/api.ts frontend/src/services/sse.ts && git commit -m "feat(m3b): frontend API client and SSE type for feedback"
+cd <repo-root> && git add frontend/src/services/api.ts frontend/src/services/sse.ts && git commit -m "feat(m3b): frontend API client and SSE type for feedback"
 ```
 
 ---
@@ -1477,7 +1477,7 @@ export default function FeedbackSidebar({ sessionId, candidateId }: FeedbackSide
 - [ ] **Step 2: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add frontend/src/components/FeedbackSidebar.tsx && git commit -m "feat(m3b): FeedbackSidebar component with weight visualization"
+cd <repo-root> && git add frontend/src/components/FeedbackSidebar.tsx && git commit -m "feat(m3b): FeedbackSidebar component with weight visualization"
 ```
 
 ---
@@ -1572,13 +1572,13 @@ To:
 
 - [ ] **Step 3: Verify frontend compiles**
 
-Run: `cd /home/angel/Documents/code/Explorator/frontend && npx tsc --noEmit`
+Run: `cd frontend && npx tsc --noEmit`
 Expected: No errors
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /home/angel/Documents/code/Explorator && git add frontend/src/views/SessionWorkspace.tsx && git commit -m "feat(m3b): integrate FeedbackSidebar in realization view"
+cd <repo-root> && git add frontend/src/views/SessionWorkspace.tsx && git commit -m "feat(m3b): integrate FeedbackSidebar in realization view"
 ```
 
 ---
@@ -1589,12 +1589,12 @@ cd /home/angel/Documents/code/Explorator && git add frontend/src/views/SessionWo
 
 - [ ] **Step 1: Run the complete backend test suite**
 
-Run: `cd /home/angel/Documents/code/Explorator/backend && python -m pytest tests/ -v --timeout=30`
+Run: `cd backend && python -m pytest tests/ -v --timeout=30`
 Expected: ALL PASS
 
 - [ ] **Step 2: Run frontend build check**
 
-Run: `cd /home/angel/Documents/code/Explorator/frontend && npx tsc --noEmit && npm run build`
+Run: `cd frontend && npx tsc --noEmit && npm run build`
 Expected: No errors
 
 - [ ] **Step 3: If failures, fix and commit**
