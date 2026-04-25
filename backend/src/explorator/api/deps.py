@@ -1,9 +1,10 @@
 """FastAPI dependency injection."""
 
+from __future__ import annotations
+
 import os
 from functools import lru_cache
-
-from neo4j import AsyncDriver
+from typing import TYPE_CHECKING
 
 from explorator.adapters.gemini import GeminiClient
 from explorator.config import settings
@@ -11,6 +12,12 @@ from explorator.graph.connection import get_driver
 from explorator.graph.genre_research_repo import GenreResearchRepository
 from explorator.graph.session_repo import SessionRepository
 from explorator.graph.style_repo import StyleRepository
+
+if TYPE_CHECKING:
+    from neo4j import AsyncDriver
+
+    from explorator.graph.pattern_library_repo import PatternLibraryRepo
+    from explorator.services.pattern_library.harvest_service import HarvestRepos
 
 
 async def get_neo4j_driver() -> AsyncDriver:
@@ -50,14 +57,14 @@ def get_gemini_client() -> GeminiClient:
     )
 
 
-async def get_pattern_library_repo():
+async def get_pattern_library_repo() -> PatternLibraryRepo:
     """Get pattern library repository dependency."""
     from explorator.graph.pattern_library_repo import PatternLibraryRepo
     driver = await get_driver()
     return PatternLibraryRepo(driver)
 
 
-async def get_harvest_repos():
+async def get_harvest_repos() -> HarvestRepos:
     """Compose the HarvestRepos bundle for POST /v1/sessions/{id}/finalists/harvest."""
     from explorator.graph.arrangement_candidate_repo import ArrangementCandidateRepo
     from explorator.graph.bass_line_repo import BassLineRepo

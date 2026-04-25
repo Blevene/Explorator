@@ -38,7 +38,7 @@ from explorator.graph.pattern_library_repo import PatternLibraryRepo
 
 
 def _add_m2_nodes(
-    graph: StateGraph,
+    graph: StateGraph[Any],
     gemini: GeminiClient,
     driver: AsyncDriver,
 ) -> None:
@@ -54,7 +54,7 @@ def _add_m2_nodes(
     graph.add_node("persist_realization", partial(persist_realization, driver=driver))
 
 
-def _add_m2_edges(graph: StateGraph) -> None:
+def _add_m2_edges(graph: StateGraph[Any]) -> None:
     """Wire M2 realization edges up to rank_and_select. Shared by full and sub-graph builders.
 
     Note: the edge FROM rank_and_select is intentionally omitted here — callers wire it

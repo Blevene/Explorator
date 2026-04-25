@@ -3,6 +3,7 @@
 import datetime
 import os
 import shutil
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from neo4j import AsyncDriver
@@ -163,7 +164,7 @@ class ProvenanceResponse(BaseModel):
     """Response for session provenance trace."""
 
     session_id: str
-    events: list[dict]
+    events: list[dict[str, Any]]
 
 
 @router.get("/sessions/{session_id}/provenance")

@@ -1,4 +1,6 @@
 """Pattern library endpoints: list, get, delete, manual harvest."""
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from neo4j import AsyncDriver
 
@@ -34,7 +36,7 @@ from explorator.services.pattern_library.harvest_service import (
 router = APIRouter(tags=["patterns"])
 
 
-def _to_pattern_item(entry: dict) -> PatternItem:
+def _to_pattern_item(entry: dict[str, Any]) -> PatternItem:
     """Project a PatternLibraryEntry dict to the public PatternItem schema."""
     return PatternItem(
         id=entry["id"],

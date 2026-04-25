@@ -98,7 +98,7 @@ async def list_arrangements(
     arr_ids = [r["id"] for r in results if r.get("id")]
     curation = await graph_repo.fetch_curation_state(arr_ids)
     for r in results:
-        is_curated, curated_at = curation.get(r.get("id"), (None, None))
+        is_curated, curated_at = curation.get(r.get("id") or "", (None, None))
         r["is_curated"] = is_curated
         r["curated_at"] = curated_at
 

@@ -5,13 +5,13 @@ from __future__ import annotations
 import io
 from typing import TYPE_CHECKING
 
-import pretty_midi
+import pretty_midi  # type: ignore[import-untyped]
 
 from explorator.utils import pitch_str_to_midi
 
 if TYPE_CHECKING:
-    from explorator.models.melody import MelodicComplement
-    from explorator.models.realization import BassLine, VoicingPlan
+    from explorator.models.melody import MelodicComplement, MelodicNoteEvent
+    from explorator.models.realization import BassLine, BassNoteEvent, VoicingEvent, VoicingPlan
 
 
 class MidiRenderError(Exception):
@@ -42,33 +42,36 @@ def _build_tracks(
 ) -> tuple[pretty_midi.Instrument, pretty_midi.Instrument, pretty_midi.Instrument | None]:
     """Build chord, bass, and optional melody Instrument objects."""
     chord_inst = pretty_midi.Instrument(program=_CHORD_PROGRAM, name="Chords")
-    for ev in voicing_plan.voicing_events:
-        start = _time_sec(ev.bar, ev.beat, beats_per_bar, bpm)
-        end = start + _duration_sec(ev.duration_beats, bpm)
-        for pitch in ev.pitches:
+    cev: VoicingEvent
+    for cev in voicing_plan.voicing_events:
+        start = _time_sec(cev.bar, cev.beat, beats_per_bar, bpm)
+        end = start + _duration_sec(cev.duration_beats, bpm)
+        for pitch in cev.pitches:
             midi_num = pitch_str_to_midi(pitch)
             chord_inst.notes.append(
                 pretty_midi.Note(velocity=_CHORD_VELOCITY, pitch=midi_num, start=start, end=end)
             )
 
     bass_inst = pretty_midi.Instrument(program=_BASS_PROGRAM, name="Bass")
-    for ev in bass_line.note_events:
-        start = _time_sec(ev.bar, ev.beat, beats_per_bar, bpm)
-        end = start + _duration_sec(ev.duration_beats, bpm)
-        midi_num = pitch_str_to_midi(ev.pitch)
+    bev: BassNoteEvent
+    for bev in bass_line.note_events:
+        start = _time_sec(bev.bar, bev.beat, beats_per_bar, bpm)
+        end = start + _duration_sec(bev.duration_beats, bpm)
+        midi_num = pitch_str_to_midi(bev.pitch)
         bass_inst.notes.append(
-            pretty_midi.Note(velocity=ev.velocity, pitch=midi_num, start=start, end=end)
+            pretty_midi.Note(velocity=bev.velocity, pitch=midi_num, start=start, end=end)
         )
 
     melody_inst: pretty_midi.Instrument | None = None
     if melodic_complement and melodic_complement.note_events:
         melody_inst = pretty_midi.Instrument(program=_MELODY_PROGRAM, name="Melody")
-        for ev in melodic_complement.note_events:
-            start = _time_sec(ev.bar, ev.beat, beats_per_bar, bpm)
-            end = start + _duration_sec(ev.duration_beats, bpm)
-            midi_num = pitch_str_to_midi(ev.pitch)
+        mev: MelodicNoteEvent
+        for mev in melodic_complement.note_events:
+            start = _time_sec(mev.bar, mev.beat, beats_per_bar, bpm)
+            end = start + _duration_sec(mev.duration_beats, bpm)
+            midi_num = pitch_str_to_midi(mev.pitch)
             melody_inst.notes.append(
-                pretty_midi.Note(velocity=ev.velocity, pitch=midi_num, start=start, end=end)
+                pretty_midi.Note(velocity=mev.velocity, pitch=midi_num, start=start, end=end)
             )
 
     total_notes = (

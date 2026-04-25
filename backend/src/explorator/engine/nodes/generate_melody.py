@@ -93,8 +93,8 @@ def _groove_summary(groove_patterns_raw: list[dict[str, Any]]) -> str:
     if not groove_patterns_raw:
         return "straight eighths"
     gp = groove_patterns_raw[0]
-    style = gp.get("style", "")
-    density = gp.get("density_label", "")
+    style = str(gp.get("style", ""))
+    density = str(gp.get("density_label", ""))
     if style and density:
         return f"{style} ({density})"
     if style:
@@ -141,7 +141,7 @@ async def generate_melody(state: ExplorationState, *, gemini: GeminiClient) -> d
     groove_summary_text = _groove_summary(groove_patterns_raw)
 
     # Build beat_grid from first groove pattern
-    beat_grid: list[dict] | None = None
+    beat_grid: list[dict[str, Any]] | None = None
     if groove_patterns_raw:
         gp0 = groove_patterns_raw[0]
         events = gp0.get("events", [])

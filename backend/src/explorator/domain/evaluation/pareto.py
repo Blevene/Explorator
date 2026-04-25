@@ -1,5 +1,7 @@
 """Pareto front identification for multi-objective candidate ranking."""
 
+from typing import Any
+
 
 def _dominates(
     scores_a: dict[str, float],
@@ -19,7 +21,7 @@ def _dominates(
 
 
 def compute_pareto_front(
-    candidates: list[dict],
+    candidates: list[dict[str, Any]],
     axes: list[str],
 ) -> list[str]:
     """Identify non-dominated candidate IDs.

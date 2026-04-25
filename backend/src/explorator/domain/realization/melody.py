@@ -15,7 +15,7 @@ from __future__ import annotations
 import contextlib
 import logging
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from music21 import harmony
 from music21 import pitch as m21pitch
@@ -118,14 +118,15 @@ def _chord_tone_names(chord_symbol: str) -> set[str]:
 def _build_scale(key_center: str, mode: str) -> list[str]:
     """Return the scale pitch names for the key/mode."""
     key_center_norm = key_center.replace("b", "-")
+    sc: Any
     if mode in ("minor", "aeolian"):
-        sc = m21scale.MinorScale(key_center_norm)
+        sc = m21scale.MinorScale(key_center_norm)  # type: ignore[no-untyped-call]
     elif mode == "dorian":
-        sc = m21scale.DorianScale(key_center_norm)
+        sc = m21scale.DorianScale(key_center_norm)  # type: ignore[no-untyped-call]
     elif mode == "mixolydian":
-        sc = m21scale.MixolydianScale(key_center_norm)
+        sc = m21scale.MixolydianScale(key_center_norm)  # type: ignore[no-untyped-call]
     else:
-        sc = m21scale.MajorScale(key_center_norm)
+        sc = m21scale.MajorScale(key_center_norm)  # type: ignore[no-untyped-call]
     return [p.name for p in sc.getPitches(key_center_norm + "1", key_center_norm + "8")]
 
 
@@ -249,7 +250,7 @@ class MelodyGenerator:
         key_center: str,
         mode: str,
         voicing_events: list[VoicingEvent],
-        beat_grid: list[dict] | None,
+        beat_grid: list[dict[str, Any]] | None,
         motion_preference: str,
     ) -> MelodicComplement:
         """Generate a melodic complement from strategy and harmonic context."""
@@ -321,7 +322,7 @@ class MelodyGenerator:
         scale_midis: list[int],
         scale_names: list[str],
         voicing_by_bar: dict[int, list[int]],
-        beat_grid: list[dict] | None,
+        beat_grid: list[dict[str, Any]] | None,
         motion_preference: str,
         prev_midi: int | None,
     ) -> tuple[list[MelodicNoteEvent], int | None]:
@@ -401,7 +402,7 @@ class MelodyGenerator:
         self,
         bar_idx: int,
         density: str,
-        beat_grid: list[dict] | None,
+        beat_grid: list[dict[str, Any]] | None,
     ) -> list[float]:
         """Return beat positions for a bar, from groove grid or synthesized."""
         if beat_grid:
@@ -417,7 +418,7 @@ class MelodyGenerator:
             return [1.0, 2.0, 3.0, 4.0]
 
     def _beats_from_groove(
-        self, bar_idx: int, density: str, beat_grid: list[dict]
+        self, bar_idx: int, density: str, beat_grid: list[dict[str, Any]]
     ) -> list[float]:
         """Convert absolute groove beats to per-bar, then filter by density."""
         bar_start = bar_idx * 4.0 + 1.0

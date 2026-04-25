@@ -70,7 +70,7 @@ class VoicingPreferences(BaseModel):
     favor_extensions: bool = False
     top_voice_continuity: str = "medium"
     variant_voicing_types: list[VoicingType] = Field(
-        default_factory=lambda: ["open", "drop2", "close"]
+        default_factory=lambda: ["open", "drop2", "close"]  # type: ignore[arg-type]
     )
 
 

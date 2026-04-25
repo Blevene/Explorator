@@ -3,7 +3,7 @@
 import json
 import logging
 from enum import StrEnum
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from google import genai
 from google.genai import types
@@ -90,7 +90,10 @@ class GeminiClient:
             raise
 
     @staticmethod
-    def _truncate_to_max_length(data: dict | list, model: type) -> dict | list:
+    def _truncate_to_max_length(
+        data: dict[str, Any] | list[Any],
+        model: type,
+    ) -> dict[str, Any] | list[Any]:
         """Truncate string fields to their maxLength constraint before Pydantic validation.
 
         Prevents Gemini's verbose text from causing validation rejection.

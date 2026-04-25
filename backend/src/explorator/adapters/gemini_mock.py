@@ -7,7 +7,10 @@ import json
 import logging
 import re
 from collections import defaultdict
-from typing import TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 from pydantic import BaseModel
 
@@ -80,7 +83,7 @@ def _genre_critique_pass_json() -> str:
 _STAGE_TAG_RE = re.compile(r"<!--\s*stage:\s*(\w+)\s*-->")
 _GENRE_HEADER_RE = re.compile(r"^#\s+Genre\s+\w+:\s+(.+?)\s*$", re.MULTILINE)
 
-_STAGE_HANDLERS = {
+_STAGE_HANDLERS: dict[str, Callable[[str], str]] = {
     "research": lambda g: _genre_research_log(g),
     "draft": lambda g: _genre_draft_json(g),
     "refine": lambda g: _genre_draft_json(g),
@@ -113,7 +116,7 @@ def _genre_research_text(prompt: str) -> str | None:
 _BUILDERS: dict[str, object] = {}
 
 
-def _get_builders() -> dict:
+def _get_builders() -> dict[str, Any]:
     """Build fixture map on first call."""
     if _BUILDERS:
         return _BUILDERS
@@ -213,7 +216,7 @@ class FakeGeminiClient:
             raise ValueError(msg)
         self.call_counts[name] += 1
         logger.info("FakeGemini: %s (call #%d)", name, self.call_counts[name])
-        return builders[name]()
+        return cast("T", builders[name]())
 
     async def generate_text(
         self,
