@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import type { PatternItem } from '../../api/types';
 import { usePatternLibraryStore } from '../../stores/patternLibraryStore';
 import { StarButton } from '../StarButton';
+import Dialog from '../Dialog';
 
 interface Props {
   pattern: PatternItem;
@@ -14,10 +16,11 @@ function shortHash(id: string): string {
 export function PatternCard({ pattern, onDelete }: Props) {
   const score = pattern.success_metrics.weighted_total ?? 0;
   const toggleCuration = usePatternLibraryStore((s) => s.toggleCuration);
-  const handleDelete = () => {
-    if (confirm('Delete this pattern? This cannot be undone.')) {
-      onDelete(pattern.id);
-    }
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const handleDelete = () => setConfirmOpen(true);
+  const confirmDelete = () => {
+    setConfirmOpen(false);
+    onDelete(pattern.id);
   };
 
   return (
@@ -97,6 +100,42 @@ export function PatternCard({ pattern, onDelete }: Props) {
         <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
           {pattern.notes}
         </p>
+      )}
+      {confirmOpen && (
+        <Dialog
+          onClose={() => setConfirmOpen(false)}
+          labelledBy={`confirm-delete-${pattern.id}`}
+          panelClassName="rounded-xl p-6 w-full max-w-sm mx-4"
+          panelStyle={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}
+        >
+          <h3
+            id={`confirm-delete-${pattern.id}`}
+            className="text-sm font-semibold mb-2"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            Delete this pattern?
+          </h3>
+          <p className="text-xs mb-5" style={{ color: 'var(--text-secondary)' }}>
+            <span className="font-mono">{shortHash(pattern.source_candidate_id)}</span> · {pattern.pattern_type} ·{' '}
+            {pattern.genre}. This cannot be undone.
+          </p>
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={() => setConfirmOpen(false)}
+              className="px-4 py-1.5 text-xs rounded-lg transition-colors"
+              style={{ background: 'var(--surface-3)', color: 'var(--text-secondary)' }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDelete}
+              className="px-4 py-1.5 text-xs rounded-lg font-medium transition-colors"
+              style={{ background: 'var(--score-low)', color: 'var(--surface-0)' }}
+            >
+              Delete
+            </button>
+          </div>
+        </Dialog>
       )}
     </div>
   );

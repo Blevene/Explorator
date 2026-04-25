@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { CandidateSummary } from '../services/api';
+import { scoreColorVar, scoreTierGlyph } from '../utils/designTokens';
 
 interface CandidateCardProps {
   candidate: CandidateSummary;
@@ -14,12 +15,6 @@ interface CandidateCardProps {
 }
 
 const LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-
-function scoreColor(score: number): string {
-  if (score >= 8.0) return 'var(--score-high)';
-  if (score >= 6.0) return 'var(--score-mid)';
-  return 'var(--score-low)';
-}
 
 interface MutationOp {
   operation: string;
@@ -121,9 +116,10 @@ export default function CandidateCard({ candidate, index, onClick, onRealize, on
             </span>
           )}
           <span
-            className="text-xs font-bold font-mono px-2 py-0.5 rounded-full"
-            style={{ color: scoreColor(score), background: `${scoreColor(score)}15` }}
+            className="text-xs font-bold font-mono px-2 py-0.5 rounded-full tabular-nums"
+            style={{ color: scoreColorVar(score), background: `${scoreColorVar(score)}15` }}
           >
+            <span aria-hidden="true" className="mr-1">{scoreTierGlyph(score)}</span>
             {score.toFixed(1)}
           </span>
         </div>

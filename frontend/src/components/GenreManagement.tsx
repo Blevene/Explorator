@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getGenreDetail } from '../services/api';
 import { useGenreResearchStore } from '../stores/genreResearchStore';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import Dialog from './Dialog';
 
 const GENRE_COLORS: Record<string, string> = {
@@ -245,6 +246,7 @@ function GenreDetailDrawer({ genre, onClose }: { genre: Record<string, any>; onC
 }
 
 export default function GenreManagement() {
+  useDocumentTitle('Genres');
   const {
     genres,
     pendingDrafts,
@@ -363,7 +365,7 @@ export default function GenreManagement() {
 
   if (view === 'library') {
     return (
-      <div className="min-h-dvh px-8 py-12 max-w-6xl mx-auto">
+      <div className="px-8 py-12 max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-10">
           <h1
@@ -391,12 +393,6 @@ export default function GenreManagement() {
           >
             Research New Genre
           </button>
-          <a
-            href="/"
-            className="text-xs tracking-wider uppercase transition-colors text-[var(--text-muted)] hover:text-[var(--accent-primary)] focus-visible:text-[var(--accent-primary)]"
-          >
-            &larr; Dashboard
-          </a>
         </div>
 
         {/* Inline request form */}

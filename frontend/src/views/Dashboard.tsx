@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createSession, listSessions } from '../services/api';
 import { useSessionStore } from '../stores/sessionStore';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export default function Dashboard() {
+  useDocumentTitle(null);
   const { sessions, setSessions } = useSessionStore();
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
@@ -93,14 +95,14 @@ export default function Dashboard() {
       </div>
 
       {/* Session list */}
-      {sessions.length > 0 && (
-        <div className="max-w-xl mx-auto w-full px-8 pb-12">
-          <h2
-            className="text-xs font-medium uppercase tracking-widest mb-3"
-            style={{ color: 'var(--text-muted)' }}
-          >
-            Recent Sessions
-          </h2>
+      <div className="max-w-xl mx-auto w-full px-8 pb-12">
+        <h2
+          className="text-xs font-medium uppercase tracking-widest mb-3"
+          style={{ color: 'var(--text-muted)' }}
+        >
+          Recent Sessions
+        </h2>
+        {sessions.length > 0 ? (
           <div className="flex flex-col gap-1.5">
             {sessions.map((s) => (
               <button
@@ -121,8 +123,19 @@ export default function Dashboard() {
               </button>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <p
+            className="text-xs px-4 py-3 rounded-lg"
+            style={{
+              color: 'var(--text-muted)',
+              background: 'var(--surface-2)',
+              border: '1px dashed var(--border-subtle)',
+            }}
+          >
+            Sessions you create will appear here.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

@@ -4,11 +4,34 @@
  * Use these instead of hardcoded Tailwind classes or hex values.
  */
 
+export type ScoreTier = "high" | "mid" | "low";
+
+/** Bucket a numeric score into one of three tiers. */
+export function scoreTier(score: number): ScoreTier {
+  if (score >= 8) return "high";
+  if (score >= 6) return "mid";
+  return "low";
+}
+
 /** Return the CSS variable value for a score tier. */
 export function scoreColorVar(score: number): string {
-  if (score >= 8) return "var(--score-high)";
-  if (score >= 6) return "var(--score-mid)";
+  const tier = scoreTier(score);
+  if (tier === "high") return "var(--score-high)";
+  if (tier === "mid") return "var(--score-mid)";
   return "var(--score-low)";
+}
+
+/**
+ * Shape glyph that mirrors a score tier as a redundant non-color signal.
+ * High = up triangle, mid = diamond, low = down triangle.
+ * Render with aria-hidden so screen readers don't double-announce alongside
+ * the numeric score.
+ */
+export function scoreTierGlyph(score: number): string {
+  const tier = scoreTier(score);
+  if (tier === "high") return "▲"; // ▲
+  if (tier === "mid") return "◆";  // ◆
+  return "▼";                       // ▼
 }
 
 /** Genre accent CSS variable. */

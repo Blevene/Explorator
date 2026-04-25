@@ -77,6 +77,7 @@ export default function PromptBar({
           onChange={(e) => onPromptChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Describe the mood, genre, or style you want to explore..."
+          aria-label="Generation prompt"
           disabled={loading}
           className="flex-1 px-4 py-2 rounded-lg text-sm focus:outline-none disabled:opacity-40 transition-colors"
           style={{
@@ -88,7 +89,7 @@ export default function PromptBar({
         <button
           onClick={onGenerate}
           disabled={loading || !prompt.trim()}
-          className="px-5 py-2 rounded-lg font-medium text-sm transition-all disabled:opacity-30"
+          className="px-5 py-2 rounded-lg font-medium text-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           style={{
             background: loading ? 'var(--surface-3)' : 'var(--accent-primary)',
             color: loading ? 'var(--text-muted)' : 'var(--surface-0)',
@@ -99,38 +100,64 @@ export default function PromptBar({
       </div>
 
       {/* Mode toggle */}
-      <div className="flex items-center gap-2">
+      <div
+        role="radiogroup"
+        aria-label="Generation mode"
+        className="flex items-center gap-2"
+      >
         <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Mode</span>
         <div className="flex gap-1">
-          {MODES.map((m) => (
-            <button
-              key={m.value}
-              onClick={() => onModeChange(m.value)}
-              disabled={loading}
-              title={m.desc}
-              className="text-xs px-3 py-1 rounded transition-colors disabled:opacity-40"
-              style={{
-                background: generationMode === m.value ? 'var(--accent-primary-dim)' : 'var(--surface-3)',
-                color: generationMode === m.value ? 'var(--accent-primary)' : 'var(--text-muted)',
-                border: generationMode === m.value ? '1px solid var(--accent-primary)' : '1px solid transparent',
-              }}
-            >
-              {m.label}
-            </button>
-          ))}
+          {MODES.map((m) => {
+            const active = generationMode === m.value;
+            return (
+              <button
+                key={m.value}
+                role="radio"
+                aria-checked={active}
+                aria-label={`${m.label}: ${m.desc}`}
+                onClick={() => onModeChange(m.value)}
+                disabled={loading}
+                title={m.desc}
+                className="text-xs px-3 py-1 rounded transition-colors disabled:opacity-40"
+                style={{
+                  background: active ? 'var(--accent-primary-dim)' : 'var(--surface-3)',
+                  color: active ? 'var(--accent-primary)' : 'var(--text-muted)',
+                  border: active ? '1px solid var(--accent-primary)' : '1px solid transparent',
+                }}
+              >
+                {m.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Pipeline progress */}
       {loading && (
-        <div className="flex flex-col gap-1.5 mt-1">
-          <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--surface-3)' }}>
+        <div
+          role="status"
+          aria-live="polite"
+          aria-label={
+            stepIndex >= 0
+              ? `Pipeline progress: ${steps[stepIndex]?.label ?? 'starting'}, step ${stepIndex + 1} of ${steps.length}`
+              : 'Pipeline starting'
+          }
+          className="flex flex-col gap-1.5 mt-1"
+        >
+          <div
+            role="progressbar"
+            aria-valuenow={pct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            className="h-1 rounded-full overflow-hidden"
+            style={{ background: 'var(--surface-3)' }}
+          >
             <div
               className="h-full rounded-full transition-all duration-500 ease-out"
               style={{ width: `${pct}%`, background: 'var(--accent-primary)' }}
             />
           </div>
-          <div className="flex gap-1 flex-wrap">
+          <div className="flex gap-1 flex-wrap" aria-hidden="true">
             {steps.map((step, i) => {
               const isDone = stepIndex > i;
               const isActive = stepIndex === i;

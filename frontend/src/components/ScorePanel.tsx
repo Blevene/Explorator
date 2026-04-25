@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { scoreColorVar } from "../utils/designTokens"
+import { scoreColorVar, scoreTierGlyph } from "../utils/designTokens"
 
 interface ScorePanelProps {
   scores: Record<string, number>
@@ -19,6 +19,7 @@ const PROGRESSION_DIMS = [
 function ScoreDimension({ name, value }: { name: string; value: number }) {
   const pct = Math.min(100, Math.max(0, (value / 10) * 100))
   const color = scoreColorVar(value)
+  const glyph = scoreTierGlyph(value)
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs w-36 shrink-0 capitalize" style={{ color: "var(--text-secondary)" }}>
@@ -30,7 +31,8 @@ function ScoreDimension({ name, value }: { name: string; value: number }) {
           style={{ width: `${pct}%`, background: color }}
         />
       </div>
-      <span className="text-xs font-mono w-8 text-right" style={{ color }}>
+      <span className="text-xs font-mono w-12 text-right tabular-nums" style={{ color }}>
+        <span aria-hidden="true" className="mr-1">{glyph}</span>
         {(value ?? 0).toFixed(1)}
       </span>
     </div>
@@ -62,7 +64,9 @@ function ScoreGroup({
 
 export default function ScorePanel({ scores, weightedTotal }: ScorePanelProps) {
   const [collapsed, setCollapsed] = useState(false)
-  const totalColor = scoreColorVar(weightedTotal ?? 0)
+  const total = weightedTotal ?? 0
+  const totalColor = scoreColorVar(total)
+  const totalGlyph = scoreTierGlyph(total)
 
   return (
     <div style={{ background: "var(--surface-1)", borderTop: "1px solid var(--border-default)" }}>
@@ -72,8 +76,9 @@ export default function ScorePanel({ scores, weightedTotal }: ScorePanelProps) {
           <span className="text-xs uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
             Scores
           </span>
-          <span className="text-base font-bold font-mono" style={{ color: totalColor }}>
-            {(weightedTotal ?? 0).toFixed(2)}
+          <span className="text-base font-bold font-mono tabular-nums" style={{ color: totalColor }}>
+            <span aria-hidden="true" className="mr-1">{totalGlyph}</span>
+            {total.toFixed(2)}
           </span>
         </div>
         <button

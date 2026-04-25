@@ -112,11 +112,20 @@ body {
 
 /* Card hover states */
 .card-interactive {
-  transition: border-color 150ms ease, background-color 150ms ease;
+  transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
+  will-change: transform;
 }
-.card-interactive:hover {
+.card-interactive:hover,
+.card-interactive:focus-visible {
   border-color: var(--accent-primary-dim);
   background-color: var(--surface-3);
+  transform: translateY(-1px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-interactive:hover,
+  .card-interactive:focus-visible {
+    transform: none;
+  }
 }
 
 /* --- Animations (from DESIGN.md spec) --- */

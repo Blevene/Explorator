@@ -6,7 +6,7 @@ import * as comparisonAudioEngine from "../services/comparisonAudioEngine"
 import { useAudioStore } from "../stores/audioStore"
 import { useComparisonAudioStore } from "../stores/comparisonAudioStore"
 import { useCandidateStore } from "../stores/candidateStore"
-import { scoreColorVar } from "../utils/designTokens"
+import { scoreColorVar, scoreTierGlyph } from "../utils/designTokens"
 import PianoRoll from "./PianoRoll"
 import ComparisonTransportBar from "./ComparisonTransportBar"
 import LaneSidebar from "./LaneSidebar"
@@ -243,10 +243,12 @@ export default function ComparisonView({
                   return (
                     <span
                       key={a.id}
-                      className="font-mono"
+                      className="font-mono tabular-nums"
                       style={{ color: scoreColorVar(score), fontWeight: isLeader ? 700 : 400, opacity: isLeader ? 1 : 0.7 }}
                     >
-                      {candidateLabels[candidateIds[i]] ?? String.fromCharCode(65 + i)}: {score.toFixed(1)}
+                      {candidateLabels[candidateIds[i]] ?? String.fromCharCode(65 + i)}:{' '}
+                      <span aria-hidden="true">{scoreTierGlyph(score)}</span>
+                      {score.toFixed(1)}
                     </span>
                   )
                 })}

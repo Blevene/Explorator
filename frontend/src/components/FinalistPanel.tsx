@@ -1,5 +1,6 @@
 import type { ArrangementSummary, FinalSelection } from '../services/api';
 import { useArrangementStore } from '../stores/arrangementStore';
+import { scoreColorVar, scoreTierGlyph } from '../utils/designTokens';
 import { StarButton } from './StarButton';
 
 interface FinalistPanelProps {
@@ -14,12 +15,6 @@ const ROLE_CONFIG: Record<string, { label: string; accent: string }> = {
   best_loop: { label: 'Best Loop', accent: 'var(--role-loop)' },
   most_experimental: { label: 'Most Experimental', accent: 'var(--role-experimental)' },
 };
-
-function scoreColor(score: number): string {
-  if (score >= 8) return 'var(--score-high)';
-  if (score >= 6) return 'var(--score-mid)';
-  return 'var(--score-low)';
-}
 
 export default function FinalistPanel({
   finalSelection,
@@ -81,9 +76,10 @@ export default function FinalistPanel({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <span
-                    className="text-sm font-bold font-mono"
-                    style={{ color: scoreColor(arr.weighted_total) }}
+                    className="text-sm font-bold font-mono tabular-nums"
+                    style={{ color: scoreColorVar(arr.weighted_total) }}
                   >
+                    <span aria-hidden="true" className="mr-1">{scoreTierGlyph(arr.weighted_total)}</span>
                     {(arr.weighted_total ?? 0).toFixed(2)}
                   </span>
                   <StarButton
