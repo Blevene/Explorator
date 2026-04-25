@@ -1,87 +1,84 @@
 # MusicExplorator
 
-Genre-aware musical exploration engine. A creative copilot that helps producers explore genre-specific harmonic ideas through iterative generation, realization, evaluation, and refinement.
+Genre-aware musical exploration engine. A creative copilot for producers: generate chord progressions, realize them into voiced arrangements with bass, groove, and melodic layers, evaluate and rank the results, mutate promising candidates, and build a personal library of curated patterns over time.
 
 ## What It Does
 
-- Translate high-level creative prompts ("dream pop in A major, wistful and haunted") into structured musical constraints
-- Generate multiple candidate chord progressions for a target genre using Gemini Pro
-- **Realize** progressions into voiced arrangements with bass lines — multiple voicing types and bass modes per genre
-- Evaluate candidates with hybrid scoring (deterministic music theory + Gemini Flash)
-- **Visualize** arrangements on a piano roll with amber voicing notes and cyan bass notes
-- **Play** arrangements in the browser with genre-matched Tone.js synthesis
-- Display ranked results with Roman numeral analysis and per-dimension scores
-- Real-time progress tracking via SSE as the LangGraph engine runs
+**Create:**
+- Translate creative prompts ("dream pop in A major, wistful and haunted") into structured musical constraints
+- Generate candidate chord progressions across 40+ genre profiles via Gemini Pro
+- **Realize** progressions into arrangements: voicings (open, close, drop-2, drop-3), genre-specific bass modes, groove patterns, and optional melodic complements
+- Evaluate arrangements across 12 dimensions (music theory + Gemini scoring)
+- **Mutate** promising candidates: transform, extend, substitute, or blend — guided by user feedback
 
-## Current Status: M2 Realization MVP Complete
+**Refine:**
+- Multi-round exploration with per-round finalists (safest / best-loop / most-experimental)
+- Free-text feedback loops reweight the scoring across rounds
+- Pareto ranking surfaces distinct trade-offs rather than a single "winner"
 
-The system generates chord progressions, realizes them into voiced arrangements with bass lines, evaluates and ranks them, and lets you see and hear the results:
+**Play & compare:**
+- Piano roll with amber voicing notes, cyan bass, purple melody
+- Tone.js playback with genre-matched synth presets
+- DAW-style comparison view: load multiple finalists into mute/solo lanes with synchronized transport
 
-### M2a — Realization Engine
-- **Voicing Generation:** Gemini Flash proposes voicing strategy → deterministic engine realizes named pitches (open, close, drop-2, drop-3)
-- **Bass Line Generation:** Genre-specific rhythm templates (supportive, pedal, syncopated)
-- **Arrangement Assembly:** Cross-product of voicing variants × bass modes per genre
-- **5-node LangGraph flow:** load_context → plan_voicings → generate_bass → assemble → persist_realization
+**Export & curate:**
+- MIDI + JSON export of any arrangement, with human-readable explanation and full provenance trace
+- **Pattern library** — every finalist auto-harvests its progression, voicing, bass, groove, and melody patterns into a reusable corpus
+- Star your favourites to build a curated library; filter `/patterns` to curated-only
 
-### M2b — Arrangement Evaluation
-- **Three Deterministic Evaluators:** Voice leading quality, register/density balance, playability
-- **Within-Family Ranking:** Quality filter + weighted scoring across 9 dimensions
-- **Genre-Scoped Multi-Bass:** Each genre explores 2 bass modes automatically
-- **Voice-Leading Optimization:** Inversion sweep minimizes voice movement between chords
+## Current Status
 
-### M2c — Playback & Visualization
-- **Piano Roll:** Canvas-based pitch grid with amber voicing notes, cyan bass notes, playback cursor
-- **Tone.js Playback:** Genre-matched synth presets (Dream Pop = pad, Synthwave = saw, Cinematic = warm triangle)
-- **Full Transport:** Play/pause/stop, tempo slider, loop toggle, per-track mute (voicing/bass), volume
-- **Split-Panel Layout:** Arrangement list (left) + detail view with piano roll + scores (right)
-- **Score Panel:** 9-dimension bar chart (3 arrangement + 6 progression scores)
-
-### M1 — Harmonic MVP (Foundation)
-- **LangGraph Engine:** 6-node flow (parse intent → load genre → generate → evaluate → select → persist)
-- **Gemini Integration:** Pro for creative generation, Flash for intent parsing + evaluation scoring
-- **music21 Adapter:** Roman numeral analysis, voicing realization, voice-leading analysis
-- **Hybrid Evaluation:** Deterministic loopability/cadence/coherence + Gemini genre fit/novelty/emotional fit
-- **Genre System:** 3 curated profiles (Dream Pop, Synthwave, Cinematic) with voicing + bass preferences
-- **Frontend:** Candidate card grid with scores, prompt bar with generation mode toggle, real-time pipeline progress
-
-### Tests
-- **Backend:** 245 passing (unit + integration)
-- **Frontend:** TypeScript strict, builds clean
+All feature milestones through **M5d** are shipped. M6 (multi-layer mutation) is specced and awaiting implementation.
 
 ### Roadmap
 
 | Milestone | Status | What It Adds |
-|-----------|--------|-------------|
-| M0 — Foundations | Done | Project scaffold, models, Neo4j, API, frontend shell |
-| M1 — Harmonic MVP | Done | LangGraph engine, Gemini progression generation, theory evaluation |
-| M2a — Realization Engine | Done | Voicing + bass generation, arrangement assembly, Neo4j persistence |
-| M2b — Arrangement Evaluation | Done | 3 evaluators, ranking, multi-bass, voice-leading optimization |
-| M2c — Playback & Visualization | Done | Piano roll, Tone.js playback, split-panel arrangement view |
-| M3 — Guided Search | Planned | Multi-round mutation, feedback loop, Pareto ranking |
-| M4 — Export | Planned | MIDI export, candidate explanations, comparison views |
-| M5 — Expanded Surface | Planned | Melodic complements, groove patterns, genre research agent |
+|---|---|---|
+| M0 — Foundations | ✅ Done | Project scaffold, Pydantic models, Neo4j, FastAPI, React shell |
+| M1 — Harmonic MVP | ✅ Done | LangGraph exploration flow, Gemini progression generation, theory + Gemini scoring, 3 seed genres |
+| M2a — Realization Engine | ✅ Done | Voicing + bass generation, arrangement assembly, Neo4j persistence |
+| M2b — Arrangement Evaluation | ✅ Done | Voice leading, register/density, playability evaluators; within-family ranking |
+| M2c — Playback & Visualization | ✅ Done | Piano roll, Tone.js playback, split-panel arrangement view |
+| M3a — Mutation Loop | ✅ Done | Gemini-driven mutations (substitute, extend, transform) on selected candidates |
+| M3b — Feedback Reweighting | ✅ Done | Free-text feedback interpreter updates objective weights across rounds |
+| M3c — Pareto Ranking & Finalists | ✅ Done | 3 finalists per round (safest / best-loop / most-experimental), distinct trade-offs |
+| M4a — MIDI & JSON Export | ✅ Done | Per-arrangement MIDI + JSON sidecar, combined session export |
+| M4b — Explanation, Comparison & Provenance | ✅ Done | Gemini-generated explanations, full lineage trace, comparison view |
+| M4c — Comparison Playback | ✅ Done | DAW-style mute/solo lanes, synchronized Tone.js transport for A/B listening |
+| M5a — Groove Patterns | ✅ Done | 5 groove archetypes, groove evaluation, accent overlay on piano roll |
+| M5b — Melodic Complement | ✅ Done | Two-phase melody generation (Gemini strategy + deterministic realization), melody-harmony eval |
+| M5c — Genre Research Agent | ✅ Done | Research → draft → critique → refine → validate pipeline produced 25+ new genre YAMLs |
+| M5d-1 — Pattern Harvest | ✅ Done | Silent accumulation: every finalist contributes 5 pattern rows (progression/voicing/bass/groove/melody) |
+| M5d-2 — Pattern Library Browser | ✅ Done | `/patterns` view with keyset pagination, genre/type filters, soft-delete |
+| M5d-3 — Pattern Curation | ✅ Done | Star finalists and library patterns; "curated only" filter; atomic event-log + denormalized state |
+| M6 — Multi-layer Mutation | 🟡 Spec'd | Mutate voicings / bass / groove / melody independently, not just progressions |
+
+### Tests
+
+- **Backend:** 635 tests (unit + integration + API), all green on main
+- **Frontend:** 59 vitest tests, tsc strict, `npm run build` clean
+- **E2E:** 41 Playwright tests covering happy path, mutations, feedback, comparison, export, M5a-d surfaces. 36 currently green; 4 pre-existing failures in the M5c genre-research spec (mock-infrastructure gap, documented in the spec)
 
 ## Tech Stack
 
-**Backend:** Python 3.12, FastAPI, Pydantic v2, LangGraph, Neo4j, music21, Gemini API (google-genai)
+**Backend:** Python 3.13, FastAPI, Pydantic v2, LangGraph, Neo4j 5 (community), music21, Gemini API (google-genai), ULID, sse-starlette
 
-**Frontend:** React 19, TypeScript, Vite, Tailwind CSS v4, Zustand, Tone.js
+**Frontend:** React 19, TypeScript 5 (strict), Vite 7, Tailwind CSS v4, Zustand 5, Tone.js 15, sonner (toasts), Playwright 1.50 for E2E
 
-**Tooling:** uv, ruff, mypy (strict), pytest, Docker Compose
+**Tooling:** uv, ruff, mypy (strict), pytest + pytest-asyncio, vitest, Docker Compose, Makefile
 
 ## Quick Start
 
 ### Prerequisites
 
-- Python 3.12+
-- Node.js 18+
+- Python 3.13+
+- Node.js 20+
 - Docker
 - A Gemini API key
 
 ### Setup
 
 ```bash
-# Clone and enter the project
 git clone git@github.com:Blevene/Explorator.git
 cd Explorator
 
@@ -89,8 +86,9 @@ cd Explorator
 cp .env.example backend/.env
 # Edit backend/.env and set GEMINI_API_KEY
 
-# Start Neo4j
+# Start Neo4j (dev + isolated test containers)
 make neo4j-up
+make neo4j-test-up     # only needed if you plan to run the backend test suite
 
 # Install backend dependencies
 cd backend && uv sync --all-extras && cd ..
@@ -103,62 +101,89 @@ cd frontend && npm install && cd ..
 
 ```bash
 # Terminal 1: Backend (port 8000)
-cd backend && uv run uvicorn explorator.api.app:create_app --factory --host 0.0.0.0 --port 8000 --reload
+make backend
+# equivalent to:
+# cd backend && uv run uvicorn explorator.api.app:create_app --factory --host 0.0.0.0 --port 8000 --reload
 
-# Terminal 2: Frontend (port 5174, proxies API to backend)
-cd frontend && npm run dev -- --host 0.0.0.0 --port 5174
+# Terminal 2: Frontend (Vite dev server, default port 5173, proxies /v1 to backend)
+cd frontend && npm run dev -- --host 0.0.0.0
 
-# Open http://localhost:5174
+# Open http://localhost:5173 (or whatever port Vite reports)
 ```
 
-### Usage
+### A typical session
 
-1. Open the frontend in your browser
-2. Create a new session with a prompt like "Dream pop in A major, wistful and haunted"
-3. Click **Generate** (adjust mode: conservative/balanced/exploratory)
-4. Watch the pipeline progress bar as it runs through 6 stages
-5. See candidate cards with chord symbols, Roman numerals, scores, and rationale
-6. Click **Realize** on a candidate to generate voiced arrangements
-7. Browse the split-panel view: arrangement cards (left) with voicing type + bass mode tags
-8. Click an arrangement to see its piano roll visualization
-9. Click **Play** to hear it with genre-matched synth sounds
-10. Use transport controls: tempo, loop, mute voicing/bass independently
+1. **Create a session** with a prompt like *"Dream pop in A major, wistful and haunted"*.
+2. Click **Generate** (mode: conservative / balanced / exploratory). Watch the SSE-driven pipeline progress.
+3. Candidate cards appear with chord symbols, Roman numerals, 9-dimension scores, and rationale.
+4. Click **Realize** on a candidate → voicings, bass, groove, and melody are generated and evaluated.
+5. The arrangement list (left) shows the grouped results; the detail view (right) shows piano roll + scores.
+6. **Play** an arrangement with genre-matched Tone.js synthesis. Mute/unmute voicing, bass, groove, melody independently.
+7. **Compare** two or three finalists side-by-side in DAW-style lane view.
+8. **Submit feedback** in plain text — the scorer reweights and you can launch the next round.
+9. **Mutate** a promising candidate to explore substitutions / extensions / transformations.
+10. **Export** as MIDI + JSON with a Gemini-generated explanation and full provenance trace.
+11. **Star** finalists to add them to your curated pattern library. Filter `/patterns` to `Curated only` to browse just your keepers.
 
 ### Test
 
 ```bash
-make test        # Full suite (auto-starts isolated test Neo4j on :7689)
-make test-unit   # Unit tests only (still uses isolated test Neo4j)
-make lint        # ruff + mypy
+make test              # Full backend suite — auto-starts isolated test Neo4j on :7689
+make test-unit         # Backend unit tests only
+make test-integration  # Backend integration tests (real Neo4j fixtures)
+make lint              # ruff + mypy strict
+
+cd frontend && npm run test:unit   # vitest
+
+make e2e               # Playwright — spawns backend (8100) + frontend preview (5199) internally
 ```
 
-The pytest suite wipes the DB between tests, so it runs against a
-dedicated `neo4j-test` container (port 7689) — the dev DB on 7688 is
-never touched. The `make test*` targets bring it up automatically. If
-you invoke pytest directly, run `make neo4j-test-up` first or override
-`NEO4J_TEST_URI` / `NEO4J_TEST_PASSWORD`.
+The pytest suite wipes the DB between tests, so it runs against a dedicated `neo4j-test` container (port 7689) — the dev DB on 7688 is never touched. The `make test*` targets bring it up automatically. If you invoke pytest directly, run `make neo4j-test-up` first or override `NEO4J_TEST_URI` / `NEO4J_TEST_PASSWORD`.
+
+E2E spawns its own backend + frontend processes; no manual startup needed.
 
 ## Architecture
 
+Two LangGraph pipelines composed into one unified graph:
+
 ```
-User Prompt
-  → Intent Parser (regex + Gemini Flash)
-  → Genre Profile (YAML → Neo4j)
-  → Harmony Generator (Gemini Pro)
-  → Theory Evaluator (deterministic + Gemini Flash)
-  → Ranking (weighted top-K selection)
-  → Persist to Neo4j
-  → Candidate Cards in UI
-  → User clicks "Realize"
-  → Voicing Strategy (Gemini Flash) → Deterministic Realization
-  → Bass Line Generation (genre templates)
-  → Arrangement Assembly (voicing × bass cross-product)
-  → Arrangement Evaluation (voice leading + register + playability)
-  → Within-Family Ranking (weighted 9-dimension scoring)
-  → Piano Roll + Tone.js Playback
+User prompt
+  → parse_intent (Gemini Flash)
+  → load_genre_profile (Neo4j)
+  → generate_progressions (Gemini Pro, 4 candidates)
+  → evaluate_progressions (deterministic + Gemini Flash)
+  → rank_progressions
+  → persist_progressions (Neo4j)
+     [round completes: SSE emits round_complete]
+
+User selects a candidate to realize:
+  → load_realization_context
+  → plan_voicings (Gemini Flash) → realize deterministically (music21)
+  → generate_bass (genre templates × variant modes)
+  → generate_groove (5 archetypes)
+  → generate_melody (Gemini strategy → deterministic realization)
+  → assemble_arrangements (voicing × bass × groove cross-product)
+  → evaluate_arrangements (voice leading + register + playability + melody-harmony + groove)
+  → rank_and_select (finalists: safest / best_loop / most_experimental)
+  → persist_realization
+  → harvest_patterns (5 pattern rows per finalist → PatternLibraryEntry in Neo4j)
+  → persist_round
+
+User feedback loop:
+  → interpret_feedback (Gemini Flash → weight_deltas)
+  → update_objective_weights (per-session scorer state)
+  → back to generate_progressions or mutate_candidates
+
+User curation:
+  → POST /v1/arrangements/{id}/curation (atomic event + fan-out in one Neo4j tx)
+  → UserFeedbackEvent appended, is_curated/curated_at denormalized across facet rows
 ```
 
-Two LangGraph pipelines: M1 exploration (6 nodes) and M2 realization (7 nodes). FastAPI owns HTTP/sessions. Domain services are pure Python. Neo4j stores all candidates and lineage.
+**Key design choices:**
+- **Neo4j is the source of truth** — sessions, candidates, arrangements, scorecards, feedback events, pattern library entries, lineage. No separate OLTP database.
+- **Dual-write for read-path performance** — e.g., curation writes both an append-only event and a denormalized boolean flag, inside one transaction. Event log is authoritative; flag is a cache for fast filter queries.
+- **Domain services are pure Python** — generators, evaluators, adapters. FastAPI owns HTTP + SSE; LangGraph owns orchestration; domain owns music theory.
+- **Provenance is built in, not bolted on** — every candidate carries its full lineage (parent_candidate_id, mutation_op, session_id, round), enabling the explanation and comparison features.
 
 ## Project Structure
 
@@ -166,73 +191,122 @@ Two LangGraph pipelines: M1 exploration (6 nodes) and M2 realization (7 nodes). 
 explorator/
 ├── backend/
 │   └── src/explorator/
-│       ├── api/          # FastAPI routes (sessions, rounds, candidates, realization)
-│       ├── adapters/     # Gemini client, music21 adapter (voicing, voice leading)
+│       ├── api/                           # FastAPI routes + schemas
+│       │   ├── routes/                    #   sessions, realization, patterns, comparisons, export, feedback, genres, genre_research
+│       │   └── schemas/
+│       ├── adapters/                      # Gemini client, music21 adapter, gemini_mock (E2E)
 │       ├── domain/
-│       │   ├── evaluation/  # Voice leading, register density, playability evaluators
-│       │   ├── harmony/     # Progression generation
-│       │   ├── intent/      # Prompt parsing
-│       │   ├── realization/ # Voicing generator, bass generator, arrangement assembler
-│       │   └── style/       # Genre profiles, YAML loader, sync
-│       ├── engine/       # LangGraph state, nodes, graph definitions
-│       ├── graph/        # Neo4j repositories
-│       ├── models/       # Pydantic v2 domain models
-│       ├── prompts/      # Centralized Gemini prompt templates
-│       └── export/       # MIDI generation (M4+)
+│       │   ├── evaluation/                # Voice leading, register/density, playability, groove, melody-harmony, theory scores
+│       │   ├── export/                    # MIDI builder, JSON sidecar
+│       │   ├── harmony/                   # Progression generator, mutator
+│       │   ├── intent/                    # Prompt parser, feedback interpreter
+│       │   ├── memory/                    # Pattern harvesting extractors
+│       │   ├── realization/               # Voicing, bass, groove, melody generators + arrangement assembler
+│       │   └── style/                     # 40+ genre YAMLs, rules, grammars, schemas
+│       ├── engine/                        # LangGraph state + nodes + unified graph
+│       │   └── nodes/
+│       │       └── genre_research/        # M5c research agent sub-graph (research → draft → critique → refine → validate)
+│       ├── graph/                         # Neo4j repositories (one per node label)
+│       ├── models/                        # Pydantic v2 domain models
+│       ├── prompts/                       # Centralized Gemini prompt templates
+│       └── services/
+│           └── pattern_library/           # Cursor, filters, harvest service, curation service
 ├── frontend/
 │   └── src/
-│       ├── views/        # Dashboard, SessionWorkspace
-│       ├── components/   # CandidateCard, ArrangementList, PianoRoll, TransportBar, ScorePanel
-│       ├── stores/       # Zustand state (session, candidate, arrangement, audio)
-│       └── services/     # API client, SSE, audio engine, MIDI utils
+│       ├── views/                         # Dashboard, SessionWorkspace, PatternLibraryBrowser, GenreManagement
+│       ├── components/                    # CandidateCard, ArrangementList, FinalistPanel, PianoRoll, TransportBar,
+│       │                                  #   ComparisonView, ExportModal, StarButton, PatternCard, etc.
+│       ├── stores/                        # Zustand — session, candidate, arrangement, audio, comparison, patternLibrary,
+│       │                                  #   patternFilters, genreResearch
+│       ├── services/                      # API client, SSE consumer, audio engines (single + comparison), MIDI utils
+│       └── lib/                           # Toast wrapper, utilities
+├── e2e/
+│   ├── tests/                             # 14 spec files covering happy path + every milestone's surfaces
+│   ├── fixtures/                          # Playwright fixtures (testSession, goToWorkspace, generateCandidates, etc.)
+│   └── playwright.config.ts
 ├── docs/
-│   ├── DESIGN.md         # Frontend design language (studio monitor aesthetic)
-│   └── superpowers/      # Design specs + implementation plans
-├── product_documents/    # PRD, functional spec, architecture docs
-├── docker-compose.yml    # Neo4j
+│   ├── ARCHITECTURE.md                    # Current system architecture (successor to product_documents/)
+│   ├── DESIGN.md                          # Frontend design language (studio monitor aesthetic)
+│   ├── manual-test/                       # Per-milestone manual QA checklists
+│   └── superpowers/                       # Design specs + implementation plans (point-in-time, preserved)
+├── product_documents/
+│   └── archive/                           # Original PRD, functional spec, etc. — frozen at project inception
+├── docker-compose.yml                     # Neo4j dev (7688) + test (7689) containers
 └── Makefile
 ```
 
 ## Configuration
 
 | Service | Port | Purpose |
-|---------|------|---------|
+|---|---|---|
 | Neo4j Browser (dev) | 7475 | Graph visualization |
-| Neo4j Bolt (dev) | 7688 | Driver connection |
+| Neo4j Bolt (dev) | 7688 | Driver connection for the running app |
 | Neo4j Browser (test) | 7476 | Isolated test DB browser |
 | Neo4j Bolt (test) | 7689 | Pytest-only — tests wipe between runs |
-| Backend | 8000 | FastAPI API |
-| Frontend | 5174 | Vite dev server (proxies /v1 to backend) |
+| Backend (dev) | 8000 | FastAPI via `make backend` |
+| Frontend (dev) | 5173 (Vite default) | `npm run dev` |
+| Backend (E2E) | 8100 | Spawned by Playwright global-setup, with `GEMINI_MOCK=true` |
+| Frontend (E2E) | 5199 | `npm run preview` against the production build |
 
 ## Genre Profiles
 
-Three curated genres ship with the system, each with harmonic vocabulary, voicing preferences, bass preferences, rules, and grammars:
+40+ genre YAMLs ship with the system in `backend/src/explorator/domain/style/genres/`. Each defines:
 
-- **Dream Pop** — Open voicings, mid-high register, supportive + pedal bass, borrowed minor iv, slow harmonic rhythm (default 4 bars)
-- **Synthwave** — Close/drop-2 voicings, mid register, supportive + syncopated bass, minor key, steady pulse (default 4 bars)
-- **Cinematic** — Open/drop-3 voicings, mid register, pedal + supportive bass, wide register, chromatic mediants (default 8 bars)
+- **Harmonic vocabulary** and tendencies (functional strength, chromaticism, borrowed-chord tolerance, cadence preference)
+- **Voicing preferences** (default + variant types, register, density)
+- **Bass preferences** (default + variant modes, rhythmic density)
+- **Groove tendencies** (comp density, articulation, syncopation)
+- **Melodic tendencies** (motion preference, range placement, phrase length)
+- **Experimentation envelope** (per-layer tolerance for deviation from the baseline)
 
-Genre profiles are YAML files in `backend/src/explorator/domain/style/genres/`. Each defines voicing preferences (`variant_voicing_types`, `default_register`, `favor_extensions`) and bass preferences (`variant_bass_modes`, `rhythmic_density`).
+The seed set is 3 hand-curated genres (Dream Pop, Synthwave, Cinematic). The remaining 37+ were produced by the M5c **genre research agent** — a research → draft → critique → refine → validate pipeline that synthesizes musicological research into the YAML schema deterministically validated by Pydantic.
 
 ## Evaluation Dimensions
 
-Each arrangement is scored on 9 dimensions:
+Each arrangement is scored across 12 dimensions, aggregated into a single `weighted_total`:
 
-### Arrangement Quality (M2b — deterministic)
+### Progression quality (hybrid deterministic + Gemini)
+| Dimension | What It Measures |
+|---|---|
+| Genre Fit | Authenticity to target genre (Gemini Flash) |
+| Emotional Fit | Alignment with target mood (Gemini Flash) |
+| Novelty | Creativity / unexpectedness (Gemini Flash) |
+| Theoretical Coherence | Diatonic fit via Roman numeral analysis (deterministic) |
+| Cadence Quality | Strength of ending cadence (deterministic) |
+| Loopability | How well the progression loops (deterministic) |
 
-| Dimension | Weight | What It Measures |
-|-----------|--------|-----------------|
-| Voice Leading | 0.15 | Smoothness, common-tone retention, parallel motion avoidance |
-| Register Density | 0.12 | Mud zone avoidance, spacing balance, bass-voicing separation |
-| Playability | 0.12 | Hand span feasibility, voice count limits |
+### Arrangement quality (deterministic)
+| Dimension | What It Measures |
+|---|---|
+| Voice Leading | Smoothness, common-tone retention, parallel-motion avoidance |
+| Register Density | Mud-zone avoidance, spacing balance, bass–voicing separation |
+| Playability | Hand-span feasibility, voice count limits |
+| Groove Quality | Archetype consistency, per-genre groove tendency fit |
+| Melody–Harmony | Melody–chord-tone alignment, contour cohesion |
+| Tension Curve | (Deferred — tracked as GitHub #3) |
 
-### Progression Quality (M1 — hybrid deterministic + Gemini)
+Weights are per-session and mutated by user feedback (M3b). The default weight profile is balanced; a session that says *"more adventurous, less predictable"* pushes novelty up and loopability down.
 
-| Dimension | Weight | What It Measures |
-|-----------|--------|-----------------|
-| Genre Fit | 0.10 | Authenticity to target genre |
-| Emotional Fit | 0.10 | Alignment with target mood |
-| Novelty | 0.10 | Creativity/unexpectedness |
-| Theoretical Coherence | 0.10 | Diatonic fit via Roman numeral analysis |
-| Cadence Quality | 0.10 | Strength of ending cadence |
-| Loopability | 0.11 | How well the progression loops |
+## External Integrations
+
+| System | Role |
+|---|---|
+| **Gemini Pro** | Creative generation (progressions, mutations, voicing strategy, melodic strategy, explanations) |
+| **Gemini Flash** | Fast deterministic tasks (intent parsing, theory scoring, feedback interpretation, genre critique) |
+| **Neo4j** | Single source of truth — sessions, candidates, arrangements, scorecards, feedback events, pattern library, lineage |
+| **music21** | Roman numeral analysis, voicing realization, voice-leading analysis |
+| **Tone.js** | Browser-side synthesis with genre-matched presets |
+
+## Known Issues / Deferred Work
+
+- **M5c E2E flakiness** — 4 tests in `e2e/tests/genre-research.spec.ts` fail because `FakeGeminiClient.generate_text` returns non-JSON. Root cause and fix strategy documented in the commit log. Net E2E: 36/41 green.
+- **Backend comparison endpoint test** — previously failed due to TestClient event-loop collision; converted to AsyncClient.
+- **Warm-start retrieval** — the pattern library is populated but retrieval doesn't yet favor curated patterns during generation. Tracked for the next post-M5d PR.
+- **GitHub issues:** #2 (cadence/loopability scoring granularity), #3 (implement tension_curve dimension).
+
+## Further Reading
+
+- **Frontend design language:** `docs/DESIGN.md` — "studio monitor" aesthetic, color palette, typography, interaction patterns
+- **Current system architecture:** `docs/ARCHITECTURE.md` — the single source of truth for how the app is wired today
+- **Historical design specs + implementation plans:** `docs/superpowers/specs/` and `docs/superpowers/plans/` — point-in-time records of each milestone's brainstorm → spec → plan → execution cycle
+- **Original product documents:** `product_documents/archive/` — the pre-implementation PRD, functional spec, hybrid graph model, and architecture docs. Preserved as a time capsule; divergence from current reality is expected and acceptable

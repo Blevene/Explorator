@@ -11,106 +11,198 @@ Dark, focused, precise. Ableton Live meets a high-end mixing console. This is a 
 - **Information density without clutter** — producers are comfortable with dense interfaces (mixing consoles, arrangement views). Don't oversimplify. Use density with clear hierarchy.
 - **Dark foundation** — dark backgrounds reduce eye strain during long sessions and make colored musical data pop.
 
+## Tokens vs. Tailwind
+
+Color is owned by **CSS custom properties** defined in `frontend/src/index.css`. JS code references them via the helpers in `frontend/src/utils/designTokens.ts`. Components style with inline `style={{ background: 'var(--surface-2)' }}` rather than Tailwind color classes — Tailwind's role is layout / spacing / typography utilities, not the palette.
+
+The exception is canvas drawing (piano roll, comparison view): the 2D context can't read CSS vars, so `CANVAS_COLORS` in `designTokens.ts` mirrors the relevant tokens as hex strings. Keep them in sync; the `CANVAS_COLORS` block has a comment to that effect.
+
+When designing a new component:
+1. Reach for an existing token first.
+2. If the token doesn't exist but the use case is general (e.g., a new "warning" tier), define the token in `index.css` and update `designTokens.ts` if JS will reference it.
+3. Hard-code a hex only when truly one-off (and even then, prefer a token).
+
 ## Color Palette
 
-### Foundation
-- Background: `slate-950` (#020617) primary, `slate-900` (#0f172a) panels
-- Surface: `slate-800` (#1e293b) cards, `slate-700` (#334155) borders
-- Text: `slate-100` (#f1f5f9) primary, `slate-400` (#94a3b8) secondary
+### Surfaces
 
-### Musical Data (the star)
-- Voicing notes: warm amber/gold `amber-400` (#fbbf24) to `amber-500` (#f59e0b)
-- Bass notes: cool cyan/teal `cyan-400` (#22d3ee) to `cyan-500` (#06b6d4)
-- Chord symbols: `slate-100` with subtle glow on hover
+| Token | Value | Use |
+|---|---|---|
+| `--surface-0` | `#08090d` | Page background, canvas background |
+| `--surface-1` | `#0d0f14` | Main panels |
+| `--surface-2` | `#12151c` | Cards, headers within panels |
+| `--surface-3` | `#181c25` | Selected/hovered card lift, secondary buttons |
+| `--surface-4` | `#1e2330` | Tertiary surfaces (rarely used) |
 
-### Genre Accents
-Each genre gets a signature highlight color used for badges, active states, and score accents:
-- Dream Pop: soft purple `violet-400` (#a78bfa)
-- Synthwave: hot pink `pink-400` (#f472b6)
-- Cinematic: deep gold `yellow-500` (#eab308)
+### Borders
 
-### Score Colors
-- Excellent (8+): `emerald-400` (#34d399)
-- Good (6-8): `amber-400` (#fbbf24)
-- Poor (<6): `rose-400` (#fb7185)
+| Token | Value | Use |
+|---|---|---|
+| `--border-subtle` | `#252a38` | Card edges, internal dividers |
+| `--border-default` | `#2f3647` | Panel boundaries |
+| `--border-bright` | `#3d4560` | Hover state, active inputs |
 
-### Transport Controls
-- Default: `slate-500` — almost invisible, unobtrusive
-- Hover/active: `slate-200` — appears on interaction
-- Playing indicator: genre accent color pulse
+### Text
+
+| Token | Value | Use |
+|---|---|---|
+| `--text-primary` | `#e2e6ef` | Body, chord symbols, emphasized labels |
+| `--text-secondary` | `#8891a5` | Labels, secondary metadata |
+| `--text-muted` | `#555e74` | Tertiary metadata, placeholders, disabled |
+
+### Accents (the music is the hero)
+
+| Token | Value | Use |
+|---|---|---|
+| `--accent-primary` | `#f0b429` (amber) | Voicing notes, primary action highlight, app accent |
+| `--accent-primary-dim` | `#f0b42933` | Hover background, soft glow |
+| `--accent-secondary` | `#6c9bef` (blue) | Bass notes |
+| `--accent-secondary-dim` | `#6c9bef22` | Bass-related backgrounds |
+| `--accent-tertiary` | `#34d399` (emerald) | Melody notes, positive scores |
+| `--accent-tertiary-dim` | `#34d39922` | Melody-related backgrounds |
+
+### Scores
+
+| Token | Value | Tier |
+|---|---|---|
+| `--score-high` | `#34d399` (emerald) | ≥ 8.0 |
+| `--score-mid` | `#fbbf24` (amber) | 6.0 – 8.0 |
+| `--score-low` | `#f87171` (rose) | < 6.0 |
+
+`scoreColorVar(score)` in `designTokens.ts` returns the right CSS var for a given numeric score.
+
+### Finalist roles
+
+| Token | Value | Role |
+|---|---|---|
+| `--role-safest` | `#34d399` | Safest finalist |
+| `--role-loop` | `#f0b429` | Best-loop finalist |
+| `--role-experimental` | `#a78bfa` | Most-experimental finalist |
+
+### Genre accents
+
+The seed three genres have signature colors:
+
+- `--genre-dream-pop` `#a78bfa` (violet)
+- `--genre-synthwave` `#f472b6` (pink)
+- `--genre-cinematic` `#eab308` (gold)
+
+The system also ships 37+ additional genres (M5c). For these, the accent falls through to `--accent-primary` (amber) by default. A small palette of `--genre-accent-{1..5}` exists for ad-hoc assignments. Do not add per-genre tokens for every genre — that would balloon the palette and force a decision per addition.
+
+### Overlay
+
+- `--overlay-backdrop` `rgba(0, 0, 0, 0.7)` for modal backdrops.
 
 ## Typography
 
 Avoid generic fonts (Inter, Roboto, Arial, system fonts). Choose fonts with character.
 
-### Musical Data
+### Musical data
 Monospace or semi-monospace for pitch names, chord symbols, Roman numerals, MIDI values. This signals "precise data" and aligns with DAW conventions.
 
-Recommendation: `JetBrains Mono`, `IBM Plex Mono`, or `Fira Code`
+Recommended: `JetBrains Mono`, `IBM Plex Mono`, or `Fira Code`.
 
-### UI Labels & Body
+### UI labels & body
 Geometric sans-serif with personality. Clean but not generic.
 
-Recommendation: `DM Sans`, `Outfit`, or `Sora`
+Recommended: `DM Sans`, `Outfit`, or `Sora`.
 
-### Score Numbers
-Tabular numerals (fixed-width digits) for score values so columns align.
+### Score numbers
+Tabular numerals (`font-variant-numeric: tabular-nums`) for fixed-width digits so columns align in score panels and pattern cards.
 
-## Layout Patterns
+## Layout patterns
 
-### Split Panel (M2c Arrangement View)
-- **Left panel** (~280px): arrangement list, compact cards, grouped by family
-- **Right panel** (flex remaining): detail view with transport + piano roll + scores
-- Resizable divider (optional)
+### Split panel — `SessionWorkspace` arrangement view
 
-### Card Hierarchy
-Arrangement cards within a family:
-- Family header: progression chord symbols as a row
-- Variant cards below: voicing type + bass mode badges, weighted score bar
-- Selected card: left accent border in genre color, subtle background lift
+- **Left panel** (~280px fixed): grouped arrangement list. Family header (chord-symbol row) + variant cards beneath.
+- **Right panel** (flex remaining): detail view with transport, piano roll, score panel.
 
-### Piano Roll (Hero Element)
-- Dark grid on `slate-950`
-- X axis: bars/beats, with bar numbers
-- Y axis: MIDI pitch range (show only the range that contains notes, with ~1 octave padding)
-- Voicing notes: amber rectangles with rounded corners, height = 1 semitone
-- Bass notes: cyan rectangles, same grid but visually distinct (below or separated by register gap)
-- Grid lines: `slate-800` for beats, `slate-700` slightly brighter for bar lines
-- Register zones: very subtle background shading to show low/mid/high
+### Pattern library — `/patterns`
 
-### Transport Bar
-- Fixed at top of detail panel, ~48px
-- Horizontal layout: [play/pause] [stop] [tempo: 120 BPM slider] [loop toggle] [mute: voicing] [mute: bass] [volume slider]
-- Minimal chrome — controls appear as icons with tooltips, not buttons with borders
-- Playing state: subtle pulsing indicator in genre accent color
+- Filter row at top: Genre input, Pattern Type select, Curated only checkbox.
+- Card list below. Each `PatternCard` shows pattern type badge, genre, score, source-arrangement short-hash, tags, expandable abstracted_pattern JSON, optional notes, star button, delete button.
+- Pagination via `Load more` button (keyset cursor — no infinite scroll, deliberate).
 
-### Score Panel
-- Below piano roll, collapsible
-- Horizontal bar chart: 9 dimensions, each as a thin bar with value label
-- Grouped: "Arrangement" (voice_leading, register_density, playability) above "Progression" (genre_fit, emotional_fit, coherence, cadence, novelty, loopability)
-- Weighted total displayed prominently
+### Comparison view (M4c)
 
-## Motion & Interaction
+- Modal-overlay surface with a DAW-style lane stack: one `LaneSidebar` per arrangement, each with mute / solo controls and per-track sub-mutes (voicing, bass, groove, melody).
+- Single `ComparisonTransportBar` at top drives all lanes via a synchronized Tone.js transport.
+- Cursor sweep on the (shared) piano roll renders all lanes' active notes.
 
-- **Page transitions**: none (SPA, instant panel switches)
-- **Card selection**: 150ms background fade + border accent appear
-- **Piano roll load**: notes fade in with staggered delay per bar (left to right, 50ms per bar)
-- **Playback cursor**: thin vertical line sweeping across piano roll in sync with audio, genre accent color
-- **Score bars**: animate width on load (200ms ease-out)
-- **Mute toggle**: muted track notes fade to 20% opacity on piano roll
+### Genre management — `/genres`
 
-## Backgrounds & Texture
+- Library list (left) of all 40+ genres.
+- Right pane shows genre detail OR research-agent progress when a job is active.
+- Step indicator: 5-step pipeline (Research → Draft → Critique → Refine → Validate).
 
-- Subtle noise grain overlay on main background (2-3% opacity) for analog warmth
-- No gradients on backgrounds — flat dark surfaces
-- Piano roll grid: clean, no texture — precision matters here
-- Card backgrounds: very subtle gradient from `slate-800` to `slate-850` (almost imperceptible, adds depth)
+### Card hierarchy
 
-## Things to Avoid
+For arrangement cards within a family:
 
-- Purple gradients on white backgrounds (AI slop)
-- Rounded, bubbly, "friendly" UI patterns (this is a pro tool)
-- Excessive whitespace (producers expect density)
-- Cliched "music app" visuals (neon waveforms, vinyl records, equalizer bars)
-- Generic component libraries with default styles (shadcn defaults, Material UI defaults)
-- Animations on everything — animate the hero moments (piano roll, playback cursor), leave the rest crisp
+- Family header: progression chord symbols as a row.
+- Variant cards: voicing type + bass mode + groove + melody badges, weighted score.
+- Selected card: left accent border in role color, subtle background lift (`--surface-3` over `--surface-2`).
+
+For finalist cards (in `FinalistPanel`):
+
+- Role badge (Safest / Best Loop / Most Experimental) at top-left, rounded full, color from `--role-*`.
+- Score at top-right, color from `scoreColorVar()`.
+- Star (curate / uncurate / disabled) immediately right of the score, color `--accent-primary`.
+- Rationale truncated below.
+
+### Piano roll (hero element)
+
+- Background: `--surface-0`.
+- Bar lines: `#252a38` (matches `--border-subtle`).
+- Beat lines: `#181c25`.
+- Y axis: visible MIDI range that contains notes, with ~1 octave of padding.
+- Voicing notes: `--accent-primary` rectangles, height = 1 semitone, rounded corners.
+- Bass notes: `--accent-secondary` rectangles in the lower register.
+- Melody notes: `--accent-tertiary` rectangles in the upper register.
+- Groove accents (M5a): subtle overlay glyphs/marks at accent beat positions.
+- Cursor: thin vertical line in `--accent-primary` sweeping with audio.
+
+### Transport bar
+
+- Fixed at top of detail panel, ~48px.
+- Horizontal layout: play/pause, stop, tempo slider (60–200 BPM), loop toggle, per-track mutes (voicing, bass, groove, melody), volume.
+- Minimal chrome — controls are icon buttons with tooltips, no borders by default.
+- Playing state: subtle pulsing indicator in `--accent-primary`.
+
+### Score panel
+
+- Below the piano roll, collapsible.
+- 12-dimension horizontal bar chart, grouped:
+  - **Arrangement quality:** voice_leading, register_density, playability, groove_quality, melody_harmony.
+  - **Progression quality:** genre_fit, emotional_fit, novelty, theoretical_coherence, cadence_quality, loopability.
+  - (`tension_curve` reserved — currently always 0; tracked as GitHub #3.)
+- Weighted total displayed prominently. Each bar uses `scoreColorVar()`.
+
+## Motion & interaction
+
+- **Page transitions:** none (SPA, instant view switches).
+- **Card selection:** 150ms background fade + accent border appear.
+- **Piano roll load:** notes fade in with a staggered 50ms-per-bar left-to-right delay.
+- **Playback cursor:** thin vertical line sweeping in sync with the audio engine.
+- **Score bars:** animate width on load (200ms ease-out).
+- **Mute toggle:** muted-track notes fade to ~20% opacity on the piano roll.
+- **Star button (M5d-3):** instant visual flip on click, optimistic — store reverts and toasts on API failure. 300ms trailing-edge debounce prevents duplicate event-log entries from rapid double-clicks.
+- **Toasts:** sonner in the bottom-right, dark theme, 3-second auto-dismiss, manual close button.
+
+## Backgrounds & texture
+
+- Subtle noise grain overlay at 2–3% opacity on the page background for analog warmth.
+- No gradients on backgrounds — flat dark surfaces.
+- Piano roll grid: clean, no texture — precision matters here.
+- Card backgrounds: very subtle gradient from `--surface-2` to `--surface-3` (almost imperceptible, adds depth on selected state).
+
+## Things to avoid
+
+- Purple gradients on white backgrounds (AI slop).
+- Rounded, bubbly, "friendly" UI patterns (this is a pro tool).
+- Excessive whitespace (producers expect density).
+- Cliched "music app" visuals (neon waveforms, vinyl records, equalizer bars, drum-machine pad mosaics).
+- Generic component libraries with default styles (shadcn defaults, Material UI defaults).
+- Animations on everything — animate the hero moments (piano roll, playback cursor), leave the rest crisp.
+- Tailwind color classes for app palette (`bg-slate-900`, `text-emerald-400`). Use CSS variables.
+- Hard-coded hex values in component code. Use a token, or define one if needed.
