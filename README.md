@@ -32,9 +32,11 @@ A creative copilot for music producers. Generate chord progressions, realize the
 
 | File | What it captures | Used by |
 |---|---|---|
-| **Profile** (`domain/style/genres/<name>.yaml`) | Harmonic vocabulary, tendency knobs (functional strength, chromaticism, cadence preference), voicing/bass/groove/melodic preferences, experimentation envelope per layer | Generators (progressions, voicings, bass, groove, melody) — the "default settings" for the genre |
-| **Rules + anti-patterns** (`domain/style/rules/<name>_rules.yaml`) | Named rules with weights and applicability (e.g. `glacial_attack_times` for ambient voicing), plus anti-patterns with severity (e.g. `staccato_rhythmic_comping` for ambient groove) | Evaluators — rules add positive bias, anti-patterns subtract |
-| **Grammar** (`domain/style/grammars/<name>_grammar.yaml`) | Preferred chord qualities, allowed borrowed chords, cadence archetypes, harmonic rhythm defaults (per time-signature), functional-motion bias | Progression generator — constrains the space the LLM is asked to explore |
+| **Profile** ([`domain/style/genres/`](./backend/src/explorator/domain/style/genres/)) | Harmonic vocabulary, tendency knobs (functional strength, chromaticism, cadence preference), voicing/bass/groove/melodic preferences, experimentation envelope per layer | Generators (progressions, voicings, bass, groove, melody) — the "default settings" for the genre |
+| **Rules + anti-patterns** ([`domain/style/rules/`](./backend/src/explorator/domain/style/rules/)) | Named rules with weights and applicability (e.g. `glacial_attack_times` for ambient voicing), plus anti-patterns with severity (e.g. `staccato_rhythmic_comping` for ambient groove) | Evaluators — rules add positive bias, anti-patterns subtract |
+| **Grammar** ([`domain/style/grammars/`](./backend/src/explorator/domain/style/grammars/)) | Preferred chord qualities, allowed borrowed chords, cadence archetypes, harmonic rhythm defaults (per time-signature), functional-motion bias | Progression generator — constrains the space the LLM is asked to explore |
+
+**See a concrete example — Ambient:** [`ambient.yaml`](./backend/src/explorator/domain/style/genres/ambient.yaml) (profile) · [`ambient_rules.yaml`](./backend/src/explorator/domain/style/rules/ambient_rules.yaml) (rules + anti-patterns) · [`ambient_grammar.yaml`](./backend/src/explorator/domain/style/grammars/ambient_grammar.yaml) (grammar). Schemas: [`schema.py`](./backend/src/explorator/domain/style/schema.py).
 
 The seed three (Dream Pop, Synthwave, Cinematic) are hand-curated. The other 37+ were produced by the **genre research agent** (M5c) — a five-step pipeline you can run yourself from the `/genres` UI:
 
@@ -175,16 +177,16 @@ explorator/
 
 See [§ The genre catalog](#the-genre-catalog) above for an overview. Each of the 40+ genres lives as three YAML files:
 
-```
-backend/src/explorator/domain/style/
-├── genres/<name>.yaml             # Profile
-├── rules/<name>_rules.yaml        # Rules + anti-patterns
-└── grammars/<name>_grammar.yaml   # Harmonic grammar
-```
+| Layer | Directory | Example |
+|---|---|---|
+| Profile | [`backend/src/explorator/domain/style/genres/`](./backend/src/explorator/domain/style/genres/) | [`ambient.yaml`](./backend/src/explorator/domain/style/genres/ambient.yaml) |
+| Rules + anti-patterns | [`backend/src/explorator/domain/style/rules/`](./backend/src/explorator/domain/style/rules/) | [`ambient_rules.yaml`](./backend/src/explorator/domain/style/rules/ambient_rules.yaml) |
+| Grammar | [`backend/src/explorator/domain/style/grammars/`](./backend/src/explorator/domain/style/grammars/) | [`ambient_grammar.yaml`](./backend/src/explorator/domain/style/grammars/ambient_grammar.yaml) |
 
-Schemas: `backend/src/explorator/domain/style/schema.py` (`GenreProfileYAML`, `GenreRulesYAML`, `HarmonicGrammarYAML`).
+Pydantic schemas (loader-enforced): [`schema.py`](./backend/src/explorator/domain/style/schema.py) — `GenreProfileYAML`, `GenreRulesYAML`, `HarmonicGrammarYAML`.
 
-To add a genre by hand, drop all three files in their respective directories using the schema; the loader picks them up at next backend reload. To add via the research agent, use the `/genres` UI.
+**To add a genre by hand:** drop all three files in their respective directories using the schemas; the loader picks them up at next backend reload.
+**To add via the research agent:** use the `/genres` UI ([§ The genre catalog](#the-genre-catalog) above).
 
 ## Evaluation dimensions
 
