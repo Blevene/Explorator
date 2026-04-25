@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import { cpSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import path from 'path';
 
@@ -84,10 +84,12 @@ export async function cleanGenreResearchState(): Promise<void> {
 function prepareTempCatalog(): string {
   const sourceCatalog = path.join(ROOT, 'backend/src/explorator/domain/style');
   const tmpRoot = mkdtempSync(path.join(tmpdir(), 'explorator-e2e-style-'));
-  // Recursive copy of the canonical style/ tree — we want all bundled
-  // genres (dream_pop, ambient, etc.) available so non-research tests
-  // that depend on them still work.
-  cpSync(sourceCatalog, tmpRoot, { recursive: true });
+  // Copy only the YAML-bearing subdirs — runtime ignores everything else, and
+  // pulling in loader.py / __pycache__ / CLAUDE.md would just be noise.
+  for (const sub of ['genres', 'rules', 'grammars']) {
+    mkdirSync(path.join(tmpRoot, sub), { recursive: true });
+    cpSync(path.join(sourceCatalog, sub), path.join(tmpRoot, sub), { recursive: true });
+  }
   writeFileSync(STYLE_DIR_FILE, tmpRoot);
   return tmpRoot;
 }
@@ -150,7 +152,6 @@ export default async function globalSetup() {
  */
 export function readTempCatalogPath(): string | null {
   try {
-    const { readFileSync } = require('fs');
     return readFileSync(STYLE_DIR_FILE, 'utf-8').trim() || null;
   } catch {
     return null;

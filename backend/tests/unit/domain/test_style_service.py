@@ -1,9 +1,5 @@
 """Tests for explorator.domain.style.service.STYLE_DIR resolution."""
 
-from pathlib import Path
-
-import pytest
-
 from explorator.domain.style.service import _resolve_style_dir
 
 
@@ -27,9 +23,9 @@ def test_resolve_style_dir_default(monkeypatch):
 
 def test_resolve_style_dir_resolves_relative_paths(tmp_path, monkeypatch):
     """A relative env-var path is resolved to absolute."""
-    rel = Path(tmp_path).relative_to(Path.cwd()) if str(tmp_path).startswith(str(Path.cwd())) else None
-    if rel is None:
-        pytest.skip("tmp_path is not under cwd; can't test relative resolution")
-    monkeypatch.setenv("EXPLORATOR_STYLE_DIR", str(rel))
+    # Chdir into tmp_path's parent so the override can be a bare basename.
+    monkeypatch.chdir(tmp_path.parent)
+    monkeypatch.setenv("EXPLORATOR_STYLE_DIR", tmp_path.name)
     result = _resolve_style_dir()
     assert result.is_absolute()
+    assert result == tmp_path.resolve()
