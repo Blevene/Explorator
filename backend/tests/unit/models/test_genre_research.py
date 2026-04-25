@@ -1,14 +1,11 @@
 """Tests for genre research models."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
 from explorator.models.genre_research import (
-    STEP_ORDER,
-    CritiqueEntry,
     CritiqueIssue,
-    GenreCritiqueResponse,
     GenreDraftResponse,
     GenreResearchJob,
     step_number,
@@ -34,11 +31,15 @@ class TestStepNumber:
 
 class TestCritiqueIssue:
     def test_valid_major_issue(self):
-        issue = CritiqueIssue(severity="major", field="harmonic_vocabulary", suggestion="Add more chord types")
+        issue = CritiqueIssue(
+            severity="major", field="harmonic_vocabulary", suggestion="Add more chord types"
+        )
         assert issue.severity == "major"
 
     def test_invalid_severity_rejected(self):
-        with pytest.raises(Exception):
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
             CritiqueIssue(severity="critical", field="x", suggestion="y")
 
 
@@ -52,8 +53,8 @@ class TestGenreResearchJob:
             research_log="",
             critique_trail=[],
             draft_yamls={},
-            created_at=datetime.now(tz=timezone.utc),
-            updated_at=datetime.now(tz=timezone.utc),
+            created_at=datetime.now(tz=UTC),
+            updated_at=datetime.now(tz=UTC),
         )
         assert job.genre_name == "lo_fi_hip_hop"
         assert job.error_message is None
@@ -68,8 +69,8 @@ class TestGenreResearchJob:
             critique_trail=[],
             draft_yamls={},
             error_message="LLM timeout",
-            created_at=datetime.now(tz=timezone.utc),
-            updated_at=datetime.now(tz=timezone.utc),
+            created_at=datetime.now(tz=UTC),
+            updated_at=datetime.now(tz=UTC),
         )
         assert job.status == "failed"
         assert job.error_message == "LLM timeout"

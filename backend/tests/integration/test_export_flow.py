@@ -7,8 +7,9 @@ import shutil
 import pretty_midi
 import pytest
 
-from explorator.domain.export.json_renderer import JsonRenderContext, render_json
+from explorator.domain.export.json_renderer import JsonRenderContext
 from explorator.domain.export.orchestrator import ExportRequest, render_and_write_artifacts
+from explorator.models.harmony import ProgressionCandidate
 from explorator.models.realization import (
     ArrangementCandidate,
     BassLine,
@@ -17,7 +18,6 @@ from explorator.models.realization import (
     VoicingPlan,
 )
 from explorator.models.session import CreativeBrief, Session
-from explorator.models.harmony import ProgressionCandidate
 
 
 @pytest.fixture
@@ -28,51 +28,88 @@ def export_dir(tmp_path):
 def test_full_export_produces_valid_files(export_dir):
     """Export combined MIDI + JSON for one candidate, verify both files."""
     vp = VoicingPlan(
-        id="vp-int", type="VoicingPlan", status="active",
+        id="vp-int",
+        type="VoicingPlan",
+        status="active",
         voicing_events=[
-            VoicingEvent(bar=0, beat=1.0, duration_beats=4.0, pitches=["C3", "E3", "G3", "B3"], chord_symbol="Cmaj7"),
-            VoicingEvent(bar=1, beat=1.0, duration_beats=4.0, pitches=["A2", "C3", "E3", "G3"], chord_symbol="Am7"),
+            VoicingEvent(
+                bar=0,
+                beat=1.0,
+                duration_beats=4.0,
+                pitches=["C3", "E3", "G3", "B3"],
+                chord_symbol="Cmaj7",
+            ),
+            VoicingEvent(
+                bar=1,
+                beat=1.0,
+                duration_beats=4.0,
+                pitches=["A2", "C3", "E3", "G3"],
+                chord_symbol="Am7",
+            ),
         ],
     )
     bl = BassLine(
-        id="bl-int", type="BassLine", status="active",
+        id="bl-int",
+        type="BassLine",
+        status="active",
         note_events=[
             BassNoteEvent(bar=0, beat=1.0, duration_beats=2.0, pitch="C2", velocity=90),
             BassNoteEvent(bar=0, beat=3.0, duration_beats=2.0, pitch="G2", velocity=80),
             BassNoteEvent(bar=1, beat=1.0, duration_beats=4.0, pitch="A1", velocity=85),
         ],
     )
-    session = Session(id="sess-int", type="Session", status="active", metadata={"prompt": "test export"})
+    session = Session(
+        id="sess-int", type="Session", status="active", metadata={"prompt": "test export"}
+    )
     brief = CreativeBrief(
-        id="cb-int", type="CreativeBrief", status="active",
-        genre="synthwave", key_center="C", mode="major", tempo_hint_bpm=118,
+        id="cb-int",
+        type="CreativeBrief",
+        status="active",
+        genre="synthwave",
+        key_center="C",
+        mode="major",
+        tempo_hint_bpm=118,
     )
     candidate = ProgressionCandidate(
-        id="pc-int", type="ProgressionCandidate", status="active",
-        session_id="sess-int", rationale="test",
+        id="pc-int",
+        type="ProgressionCandidate",
+        status="active",
+        session_id="sess-int",
+        rationale="test",
         chord_symbols=["Cmaj7", "Am7"],
         roman_numerals=["Imaj7", "vim7"],
         key_center="C",
         metadata={"label": "C", "role": "best", "origin_round": 1},
     )
     arrangement = ArrangementCandidate(
-        id="ac-int", type="ArrangementCandidate", status="active",
-        session_id="sess-int", rationale="test", progression_candidate_id="pc-int",
+        id="ac-int",
+        type="ArrangementCandidate",
+        status="active",
+        session_id="sess-int",
+        rationale="test",
+        progression_candidate_id="pc-int",
     )
 
     json_ctx = JsonRenderContext(
-        session=session, creative_brief=brief, candidate=candidate,
-        arrangement=arrangement, voicing_plan=vp, bass_line=bl,
+        session=session,
+        creative_brief=brief,
+        candidate=candidate,
+        arrangement=arrangement,
+        voicing_plan=vp,
+        bass_line=bl,
         melodic_complement=None,
         scores={"tension_curve": 0.82, "voice_leading": 0.91},
         mutation_summaries=[],
     )
 
     req = ExportRequest(
-        label="C", short_id="a3f2b1",
-        voicing_plan=vp, bass_line=bl,
+        label="C",
+        short_id="a3f2b1",
+        voicing_plan=vp,
+        bass_line=bl,
         melodic_complement=None,
-        bpm=118.0, beats_per_bar=4,
+        bpm=118.0,
+        beats_per_bar=4,
         formats=["midi_combined", "json"],
         output_dir=export_dir,
         json_context=json_ctx,
@@ -85,6 +122,7 @@ def test_full_export_produces_valid_files(export_dir):
     midi_art = [a for a in artifacts if a["artifact_type"] == "midi_combined"][0]
     assert os.path.exists(midi_art["path"])
     import io
+
     with open(midi_art["path"], "rb") as f:
         midi = pretty_midi.PrettyMIDI(io.BytesIO(f.read()))
     assert len(midi.instruments) == 2

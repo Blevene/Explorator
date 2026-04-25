@@ -1,7 +1,8 @@
 """Tests for provenance event instrumentation in graph nodes."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from explorator.engine.state import ExplorationState
 
@@ -34,9 +35,7 @@ class TestGenerateProvenance:
             "chord_symbols": ["C", "Am"],
         }
 
-        with patch(
-            "explorator.engine.nodes.generate.HarmonyGenerator"
-        ) as MockGen:
+        with patch("explorator.engine.nodes.generate.HarmonyGenerator") as MockGen:
             instance = MockGen.return_value
             instance.generate = AsyncMock(return_value=[mock_candidate, mock_candidate])
 
@@ -60,9 +59,7 @@ class TestGenerateProvenance:
         mock_candidate = MagicMock()
         mock_candidate.model_dump.return_value = {"id": "pc_1", "chord_symbols": ["C"]}
 
-        with patch(
-            "explorator.engine.nodes.generate.HarmonyGenerator"
-        ) as MockGen:
+        with patch("explorator.engine.nodes.generate.HarmonyGenerator") as MockGen:
             instance = MockGen.return_value
             instance.generate = AsyncMock(return_value=[mock_candidate])
 
@@ -100,15 +97,17 @@ class TestMutateProvenance:
         mock_mutation.predicted_score_changes = []
         mock_response.mutations = [mock_mutation]
 
-        with patch(
-            "explorator.engine.nodes.mutate.HarmonyMutator"
-        ) as MockMut:
+        with patch("explorator.engine.nodes.mutate.HarmonyMutator") as MockMut:
             instance = MockMut.return_value
             instance.mutate_harmonic = AsyncMock(return_value=mock_response)
 
             state = _make_state(
                 progression_candidates=[
-                    {"id": "pc_1", "chord_symbols": ["C", "Am", "F", "G"], "metadata": {"scores": {"genre_fit": 7.0}}},
+                    {
+                        "id": "pc_1",
+                        "chord_symbols": ["C", "Am", "F", "G"],
+                        "metadata": {"scores": {"genre_fit": 7.0}},
+                    },
                 ],
                 scorecards=[
                     {"candidate_id": "arr_1", "weighted_total": 7.5, "scores": {"genre_fit": 7.0}},
@@ -148,7 +147,11 @@ class TestRankAndSelectProvenance:
             ],
             arrangement_families=[],
             progression_candidates=[
-                {"id": "pc_1", "chord_symbols": ["C", "Am", "F", "G"], "metadata": {"scores": {"genre_fit": 7.0}}},
+                {
+                    "id": "pc_1",
+                    "chord_symbols": ["C", "Am", "F", "G"],
+                    "metadata": {"scores": {"genre_fit": 7.0}},
+                },
             ],
             evaluations=[
                 {
@@ -177,15 +180,16 @@ class TestLoadMemoryProvenance:
 
         mock_driver = MagicMock()
 
-        with patch(
-            "explorator.engine.nodes.load_memory.FeedbackEventRepo"
-        ) as MockFB, patch(
-            "explorator.engine.nodes.load_memory.ObjectiveWeightsRepo"
-        ) as MockOW:
+        with (
+            patch("explorator.engine.nodes.load_memory.FeedbackEventRepo") as MockFB,
+            patch("explorator.engine.nodes.load_memory.ObjectiveWeightsRepo") as MockOW,
+        ):
             fb_instance = MockFB.return_value
-            fb_instance.list_by_session = AsyncMock(return_value=[
-                {"id": "fb_1", "text": "more tension", "weight_deltas": {"tension_curve": 0.5}},
-            ])
+            fb_instance.list_by_session = AsyncMock(
+                return_value=[
+                    {"id": "fb_1", "text": "more tension", "weight_deltas": {"tension_curve": 0.5}},
+                ]
+            )
 
             ow_instance = MockOW.return_value
             ow_instance.get_latest_for_session = AsyncMock(return_value=None)
@@ -204,11 +208,10 @@ class TestLoadMemoryProvenance:
 
         mock_driver = MagicMock()
 
-        with patch(
-            "explorator.engine.nodes.load_memory.FeedbackEventRepo"
-        ) as MockFB, patch(
-            "explorator.engine.nodes.load_memory.ObjectiveWeightsRepo"
-        ) as MockOW:
+        with (
+            patch("explorator.engine.nodes.load_memory.FeedbackEventRepo") as MockFB,
+            patch("explorator.engine.nodes.load_memory.ObjectiveWeightsRepo") as MockOW,
+        ):
             fb_instance = MockFB.return_value
             fb_instance.list_by_session = AsyncMock(return_value=[])
 

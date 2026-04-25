@@ -51,7 +51,9 @@ async def submit_feedback(
         raise HTTPException(status_code=404, detail="Session not found")
 
     if session_id in _busy_sessions:
-        raise HTTPException(status_code=409, detail="Feedback submission already in-flight for this session")
+        raise HTTPException(
+            status_code=409, detail="Feedback submission already in-flight for this session"
+        )
     _busy_sessions.add(session_id)
 
     try:

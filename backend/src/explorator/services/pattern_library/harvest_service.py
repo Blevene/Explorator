@@ -3,9 +3,10 @@
 Extracted from the LangGraph `harvest_patterns` node so the same logic can be
 reused by the POST /v1/sessions/{id}/finalists/harvest API endpoint.
 """
+
 import logging
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from neo4j.exceptions import Neo4jError
@@ -16,8 +17,9 @@ from explorator.graph.pattern_library_repo import PatternLibraryRepo
 logger = logging.getLogger(__name__)
 
 
-class SkipReason(str, Enum):
+class SkipReason(StrEnum):
     """Why a candidate facet was not upserted to the library."""
+
     MISSING_ARRANGEMENT = "missing_arrangement"
     MISSING_PROGRESSION = "missing_progression"
     MISSING_GENRE = "missing_genre"
@@ -28,6 +30,7 @@ class SkipReason(str, Enum):
 @dataclass(frozen=True)
 class SkipEntry:
     """A single skipped-pattern record for the HarvestReport."""
+
     candidate_id: str
     pattern_type: str
     reason: SkipReason
@@ -41,6 +44,7 @@ class HarvestReport:
     `upserted_count` counts MERGE operations (new + idempotent rewrite alike).
     Consumers must treat `upserted_pattern_ids` as an unordered set.
     """
+
     session_id: str
     upserted_count: int
     skipped_count: int
@@ -72,7 +76,9 @@ async def harvest_session_finalists_from_state(
 
     if not selected_ids:
         return HarvestReport(
-            session_id=session_id, upserted_count=0, skipped_count=0,
+            session_id=session_id,
+            upserted_count=0,
+            skipped_count=0,
         )
 
     if not genre:
@@ -85,8 +91,10 @@ async def harvest_session_finalists_from_state(
             for cid in selected_ids
         ]
         return HarvestReport(
-            session_id=session_id, upserted_count=0,
-            skipped_count=len(skipped), skipped_reasons=skipped,
+            session_id=session_id,
+            upserted_count=0,
+            skipped_count=len(skipped),
+            skipped_reasons=skipped,
         )
 
     roles: dict[str, str] = final_selection.get("selection_roles") or {}
@@ -97,9 +105,7 @@ async def harvest_session_finalists_from_state(
     grooves = _index_by_id(state.get("groove_patterns") or [])
     melodies = _index_by_id(state.get("melodic_complements") or [])
     scorecards_by_cand = {
-        s["candidate_id"]: s
-        for s in (state.get("scorecards") or [])
-        if s.get("candidate_id")
+        s["candidate_id"]: s for s in (state.get("scorecards") or []) if s.get("candidate_id")
     }
 
     upserted_ids: list[str] = []
@@ -108,20 +114,28 @@ async def harvest_session_finalists_from_state(
     for arr_id in selected_ids:
         arrangement = arrangements.get(arr_id)
         if arrangement is None:
-            skipped.append(SkipEntry(
-                candidate_id=arr_id, pattern_type="*",
-                reason=SkipReason.MISSING_ARRANGEMENT,
-            ))
+            skipped.append(
+                SkipEntry(
+                    candidate_id=arr_id,
+                    pattern_type="*",
+                    reason=SkipReason.MISSING_ARRANGEMENT,
+                )
+            )
             continue
         progression = progressions.get(arrangement.get("progression_candidate_id"))
         if progression is None:
-            skipped.append(SkipEntry(
-                candidate_id=arr_id, pattern_type="*",
-                reason=SkipReason.MISSING_PROGRESSION,
-            ))
+            skipped.append(
+                SkipEntry(
+                    candidate_id=arr_id,
+                    pattern_type="*",
+                    reason=SkipReason.MISSING_PROGRESSION,
+                )
+            )
             continue
         scorecard = scorecards_by_cand.get(arr_id) or {
-            "weighted_total": 0.0, "scores": {}, "pareto_tags": [],
+            "weighted_total": 0.0,
+            "scores": {},
+            "pareto_tags": [],
         }
         role = roles.get(arr_id, "unknown")
 
@@ -146,13 +160,18 @@ async def harvest_session_finalists_from_state(
             except Neo4jError as exc:
                 logger.error(
                     "harvest_session_finalists: failed to upsert entry %s (%s/%s): %s",
-                    entry.id, entry.pattern_type, entry.source_candidate_id, exc,
+                    entry.id,
+                    entry.pattern_type,
+                    entry.source_candidate_id,
+                    exc,
                 )
-                skipped.append(SkipEntry(
-                    candidate_id=entry.source_candidate_id,
-                    pattern_type=entry.pattern_type,
-                    reason=SkipReason.UPSERT_FAILED,
-                ))
+                skipped.append(
+                    SkipEntry(
+                        candidate_id=entry.source_candidate_id,
+                        pattern_type=entry.pattern_type,
+                        reason=SkipReason.UPSERT_FAILED,
+                    )
+                )
 
     return HarvestReport(
         session_id=session_id,
@@ -178,12 +197,13 @@ class HarvestRepos:
     ProgressionCandidateRepo is not a separate persistent repo; progression data
     is reconstructed from state or from the ArrangementCandidateRepo's metadata.
     """
+
     pattern_library: PatternLibraryRepo
-    arrangement_candidate: Any   # ArrangementCandidateRepo (imported at call site)
-    bass_line: Any               # BassLineRepo
-    voicing_plan: Any            # VoicingPlanRepo
-    groove_pattern: Any          # GroovePatternRepo
-    melodic_complement: Any      # MelodicComplementRepo
+    arrangement_candidate: Any  # ArrangementCandidateRepo (imported at call site)
+    bass_line: Any  # BassLineRepo
+    voicing_plan: Any  # VoicingPlanRepo
+    groove_pattern: Any  # GroovePatternRepo
+    melodic_complement: Any  # MelodicComplementRepo
 
 
 async def harvest_session_finalists(
@@ -199,7 +219,8 @@ async def harvest_session_finalists(
     # Build a state-shaped dict from repo reads, then delegate.
     state = await _reconstruct_state_from_repos(session_id, repos=repos)
     return await harvest_session_finalists_from_state(
-        state, pattern_library_repo=repos.pattern_library,
+        state,
+        pattern_library_repo=repos.pattern_library,
     )
 
 
@@ -225,8 +246,12 @@ async def _reconstruct_state_from_repos(
     voicing_ids = {a.get("voicing_plan_id") for a in arrangements if a.get("voicing_plan_id")}
     bass_ids = {a.get("bass_line_id") for a in arrangements if a.get("bass_line_id")}
     groove_ids = {a.get("groove_pattern_id") for a in arrangements if a.get("groove_pattern_id")}
-    melody_ids = {a.get("melodic_complement_id") for a in arrangements if a.get("melodic_complement_id")}
-    prog_ids = {a.get("progression_candidate_id") for a in arrangements if a.get("progression_candidate_id")}
+    melody_ids = {
+        a.get("melodic_complement_id") for a in arrangements if a.get("melodic_complement_id")
+    }
+    prog_ids = {
+        a.get("progression_candidate_id") for a in arrangements if a.get("progression_candidate_id")
+    }
 
     voicings = [await repos.voicing_plan.get_by_id(i) for i in voicing_ids]
     basses = [await repos.bass_line.get_by_id(i) for i in bass_ids]

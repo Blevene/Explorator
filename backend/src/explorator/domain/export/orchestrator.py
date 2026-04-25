@@ -4,16 +4,17 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from explorator.domain.export.json_renderer import JsonRenderContext, render_json
 from explorator.domain.export.midi_renderer import (
     render_combined_midi,
     render_separate_midi,
 )
-from explorator.models.melody import MelodicComplement
-from explorator.models.realization import BassLine, VoicingPlan
 
+if TYPE_CHECKING:
+    from explorator.models.melody import MelodicComplement
+    from explorator.models.realization import BassLine, VoicingPlan
 
 _FILENAME_MAP = {
     "midi_combined": "candidate-{label}-{sid}-chords-bass-melody.mid",
@@ -54,7 +55,10 @@ def render_and_write_artifacts(req: ExportRequest) -> list[dict[str, Any]]:
     for fmt in req.formats:
         if fmt == "midi_combined":
             data = render_combined_midi(
-                req.voicing_plan, req.bass_line, req.bpm, req.beats_per_bar,
+                req.voicing_plan,
+                req.bass_line,
+                req.bpm,
+                req.beats_per_bar,
                 melodic_complement=req.melodic_complement,
             )
             fname = build_filename(req.label, req.short_id, "midi_combined")
@@ -65,7 +69,10 @@ def render_and_write_artifacts(req: ExportRequest) -> list[dict[str, Any]]:
 
         elif fmt == "midi_separate":
             separate = render_separate_midi(
-                req.voicing_plan, req.bass_line, req.bpm, req.beats_per_bar,
+                req.voicing_plan,
+                req.bass_line,
+                req.bpm,
+                req.beats_per_bar,
                 melodic_complement=req.melodic_complement,
             )
             for voice, key in [("chords", "chords"), ("bass", "bass"), ("melody", "melody")]:
@@ -75,7 +82,9 @@ def render_and_write_artifacts(req: ExportRequest) -> list[dict[str, Any]]:
                 path = os.path.join(req.output_dir, fname)
                 with open(path, "wb") as f:
                     f.write(separate[key])
-                artifacts.append({"artifact_type": f"midi_separate_{voice}", "path": path, "filename": fname})
+                artifacts.append(
+                    {"artifact_type": f"midi_separate_{voice}", "path": path, "filename": fname}
+                )
 
         elif fmt == "json":
             if req.json_context is None:

@@ -1,8 +1,9 @@
 """Neo4j CRUD for GenreResearchJob nodes."""
 
+import contextlib
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from neo4j import AsyncDriver
@@ -28,10 +29,8 @@ def _unflatten_from_neo4j(props: dict[str, Any]) -> dict[str, Any]:
     result = dict(props)
     for key in ("draft_yamls", "critique_trail", "reference_artists", "validation_errors"):
         if key in result and isinstance(result[key], str):
-            try:
+            with contextlib.suppress(json.JSONDecodeError, TypeError):
                 result[key] = json.loads(result[key])
-            except (json.JSONDecodeError, TypeError):
-                pass
     return result
 
 
@@ -63,7 +62,7 @@ class GenreResearchRepository:
 
     async def update_job(self, job_id: str, updates: dict[str, Any]) -> None:
         """Partial update of a job node."""
-        updates["updated_at"] = datetime.now(tz=timezone.utc).isoformat()
+        updates["updated_at"] = datetime.now(tz=UTC).isoformat()
         flat = _flatten_for_neo4j(updates)
         query = """
             MATCH (j:GenreResearchJob {id: $id})
@@ -90,7 +89,7 @@ class GenreResearchRepository:
             MATCH (j:GenreResearchJob {genre_name: $name})
             WHERE j.status IN ['researching', 'drafting', 'critiquing', 'refining', 'validating', 'pending_review']
             RETURN count(j) AS cnt
-        """
+        """  # noqa: E501
         async with self.driver.session() as session:
             result = await session.run(query, name=genre_name)
             record = await result.single()

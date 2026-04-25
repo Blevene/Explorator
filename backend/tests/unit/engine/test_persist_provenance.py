@@ -1,7 +1,8 @@
 """Tests for provenance persistence in persist_round node."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from explorator.engine.state import ExplorationState
 

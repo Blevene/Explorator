@@ -22,7 +22,14 @@ logger = logging.getLogger(__name__)
 DEFAULT_WEIGHTS: dict[str, float] = dict(CANONICAL_DEFAULT_WEIGHTS.weights)
 
 # Dimensions whose absence triggers a 5.0 fallback (M1 scores)
-_M1_DIMENSIONS = {"genre_fit", "emotional_fit", "theoretical_coherence", "cadence_quality", "novelty", "loopability"}
+_M1_DIMENSIONS = {
+    "genre_fit",
+    "emotional_fit",
+    "theoretical_coherence",
+    "cadence_quality",
+    "novelty",
+    "loopability",
+}
 
 # M2b dimensions that must pass threshold
 _M2B_GATE_DIMENSIONS = {"voice_leading", "register_density", "playability"}
@@ -32,10 +39,7 @@ _PARETO_AXES = ["genre_fit", "novelty", "loopability", "playability"]
 
 def _identify_pareto_front(candidates: list[dict[str, Any]]) -> set[str]:
     """Identify Pareto front candidates across key axes."""
-    pareto_input = [
-        {"id": c["id"], "scores": c.get("merged_scores", {})}
-        for c in candidates
-    ]
+    pareto_input = [{"id": c["id"], "scores": c.get("merged_scores", {})} for c in candidates]
     front_ids = compute_pareto_front(pareto_input, axes=_PARETO_AXES)
     return set(front_ids)
 
@@ -107,9 +111,7 @@ def _rank_family(
     passed: list[dict[str, Any]] = []
     for cand in candidates:
         scores = cand.get("merged_scores", {})
-        gate_fail = any(
-            scores.get(dim, 5.0) < min_threshold for dim in _M2B_GATE_DIMENSIONS
-        )
+        gate_fail = any(scores.get(dim, 5.0) < min_threshold for dim in _M2B_GATE_DIMENSIONS)
         if not gate_fail:
             passed.append(cand)
 
@@ -132,7 +134,9 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
     arrangement_families_raw = state.get("arrangement_families", [])
     # Prefer top_progressions (has M1 scores attached by select_top_progressions)
     # over raw progression_candidates (which lack scores in metadata)
-    progression_candidates_raw = state.get("top_progressions", []) or state.get("progression_candidates", [])
+    progression_candidates_raw = state.get("top_progressions", []) or state.get(
+        "progression_candidates", []
+    )
     evaluations_raw = state.get("evaluations", [])
 
     # M3b: use state-provided weights if available, else hardcoded defaults
@@ -229,7 +233,7 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
             arr_status[pid] = "selected"
 
     # Second pass: build scorecards now that pareto_ids is known
-    for prog_id, fam in family_data.items():
+    for _prog_id, fam in family_data.items():
         family_candidates = fam["candidates"]
         selected_in_family = fam["selected_in_family"]
         for cand in family_candidates:
@@ -263,7 +267,9 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
 
     # Build selected_arrangements list (full dicts for selected ones)
     arr_by_id_updated = {a["id"]: a for a in updated_arrangements}
-    selected_arrangements = [arr_by_id_updated[aid] for aid in selected_ids if aid in arr_by_id_updated]
+    selected_arrangements = [
+        arr_by_id_updated[aid] for aid in selected_ids if aid in arr_by_id_updated
+    ]
 
     # Update arrangement_families with selected_member info
     updated_families = []
@@ -279,7 +285,9 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
         prog_chord_lookup[pc_id] = pc.get("chord_symbols", [])
 
     # Enrich flat candidates with progression_candidate_id for diversity check
-    arr_prog_map = {a["id"]: a.get("progression_candidate_id", "") for a in arrangement_candidates_raw}
+    arr_prog_map = {
+        a["id"]: a.get("progression_candidate_id", "") for a in arrangement_candidates_raw
+    }
     for c in all_flat_candidates:
         c["progression_candidate_id"] = arr_prog_map.get(c["id"], "")
 
@@ -296,13 +304,15 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
     for sc_data in scorecards:
         arr_id = sc_data["candidate_id"]
         prog_id = arr_prog_map.get(arr_id, "")
-        diversity_input.append({
-            "id": arr_id,
-            "progression_candidate_id": prog_id,
-            "weighted_total": sc_data["weighted_total"],
-            "chord_symbols": prog_chord_lookup.get(prog_id, []),
-            "scores": sc_data["scores"],
-        })
+        diversity_input.append(
+            {
+                "id": arr_id,
+                "progression_candidate_id": prog_id,
+                "weighted_total": sc_data["weighted_total"],
+                "chord_symbols": prog_chord_lookup.get(prog_id, []),
+                "scores": sc_data["scores"],
+            }
+        )
     diversity_input.sort(key=lambda c: c["weighted_total"], reverse=True)
 
     search_plan = parse_json_or_dict(state.get("search_plan", {}))
@@ -310,7 +320,10 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
     top_n = max(3, round(len(diversity_input) * diversity_target))
 
     diversified = apply_diversity_penalty(
-        diversity_input, top_n=top_n, edit_dist_threshold=2, score_dist_threshold=0.5,
+        diversity_input,
+        top_n=top_n,
+        edit_dist_threshold=2,
+        score_dist_threshold=0.5,
     )
 
     # --- M3c: Selection roles ---
@@ -323,27 +336,32 @@ async def rank_and_select(state: ExplorationState) -> dict[str, Any]:
     }
 
     if callback:
-        await callback("node_completed", {
-            "node": "rank_and_select",
-            "selected_count": len(selected_arrangements),
-            "pareto_count": len(pareto_ids),
-            "finalist_count": len(selection_roles),
-            "final_selection": final_selection,
-        })
+        await callback(
+            "node_completed",
+            {
+                "node": "rank_and_select",
+                "selected_count": len(selected_arrangements),
+                "pareto_count": len(pareto_ids),
+                "finalist_count": len(selection_roles),
+                "final_selection": final_selection,
+            },
+        )
 
     # M4b: Provenance event
     existing_events = list(state.get("provenance_events", []))
-    existing_events.append({
-        "timestamp": utc_now().isoformat(),
-        "action": "rank_and_select",
-        "object_id": state.get("session_id", ""),
-        "round_number": state.get("round_number", 1),
-        "details": {
-            "role_assignments": selection_roles,
-            "selected_count": len(selected_arrangements),
-            "pareto_count": len(pareto_ids),
-        },
-    })
+    existing_events.append(
+        {
+            "timestamp": utc_now().isoformat(),
+            "action": "rank_and_select",
+            "object_id": state.get("session_id", ""),
+            "round_number": state.get("round_number", 1),
+            "details": {
+                "role_assignments": selection_roles,
+                "selected_count": len(selected_arrangements),
+                "pareto_count": len(pareto_ids),
+            },
+        }
+    )
 
     return {
         "arrangement_candidates": updated_arrangements,

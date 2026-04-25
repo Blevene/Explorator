@@ -1,6 +1,5 @@
 """Tests for explanation prompt generation."""
 
-import pytest
 
 from explorator.prompts.explanation import explanation_prompt
 

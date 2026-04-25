@@ -10,8 +10,8 @@ from pydantic import BaseModel
 from ulid import ULID
 
 from explorator.api.deps import get_neo4j_driver, get_session_repo
-from explorator.graph.provenance_trace_repo import ProvenanceTraceRepo
 from explorator.config import settings
+from explorator.graph.provenance_trace_repo import ProvenanceTraceRepo
 from explorator.graph.session_repo import SessionRepository
 from explorator.models.session import Session
 from explorator.utils import parse_json_or_dict

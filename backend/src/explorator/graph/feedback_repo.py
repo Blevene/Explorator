@@ -17,7 +17,7 @@ class FeedbackEventRepo(BaseRepository):
 
     async def create_with_relationships(
         self,
-        event: "BaseEntity",
+        event: BaseEntity,
         weights_id: str,
         session_id: str,
     ) -> None:

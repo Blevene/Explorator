@@ -3,9 +3,9 @@
 import pytest
 
 from explorator.adapters.gemini_mock import FakeGeminiClient
+from explorator.domain.evaluation.theory import GeminiScores
 from explorator.domain.harmony.generator import GeneratedProgressionSet
 from explorator.domain.harmony.mutator import MutationResponse
-from explorator.domain.evaluation.theory import GeminiScores
 from explorator.domain.intent.feedback import FeedbackInterpretation
 from explorator.domain.intent.parser import SoftPreferences
 from explorator.models.realization import VoicingStrategyResponse

@@ -1,5 +1,6 @@
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, UTC
 
 from explorator.graph.arrangement_candidate_repo import ArrangementCandidateRepo
 from explorator.graph.pattern_library_repo import PatternLibraryRepo

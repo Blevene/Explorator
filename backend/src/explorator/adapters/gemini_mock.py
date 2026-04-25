@@ -118,14 +118,14 @@ def _get_builders() -> dict:
     if _BUILDERS:
         return _BUILDERS
 
-    from explorator.domain.intent.parser import SoftPreferences
-    from explorator.domain.harmony.generator import GeneratedProgression, GeneratedProgressionSet
     from explorator.domain.evaluation.theory import GeminiScores
-    from explorator.models.realization import ChordVoicingInstruction, VoicingStrategyResponse
+    from explorator.domain.harmony.generator import GeneratedProgression, GeneratedProgressionSet
     from explorator.domain.harmony.mutator import MutationResponse, MutationResponseItem
     from explorator.domain.intent.feedback import FeedbackInterpretation
+    from explorator.domain.intent.parser import SoftPreferences
+    from explorator.models.realization import ChordVoicingInstruction, VoicingStrategyResponse
 
-    _PROGS = [
+    _progs = [
         GeneratedProgression(
             chord_symbols=["Amaj7", "F#m7", "Dmaj7", "E7"],
             rationale="Classic dream pop I-vi-IV-V with 7th extensions",
@@ -155,7 +155,7 @@ def _get_builders() -> dict:
             complexity_target="medium",
             novelty_target="moderate",
         ),
-        "GeneratedProgressionSet": lambda: GeneratedProgressionSet(progressions=_PROGS),
+        "GeneratedProgressionSet": lambda: GeneratedProgressionSet(progressions=_progs),
         "GeminiScores": lambda: GeminiScores(genre_fit=7.5, emotional_fit=7.0, novelty=6.5),
         "VoicingStrategyResponse": lambda: VoicingStrategyResponse(
             global_strategy="Open voicings with 7th extensions",

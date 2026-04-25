@@ -26,7 +26,7 @@ def melody_strategy_prompt(
         tendencies_text = "Genre melodic tendencies:\n" + "\n".join(items) + "\n\n"
 
     user_prompt = (
-        f"Create a melodic strategy for a single-line melody over this {genre_display} arrangement:\n\n"
+        f"Create a melodic strategy for a single-line melody over this {genre_display} arrangement:\n\n"  # noqa: E501
         f"Progression ({n_bars} bars): {chords}\n"
         f"Key: {key_center} {mode}\n"
         f"Voicing ceiling (highest note per bar): {ceiling}\n"
@@ -35,7 +35,7 @@ def melody_strategy_prompt(
         f"{tendencies_text}"
         "Guidelines:\n"
         "- Place melody ABOVE the voicing ceiling to avoid collisions.\n"
-        "- Suggest a register range (range_low to range_high) at least a minor 3rd above the voicing ceiling.\n"
+        "- Suggest a register range (range_low to range_high) at least a minor 3rd above the voicing ceiling.\n"  # noqa: E501
         "- Break the melody into phrases (2 or 4 bars each).\n"
         "- For each phrase, specify contour (arch/ascending/descending/wave/static), "
         "density (sparse/moderate/active), strong-beat scale degree targets, "
@@ -53,7 +53,7 @@ def melody_strategy_prompt(
     )
 
     system_prompt = (
-        f"You are an expert melodist composing a single-line melody over a {genre_display} arrangement. "
+        f"You are an expert melodist composing a single-line melody over a {genre_display} arrangement. "  # noqa: E501
         "The melody must stay above the voicing register to avoid pitch collisions. "
         "Create a strategy with phrase-by-phrase instructions that produce a coherent, "
         "genre-appropriate melodic line. Return valid JSON matching the schema."

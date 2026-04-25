@@ -1,5 +1,4 @@
-import pytest
-from explorator.adapters.music21_adapter import realize_voicing, check_voice_leading
+from explorator.adapters.music21_adapter import check_voice_leading, realize_voicing
 from explorator.models.realization import VoiceLeadingCheck
 
 

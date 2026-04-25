@@ -5,8 +5,8 @@ import logging
 from typing import Any
 
 from explorator.adapters.gemini import GeminiClient, ModelTier
-from explorator.graph.genre_research_repo import GenreResearchRepository
 from explorator.engine.nodes.genre_research.draft import _normalize_draft
+from explorator.graph.genre_research_repo import GenreResearchRepository
 from explorator.models.genre_research import GenreDraftResponse
 from explorator.prompts.genre_research import load_prompt
 
@@ -34,7 +34,10 @@ async def refine_draft(
     await repo.update_job(job_id, {"status": "refining"})
 
     if callback:
-        await callback("genre_research", {"status": "refining", "detail": f"Refining draft (iteration {iteration}/2)..."})
+        await callback(
+            "genre_research",
+            {"status": "refining", "detail": f"Refining draft (iteration {iteration}/2)..."},
+        )
 
     # Get the latest critique
     latest_critique = critique_trail[-1] if critique_trail else {}
@@ -75,7 +78,9 @@ async def refine_draft(
     trail = list(critique_trail)
     if trail:
         last = dict(trail[-1])
-        last["resolution"] = f"Applied {len(last.get('issues', []))} fix(es) in iteration {iteration}"
+        last["resolution"] = (
+            f"Applied {len(last.get('issues', []))} fix(es) in iteration {iteration}"
+        )
         trail[-1] = last
 
     draft_yamls = {

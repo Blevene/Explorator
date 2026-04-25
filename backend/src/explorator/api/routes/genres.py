@@ -1,5 +1,6 @@
 """Genre profile endpoints."""
 
+import contextlib
 import json
 from typing import Any
 
@@ -46,10 +47,8 @@ def _parse_json_fields(data: dict[str, Any]) -> dict[str, Any]:
     result = dict(data)
     for key, value in result.items():
         if isinstance(value, str) and value.startswith(("{", "[")):
-            try:
+            with contextlib.suppress(json.JSONDecodeError, TypeError):
                 result[key] = json.loads(value)
-            except (json.JSONDecodeError, TypeError):
-                pass
     return result
 
 

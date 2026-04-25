@@ -2,7 +2,12 @@
 
 from ulid import ULID
 
-from explorator.models.realization import ArrangementCandidate, ArrangementFamily, BassLine, VoicingPlan
+from explorator.models.realization import (
+    ArrangementCandidate,
+    ArrangementFamily,
+    BassLine,
+    VoicingPlan,
+)
 from explorator.utils import utc_now
 
 

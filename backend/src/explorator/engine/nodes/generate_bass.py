@@ -5,10 +5,10 @@ from typing import Any
 
 from explorator.domain.realization.bass import BassLineGenerator
 from explorator.engine.state import ExplorationState
-from explorator.utils import parse_json_field, parse_json_or_dict
 from explorator.models.groove import GroovePattern
 from explorator.models.harmony import ProgressionCandidate
 from explorator.models.realization import BassPreferences
+from explorator.utils import parse_json_field, parse_json_or_dict
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,11 @@ async def generate_bass(state: ExplorationState) -> dict[str, Any]:
 
     prefs = _build_bass_prefs(genre_profile)
     genre = genre_profile.get("genre", creative_brief.get("genre", "dream_pop"))
-    logger.warning("generate_bass: genre_profile bass_preferences=%s, type=%s", genre_profile.get("bass_preferences"), type(genre_profile.get("bass_preferences")).__name__)
+    logger.warning(
+        "generate_bass: genre_profile bass_preferences=%s, type=%s",
+        genre_profile.get("bass_preferences"),
+        type(genre_profile.get("bass_preferences")).__name__,
+    )
 
     variant_modes = prefs.variant_bass_modes
 
@@ -54,7 +58,9 @@ async def generate_bass(state: ExplorationState) -> dict[str, Any]:
         chord_symbols = [e.symbol for e in candidate.chord_events]
 
         # Round-robin groove pattern assignment (None if no patterns available)
-        groove_pattern = groove_patterns[candidate_idx % len(groove_patterns)] if groove_patterns else None
+        groove_pattern = (
+            groove_patterns[candidate_idx % len(groove_patterns)] if groove_patterns else None
+        )
 
         for mode in variant_modes:
             mode_prefs = BassPreferences(
@@ -62,7 +68,9 @@ async def generate_bass(state: ExplorationState) -> dict[str, Any]:
                 default_register=prefs.default_register,
                 rhythmic_density=prefs.rhythmic_density,
             )
-            bass_line = bass_generator.generate(chord_symbols, mode_prefs, genre=genre, groove_pattern=groove_pattern)
+            bass_line = bass_generator.generate(
+                chord_symbols, mode_prefs, genre=genre, groove_pattern=groove_pattern
+            )
             bass_line.progression_candidate_id = candidate.id
             bass_lines.append(bass_line.model_dump(mode="json"))
 

@@ -1,6 +1,5 @@
 """Tests for MelodyGenerator domain service."""
 
-import pytest
 
 from explorator.domain.realization.melody import MelodyGenerator
 from explorator.models.melody import (
@@ -11,7 +10,6 @@ from explorator.models.melody import (
 )
 from explorator.models.realization import VoicingEvent
 from explorator.utils import pitch_str_to_midi
-
 
 # ---------------------------------------------------------------------------
 # Helpers

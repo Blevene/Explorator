@@ -6,7 +6,6 @@ from pydantic import BaseModel, Field
 
 from explorator.models.base import BaseEntity
 
-
 # ---------------------------------------------------------------------------
 # Event models
 # ---------------------------------------------------------------------------
@@ -90,10 +89,7 @@ class MelodicPreferences(BaseModel):
             phrase_length = 4
 
         rest_raw = tendencies.get("rest_between_phrases", True)
-        if isinstance(rest_raw, str):
-            rest_between = rest_raw.lower() != "false"
-        else:
-            rest_between = bool(rest_raw)
+        rest_between = rest_raw.lower() != "false" if isinstance(rest_raw, str) else bool(rest_raw)
 
         return cls(
             motion_preference=tendencies.get("motion_preference", "stepwise"),

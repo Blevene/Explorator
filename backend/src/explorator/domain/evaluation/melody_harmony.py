@@ -4,8 +4,9 @@ Two scoring dimensions: melody_support_score, collision_risk_score.
 Fully deterministic, no LLM calls.
 """
 
-import music21
+import contextlib
 
+import music21
 from ulid import ULID
 
 from explorator.models.evaluation import MelodyHarmonyEvaluation
@@ -65,7 +66,9 @@ class MelodyHarmonyEvaluator:
                 collision_risk_score=5.0,
             )
 
-        melody_support = self._score_melody_support(complement, chord_symbols, voicing_events, motion_preference)
+        melody_support = self._score_melody_support(
+            complement, chord_symbols, voicing_events, motion_preference
+        )
         collision_risk = self._score_collision_risk(complement, voicing_events)
 
         return MelodyHarmonyEvaluation(
@@ -113,9 +116,7 @@ class MelodyHarmonyEvaluator:
         for ve in voicing_events:
             bar_chord[ve.bar] = ve.chord_symbol
 
-        strong_beat_events = [
-            ev for ev in complement.note_events if ev.beat in _STRONG_BEATS
-        ]
+        strong_beat_events = [ev for ev in complement.note_events if ev.beat in _STRONG_BEATS]
 
         if not strong_beat_events:
             # No strong-beat notes: return neutral score
@@ -199,10 +200,8 @@ class MelodyHarmonyEvaluator:
         for ve in voicing_events:
             midis: list[int] = []
             for p in ve.pitches:
-                try:
+                with contextlib.suppress(ValueError):
                     midis.append(pitch_str_to_midi(p))
-                except ValueError:
-                    pass
             if midis:
                 bar_voicing_midis.setdefault(ve.bar, []).extend(midis)
 
@@ -246,6 +245,7 @@ def _pitch_class(pitch: str) -> str | None:
     # Normalize: convert 'b' after a note letter to '-' for music21 compatibility
     # E.g., "Bb4" → pitch class "B-", "F#4" → pitch class "F#"
     import re
+
     m = re.match(r"^([A-Ga-g])([#b]?)(-?\d+)$", s)
     if m:
         note, acc, _ = m.groups()

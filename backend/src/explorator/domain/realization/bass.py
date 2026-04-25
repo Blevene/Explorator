@@ -1,7 +1,6 @@
 """Deterministic bass line generation from chord symbols."""
 
 from music21 import harmony
-
 from ulid import ULID
 
 from explorator.adapters.music21_adapter import _normalize_chord_symbol
@@ -233,10 +232,7 @@ class BassLineGenerator:
                     continue
                 # Convert absolute beat to per-bar beat (1.0-based)
                 per_bar_beat = groove_event.beat - (bar_idx * 4.0)
-                if groove_event.accent and per_bar_beat == 1.0:
-                    pitch = root_pitch
-                else:
-                    pitch = fifth_pitch
+                pitch = root_pitch if groove_event.accent and per_bar_beat == 1.0 else fifth_pitch
                 events.append(
                     BassNoteEvent(
                         bar=bar_idx,

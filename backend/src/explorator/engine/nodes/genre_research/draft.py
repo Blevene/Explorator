@@ -67,7 +67,10 @@ async def draft_yamls(
     await repo.update_job(job_id, {"status": "drafting"})
 
     if callback:
-        await callback("genre_research", {"status": "drafting", "detail": "Synthesizing research into genre profile..."})
+        await callback(
+            "genre_research",
+            {"status": "drafting", "detail": "Synthesizing research into genre profile..."},
+        )
 
     user_prompt = load_prompt(
         "draft",

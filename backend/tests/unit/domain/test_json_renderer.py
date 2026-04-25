@@ -3,6 +3,7 @@
 import json
 
 from explorator.domain.export.json_renderer import JsonRenderContext, render_json
+from explorator.models.harmony import ProgressionCandidate
 from explorator.models.realization import (
     ArrangementCandidate,
     BassLine,
@@ -11,40 +12,62 @@ from explorator.models.realization import (
     VoicingPlan,
 )
 from explorator.models.session import CreativeBrief, Session
-from explorator.models.harmony import ProgressionCandidate
 
 
 def _make_context() -> JsonRenderContext:
     session = Session(
-        id="sess-1", type="Session", status="active",
+        id="sess-1",
+        type="Session",
+        status="active",
         metadata={"prompt": "dreamy synthwave, 4 bars"},
     )
     brief = CreativeBrief(
-        id="cb-1", type="CreativeBrief", status="active",
-        genre="synthwave", key_center="C", mode="major",
-        tempo_hint_bpm=118, meter="4/4",
+        id="cb-1",
+        type="CreativeBrief",
+        status="active",
+        genre="synthwave",
+        key_center="C",
+        mode="major",
+        tempo_hint_bpm=118,
+        meter="4/4",
     )
     candidate = ProgressionCandidate(
-        id="pc-1", type="ProgressionCandidate", status="active",
-        session_id="sess-1", rationale="test",
+        id="pc-1",
+        type="ProgressionCandidate",
+        status="active",
+        session_id="sess-1",
+        rationale="test",
         key_center="C",
         chord_symbols=["Cmaj7", "Am7", "Fmaj7", "G7"],
         roman_numerals=["Imaj7", "vim7", "IVmaj7", "V7"],
         metadata={"label": "C", "role": "best"},
     )
     arrangement = ArrangementCandidate(
-        id="ac-1", type="ArrangementCandidate", status="active",
-        session_id="sess-1", rationale="test",
+        id="ac-1",
+        type="ArrangementCandidate",
+        status="active",
+        session_id="sess-1",
+        rationale="test",
         progression_candidate_id="pc-1",
     )
     voicing_plan = VoicingPlan(
-        id="vp-1", type="VoicingPlan", status="active",
+        id="vp-1",
+        type="VoicingPlan",
+        status="active",
         voicing_events=[
-            VoicingEvent(bar=0, beat=1.0, duration_beats=4.0, pitches=["C3", "E3", "G3", "B3"], chord_symbol="Cmaj7"),
+            VoicingEvent(
+                bar=0,
+                beat=1.0,
+                duration_beats=4.0,
+                pitches=["C3", "E3", "G3", "B3"],
+                chord_symbol="Cmaj7",
+            ),
         ],
     )
     bass_line = BassLine(
-        id="bl-1", type="BassLine", status="active",
+        id="bl-1",
+        type="BassLine",
+        status="active",
         note_events=[
             BassNoteEvent(bar=0, beat=1.0, duration_beats=2.0, pitch="C2", velocity=90),
         ],

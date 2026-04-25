@@ -1,15 +1,16 @@
 """Genre research API endpoints."""
 
 import asyncio
+import contextlib
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
-from ulid import ULID
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
+from ulid import ULID
 
 from explorator.adapters.gemini import GeminiClient
 from explorator.api.deps import get_gemini_client, get_genre_research_repo, get_neo4j_driver
@@ -30,6 +31,7 @@ _GENRE_NAME_RE = re.compile(r"^[a-z][a-z0-9_]{1,48}$")
 
 
 # --- Request/Response models ---
+
 
 class StartResearchRequest(BaseModel):
     genre_name: str
@@ -56,6 +58,7 @@ class RejectRequest(BaseModel):
 
 # --- Endpoints ---
 
+
 @router.post("/genres/research")
 async def start_research(
     request: StartResearchRequest,
@@ -77,10 +80,12 @@ async def start_research(
         raise HTTPException(status_code=409, detail=f"Genre '{genre_name}' already exists")
 
     if await repo.job_exists_for_genre(genre_name):
-        raise HTTPException(status_code=409, detail=f"Research job already in progress for '{genre_name}'")
+        raise HTTPException(
+            status_code=409, detail=f"Research job already in progress for '{genre_name}'"
+        )
 
     job_id = f"grj_{ULID()}"
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     job_data = {
         "id": job_id,
         "genre_name": genre_name,
@@ -196,27 +201,32 @@ async def approve_draft(
         rules_path = STYLE_DIR / "rules" / f"{genre_name}_rules.yaml"
         grammar_path = STYLE_DIR / "grammars" / f"{genre_name}_grammar.yaml"
 
-        profile_path.write_text(yaml.dump(draft_yamls.get("profile", {}), default_flow_style=False, sort_keys=False))
+        profile_path.write_text(
+            yaml.dump(draft_yamls.get("profile", {}), default_flow_style=False, sort_keys=False)
+        )
         files_written.append(str(profile_path))
 
-        rules_path.write_text(yaml.dump(draft_yamls.get("rules", {}), default_flow_style=False, sort_keys=False))
+        rules_path.write_text(
+            yaml.dump(draft_yamls.get("rules", {}), default_flow_style=False, sort_keys=False)
+        )
         files_written.append(str(rules_path))
 
-        grammar_path.write_text(yaml.dump(draft_yamls.get("grammar", {}), default_flow_style=False, sort_keys=False))
+        grammar_path.write_text(
+            yaml.dump(draft_yamls.get("grammar", {}), default_flow_style=False, sort_keys=False)
+        )
         files_written.append(str(grammar_path))
 
         style_service = StyleService(driver)
         await style_service.sync_genres_to_neo4j()
 
-    except Exception:
+    except Exception as err:
         import os
+
         for f in files_written:
-            try:
+            with contextlib.suppress(OSError):
                 os.remove(f)
-            except OSError:
-                pass
         logger.exception("Failed to approve genre %s", genre_name)
-        raise HTTPException(status_code=500, detail="Failed to write genre files")
+        raise HTTPException(status_code=500, detail="Failed to write genre files") from err
 
     await repo.update_job(job_id, {"status": "approved"})
     return {"status": "approved", "genre_name": genre_name}
@@ -233,8 +243,11 @@ async def reject_draft(
     if job is None or job.get("status") != "pending_review":
         raise HTTPException(status_code=404, detail="Draft not found or not pending review")
 
-    await repo.update_job(job_id, {
-        "status": "rejected",
-        "rejection_reason": request.reason,
-    })
+    await repo.update_job(
+        job_id,
+        {
+            "status": "rejected",
+            "rejection_reason": request.reason,
+        },
+    )
     return {"status": "rejected"}

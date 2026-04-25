@@ -66,7 +66,6 @@ def test_exploration_state_includes_m3a_fields() -> None:
 
 def test_feedback_fields_in_state() -> None:
     """M3b state fields are valid keys."""
-    from explorator.engine.state import ExplorationState
 
     state: ExplorationState = {
         "feedback_history": [{"id": "fb_1", "content": "too busy"}],

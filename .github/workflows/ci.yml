@@ -15,10 +15,11 @@ concurrency:
 #  Runs on every PR + every push to main:
 #    - Frontend type-check (via `npm run build` -> `tsc -b && vite build`)
 #    - Frontend unit tests (vitest)
+#    - Backend ruff (lint)
 #
 #  Deliberately not running yet (pre-existing debt; opt in when cleaned up):
 #    - Frontend ESLint    (~44 errors, mostly react-hooks/exhaustive-deps)
-#    - Backend ruff/mypy  (~298 ruff + 108 mypy errors)
+#    - Backend mypy       (~108 errors, partly missing stubs)
 #    - Backend pytest     (needs a Neo4j service; conftest imports neo4j)
 #    - E2E (Playwright)   (needs Neo4j + a built frontend; doable later)
 #
@@ -48,3 +49,26 @@ jobs:
 
       - name: Build (also runs `tsc -b`)
         run: npm run build
+
+  backend-lint:
+    name: Backend (ruff)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Sync deps
+        run: uv sync --all-extras
+
+      - name: Ruff
+        run: uv run ruff check src tests

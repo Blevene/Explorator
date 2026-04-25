@@ -8,9 +8,8 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from typing import TYPE_CHECKING
 
-from neo4j import AsyncDriver
 from ulid import ULID
 
 from explorator.graph.pattern_library_repo import CURATION_FANOUT_CYPHER
@@ -18,14 +17,19 @@ from explorator.graph.repository import _neo4j_safe
 from explorator.models.memory import UserFeedbackEvent
 from explorator.utils import utc_now
 
+if TYPE_CHECKING:
+    from datetime import datetime
+
+    from neo4j import AsyncDriver
+
 logger = logging.getLogger(__name__)
 
 
-class ArrangementNotFound(Exception):
+class ArrangementNotFound(Exception):  # noqa: N818 — semantic name, not all exceptions are errors
     """Raised when the arrangement_id doesn't exist. Maps to HTTP 404."""
 
 
-class PatternsNotHarvested(Exception):
+class PatternsNotHarvested(Exception):  # noqa: N818 — semantic name, not all exceptions are errors
     """Raised when an arrangement exists but has no non-deleted library rows.
 
     Maps to HTTP 409. Frontend should prevent this via the disabled-star UX.

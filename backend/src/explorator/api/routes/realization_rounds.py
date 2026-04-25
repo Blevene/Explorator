@@ -48,7 +48,9 @@ async def trigger_realization(
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
     if not request.progression_candidate_ids:
-        raise HTTPException(status_code=422, detail="At least one progression_candidate_id required")
+        raise HTTPException(
+            status_code=422, detail="At least one progression_candidate_id required"
+        )
 
     channel = SSEChannel()
     graph = build_realization_subgraph(gemini, driver)
@@ -75,7 +77,10 @@ async def trigger_realization(
 
 
 @router.get("/candidates/{candidate_id}/arrangements")
-async def list_arrangements(candidate_id: str, driver: AsyncDriver = Depends(get_neo4j_driver)) -> list[dict[str, Any]]:  # noqa: B008
+async def list_arrangements(
+    candidate_id: str,
+    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+) -> list[dict[str, Any]]:
     """List arrangement candidates for a progression candidate."""
     repo = ArrangementCandidateRepo(driver)
     results = await repo.query_by_property("progression_candidate_id", candidate_id)
@@ -101,12 +106,15 @@ async def list_arrangements(candidate_id: str, driver: AsyncDriver = Depends(get
 
 
 @router.get("/arrangements/{arrangement_id}")
-async def get_arrangement(arrangement_id: str, driver: AsyncDriver = Depends(get_neo4j_driver)) -> dict[str, Any]:  # noqa: B008
+async def get_arrangement(
+    arrangement_id: str,
+    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+) -> dict[str, Any]:
     """Get a single arrangement with its voicing plan and bass line."""
-    from explorator.graph.voicing_plan_repo import VoicingPlanRepo
     from explorator.graph.bass_line_repo import BassLineRepo
     from explorator.graph.groove_pattern_repo import GroovePatternRepo
     from explorator.graph.melodic_complement_repo import MelodicComplementRepo
+    from explorator.graph.voicing_plan_repo import VoicingPlanRepo
 
     ac_repo = ArrangementCandidateRepo(driver)
     arrangement = await ac_repo.get_by_id(arrangement_id)

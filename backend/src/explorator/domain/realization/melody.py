@@ -12,11 +12,14 @@ Seven-step algorithm:
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import re
+from typing import TYPE_CHECKING
 
-from music21 import harmony, pitch as m21pitch, scale as m21scale
-
+from music21 import harmony
+from music21 import pitch as m21pitch
+from music21 import scale as m21scale
 from ulid import ULID
 
 from explorator.adapters.music21_adapter import _normalize_chord_symbol
@@ -26,8 +29,10 @@ from explorator.models.melody import (
     MelodicStrategyResponse,
     PhraseInstruction,
 )
-from explorator.models.realization import VoicingEvent
 from explorator.utils import pitch_str_to_midi, utc_now
+
+if TYPE_CHECKING:
+    from explorator.models.realization import VoicingEvent
 
 logger = logging.getLogger(__name__)
 
@@ -195,10 +200,10 @@ def _pick_with_contour_bias(
     # Split into preferred (matching direction) and other
     if direction > 0:
         preferred = [m for m in candidates if m > prev_midi]
-        other = [m for m in candidates if m <= prev_midi]
+        [m for m in candidates if m <= prev_midi]
     else:
         preferred = [m for m in candidates if m < prev_midi]
-        other = [m for m in candidates if m >= prev_midi]
+        [m for m in candidates if m >= prev_midi]
 
     if preferred:
         # Pick the closest in the preferred direction
@@ -261,10 +266,8 @@ class MelodyGenerator:
         for v in voicing_events:
             midis = []
             for p in v.pitches:
-                try:
+                with contextlib.suppress(ValueError):
                     midis.append(pitch_str_to_midi(p))
-                except ValueError:
-                    pass
             voicing_by_bar.setdefault(v.bar, []).extend(midis)
 
         all_events: list[MelodicNoteEvent] = []
@@ -478,7 +481,7 @@ class MelodyGenerator:
         range_hi: int,
     ) -> list[int]:
         """Get MIDI pitches for the target degrees within range."""
-        chord_names = _chord_tone_names(chord_sym)
+        _chord_tone_names(chord_sym)
         normalized = _normalize_chord_symbol(chord_sym)
 
         try:
@@ -489,7 +492,7 @@ class MelodyGenerator:
 
         result: list[int] = []
         for target in targets:
-            semitone_offset = _DEGREE_SEMITONES.get(target, None)
+            semitone_offset = _DEGREE_SEMITONES.get(target)
             if semitone_offset is None:
                 continue
             target_pc = (root_midi + semitone_offset) % 12
@@ -548,10 +551,7 @@ class MelodyGenerator:
             return midi
 
         def _collides(m: int) -> bool:
-            for vm in v_midis:
-                if abs(m - vm) <= 1:
-                    return True
-            return False
+            return any(abs(m - vm) <= 1 for vm in v_midis)
 
         if not _collides(midi):
             return midi
@@ -627,10 +627,7 @@ class MelodyGenerator:
         v_midis = voicing_by_bar.get(bar, [])
 
         def _collides(m: int) -> bool:
-            for vm in v_midis:
-                if abs(m - vm) <= 1:
-                    return True
-            return False
+            return any(abs(m - vm) <= 1 for vm in v_midis)
 
         if _collides(best):
             # Try other candidates

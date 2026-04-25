@@ -84,7 +84,9 @@ async def evaluate_arrangements(state: ExplorationState) -> dict[str, Any]:
         # Run evaluators
         vl_eval = vl_evaluator.evaluate(voicing_plan, candidate_id=arrangement_id)
         rd_eval = rd_evaluator.evaluate(
-            voicing_plan, bass_line, candidate_id=arrangement_id,
+            voicing_plan,
+            bass_line,
+            candidate_id=arrangement_id,
             preferred_register=preferred_register,
         )
         play_eval = play_evaluator.evaluate(voicing_plan, candidate_id=arrangement_id)
@@ -95,10 +97,14 @@ async def evaluate_arrangements(state: ExplorationState) -> dict[str, Any]:
 
         # Groove evaluation
         groove_pattern_id: str | None = arr_data.get("groove_pattern_id")
-        groove_pattern = groove_pattern_lookup.get(groove_pattern_id or "") if groove_pattern_id else None
+        groove_pattern = (
+            groove_pattern_lookup.get(groove_pattern_id or "") if groove_pattern_id else None
+        )
 
         if groove_pattern is not None:
-            groove_eval = groove_evaluator.evaluate(groove_pattern, groove_prefs, candidate_id=arrangement_id)
+            groove_eval = groove_evaluator.evaluate(
+                groove_pattern, groove_prefs, candidate_id=arrangement_id
+            )
             groove_score = groove_evaluator.overall_score(groove_eval)
             groove_entry = {
                 "evaluation": groove_eval.model_dump(mode="json"),
@@ -112,7 +118,11 @@ async def evaluate_arrangements(state: ExplorationState) -> dict[str, Any]:
 
         # Melody evaluation (conditional on melodic_complement_id)
         melodic_complement_id: str | None = arr_data.get("melodic_complement_id")
-        melody_complement = melody_complement_lookup.get(melodic_complement_id or "") if melodic_complement_id else None
+        melody_complement = (
+            melody_complement_lookup.get(melodic_complement_id or "")
+            if melodic_complement_id
+            else None
+        )
 
         if melody_complement is not None:
             # Get chord symbols from voicing events
@@ -138,22 +148,24 @@ async def evaluate_arrangements(state: ExplorationState) -> dict[str, Any]:
                 "overall_score": 5.0,
             }
 
-        evaluations.append({
-            "arrangement_candidate_id": arrangement_id,
-            "voice_leading": {
-                "evaluation": vl_eval.model_dump(mode="json"),
-                "overall_score": vl_score,
-            },
-            "register_density": {
-                "evaluation": rd_eval.model_dump(mode="json"),
-                "overall_score": rd_score,
-            },
-            "playability": {
-                "evaluation": play_eval.model_dump(mode="json"),
-                "overall_score": play_score,
-            },
-            "groove": groove_entry,
-            "melody": melody_entry,
-        })
+        evaluations.append(
+            {
+                "arrangement_candidate_id": arrangement_id,
+                "voice_leading": {
+                    "evaluation": vl_eval.model_dump(mode="json"),
+                    "overall_score": vl_score,
+                },
+                "register_density": {
+                    "evaluation": rd_eval.model_dump(mode="json"),
+                    "overall_score": rd_score,
+                },
+                "playability": {
+                    "evaluation": play_eval.model_dump(mode="json"),
+                    "overall_score": play_score,
+                },
+                "groove": groove_entry,
+                "melody": melody_entry,
+            }
+        )
 
     return {"evaluations": evaluations}
