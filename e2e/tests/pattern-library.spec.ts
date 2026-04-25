@@ -21,9 +21,11 @@ test.describe('Pattern Library', () => {
     const deletedTestId = await firstCard.getAttribute('data-testid');
     expect(deletedTestId).toBeTruthy();
 
-    // 4. Delete the first card
-    page.once('dialog', (dialog) => dialog.accept()); // confirm() dialog
+    // 4. Delete the first card — opens an in-app Dialog; confirm by clicking Delete inside it.
     await firstCard.getByRole('button', { name: /delete/i }).click();
+    const confirmDialog = page.getByRole('dialog');
+    await expect(confirmDialog).toBeVisible({ timeout: 5_000 });
+    await confirmDialog.getByRole('button', { name: 'Delete' }).click();
 
     // 5. Assert the specific row disappears from the list (detach, not merely hidden)
     await expect(page.locator(`[data-testid="${deletedTestId}"]`)).toHaveCount(0, { timeout: 10_000 });
