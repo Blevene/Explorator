@@ -297,6 +297,9 @@ export default function GenreManagement() {
         if (!cancelled) {
           setSelectedGenre(null);
           // Strip the bad slug from the URL so the user isn't stuck on a 404.
+          // replace: true so the broken URL doesn't pollute Browser-Back history
+          // (a user clicking Back after a 404 should land on whatever page they
+          // came from, not on the bad URL again).
           setSearchParams((prev) => {
             const next = new URLSearchParams(prev);
             next.delete('detail');
