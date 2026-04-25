@@ -1,4 +1,4 @@
-# MusicExplorator
+# Explorator
 
 A creative copilot for music producers. Generate chord progressions, realize them into voiced arrangements with bass / groove / melody, evaluate and rank the results, mutate promising candidates, and build a personal library of curated patterns over time.
 

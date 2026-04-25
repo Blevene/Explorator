@@ -1,4 +1,4 @@
-# MusicExplorator Frontend Design Language
+# Explorator Frontend Design Language
 
 ## Aesthetic Direction: Studio Monitor
 

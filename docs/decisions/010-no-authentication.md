@@ -4,7 +4,7 @@
 
 ## Context
 
-MusicExplorator is, today, a creative tool that runs on the producer's local machine. The backend listens on `0.0.0.0:8000`, the frontend on `0.0.0.0:5173` (or whatever Vite reports). All sessions, candidates, exports, and pattern library entries belong to the operator.
+Explorator is, today, a creative tool that runs on the producer's local machine. The backend listens on `0.0.0.0:8000`, the frontend on `0.0.0.0:5173` (or whatever Vite reports). All sessions, candidates, exports, and pattern library entries belong to the operator.
 
 A typical default for any user-facing app is "add auth from day one" — JWT, OAuth, session cookies, the works. But the cost isn't zero:
 

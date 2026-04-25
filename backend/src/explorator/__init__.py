@@ -1,1 +1,1 @@
-"""MusicExplorator — Genre-aware musical exploration engine."""
+"""Explorator — Genre-aware musical exploration engine."""

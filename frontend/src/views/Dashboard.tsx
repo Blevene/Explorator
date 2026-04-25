@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { createSession, listSessions } from '../services/api';
 import { useSessionStore } from '../stores/sessionStore';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { logError } from '../lib/log';
 
 export default function Dashboard() {
   useDocumentTitle(null);
@@ -12,7 +13,9 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    listSessions().then((data) => setSessions(data.items)).catch(console.error);
+    listSessions()
+      .then((data) => setSessions(data.items))
+      .catch((err) => logError('Dashboard.listSessions', err));
   }, [setSessions]);
 
   const handleCreate = async () => {
@@ -22,7 +25,7 @@ export default function Dashboard() {
       const session = await createSession(prompt);
       navigate(`/session/${session.session_id}`);
     } catch (err) {
-      console.error(err);
+      logError('Dashboard.createSession', err);
     } finally {
       setLoading(false);
     }
