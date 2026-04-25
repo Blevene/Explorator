@@ -81,6 +81,7 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
         onClick={handlePlayPause}
         disabled={!arrangement}
         title={playing ? "Pause" : paused ? "Resume" : "Play"}
+        aria-label={playing ? "Pause" : paused ? "Resume" : "Play"}
         className="p-2 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         style={{ color: isPlayActive ? accent : undefined }}
       >
@@ -102,6 +103,7 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
       <button
         onClick={handleStop}
         title="Stop"
+        aria-label="Stop"
         className="p-2 rounded transition-colors"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
@@ -121,6 +123,7 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
           value={tempo}
           onChange={handleTempoChange}
           title={`Tempo: ${tempo} BPM`}
+          aria-label={`Tempo: ${tempo} BPM`}
           className="w-24 cursor-pointer accent-[var(--text-secondary)]"
         />
         <span className="text-xs font-mono w-8 text-right" style={{ color: "var(--text-primary)" }}>{tempo}</span>
@@ -132,6 +135,8 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
       <button
         onClick={handleLoopToggle}
         title={isLoopActive ? "Loop on" : "Loop off"}
+        aria-label={isLoopActive ? "Disable loop" : "Enable loop"}
+        aria-pressed={isLoopActive}
         className="p-2 rounded transition-colors"
         style={isLoopActive ? { color: accent } : undefined}
       >
@@ -158,6 +163,7 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
       <button
         onClick={handleVoicingMute}
         title={isVoicingMuted ? "Unmute voicing" : "Mute voicing"}
+        aria-pressed={!isVoicingMuted}
         className="px-2 py-1 rounded text-xs font-medium transition-colors"
         style={!isVoicingMuted
           ? { color: "var(--accent-primary)", background: "var(--accent-primary-dim)" }
@@ -170,6 +176,7 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
       <button
         onClick={handleBassMute}
         title={isBassMuted ? "Unmute bass" : "Mute bass"}
+        aria-pressed={!isBassMuted}
         className="px-2 py-1 rounded text-xs font-medium transition-colors"
         style={!isBassMuted
           ? { color: "var(--accent-secondary)", background: "var(--accent-secondary-dim)" }
@@ -182,6 +189,7 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
       <button
         onClick={handleMelodyMute}
         title={isMelodyMuted ? "Unmute melody" : "Mute melody"}
+        aria-pressed={!isMelodyMuted}
         className="px-2 py-1 rounded text-xs font-medium transition-colors"
         style={!isMelodyMuted
           ? { color: "var(--accent-tertiary)", background: "var(--accent-tertiary-dim)" }
@@ -202,6 +210,7 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
           value={volume}
           onChange={handleVolumeChange}
           title={`Volume: ${volume} dB`}
+          aria-label={`Volume: ${volume} dB`}
           className="w-24 cursor-pointer accent-[var(--text-secondary)]"
         />
         <span className="text-xs font-mono w-10 text-right" style={{ color: "var(--text-primary)" }}>{volume} dB</span>

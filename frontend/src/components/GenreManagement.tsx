@@ -392,10 +392,7 @@ export default function GenreManagement() {
           </button>
           <a
             href="/"
-            className="text-xs tracking-wider uppercase transition-colors"
-            style={{ color: 'var(--text-muted)' }}
-            onMouseOver={(e) => (e.currentTarget.style.color = 'var(--accent-primary)')}
-            onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+            className="text-xs tracking-wider uppercase transition-colors text-[var(--text-muted)] hover:text-[var(--accent-primary)] focus-visible:text-[var(--accent-primary)]"
           >
             &larr; Dashboard
           </a>
@@ -715,7 +712,7 @@ export default function GenreManagement() {
             {hasValidationErrors && (
               <span
                 className="text-[11px] font-medium px-2 py-0.5 rounded-full"
-                style={{ background: 'rgba(248,113,113,0.15)', color: 'var(--score-low)' }}
+                style={{ background: 'var(--score-low-faint)', color: 'var(--score-low)' }}
               >
                 Validation Warnings
               </span>
@@ -723,10 +720,8 @@ export default function GenreManagement() {
           </div>
           <button
             onClick={handleBackToLibrary}
-            className="text-xs tracking-wider uppercase transition-colors mt-2"
-            style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
-            onMouseOver={(e) => (e.currentTarget.style.color = 'var(--accent-primary)')}
-            onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+            className="text-xs tracking-wider uppercase transition-colors mt-2 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-primary)] focus-visible:text-[var(--accent-primary)]"
+            style={{ background: 'none', border: 'none' }}
           >
             &larr; Back to Library
           </button>
@@ -891,10 +886,10 @@ export default function GenreManagement() {
                       style={{
                         background:
                           ap.severity === 'high'
-                            ? 'rgba(248,113,113,0.15)'
+                            ? 'var(--score-low-faint)'
                             : ap.severity === 'medium'
-                              ? 'rgba(251,191,36,0.15)'
-                              : 'rgba(85,94,116,0.15)',
+                              ? 'var(--score-mid-faint)'
+                              : 'var(--text-muted-faint)',
                         color:
                           ap.severity === 'high'
                             ? 'var(--score-low)'

@@ -93,10 +93,8 @@ export default function SessionHistory({ sessionId }: SessionHistoryProps) {
           if (collapsed) fetchEvents()
           setCollapsed(!collapsed)
         }}
-        className="w-full flex items-center justify-between px-4 py-2 transition-colors"
-        style={{ background: 'var(--surface-2)' }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-3)')}
-        onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
+        aria-expanded={!collapsed}
+        className="w-full flex items-center justify-between px-4 py-2 transition-colors bg-[var(--surface-2)] hover:bg-[var(--surface-3)] focus-visible:bg-[var(--surface-3)]"
       >
         <span
           className="text-xs font-medium uppercase tracking-wider"

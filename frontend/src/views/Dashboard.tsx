@@ -40,19 +40,13 @@ export default function Dashboard() {
           <div className="mt-4 flex gap-4 justify-center">
             <a
               href="/genres"
-              className="text-xs tracking-wider uppercase transition-colors"
-              style={{ color: 'var(--text-muted)' }}
-              onMouseOver={(e) => (e.currentTarget.style.color = 'var(--accent-primary)')}
-              onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+              className="text-xs tracking-wider uppercase transition-colors text-[var(--text-muted)] hover:text-[var(--accent-primary)] focus-visible:text-[var(--accent-primary)]"
             >
               Manage Genres &rarr;
             </a>
             <a
               href="/patterns"
-              className="text-xs tracking-wider uppercase transition-colors"
-              style={{ color: 'var(--text-muted)' }}
-              onMouseOver={(e) => (e.currentTarget.style.color = 'var(--accent-primary)')}
-              onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+              className="text-xs tracking-wider uppercase transition-colors text-[var(--text-muted)] hover:text-[var(--accent-primary)] focus-visible:text-[var(--accent-primary)]"
             >
               Pattern Library &rarr;
             </a>
@@ -108,13 +102,11 @@ export default function Dashboard() {
           </h2>
           <div className="flex flex-col gap-1.5">
             {sessions.map((s) => (
-              <div
+              <button
                 key={s.session_id}
+                type="button"
                 onClick={() => navigate(`/session/${s.session_id}`)}
-                className="flex justify-between items-center px-4 py-3 rounded-lg cursor-pointer transition-colors"
-                style={{ background: 'var(--surface-2)' }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-3)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
+                className="flex justify-between items-center w-full text-left px-4 py-3 rounded-lg cursor-pointer transition-colors bg-[var(--surface-2)] hover:bg-[var(--surface-3)] focus-visible:bg-[var(--surface-3)]"
               >
                 <span className="text-sm truncate mr-4" style={{ color: 'var(--text-primary)' }}>
                   {s.prompt || 'Untitled session'}
@@ -125,7 +117,7 @@ export default function Dashboard() {
                 >
                   {s.status}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         </div>

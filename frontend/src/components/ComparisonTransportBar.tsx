@@ -61,6 +61,7 @@ export default function ComparisonTransportBar({ arrangements, genre, onClose }:
       <button
         onClick={handlePlayPause}
         title={playing ? "Pause" : paused ? "Resume" : "Play"}
+        aria-label={playing ? "Pause" : paused ? "Resume" : "Play"}
         className="p-2 rounded transition-colors"
         style={{ color: playing ? accent : undefined }}
       >
@@ -80,6 +81,7 @@ export default function ComparisonTransportBar({ arrangements, genre, onClose }:
       <button
         onClick={handleStop}
         title="Stop"
+        aria-label="Stop"
         className="p-2 rounded transition-colors"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
@@ -97,6 +99,7 @@ export default function ComparisonTransportBar({ arrangements, genre, onClose }:
           value={tempo}
           onChange={handleTempoChange}
           title={`Tempo: ${tempo} BPM`}
+          aria-label={`Tempo: ${tempo} BPM`}
           className="w-20 cursor-pointer accent-[var(--text-secondary)]"
         />
         <span className="text-xs font-mono w-8 text-right" style={{ color: "var(--text-primary)" }}>{tempo}</span>
@@ -106,6 +109,8 @@ export default function ComparisonTransportBar({ arrangements, genre, onClose }:
       <button
         onClick={handleLoopToggle}
         title={loop ? "Loop on" : "Loop off"}
+        aria-label={loop ? "Disable loop" : "Enable loop"}
+        aria-pressed={loop}
         className="p-2 rounded transition-colors"
         style={loop ? { color: accent } : undefined}
       >
@@ -130,6 +135,7 @@ export default function ComparisonTransportBar({ arrangements, genre, onClose }:
       <button
         onClick={onClose}
         title="Close comparison"
+        aria-label="Close comparison"
         className="p-2 rounded transition-colors text-[var(--text-muted)] hover:text-[var(--text-primary)] ml-2"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

@@ -54,6 +54,12 @@
   --danger-border: #7f1d1d;
   --danger-text: #fca5a5;
 
+  /* Faint score backgrounds — used as severity badges / progress bar fills */
+  --score-high-faint: #34d39926;  /* --score-high @ 15% */
+  --score-mid-faint: #fbbf2426;   /* --score-mid  @ 15% */
+  --score-low-faint: #f8717126;   /* --score-low  @ 15% */
+  --text-muted-faint: #7d869926;  /* --text-muted @ 15% */
+
   /* Session-history action categories — distinct hues per pipeline step */
   --action-generate: #8b5cf6;
   --action-mutate: #f59e0b;
