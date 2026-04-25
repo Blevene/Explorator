@@ -1,7 +1,7 @@
 import { useState } from "react"
 import type { ArrangementSummary, CandidateExplanation } from "../services/api"
 import { generateExplanation } from "../services/api"
-import { scoreColorVar, genreAccentVar } from "../utils/designTokens"
+import { scoreColorVar, scoreTierGlyph, genreAccentVar } from "../utils/designTokens"
 
 interface ArrangementCardProps {
   arrangement: ArrangementSummary
@@ -70,9 +70,10 @@ export default function ArrangementCard({
           #{arrangement.rank_within_round}
         </span>
         <span
-          className="text-sm font-bold font-mono"
+          className="text-sm font-bold font-mono tabular-nums"
           style={{ color: scoreColorVar(arrangement.weighted_total) }}
         >
+          <span aria-hidden="true" className="mr-1">{scoreTierGlyph(arrangement.weighted_total)}</span>
           {(arrangement.weighted_total ?? 0).toFixed(2)}
         </span>
       </div>
