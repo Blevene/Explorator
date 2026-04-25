@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useAudioStore } from "../stores/audioStore"
 import * as audioEngine from "../services/audioEngine"
+import { genreAccentVar } from "../utils/designTokens"
 import type { ArrangementDetail } from "../services/api"
 
 interface TransportBarProps {
@@ -8,24 +9,13 @@ interface TransportBarProps {
   genre: string
 }
 
-const GENRE_ACCENT: Record<string, string> = {
-  dream_pop: "#a78bfa",
-  synthwave: "#f472b6",
-  cinematic: "#eab308",
-}
-
-function getAccent(genre: string): string {
-  const key = genre.toLowerCase().replace(/[\s-]/g, "_")
-  return GENRE_ACCENT[key] ?? GENRE_ACCENT["dream_pop"]
-}
-
 function Divider() {
-  return <div className="w-px h-8 bg-slate-700 mx-1 self-center" />
+  return <div className="w-px h-8 mx-1 self-center" style={{ background: "var(--border-default)" }} />
 }
 
 export default function TransportBar({ arrangement, genre }: TransportBarProps) {
   const { playing, paused, tempo, loop, mutedTracks, volume } = useAudioStore()
-  const accent = getAccent(genre)
+  const accent = genreAccentVar(genre)
 
   const [audioError, setAudioError] = useState<string | null>(null)
 
@@ -81,7 +71,10 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
   const isMelodyMuted = mutedTracks.melody
 
   return (
-    <div className="h-12 bg-slate-900 border-b border-slate-700 flex items-center px-3 gap-1">
+    <div
+      className="h-12 flex items-center px-3 gap-1"
+      style={{ background: "var(--surface-1)", borderBottom: "1px solid var(--border-default)" }}
+    >
 
       {/* Play / Pause */}
       <button
@@ -93,13 +86,13 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
       >
         {playing ? (
           // Pause bars
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className={isPlayActive ? "" : "text-slate-500 hover:text-slate-200"}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className={isPlayActive ? "" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}>
             <rect x="2" y="1" width="4" height="12" rx="1" />
             <rect x="8" y="1" width="4" height="12" rx="1" />
           </svg>
         ) : (
           // Play triangle
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className="text-slate-500 hover:text-slate-200">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
             <polygon points="2,1 12,7 2,13" />
           </svg>
         )}
@@ -111,7 +104,7 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
         title="Stop"
         className="p-2 rounded transition-colors"
       >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className="text-slate-500 hover:text-slate-200">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
           <rect x="1" y="1" width="12" height="12" rx="1" />
         </svg>
       </button>
@@ -120,7 +113,7 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
 
       {/* Tempo slider */}
       <div className="flex items-center gap-2">
-        <span className="text-slate-500 text-xs select-none">BPM</span>
+        <span className="text-xs select-none" style={{ color: "var(--text-muted)" }}>BPM</span>
         <input
           type="range"
           min={60}
@@ -128,9 +121,9 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
           value={tempo}
           onChange={handleTempoChange}
           title={`Tempo: ${tempo} BPM`}
-          className="w-24 accent-slate-400 cursor-pointer"
+          className="w-24 cursor-pointer accent-[var(--text-secondary)]"
         />
-        <span className="text-slate-300 text-xs font-mono w-8 text-right">{tempo}</span>
+        <span className="text-xs font-mono w-8 text-right" style={{ color: "var(--text-primary)" }}>{tempo}</span>
       </div>
 
       <Divider />
@@ -151,7 +144,7 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={isLoopActive ? "" : "text-slate-500 hover:text-slate-200"}
+          className={isLoopActive ? "" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}
         >
           <path d="M1 4h10a4 4 0 0 1 4 4v0a4 4 0 0 1-4 4H5" />
           <polyline points="3 7 1 4 4 2" />
@@ -201,7 +194,7 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
 
       {/* Volume slider */}
       <div className="flex items-center gap-2">
-        <span className="text-slate-500 text-xs select-none">Vol</span>
+        <span className="text-xs select-none" style={{ color: "var(--text-muted)" }}>Vol</span>
         <input
           type="range"
           min={-60}
@@ -209,14 +202,14 @@ export default function TransportBar({ arrangement, genre }: TransportBarProps) 
           value={volume}
           onChange={handleVolumeChange}
           title={`Volume: ${volume} dB`}
-          className="w-24 accent-slate-400 cursor-pointer"
+          className="w-24 cursor-pointer accent-[var(--text-secondary)]"
         />
-        <span className="text-slate-300 text-xs font-mono w-10 text-right">{volume} dB</span>
+        <span className="text-xs font-mono w-10 text-right" style={{ color: "var(--text-primary)" }}>{volume} dB</span>
       </div>
 
       {/* Audio error */}
       {audioError && (
-        <span className="text-rose-400 text-xs ml-2 truncate" title={audioError}>
+        <span className="text-xs ml-2 truncate" style={{ color: "var(--danger-text)" }} title={audioError}>
           Audio: {audioError}
         </span>
       )}

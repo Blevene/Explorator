@@ -39,14 +39,20 @@ export default function ArrangementList({
 
   if (grouped.size === 0) {
     return (
-      <div className="w-72 shrink-0 bg-slate-950 border-r border-slate-700 flex items-center justify-center">
-        <p className="text-slate-500 text-sm">No arrangements</p>
+      <div
+        className="w-72 shrink-0 flex items-center justify-center"
+        style={{ background: "var(--surface-0)", borderRight: "1px solid var(--border-default)" }}
+      >
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>No arrangements</p>
       </div>
     )
   }
 
   return (
-    <div className="w-72 shrink-0 bg-slate-950 border-r border-slate-700 overflow-y-auto flex flex-col">
+    <div
+      className="w-72 shrink-0 overflow-y-auto flex flex-col"
+      style={{ background: "var(--surface-0)", borderRight: "1px solid var(--border-default)" }}
+    >
       {finalSelection && finalSelection.selected_candidate_ids.length > 0 && (
         <FinalistPanel
           finalSelection={finalSelection}
@@ -64,8 +70,18 @@ export default function ArrangementList({
         return (
           <div key={candidateId} className="flex flex-col">
             {/* Family header */}
-            <div className="px-3 py-2 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
-              <p className="text-xs font-mono text-slate-300 truncate" title={familyLabel}>
+            <div
+              className="px-3 py-2 sticky top-0 z-10"
+              style={{
+                background: "var(--surface-1)",
+                borderBottom: "1px solid var(--border-subtle)",
+              }}
+            >
+              <p
+                className="text-xs font-mono truncate"
+                style={{ color: "var(--text-primary)" }}
+                title={familyLabel}
+              >
                 {familyLabel}
               </p>
             </div>

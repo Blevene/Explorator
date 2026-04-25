@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useComparisonAudioStore } from "../stores/comparisonAudioStore"
 import * as comparisonAudioEngine from "../services/comparisonAudioEngine"
+import { genreAccentVar } from "../utils/designTokens"
 import type { ArrangementDetail } from "../services/api"
 
 interface ComparisonTransportBarProps {
@@ -9,20 +10,9 @@ interface ComparisonTransportBarProps {
   onClose: () => void
 }
 
-const GENRE_ACCENT: Record<string, string> = {
-  dream_pop: "#a78bfa",
-  synthwave: "#f472b6",
-  cinematic: "#eab308",
-}
-
-function getAccent(genre: string): string {
-  const key = genre.toLowerCase().replace(/[\s-]/g, "_")
-  return GENRE_ACCENT[key] ?? GENRE_ACCENT["dream_pop"]
-}
-
 export default function ComparisonTransportBar({ arrangements, genre, onClose }: ComparisonTransportBarProps) {
   const { playing, paused, tempo, loop } = useComparisonAudioStore()
-  const accent = getAccent(genre)
+  const accent = genreAccentVar(genre)
   const [audioError, setAudioError] = useState<string | null>(null)
 
   async function handlePlayPause() {
@@ -75,12 +65,12 @@ export default function ComparisonTransportBar({ arrangements, genre, onClose }:
         style={{ color: playing ? accent : undefined }}
       >
         {playing ? (
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className={playing ? "" : "text-slate-500 hover:text-slate-200"}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className={playing ? "" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}>
             <rect x="2" y="1" width="4" height="12" rx="1" />
             <rect x="8" y="1" width="4" height="12" rx="1" />
           </svg>
         ) : (
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className="text-slate-500 hover:text-slate-200">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
             <polygon points="2,1 12,7 2,13" />
           </svg>
         )}
@@ -92,14 +82,14 @@ export default function ComparisonTransportBar({ arrangements, genre, onClose }:
         title="Stop"
         className="p-2 rounded transition-colors"
       >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className="text-slate-500 hover:text-slate-200">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
           <rect x="1" y="1" width="12" height="12" rx="1" />
         </svg>
       </button>
 
       {/* Tempo */}
       <div className="flex items-center gap-2 mx-2">
-        <span className="text-slate-500 text-xs select-none">BPM</span>
+        <span className="text-xs select-none" style={{ color: "var(--text-muted)" }}>BPM</span>
         <input
           type="range"
           min={60}
@@ -107,9 +97,9 @@ export default function ComparisonTransportBar({ arrangements, genre, onClose }:
           value={tempo}
           onChange={handleTempoChange}
           title={`Tempo: ${tempo} BPM`}
-          className="w-20 accent-slate-400 cursor-pointer"
+          className="w-20 cursor-pointer accent-[var(--text-secondary)]"
         />
-        <span className="text-slate-300 text-xs font-mono w-8 text-right">{tempo}</span>
+        <span className="text-xs font-mono w-8 text-right" style={{ color: "var(--text-primary)" }}>{tempo}</span>
       </div>
 
       {/* Loop */}
@@ -128,7 +118,7 @@ export default function ComparisonTransportBar({ arrangements, genre, onClose }:
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={loop ? "" : "text-slate-500 hover:text-slate-200"}
+          className={loop ? "" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}
         >
           <path d="M1 4h10a4 4 0 0 1 4 4v0a4 4 0 0 1-4 4H5" />
           <polyline points="3 7 1 4 4 2" />
@@ -140,7 +130,7 @@ export default function ComparisonTransportBar({ arrangements, genre, onClose }:
       <button
         onClick={onClose}
         title="Close comparison"
-        className="p-2 rounded transition-colors text-slate-500 hover:text-slate-200 ml-2"
+        className="p-2 rounded transition-colors text-[var(--text-muted)] hover:text-[var(--text-primary)] ml-2"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           <line x1="2" y1="2" x2="12" y2="12" />
@@ -150,7 +140,7 @@ export default function ComparisonTransportBar({ arrangements, genre, onClose }:
 
       {/* Error */}
       {audioError && (
-        <span className="text-rose-400 text-xs ml-2 truncate" title={audioError}>
+        <span className="text-xs ml-2 truncate" style={{ color: "var(--danger-text)" }} title={audioError}>
           Audio: {audioError}
         </span>
       )}

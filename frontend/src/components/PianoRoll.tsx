@@ -228,7 +228,7 @@ export default function PianoRoll({
       // Draw accent marker as dashed vertical line at the beat position, repeated for each bar
       for (let bar = 0; bar < totalBars; bar++) {
         const x = LABEL_WIDTH + (bar + (ev.beat - 1) / beatsPerBar) * BAR_WIDTH
-        ctx.strokeStyle = 'rgba(250, 204, 21, 0.25)' // yellow-400 at 25% opacity
+        ctx.strokeStyle = CANVAS_COLORS.grooveAccent
         ctx.lineWidth = 1
         ctx.setLineDash([4, 4])
         ctx.beginPath()

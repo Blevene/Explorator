@@ -30,7 +30,7 @@ const FINALIST_ROLES = new Set(["best", "runner-up", "wildcard"]);
 function roleBadgeStyle(role: string): React.CSSProperties {
   if (role === "best") return { background: "var(--accent-primary-dim)", color: "var(--accent-primary)" };
   if (role === "runner-up") return { background: "var(--accent-secondary-dim)", color: "var(--accent-secondary)" };
-  if (role === "wildcard") return { background: "#6c9bef22", color: "#a78bfa" };
+  if (role === "wildcard") return { background: "var(--accent-secondary-dim)", color: "var(--role-experimental)" };
   return { background: "var(--surface-3)", color: "var(--text-secondary)" };
 }
 
@@ -250,7 +250,7 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
             </button>
 
             {exportError && (
-              <p className="text-xs rounded px-3 py-2" style={{ background: "#7f1d1d33", color: "#fca5a5", border: "1px solid #7f1d1d" }}>
+              <p className="text-xs rounded px-3 py-2" style={{ background: "var(--danger-bg)", color: "var(--danger-text)", border: "1px solid var(--danger-border)" }}>
                 {exportError}
               </p>
             )}

@@ -50,6 +50,7 @@ export const CANVAS_COLORS = {
   labelText: "#7d8699",
   headerText: "#8891a5",
   headerBg: "#12151c",
+  grooveAccent: "rgba(240, 180, 41, 0.25)",  // --accent-primary @ 25%
 
   genreAccent: {
     dream_pop: "#a78bfa",

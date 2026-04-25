@@ -15,11 +15,11 @@ const ACTION_ICONS: Record<string, string> = {
 }
 
 const ACTION_COLORS: Record<string, string> = {
-  generate: "#8b5cf6",   // violet-500
-  mutate: "#f59e0b",     // amber-500
-  feedback: "#06b6d4",   // cyan-500
-  rank_and_select: "#10b981", // emerald-500
-  export: "#ec4899",     // pink-500
+  generate: "var(--action-generate)",
+  mutate: "var(--action-mutate)",
+  feedback: "var(--action-feedback)",
+  rank_and_select: "var(--action-select)",
+  export: "var(--action-export)",
 }
 
 function formatTime(timestamp: string): string {

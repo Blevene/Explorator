@@ -72,19 +72,25 @@ function TreeNode({
   const isMutant = depth > 0;
 
   return (
-    <div className={depth > 0 ? 'ml-4 border-l border-gray-700 pl-3' : ''}>
+    <div
+      className={depth > 0 ? 'ml-4 pl-3' : ''}
+      style={depth > 0 ? { borderLeft: '1px solid var(--border-default)' } : undefined}
+    >
       <div
         onClick={() => onSelect?.(node.id)}
-        className="flex items-center gap-2 py-1 px-2 rounded hover:bg-gray-800 cursor-pointer group"
+        className="flex items-center gap-2 py-1 px-2 rounded cursor-pointer group hover:bg-[var(--surface-3)]"
       >
         {isMutant && (
-          <span className="text-cyan-500 text-xs">⟳</span>
+          <span className="text-xs" style={{ color: 'var(--accent-secondary)' }}>⟳</span>
         )}
-        <span className="text-xs font-mono text-gray-300 group-hover:text-white">
+        <span
+          className="text-xs font-mono group-hover:text-[var(--text-primary)]"
+          style={{ color: 'var(--text-secondary)' }}
+        >
           {node.label}
         </span>
         {node.round && (
-          <span className="text-xs text-gray-600">R{node.round}</span>
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>R{node.round}</span>
         )}
         <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
           {node.chordSymbols.join(' \u2192 ')}

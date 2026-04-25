@@ -48,6 +48,18 @@
 
   /* Modal */
   --overlay-backdrop: rgba(0, 0, 0, 0.7);
+
+  /* Danger / error state — used for inline error banners and toasts */
+  --danger-bg: #7f1d1d33;
+  --danger-border: #7f1d1d;
+  --danger-text: #fca5a5;
+
+  /* Session-history action categories — distinct hues per pipeline step */
+  --action-generate: #8b5cf6;
+  --action-mutate: #f59e0b;
+  --action-feedback: #06b6d4;
+  --action-select: #10b981;
+  --action-export: #ec4899;
 }
 
 body {

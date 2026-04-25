@@ -43,8 +43,8 @@ export default function LaneSidebar({ candidateId, label, score, audible }: Lane
           title={isSoloed ? "Unsolo" : "Solo"}
           className="w-[22px] h-[18px] rounded-sm text-[9px] font-bold border-none cursor-pointer"
           style={{
-            background: isSoloed ? "#eab308" : "var(--surface-3)",
-            color: isSoloed ? "#0f172a" : "var(--text-muted)",
+            background: isSoloed ? "var(--accent-primary)" : "var(--surface-3)",
+            color: isSoloed ? "var(--surface-0)" : "var(--text-muted)",
           }}
         >
           S
@@ -54,8 +54,8 @@ export default function LaneSidebar({ candidateId, label, score, audible }: Lane
           title={isMuted ? "Unmute" : "Mute"}
           className="w-[22px] h-[18px] rounded-sm text-[9px] font-bold border-none cursor-pointer"
           style={{
-            background: isMuted ? "#ef4444" : "var(--surface-3)",
-            color: isMuted ? "#fff" : "var(--text-muted)",
+            background: isMuted ? "var(--score-low)" : "var(--surface-3)",
+            color: isMuted ? "var(--surface-0)" : "var(--text-muted)",
           }}
         >
           M
