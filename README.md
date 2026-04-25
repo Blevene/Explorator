@@ -63,9 +63,9 @@ Approved genres land in the same three directories as the seed genres and become
 
 | | |
 |---|---|
-| Backend | 635 tests (unit + integration + API), all green |
-| Frontend | 59 vitest, tsc strict, `npm run build` clean |
-| E2E | 41 Playwright; 36 green, 4 pre-existing M5c genre-research failures (mock-infrastructure gap) |
+| Backend | 645 tests (unit + integration + API), all green |
+| Frontend | 81 vitest, tsc strict, `npm run build` clean |
+| E2E | 41 Playwright, all green under `GEMINI_MOCK=true` (one occasional flake on `ux-coherence:11 navigation-flow` that passes in isolation) |
 
 ## Quick start
 
