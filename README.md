@@ -26,6 +26,35 @@ A creative copilot for music producers. Generate chord progressions, realize the
 - Pattern library: every finalist auto-harvests its progression, voicing, bass, groove, and melody patterns
 - Star your favourites; filter `/patterns` to *Curated only*
 
+## The genre catalog
+
+40+ genres ship with the system. Each genre is a triplet of YAML files that together drive every musical decision the engine makes:
+
+| File | What it captures | Used by |
+|---|---|---|
+| **Profile** (`domain/style/genres/<name>.yaml`) | Harmonic vocabulary, tendency knobs (functional strength, chromaticism, cadence preference), voicing/bass/groove/melodic preferences, experimentation envelope per layer | Generators (progressions, voicings, bass, groove, melody) — the "default settings" for the genre |
+| **Rules + anti-patterns** (`domain/style/rules/<name>_rules.yaml`) | Named rules with weights and applicability (e.g. `glacial_attack_times` for ambient voicing), plus anti-patterns with severity (e.g. `staccato_rhythmic_comping` for ambient groove) | Evaluators — rules add positive bias, anti-patterns subtract |
+| **Grammar** (`domain/style/grammars/<name>_grammar.yaml`) | Preferred chord qualities, allowed borrowed chords, cadence archetypes, harmonic rhythm defaults (per time-signature), functional-motion bias | Progression generator — constrains the space the LLM is asked to explore |
+
+The seed three (Dream Pop, Synthwave, Cinematic) are hand-curated. The other 37+ were produced by the **genre research agent** (M5c) — a five-step pipeline you can run yourself from the `/genres` UI:
+
+```
+research  →  draft  →  critique  →  refine  →  validate
+   ↑                       │
+   │                       ↓ (if not passed, up to 2 refine cycles)
+   └──── musicology research log
+```
+
+Concretely, you type a genre name (e.g. *"Trip-Hop"*), optionally add reference artists, and click *Start research*. The agent:
+
+1. **Researches** the genre via Gemini Pro — produces a free-text musicology log.
+2. **Drafts** all three YAMLs from the research, deterministically validated against the Pydantic schema.
+3. **Critiques** the draft via Gemini Flash with fresh context (no research log) — independent review.
+4. **Refines** if the critique flagged issues (up to two iterations).
+5. **Validates** the final result against the schema and surfaces the result for you to **approve** (write to disk, immediately usable for new sessions) or **reject** (logged to the audit trail with the reason).
+
+Approved genres land in the same three directories as the seed genres and become available for new sessions on the next backend reload — no special handling, no separate code path. The UI's step indicator + research-log view lets you watch the pipeline run live; the audit trail of critique iterations is preserved on the job record so you can see *why* a genre took the shape it did.
+
 ## Status
 
 **M0 → M5d shipped.** M6 (multi-layer mutation) is specced and pending. See [`docs/superpowers/plans/`](./docs/superpowers/plans/) for the milestone history, or [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md#pipelines) for the current pipeline shape.
@@ -142,9 +171,20 @@ explorator/
 | Backend (E2E) | 8100 | Spawned by Playwright with `GEMINI_MOCK=true` |
 | Frontend (E2E) | 5199 | `npm run preview` against the production build |
 
-## Genre profiles
+## Genre catalog reference
 
-40+ genre YAMLs ship in `backend/src/explorator/domain/style/genres/`. Each defines harmonic vocabulary, voicing/bass/groove/melodic preferences, and an experimentation envelope. Three are hand-curated seed genres (Dream Pop, Synthwave, Cinematic); the rest were produced by the **M5c genre research agent** — a research → draft → critique → refine → validate pipeline that synthesizes musicological research into the YAML schema and validates deterministically with Pydantic.
+See [§ The genre catalog](#the-genre-catalog) above for an overview. Each of the 40+ genres lives as three YAML files:
+
+```
+backend/src/explorator/domain/style/
+├── genres/<name>.yaml             # Profile
+├── rules/<name>_rules.yaml        # Rules + anti-patterns
+└── grammars/<name>_grammar.yaml   # Harmonic grammar
+```
+
+Schemas: `backend/src/explorator/domain/style/schema.py` (`GenreProfileYAML`, `GenreRulesYAML`, `HarmonicGrammarYAML`).
+
+To add a genre by hand, drop all three files in their respective directories using the schema; the loader picks them up at next backend reload. To add via the research agent, use the `/genres` UI.
 
 ## Evaluation dimensions
 
