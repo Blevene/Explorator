@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useGenreResearchStore } from '../stores/genreResearchStore';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useGenreDetailDrawer } from '../hooks/useGenreDetailDrawer';
+import { logError } from '../lib/log';
 import Dialog from './Dialog';
 
 const GENRE_COLORS: Record<string, string> = {
@@ -278,8 +279,8 @@ export default function GenreManagement() {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    fetchGenres().catch(console.error);
-    fetchDrafts().catch(console.error);
+    fetchGenres().catch((err) => logError('GenreManagement.fetchGenres', err));
+    fetchDrafts().catch((err) => logError('GenreManagement.fetchDrafts', err));
   }, [fetchGenres, fetchDrafts]);
 
   // Auto-transition to progress view when research starts
@@ -299,7 +300,7 @@ export default function GenreManagement() {
         // Fallback to library if fetch fails
         setView('library');
         reset();
-        fetchDrafts().catch(console.error);
+        fetchDrafts().catch((err) => logError('GenreManagement.fetchDrafts', err));
       });
     }
   }, [activeJobId, activeJobStatus, reset, fetchDrafts, fetchDraftDetail]);

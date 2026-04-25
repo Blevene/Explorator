@@ -1,8 +1,8 @@
-# MusicExplorator — System Architecture
+# Explorator — System Architecture
 
 **Status:** current as of 2026-04-24 (post-M5d-3, pre-M6).
 
-This document is the developer-onboarding reference for how MusicExplorator is wired together today. For "what does the product do," see the [root README](../README.md). For per-milestone design history, see [`docs/superpowers/specs/`](./superpowers/specs/).
+This document is the developer-onboarding reference for how Explorator is wired together today. For "what does the product do," see the [root README](../README.md). For per-milestone design history, see [`docs/superpowers/specs/`](./superpowers/specs/).
 
 ---
 

@@ -1,6 +1,6 @@
-# MusicExplorator Frontend
+# Explorator Frontend
 
-React 19 + TypeScript + Vite frontend for MusicExplorator. See the [root README](../README.md) for what the project is and a tour of the user-facing flow.
+React 19 + TypeScript + Vite frontend for Explorator. See the [root README](../README.md) for what the project is and a tour of the user-facing flow.
 
 ## Stack
 

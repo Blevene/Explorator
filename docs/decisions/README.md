@@ -1,6 +1,6 @@
 # Architectural Decision Records
 
-Lightweight ADRs for the load-bearing decisions in MusicExplorator. Each one captures *why* we chose what we chose, not just what we chose.
+Lightweight ADRs for the load-bearing decisions in Explorator. Each one captures *why* we chose what we chose, not just what we chose.
 
 Format follows the [Michael Nygard template](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions): Title, Status, Context, Decision, Consequences.
 
