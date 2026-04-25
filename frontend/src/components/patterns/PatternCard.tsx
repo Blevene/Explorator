@@ -63,10 +63,7 @@ export function PatternCard({ pattern, onDelete }: Props) {
           <button
             onClick={handleDelete}
             aria-label={`Delete ${pattern.id}`}
-            className="text-xs px-2 py-1 rounded transition-colors"
-            style={{ color: 'var(--text-muted)', background: 'transparent' }}
-            onMouseOver={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
-            onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+            className="text-xs px-2 py-1 rounded transition-colors bg-transparent text-[var(--text-muted)] hover:text-[var(--score-low)] focus-visible:text-[var(--score-low)]"
           >
             Delete
           </button>

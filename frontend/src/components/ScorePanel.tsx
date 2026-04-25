@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { scoreColorVar } from "../utils/designTokens"
 
 interface ScorePanelProps {
   scores: Record<string, number>
@@ -15,38 +16,21 @@ const PROGRESSION_DIMS = [
   "loopability",
 ]
 
-function barColor(score: number): string {
-  if (score >= 8) return "bg-emerald-400"
-  if (score >= 6) return "bg-amber-400"
-  return "bg-rose-400"
-}
-
-function labelColor(score: number): string {
-  if (score >= 8) return "text-emerald-400"
-  if (score >= 6) return "text-amber-400"
-  return "text-rose-400"
-}
-
-function totalColor(score: number): string {
-  if (score >= 8) return "text-emerald-400"
-  if (score >= 6) return "text-amber-400"
-  return "text-rose-400"
-}
-
 function ScoreDimension({ name, value }: { name: string; value: number }) {
   const pct = Math.min(100, Math.max(0, (value / 10) * 100))
+  const color = scoreColorVar(value)
   return (
     <div className="flex items-center gap-2">
-      <span className="text-slate-400 text-xs w-36 shrink-0 capitalize">
+      <span className="text-xs w-36 shrink-0 capitalize" style={{ color: "var(--text-secondary)" }}>
         {name.replace(/_/g, " ")}
       </span>
-      <div className="flex-1 bg-slate-700 rounded-full h-1.5">
+      <div className="flex-1 rounded-full h-1.5" style={{ background: "var(--border-default)" }}>
         <div
-          className={`h-1.5 rounded-full ${barColor(value)}`}
-          style={{ width: `${pct}%` }}
+          className="h-1.5 rounded-full"
+          style={{ width: `${pct}%`, background: color }}
         />
       </div>
-      <span className={`text-xs font-mono w-8 text-right ${labelColor(value)}`}>
+      <span className="text-xs font-mono w-8 text-right" style={{ color }}>
         {(value ?? 0).toFixed(1)}
       </span>
     </div>
@@ -66,7 +50,9 @@ function ScoreGroup({
   if (available.length === 0) return null
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-slate-500 text-xs uppercase tracking-wider">{title}</span>
+      <span className="text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+        {title}
+      </span>
       {available.map((dim) => (
         <ScoreDimension key={dim} name={dim} value={scores[dim]} />
       ))}
@@ -76,20 +62,23 @@ function ScoreGroup({
 
 export default function ScorePanel({ scores, weightedTotal }: ScorePanelProps) {
   const [collapsed, setCollapsed] = useState(false)
+  const totalColor = scoreColorVar(weightedTotal ?? 0)
 
   return (
-    <div className="bg-slate-900 border-t border-slate-700">
+    <div style={{ background: "var(--surface-1)", borderTop: "1px solid var(--border-default)" }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2">
         <div className="flex items-center gap-3">
-          <span className="text-slate-400 text-xs uppercase tracking-wider">Scores</span>
-          <span className={`text-base font-bold font-mono ${totalColor(weightedTotal ?? 0)}`}>
+          <span className="text-xs uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
+            Scores
+          </span>
+          <span className="text-base font-bold font-mono" style={{ color: totalColor }}>
             {(weightedTotal ?? 0).toFixed(2)}
           </span>
         </div>
         <button
           onClick={() => setCollapsed((c) => !c)}
-          className="text-slate-500 hover:text-slate-300 text-sm font-bold w-5 h-5 flex items-center justify-center transition-colors"
+          className="text-sm font-bold w-5 h-5 flex items-center justify-center transition-colors text-[var(--text-muted)] hover:text-[var(--text-primary)]"
           aria-label={collapsed ? "Expand scores" : "Collapse scores"}
         >
           {collapsed ? "+" : "−"}

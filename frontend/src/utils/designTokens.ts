@@ -47,9 +47,10 @@ export const CANVAS_COLORS = {
   bassNote: "#6c9bef",
   melodyNote: "#34d399",  // emerald green, distinct from voicing (amber) and bass (blue)
   cursorLine: "#f0b429",
-  labelText: "#555e74",
+  labelText: "#7d8699",
   headerText: "#8891a5",
   headerBg: "#12151c",
+  grooveAccent: "rgba(240, 180, 41, 0.25)",  // --accent-primary @ 25%
 
   genreAccent: {
     dream_pop: "#a78bfa",

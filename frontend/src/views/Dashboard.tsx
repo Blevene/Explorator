@@ -27,7 +27,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       {/* Hero */}
       <div className="flex-1 flex flex-col items-center justify-center px-8 pb-16 pt-24">
         <div className="text-center mb-12">
@@ -40,19 +40,13 @@ export default function Dashboard() {
           <div className="mt-4 flex gap-4 justify-center">
             <a
               href="/genres"
-              className="text-xs tracking-wider uppercase transition-colors"
-              style={{ color: 'var(--text-muted)' }}
-              onMouseOver={(e) => (e.currentTarget.style.color = 'var(--accent-primary)')}
-              onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+              className="text-xs tracking-wider uppercase transition-colors text-[var(--text-muted)] hover:text-[var(--accent-primary)] focus-visible:text-[var(--accent-primary)]"
             >
               Manage Genres &rarr;
             </a>
             <a
               href="/patterns"
-              className="text-xs tracking-wider uppercase transition-colors"
-              style={{ color: 'var(--text-muted)' }}
-              onMouseOver={(e) => (e.currentTarget.style.color = 'var(--accent-primary)')}
-              onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+              className="text-xs tracking-wider uppercase transition-colors text-[var(--text-muted)] hover:text-[var(--accent-primary)] focus-visible:text-[var(--accent-primary)]"
             >
               Pattern Library &rarr;
             </a>
@@ -66,13 +60,14 @@ export default function Dashboard() {
             style={{ background: `linear-gradient(135deg, var(--border-subtle), var(--border-default), var(--border-subtle))` }}
           >
             <div className="rounded-xl p-5" style={{ background: 'var(--surface-2)' }}>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="text"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
                   placeholder="Dream pop in A major, wistful and haunted, 8 bars..."
+                  aria-label="Session prompt"
                   className="flex-1 px-4 py-2.5 rounded-lg text-sm placeholder-opacity-40 focus:outline-none transition-colors"
                   style={{
                     background: 'var(--surface-1)',
@@ -83,7 +78,7 @@ export default function Dashboard() {
                 <button
                   onClick={handleCreate}
                   disabled={loading || !prompt.trim()}
-                  className="px-6 py-2.5 rounded-lg font-medium text-sm transition-all disabled:opacity-30"
+                  className="px-6 py-2.5 rounded-lg font-medium text-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   style={{
                     background: 'var(--accent-primary)',
                     color: 'var(--surface-0)',
@@ -108,13 +103,11 @@ export default function Dashboard() {
           </h2>
           <div className="flex flex-col gap-1.5">
             {sessions.map((s) => (
-              <div
+              <button
                 key={s.session_id}
+                type="button"
                 onClick={() => navigate(`/session/${s.session_id}`)}
-                className="flex justify-between items-center px-4 py-3 rounded-lg cursor-pointer transition-colors"
-                style={{ background: 'var(--surface-2)' }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-3)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
+                className="flex justify-between items-center w-full text-left px-4 py-3 rounded-lg cursor-pointer transition-colors bg-[var(--surface-2)] hover:bg-[var(--surface-3)] focus-visible:bg-[var(--surface-3)]"
               >
                 <span className="text-sm truncate mr-4" style={{ color: 'var(--text-primary)' }}>
                   {s.prompt || 'Untitled session'}
@@ -125,7 +118,7 @@ export default function Dashboard() {
                 >
                   {s.status}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         </div>

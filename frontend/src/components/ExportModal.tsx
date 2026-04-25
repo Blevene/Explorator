@@ -3,6 +3,7 @@ import JSZip from "jszip";
 import { useExportStore } from "../stores/exportStore";
 import { getArtifactDownloadUrl, listArrangements } from "../services/api";
 import type { ExportPackage } from "../services/api";
+import Dialog from "./Dialog";
 
 interface CandidateEntry {
   id: string;
@@ -29,7 +30,7 @@ const FINALIST_ROLES = new Set(["best", "runner-up", "wildcard"]);
 function roleBadgeStyle(role: string): React.CSSProperties {
   if (role === "best") return { background: "var(--accent-primary-dim)", color: "var(--accent-primary)" };
   if (role === "runner-up") return { background: "var(--accent-secondary-dim)", color: "var(--accent-secondary)" };
-  if (role === "wildcard") return { background: "#6c9bef22", color: "#a78bfa" };
+  if (role === "wildcard") return { background: "var(--accent-secondary-dim)", color: "var(--role-experimental)" };
   return { background: "var(--surface-3)", color: "var(--text-secondary)" };
 }
 
@@ -129,22 +130,16 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
   };
 
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center z-50"
-      style={{ background: "var(--overlay-backdrop)" }}
-      onClick={onClose}
+    <Dialog
+      onClose={onClose}
+      labelledBy="export-modal-title"
+      panelClassName="rounded-xl w-full max-w-lg max-h-[90vh] flex flex-col mx-4"
+      panelStyle={{
+        background: "var(--surface-1)",
+        border: "1px solid var(--border-default)",
+      }}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="export-modal-title"
-        className="rounded-xl w-full max-w-lg max-h-[90vh] flex flex-col"
-        style={{
-          background: "var(--surface-1)",
-          border: "1px solid var(--border-default)",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <>
         {/* Header */}
         <div
           className="flex items-center justify-between px-5 py-4"
@@ -255,7 +250,7 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
             </button>
 
             {exportError && (
-              <p className="text-xs rounded px-3 py-2" style={{ background: "#7f1d1d33", color: "#fca5a5", border: "1px solid #7f1d1d" }}>
+              <p className="text-xs rounded px-3 py-2" style={{ background: "var(--danger-bg)", color: "var(--danger-text)", border: "1px solid var(--danger-border)" }}>
                 {exportError}
               </p>
             )}
@@ -334,7 +329,7 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
             </details>
           )}
         </div>
-      </div>
-    </div>
+      </>
+    </Dialog>
   );
 }

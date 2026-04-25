@@ -228,7 +228,7 @@ export default function PianoRoll({
       // Draw accent marker as dashed vertical line at the beat position, repeated for each bar
       for (let bar = 0; bar < totalBars; bar++) {
         const x = LABEL_WIDTH + (bar + (ev.beat - 1) / beatsPerBar) * BAR_WIDTH
-        ctx.strokeStyle = 'rgba(250, 204, 21, 0.25)' // yellow-400 at 25% opacity
+        ctx.strokeStyle = CANVAS_COLORS.grooveAccent
         ctx.lineWidth = 1
         ctx.setLineDash([4, 4])
         ctx.beginPath()
@@ -277,18 +277,57 @@ export default function PianoRoll({
     )
   }
 
+  // Summary for screen readers — canvas is purely visual, so describe it.
+  const totalNotes = voicingEvents.reduce((n, e) => n + e.pitches.length, 0)
+    + bassEvents.length + melodyEvents.length
+  const summary =
+    `Piano roll, ${totalBarsProp ?? 8} bars, ${totalNotes} note${totalNotes === 1 ? "" : "s"}: ` +
+    `${voicingEvents.reduce((n, e) => n + e.pitches.length, 0)} chord, ` +
+    `${bassEvents.length} bass, ` +
+    `${melodyEvents.length} melody.`
+
+  // Arrow keys / Home / End scroll horizontally; reasonable scrub UX without
+  // hijacking system shortcuts.
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    const container = containerRef.current
+    if (!container) return
+    const step = BAR_WIDTH
+    switch (e.key) {
+      case "ArrowRight":
+        e.preventDefault()
+        container.scrollLeft += step
+        break
+      case "ArrowLeft":
+        e.preventDefault()
+        container.scrollLeft -= step
+        break
+      case "Home":
+        e.preventDefault()
+        container.scrollLeft = 0
+        break
+      case "End":
+        e.preventDefault()
+        container.scrollLeft = container.scrollWidth
+        break
+    }
+  }
+
   return (
     <div
       ref={containerRef}
-      className="overflow-x-auto overflow-y-auto"
+      role="img"
+      aria-label={summary}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      className="overflow-x-auto overflow-y-auto motion-safe:transition-opacity"
       style={{
         background: 'var(--surface-1)',
         maxHeight: compact ? "220px" : "400px",
         opacity: dimmed ? 0.2 : 1,
-        transition: "opacity 150ms ease",
+        transitionDuration: "150ms",
       }}
     >
-      <canvas ref={canvasRef} />
+      <canvas ref={canvasRef} aria-hidden="true" />
     </div>
   )
 }

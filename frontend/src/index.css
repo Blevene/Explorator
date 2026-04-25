@@ -16,7 +16,7 @@
   /* Text */
   --text-primary: #e2e6ef;
   --text-secondary: #8891a5;
-  --text-muted: #555e74;
+  --text-muted: #7d8699;
 
   /* Accents — warm amber primary, cool blue secondary, emerald tertiary */
   --accent-primary: #f0b429;
@@ -48,6 +48,24 @@
 
   /* Modal */
   --overlay-backdrop: rgba(0, 0, 0, 0.7);
+
+  /* Danger / error state — used for inline error banners and toasts */
+  --danger-bg: #7f1d1d33;
+  --danger-border: #7f1d1d;
+  --danger-text: #fca5a5;
+
+  /* Faint score backgrounds — used as severity badges / progress bar fills */
+  --score-high-faint: #34d39926;  /* --score-high @ 15% */
+  --score-mid-faint: #fbbf2426;   /* --score-mid  @ 15% */
+  --score-low-faint: #f8717126;   /* --score-low  @ 15% */
+  --text-muted-faint: #7d869926;  /* --text-muted @ 15% */
+
+  /* Session-history action categories — distinct hues per pipeline step */
+  --action-generate: #8b5cf6;
+  --action-mutate: #f59e0b;
+  --action-feedback: #06b6d4;
+  --action-select: #10b981;
+  --action-export: #ec4899;
 }
 
 body {

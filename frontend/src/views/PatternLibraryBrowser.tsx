@@ -22,8 +22,8 @@ export default function PatternLibraryBrowser() {
   const showEmpty = !loading && items.length === 0;
 
   return (
-    <div className="min-h-screen px-8 py-12">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-dvh px-8 py-12">
+      <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-light" style={{ color: 'var(--text-primary)' }}>
             Pattern Library

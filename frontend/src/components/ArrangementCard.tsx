@@ -29,7 +29,6 @@ export default function ArrangementCard({
   const [explaining, setExplaining] = useState(false)
   const [explainError, setExplainError] = useState<string | null>(null)
   const [showExplanation, setShowExplanation] = useState(false)
-  const [explainBtnHover, setExplainBtnHover] = useState(false)
 
   const handleExplain = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -111,13 +110,10 @@ export default function ArrangementCard({
         <button
           onClick={handleExplain}
           disabled={explaining}
-          onMouseEnter={() => setExplainBtnHover(true)}
-          onMouseLeave={() => setExplainBtnHover(false)}
-          className="mt-2 text-xs px-2 py-1 rounded transition-colors disabled:opacity-50"
-          style={{
-            border: `1px solid ${explainBtnHover ? "var(--border-bright)" : "var(--border-default)"}`,
-            color: explainBtnHover ? "var(--text-primary)" : "var(--text-secondary)",
-          }}
+          aria-expanded={!!explanation && showExplanation}
+          className="mt-2 text-xs px-2 py-1 rounded border transition-colors disabled:opacity-50
+                     border-[var(--border-default)] hover:border-[var(--border-bright)] focus-visible:border-[var(--border-bright)]
+                     text-[var(--text-secondary)] hover:text-[var(--text-primary)] focus-visible:text-[var(--text-primary)]"
         >
           {explaining ? (
             <span className="flex items-center gap-1">

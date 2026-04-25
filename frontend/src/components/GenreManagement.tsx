@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getGenreDetail } from '../services/api';
 import { useGenreResearchStore } from '../stores/genreResearchStore';
+import Dialog from './Dialog';
 
 const GENRE_COLORS: Record<string, string> = {
   dream_pop: 'var(--genre-dream-pop)',
@@ -119,43 +120,43 @@ function DictSection({ title, data }: { title: string; data: Record<string, any>
 function GenreDetailDrawer({ genre, onClose }: { genre: Record<string, any>; onClose: () => void }) {
   const g = genre;
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40"
-        style={{ background: 'var(--overlay-backdrop)' }}
-        onClick={onClose}
-      />
-      {/* Drawer panel — slides in from right */}
-      <div
-        className="fixed top-0 right-0 z-50 h-full overflow-y-auto"
-        style={{
-          width: '480px',
-          maxWidth: '90vw',
-          background: 'var(--surface-1)',
-          borderLeft: '1px solid var(--border-default)',
-          animation: 'drawer-slide-in 200ms ease-out both',
-        }}
-      >
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>
-                {g.display_name || g.genre}
-              </h2>
-              <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
-                {g.genre} &middot; v{g.version ?? 1}
-              </span>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg text-xs transition-colors"
-              style={{ background: 'var(--surface-3)', color: 'var(--text-secondary)' }}
+    <Dialog
+      onClose={onClose}
+      labelledBy="genre-drawer-title"
+      placement="right"
+      panelClassName="h-full overflow-y-auto"
+      panelStyle={{
+        width: '480px',
+        maxWidth: '90vw',
+        background: 'var(--surface-1)',
+        borderLeft: '1px solid var(--border-default)',
+        animation: 'drawer-slide-in 200ms ease-out both',
+      }}
+    >
+      <div className="p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2
+              id="genre-drawer-title"
+              className="text-lg font-medium"
+              style={{ color: 'var(--text-primary)' }}
             >
-              &times;
-            </button>
+              {g.display_name || g.genre}
+            </h2>
+            <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+              {g.genre} &middot; v{g.version ?? 1}
+            </span>
           </div>
+          <button
+            onClick={onClose}
+            aria-label="Close genre detail"
+            className="p-2 rounded-lg text-xs transition-colors"
+            style={{ background: 'var(--surface-3)', color: 'var(--text-secondary)' }}
+          >
+            &times;
+          </button>
+        </div>
 
           {/* Sections — single column in drawer */}
           <div className="flex flex-col gap-3">
@@ -237,10 +238,9 @@ function GenreDetailDrawer({ genre, onClose }: { genre: Record<string, any>; onC
             </ul>
           </SectionCard>
         )}
-          </div>
         </div>
       </div>
-    </>
+    </Dialog>
   );
 }
 
@@ -273,6 +273,7 @@ export default function GenreManagement() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectedGenre, setSelectedGenre] = useState<Record<string, any> | null>(null);
   const [loadingGenre, setLoadingGenre] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleGenreClick = async (genreSlug: string) => {
     setLoadingGenre(true);
@@ -362,7 +363,7 @@ export default function GenreManagement() {
 
   if (view === 'library') {
     return (
-      <div className="min-h-screen px-8 py-12 max-w-4xl mx-auto">
+      <div className="min-h-dvh px-8 py-12 max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-10">
           <h1
@@ -392,10 +393,7 @@ export default function GenreManagement() {
           </button>
           <a
             href="/"
-            className="text-xs tracking-wider uppercase transition-colors"
-            style={{ color: 'var(--text-muted)' }}
-            onMouseOver={(e) => (e.currentTarget.style.color = 'var(--accent-primary)')}
-            onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+            className="text-xs tracking-wider uppercase transition-colors text-[var(--text-muted)] hover:text-[var(--accent-primary)] focus-visible:text-[var(--accent-primary)]"
           >
             &larr; Dashboard
           </a>
@@ -501,16 +499,48 @@ export default function GenreManagement() {
         )}
 
         {/* Genre library cards */}
-        {genres.length > 0 && (
+        {genres.length > 0 && (() => {
+          const q = searchQuery.trim().toLowerCase();
+          const filtered = q
+            ? genres.filter((g) =>
+                g.display_name.toLowerCase().includes(q) || g.genre.toLowerCase().includes(q),
+              )
+            : genres;
+          return (
           <div>
-            <h2
-              className="text-xs font-medium uppercase tracking-widest mb-3"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              Installed Genres
-            </h2>
+            <div className="flex items-baseline justify-between mb-3 gap-4">
+              <h2
+                className="text-xs font-medium uppercase tracking-widest"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                Installed Genres
+                {q && (
+                  <span className="ml-2 normal-case tracking-normal" style={{ color: 'var(--text-muted)' }}>
+                    ({filtered.length} of {genres.length})
+                  </span>
+                )}
+              </h2>
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search genres…"
+                aria-label="Search genres"
+                className="w-64 max-w-full px-3 py-1.5 rounded-lg text-sm focus:outline-none"
+                style={{
+                  background: 'var(--surface-1)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-primary)',
+                }}
+              />
+            </div>
+            {filtered.length === 0 ? (
+              <p className="text-sm py-3" style={{ color: 'var(--text-muted)' }}>
+                No genres match “{searchQuery}”.
+              </p>
+            ) : (
             <div className="flex flex-col gap-2">
-              {genres.map((g, i) => (
+              {filtered.map((g, i) => (
                 <div
                   key={g.genre}
                   onClick={() => handleGenreClick(g.genre)}
@@ -536,8 +566,10 @@ export default function GenreManagement() {
                 </div>
               ))}
             </div>
+            )}
           </div>
-        )}
+          );
+        })()}
 
         {genres.length === 0 && pendingDrafts.length === 0 && !showForm && (
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
@@ -715,7 +747,7 @@ export default function GenreManagement() {
             {hasValidationErrors && (
               <span
                 className="text-[11px] font-medium px-2 py-0.5 rounded-full"
-                style={{ background: 'rgba(248,113,113,0.15)', color: 'var(--score-low)' }}
+                style={{ background: 'var(--score-low-faint)', color: 'var(--score-low)' }}
               >
                 Validation Warnings
               </span>
@@ -723,10 +755,8 @@ export default function GenreManagement() {
           </div>
           <button
             onClick={handleBackToLibrary}
-            className="text-xs tracking-wider uppercase transition-colors mt-2"
-            style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
-            onMouseOver={(e) => (e.currentTarget.style.color = 'var(--accent-primary)')}
-            onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+            className="text-xs tracking-wider uppercase transition-colors mt-2 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-primary)] focus-visible:text-[var(--accent-primary)]"
+            style={{ background: 'none', border: 'none' }}
           >
             &larr; Back to Library
           </button>
@@ -891,10 +921,10 @@ export default function GenreManagement() {
                       style={{
                         background:
                           ap.severity === 'high'
-                            ? 'rgba(248,113,113,0.15)'
+                            ? 'var(--score-low-faint)'
                             : ap.severity === 'medium'
-                              ? 'rgba(251,191,36,0.15)'
-                              : 'rgba(85,94,116,0.15)',
+                              ? 'var(--score-mid-faint)'
+                              : 'var(--text-muted-faint)',
                         color:
                           ap.severity === 'high'
                             ? 'var(--score-low)'
