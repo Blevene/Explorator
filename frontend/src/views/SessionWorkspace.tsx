@@ -205,7 +205,7 @@ export default function SessionWorkspace() {
 
       {/* Error */}
       {generation.error && (
-        <div data-testid="error-message" className="rounded-lg px-4 py-3 text-sm" style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)' }}>
+        <div data-testid="error-message" role="alert" aria-live="assertive" className="rounded-lg px-4 py-3 text-sm" style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)' }}>
           {generation.error}
         </div>
       )}

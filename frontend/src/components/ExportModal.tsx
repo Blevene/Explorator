@@ -250,7 +250,7 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
             </button>
 
             {exportError && (
-              <p className="text-xs rounded px-3 py-2" style={{ background: "var(--danger-bg)", color: "var(--danger-text)", border: "1px solid var(--danger-border)" }}>
+              <p role="alert" aria-live="assertive" className="text-xs rounded px-3 py-2" style={{ background: "var(--danger-bg)", color: "var(--danger-text)", border: "1px solid var(--danger-border)" }}>
                 {exportError}
               </p>
             )}

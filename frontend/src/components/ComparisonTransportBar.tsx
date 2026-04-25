@@ -146,7 +146,7 @@ export default function ComparisonTransportBar({ arrangements, genre, onClose }:
 
       {/* Error */}
       {audioError && (
-        <span className="text-xs ml-2 truncate" style={{ color: "var(--danger-text)" }} title={audioError}>
+        <span role="alert" aria-live="polite" className="text-xs ml-2 truncate" style={{ color: "var(--danger-text)" }} title={audioError}>
           Audio: {audioError}
         </span>
       )}
