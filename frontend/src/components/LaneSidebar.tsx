@@ -36,12 +36,14 @@ export default function LaneSidebar({ candidateId, label, score, audible }: Lane
         {score.toFixed(1)}
       </span>
 
-      {/* Solo / Mute buttons */}
+      {/* Solo / Mute buttons — 32×32 hit area; visual letters stay compact */}
       <div className="flex gap-1">
         <button
           onClick={(e) => { e.stopPropagation(); toggleSolo(candidateId) }}
           title={isSoloed ? "Unsolo" : "Solo"}
-          className="w-[22px] h-[18px] rounded-sm text-[9px] font-bold border-none cursor-pointer"
+          aria-label={`${isSoloed ? "Unsolo" : "Solo"} ${label}`}
+          aria-pressed={isSoloed}
+          className="w-8 h-8 flex items-center justify-center rounded-sm text-[10px] font-bold border-none cursor-pointer"
           style={{
             background: isSoloed ? "var(--accent-primary)" : "var(--surface-3)",
             color: isSoloed ? "var(--surface-0)" : "var(--text-muted)",
@@ -52,7 +54,9 @@ export default function LaneSidebar({ candidateId, label, score, audible }: Lane
         <button
           onClick={(e) => { e.stopPropagation(); toggleMute(candidateId) }}
           title={isMuted ? "Unmute" : "Mute"}
-          className="w-[22px] h-[18px] rounded-sm text-[9px] font-bold border-none cursor-pointer"
+          aria-label={`${isMuted ? "Unmute" : "Mute"} ${label}`}
+          aria-pressed={isMuted}
+          className="w-8 h-8 flex items-center justify-center rounded-sm text-[10px] font-bold border-none cursor-pointer"
           style={{
             background: isMuted ? "var(--score-low)" : "var(--surface-3)",
             color: isMuted ? "var(--surface-0)" : "var(--text-muted)",
