@@ -3,6 +3,7 @@ import JSZip from "jszip";
 import { useExportStore } from "../stores/exportStore";
 import { getArtifactDownloadUrl, listArrangements } from "../services/api";
 import type { ExportPackage } from "../services/api";
+import Dialog from "./Dialog";
 
 interface CandidateEntry {
   id: string;
@@ -129,22 +130,16 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
   };
 
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center z-50"
-      style={{ background: "var(--overlay-backdrop)" }}
-      onClick={onClose}
+    <Dialog
+      onClose={onClose}
+      labelledBy="export-modal-title"
+      panelClassName="rounded-xl w-full max-w-lg max-h-[90vh] flex flex-col mx-4"
+      panelStyle={{
+        background: "var(--surface-1)",
+        border: "1px solid var(--border-default)",
+      }}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="export-modal-title"
-        className="rounded-xl w-full max-w-lg max-h-[90vh] flex flex-col"
-        style={{
-          background: "var(--surface-1)",
-          border: "1px solid var(--border-default)",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <>
         {/* Header */}
         <div
           className="flex items-center justify-between px-5 py-4"
@@ -334,7 +329,7 @@ export default function ExportModal({ sessionId, candidates, onClose }: Props) {
             </details>
           )}
         </div>
-      </div>
-    </div>
+      </>
+    </Dialog>
   );
 }

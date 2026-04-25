@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getGenreDetail } from '../services/api';
 import { useGenreResearchStore } from '../stores/genreResearchStore';
+import Dialog from './Dialog';
 
 const GENRE_COLORS: Record<string, string> = {
   dream_pop: 'var(--genre-dream-pop)',
@@ -119,43 +120,43 @@ function DictSection({ title, data }: { title: string; data: Record<string, any>
 function GenreDetailDrawer({ genre, onClose }: { genre: Record<string, any>; onClose: () => void }) {
   const g = genre;
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40"
-        style={{ background: 'var(--overlay-backdrop)' }}
-        onClick={onClose}
-      />
-      {/* Drawer panel — slides in from right */}
-      <div
-        className="fixed top-0 right-0 z-50 h-full overflow-y-auto"
-        style={{
-          width: '480px',
-          maxWidth: '90vw',
-          background: 'var(--surface-1)',
-          borderLeft: '1px solid var(--border-default)',
-          animation: 'drawer-slide-in 200ms ease-out both',
-        }}
-      >
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>
-                {g.display_name || g.genre}
-              </h2>
-              <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
-                {g.genre} &middot; v{g.version ?? 1}
-              </span>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg text-xs transition-colors"
-              style={{ background: 'var(--surface-3)', color: 'var(--text-secondary)' }}
+    <Dialog
+      onClose={onClose}
+      labelledBy="genre-drawer-title"
+      placement="right"
+      panelClassName="h-full overflow-y-auto"
+      panelStyle={{
+        width: '480px',
+        maxWidth: '90vw',
+        background: 'var(--surface-1)',
+        borderLeft: '1px solid var(--border-default)',
+        animation: 'drawer-slide-in 200ms ease-out both',
+      }}
+    >
+      <div className="p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2
+              id="genre-drawer-title"
+              className="text-lg font-medium"
+              style={{ color: 'var(--text-primary)' }}
             >
-              &times;
-            </button>
+              {g.display_name || g.genre}
+            </h2>
+            <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+              {g.genre} &middot; v{g.version ?? 1}
+            </span>
           </div>
+          <button
+            onClick={onClose}
+            aria-label="Close genre detail"
+            className="p-2 rounded-lg text-xs transition-colors"
+            style={{ background: 'var(--surface-3)', color: 'var(--text-secondary)' }}
+          >
+            &times;
+          </button>
+        </div>
 
           {/* Sections — single column in drawer */}
           <div className="flex flex-col gap-3">
@@ -237,10 +238,9 @@ function GenreDetailDrawer({ genre, onClose }: { genre: Record<string, any>; onC
             </ul>
           </SectionCard>
         )}
-          </div>
         </div>
       </div>
-    </>
+    </Dialog>
   );
 }
 
