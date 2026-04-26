@@ -1,6 +1,7 @@
 """Candidate ranking — weighted scoring + top-K selection."""
 
 import math
+from typing import Any
 
 from explorator.models.evaluation import AggregateScorecard, ObjectiveWeights
 
@@ -105,11 +106,11 @@ def score_space_distance(
 
 
 def apply_diversity_penalty(
-    candidates: list[dict],
+    candidates: list[dict[str, Any]],
     top_n: int = 5,
     edit_dist_threshold: int = 2,
     score_dist_threshold: float = 0.5,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Reorder candidates by demoting near-duplicates from top-N.
 
     Two candidates are near-duplicates if chord_edit_distance <= edit_dist_threshold
@@ -119,7 +120,7 @@ def apply_diversity_penalty(
     if not candidates:
         return []
 
-    result: list[dict] = []
+    result: list[dict[str, Any]] = []
     remaining = list(candidates)
     demoted: set[str] = set()  # Guard against infinite loop
 
@@ -157,7 +158,7 @@ def apply_diversity_penalty(
 
 
 def _assign_roles_for_group(
-    candidates: list[dict],
+    candidates: list[dict[str, Any]],
 ) -> tuple[dict[str, str], list[str]]:
     """Assign finalist roles within a single group of arrangement candidates.
 
@@ -209,7 +210,7 @@ def _assign_roles_for_group(
 
 
 def assign_selection_roles(
-    candidates: list[dict],
+    candidates: list[dict[str, Any]],
 ) -> tuple[dict[str, str], list[str]]:
     """Assign finalist roles per progression candidate group.
 
@@ -220,7 +221,7 @@ def assign_selection_roles(
     Returns (roles dict {arrangement_id: role_name}, notes list).
     """
     # Group by progression_candidate_id
-    groups: dict[str, list[dict]] = {}
+    groups: dict[str, list[dict[str, Any]]] = {}
     for c in candidates:
         prog_id = c.get("progression_candidate_id", "ungrouped")
         groups.setdefault(prog_id, []).append(c)

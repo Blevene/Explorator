@@ -32,7 +32,7 @@ async def harvest_patterns(
         await callback("node_started", {"node": "harvest_patterns"})
 
     report = await harvest_session_finalists_from_state(
-        state, pattern_library_repo=repo,
+        dict(state), pattern_library_repo=repo,
     )
 
     # Happy-path domain event: only emitted when something was actually harvested.

@@ -86,15 +86,15 @@ async def harvest_session_finalists_from_state(
             "harvest_session_finalists: no genre in state for session %s; skipping",
             session_id or "?",
         )
-        skipped = [
+        skipped_missing_genre: list[SkipEntry] = [
             SkipEntry(candidate_id=cid, pattern_type="*", reason=SkipReason.MISSING_GENRE)
             for cid in selected_ids
         ]
         return HarvestReport(
             session_id=session_id,
             upserted_count=0,
-            skipped_count=len(skipped),
-            skipped_reasons=skipped,
+            skipped_count=len(skipped_missing_genre),
+            skipped_reasons=skipped_missing_genre,
         )
 
     roles: dict[str, str] = final_selection.get("selection_roles") or {}
@@ -122,7 +122,7 @@ async def harvest_session_finalists_from_state(
                 )
             )
             continue
-        progression = progressions.get(arrangement.get("progression_candidate_id"))
+        progression = progressions.get(arrangement.get("progression_candidate_id") or "")
         if progression is None:
             skipped.append(
                 SkipEntry(
@@ -142,10 +142,10 @@ async def harvest_session_finalists_from_state(
         entries = harvest_finalist(
             arrangement=arrangement,
             progression=progression,
-            voicing_plan=voicing_plans.get(arrangement.get("voicing_plan_id")),
-            bass_line=bass_lines.get(arrangement.get("bass_line_id")),
-            groove=grooves.get(arrangement.get("groove_pattern_id")),
-            melody=melodies.get(arrangement.get("melodic_complement_id")),
+            voicing_plan=voicing_plans.get(arrangement.get("voicing_plan_id") or ""),
+            bass_line=bass_lines.get(arrangement.get("bass_line_id") or ""),
+            groove=grooves.get(arrangement.get("groove_pattern_id") or ""),
+            melody=melodies.get(arrangement.get("melodic_complement_id") or ""),
             scorecard=scorecard,
             genre=genre,
             role=role,

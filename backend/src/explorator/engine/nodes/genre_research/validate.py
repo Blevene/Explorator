@@ -3,6 +3,8 @@
 import logging
 from typing import Any
 
+from pydantic import BaseModel
+
 from explorator.domain.style.schema import (
     GenreProfileYAML,
     GenreRulesYAML,
@@ -12,7 +14,7 @@ from explorator.graph.genre_research_repo import GenreResearchRepository
 
 logger = logging.getLogger(__name__)
 
-_SCHEMA_MAP = {
+_SCHEMA_MAP: dict[str, type[BaseModel]] = {
     "profile": GenreProfileYAML,
     "rules": GenreRulesYAML,
     "grammar": HarmonicGrammarYAML,

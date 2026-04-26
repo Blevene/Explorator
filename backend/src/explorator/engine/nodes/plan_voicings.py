@@ -128,7 +128,7 @@ async def plan_voicings(state: ExplorationState, *, gemini: GeminiClient) -> dic
     all_strategies: list[dict[str, Any]] = []
     all_plans: list[dict[str, Any]] = []
     for r in results:
-        if isinstance(r, Exception):
+        if isinstance(r, BaseException):
             logger.warning("Voicing generation failed for a candidate: %s", r)
             continue
         strategy_dict, plans_out = r

@@ -55,6 +55,12 @@ warn_return_any = true
 warn_unused_configs = true
 plugins = ["pydantic.mypy"]
 
+# music21 publishes no type stubs. We import it as untyped — call sites in
+# our code that use music21 may need per-call `# type: ignore[no-untyped-call]`.
+[[tool.mypy.overrides]]
+module = ["music21.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"

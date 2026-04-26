@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from neo4j import AsyncDriver
@@ -61,7 +62,7 @@ async def trigger_round(
 
     n, k = MODE_PARAMS.get(request.generation_mode, (12, 4))
 
-    initial_state = {
+    initial_state: dict[str, Any] = {
         "session_id": session_id,
         "prompt": prompt,
         "generation_mode": request.generation_mode,
