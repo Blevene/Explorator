@@ -13,13 +13,13 @@ concurrency:
 # What this workflow runs (and what it doesn't):
 #
 #  Runs on every PR + every push to main:
+#    - Frontend ESLint
 #    - Frontend type-check (via `npm run build` -> `tsc -b && vite build`)
 #    - Frontend unit tests (vitest)
 #    - Backend ruff (lint)
 #    - Backend mypy (type-check, strict mode)
 #
 #  Deliberately not running yet (pre-existing debt; opt in when cleaned up):
-#    - Frontend ESLint    (~44 errors, mostly react-hooks/exhaustive-deps)
 #    - Backend pytest     (needs a Neo4j service; conftest imports neo4j)
 #    - E2E (Playwright)   (needs Neo4j + a built frontend; doable later)
 #
@@ -43,6 +43,9 @@ jobs:
 
       - name: Install
         run: npm ci
+
+      - name: Lint
+        run: npm run lint
 
       - name: Unit tests
         run: npm run test:unit

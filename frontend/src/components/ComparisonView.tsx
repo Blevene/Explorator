@@ -62,6 +62,10 @@ export default function ComparisonView({
     .filter((a): a is ArrangementDetail => a !== undefined)
 
   // Fire-and-forget comparison recording
+  // Use a stable string key so the effect fires only when the *content* of
+  // `candidateIds` changes, not on every parent re-render that hands us a
+  // new array reference.
+  const candidateKey = candidateIds.join(",")
   useEffect(() => {
     if (comparedArrangements.length >= 2) {
       const labels: Record<string, string> = {}
@@ -75,7 +79,8 @@ export default function ComparisonView({
         labels,
       )
     }
-  }, [candidateIds.join(",")])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candidateKey])
 
   // Read comparison audio state
   const { playing: compPlaying, currentPosition: compPosition, mutedLanes, soloedLanes, trackMutes, toggleTrackMute } = useComparisonAudioStore()

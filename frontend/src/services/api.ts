@@ -50,7 +50,27 @@ export async function listGenres(): Promise<GenreListResponse> {
   return res.json();
 }
 
-export async function getGenreDetail(genreName: string): Promise<Record<string, any>> {
+export interface GenreDetail {
+  genre: string;
+  display_name?: string;
+  subgenre?: string | null;
+  version?: number;
+  harmonic_vocabulary?: string[];
+  harmonic_tendencies?: Record<string, string>;
+  voicing_tendencies?: Record<string, string>;
+  bass_tendencies?: Record<string, string>;
+  groove_tendencies?: Record<string, string>;
+  melodic_tendencies?: Record<string, string>;
+  common_devices?: string[];
+  anti_patterns?: string[];
+  experimentation_envelope?: Record<string, number>;
+  voicing_preferences?: Record<string, unknown>;
+  bass_preferences?: Record<string, unknown>;
+  // Backend may surface arbitrary extra fields (timestamps, melodic_tendencies, ids).
+  // Consumers index those via `(g as Record<string, unknown>)[key]` when needed.
+}
+
+export async function getGenreDetail(genreName: string): Promise<GenreDetail> {
   const res = await fetch(`${API_BASE}/genres/${genreName}`);
   if (!res.ok) throw new Error(`Failed to get genre: ${res.status}`);
   return res.json();
@@ -296,7 +316,10 @@ export interface GenreResearchJob {
   reference_artists: string[];
   status: string;
   research_log: string;
-  critique_trail: any[];
+  critique_trail: unknown[];
+  // Pre-validation YAML payload from the LLM — shape isn't guaranteed yet,
+  // so consumers do their own optional-chaining. Typed as `any` deliberately.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   draft_yamls: Record<string, any>;
   validation_errors?: string[];
   rejection_reason?: string | null;

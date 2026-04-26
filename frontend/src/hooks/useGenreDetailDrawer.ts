@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { getGenreDetail } from '../services/api';
+import { getGenreDetail, type GenreDetail } from '../services/api';
 
 export interface UseGenreDetailDrawerResult {
   /** The fetched genre detail, or null when no drawer is open or fetch hasn't completed. */
-  genre: Record<string, any> | null;
+  genre: GenreDetail | null;
   /** True while a fetch is in flight. */
   loading: boolean;
   /** Open the drawer for a given genre slug (writes ?detail=<slug> to URL). */
@@ -30,22 +30,27 @@ export interface UseGenreDetailDrawerResult {
 export function useGenreDetailDrawer(): UseGenreDetailDrawerResult {
   const [searchParams, setSearchParams] = useSearchParams();
   const slug = searchParams.get('detail');
-  const [genre, setGenre] = useState<Record<string, any> | null>(null);
+  const [fetched, setFetched] = useState<GenreDetail | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Derive `genre` and the in-flight loading flag from `slug` so that closing
+  // the drawer (slug -> null) doesn't require a synchronous setState in an
+  // effect. The fetch effect below only runs when slug is truthy.
+  const genre = slug ? fetched : null;
+  const effectiveLoading = slug ? loading : false;
+
   useEffect(() => {
+    if (!slug) return;
     let cancelled = false;
-    if (!slug) {
-      setGenre(null);
-      setLoading(false);
-      return;
-    }
+    // Sync external (network) state into the loading flag — legitimate
+    // "external -> UI" pattern the rule's docs explicitly allow.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     getGenreDetail(slug)
-      .then((detail) => { if (!cancelled) setGenre(detail); })
+      .then((detail) => { if (!cancelled) setFetched(detail); })
       .catch(() => {
         if (!cancelled) {
-          setGenre(null);
+          setFetched(null);
           setSearchParams((prev) => {
             const next = new URLSearchParams(prev);
             next.delete('detail');
@@ -73,5 +78,5 @@ export function useGenreDetailDrawer(): UseGenreDetailDrawerResult {
     });
   };
 
-  return { genre, loading, open, close };
+  return { genre, loading: effectiveLoading, open, close };
 }

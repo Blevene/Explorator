@@ -18,6 +18,10 @@ export default function PatternLibraryBrowser() {
   useEffect(() => {
     reset();
     void loadMore(filters);
+    // Intentionally depend on the individual filter fields rather than
+    // `filters` itself — the store reference can change identity on
+    // unrelated updates and would re-fire the load every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.genre, filters.pattern_type, filters.curated_only, reset, loadMore]);
 
   const showEmpty = !loading && items.length === 0;
