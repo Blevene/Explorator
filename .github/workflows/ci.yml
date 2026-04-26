@@ -18,9 +18,9 @@ concurrency:
 #    - Frontend unit tests (vitest)
 #    - Backend ruff (lint)
 #    - Backend mypy (type-check, strict mode)
+#    - Backend pytest (against a Neo4j service container)
 #
 #  Deliberately not running yet (pre-existing debt; opt in when cleaned up):
-#    - Backend pytest     (needs a Neo4j service; conftest imports neo4j)
 #    - E2E (Playwright)   (needs Neo4j + a built frontend; doable later)
 #
 # The local Makefile + frontend/package.json scripts cover those for devs.
@@ -78,3 +78,48 @@ jobs:
 
       - name: Mypy
         run: uv run mypy src
+
+  backend-test:
+    name: Backend (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      # Test Neo4j on port 7689 to match the local docker-compose `neo4j-test`
+      # service and conftest defaults. Auth password matches NEO4J_TEST_PASSWORD.
+      neo4j:
+        image: neo4j:5-community
+        ports:
+          - 7689:7687
+        env:
+          NEO4J_AUTH: neo4j/explorator_test
+          NEO4J_PLUGINS: '[]'
+        # Probe the HTTP listener — Neo4j brings it up alongside bolt, and
+        # wget ships in the neo4j:5-community image. `--health-start-period`
+        # gives the JVM a head start before the first probe counts.
+        options: >-
+          --health-cmd "wget --quiet --spider http://localhost:7474 || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 20
+          --health-start-period 30s
+    env:
+      NEO4J_TEST_URI: bolt://localhost:7689
+      NEO4J_TEST_PASSWORD: explorator_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Sync deps
+        run: uv sync --all-extras
+
+      - name: Pytest
+        run: uv run pytest -q
