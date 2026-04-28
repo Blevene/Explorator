@@ -1,4 +1,4 @@
-.PHONY: dev test lint neo4j-up neo4j-down neo4j-test-up neo4j-test-down sync-genres backend frontend e2e e2e-headed
+.PHONY: dev test lint neo4j-up neo4j-down neo4j-test-up neo4j-test-down sync-genres backend frontend e2e e2e-headed screenshots
 
 # Infrastructure
 neo4j-up:
@@ -48,3 +48,10 @@ e2e:
 
 e2e-headed:
 	cd e2e && npx playwright test --headed
+
+# Regenerate the README screenshots in docs/images/ by driving the live
+# dev stack through a real session. Requires `make neo4j-up`, `make backend`,
+# and a running frontend on :5173 (with VITE_API_TARGET=http://localhost:8000).
+# Hits the real Gemini API — takes ~3 minutes for four screenshots.
+screenshots:
+	cd e2e && npx playwright test capture-screenshots.spec.ts --config capture.config.ts

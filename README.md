@@ -2,6 +2,8 @@
 
 A creative copilot for music producers. Generate chord progressions, realize them into voiced arrangements with bass / groove / melody, evaluate and rank the results, mutate promising candidates, and build a personal library of curated patterns over time.
 
+![Explorator — realized arrangement with piano roll](docs/images/02-realization-piano-roll.png)
+
 ## What it does
 
 **Create**
@@ -56,6 +58,8 @@ Concretely, you type a genre name (e.g. *"Trip-Hop"*), optionally add reference 
 5. **Validates** the final result against the schema and surfaces the result for you to **approve** (write to disk, immediately usable for new sessions) or **reject** (logged to the audit trail with the reason).
 
 Approved genres land in the same three directories as the seed genres and become available for new sessions on the next backend reload — no special handling, no separate code path. The UI's step indicator + research-log view lets you watch the pipeline run live; the audit trail of critique iterations is preserved on the job record so you can see *why* a genre took the shape it did.
+
+![Genre research — five-step pipeline live](docs/images/04-genre-research.png)
 
 ## Status
 
@@ -114,9 +118,14 @@ The pytest suite wipes the DB between tests, so it runs against a dedicated `neo
 
 1. **Create a session** — prompt like *"Dream pop in A major, wistful and haunted"*.
 2. **Generate** (mode: conservative / balanced / exploratory). Watch the SSE pipeline progress; candidate cards appear with chord symbols, Roman numerals, scores, and rationale.
+
+   ![Session workspace — generated candidates](docs/images/01-session-workspace.png)
+
 3. **Realize** a candidate → voicings, bass, groove, and melody are generated and evaluated. Three finalists surface with role badges.
 4. **Play** an arrangement with genre-matched synth. Mute/unmute voicing, bass, groove, melody independently.
 5. **Compare** two or three finalists in DAW-style lane view with synchronized transport.
+
+   ![Comparison view — two arrangements with score breakdown](docs/images/03-comparison-view.png)
 6. **Submit feedback** in plain text — the scorer reweights and you can launch the next round.
 7. **Mutate** a promising candidate to explore substitutions / extensions / transformations.
 8. **Export** as MIDI + JSON with explanation and provenance trace.
