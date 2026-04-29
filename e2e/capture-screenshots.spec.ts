@@ -81,6 +81,26 @@ async function realizeAndBack(page: Page, idx: number): Promise<void> {
   await page.waitForTimeout(600);
 }
 
+/**
+ * Reject any leftover pending-review research jobs so the genre library
+ * shot doesn't lead with a stack of stale "Pending Review" tiles from
+ * previous capture runs.
+ */
+async function rejectPendingDrafts(): Promise<void> {
+  const res = await fetch(`${BACKEND}/v1/genres/drafts`);
+  if (!res.ok) return;
+  const data = (await res.json()) as { items?: Array<{ job_id: string }> };
+  const jobs = data.items ?? [];
+  for (const j of jobs) {
+    await fetch(`${BACKEND}/v1/genres/drafts/${j.job_id}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: 'screenshot test cleanup' }),
+    }).catch(() => { /* best-effort */ });
+  }
+  if (jobs.length > 0) console.log(`  cleaned up ${jobs.length} stale pending drafts`);
+}
+
 test('capture README screenshots', async ({ page }) => {
   test.setTimeout(15 * 60 * 1000); // 15-minute budget for real Gemini calls
 
@@ -88,15 +108,17 @@ test('capture README screenshots', async ({ page }) => {
   console.log(`backend:  ${BACKEND}`);
   console.log(`out:      ${OUT_DIR}\n`);
 
+  await rejectPendingDrafts();
+
   // ── 1. Session workspace with generated progressions ────────────────────
-  console.log('[1/4] Session workspace with generated progressions');
+  console.log('[1/6] Session workspace with generated progressions');
   const sessionId = await createSessionViaApi();
   console.log(`  session: ${sessionId}`);
   await openSessionAndGenerate(page, sessionId);
   await shoot(page, '01-session-workspace');
 
   // ── 2. Realized arrangement with piano roll ─────────────────────────────
-  console.log('[2/4] Realized arrangement with piano roll');
+  console.log('[2/6] Realized arrangement with piano roll');
   await page.getByRole('button', { name: /view arrangements/i }).first().click();
   await page.locator('canvas').first().waitFor({ timeout: 90_000 });
   await page.waitForTimeout(1500);
@@ -107,7 +129,7 @@ test('capture README screenshots', async ({ page }) => {
   await realizeAndBack(page, 1);
 
   // ── 3. Comparison view ──────────────────────────────────────────────────
-  console.log('[3/4] Comparison view');
+  console.log('[3/6] Comparison view');
   for (let i = 0; i < 2; i++) {
     const compareBtn = page.getByRole('button', { name: 'Compare', exact: true }).first();
     await compareBtn.click();
@@ -136,11 +158,32 @@ test('capture README screenshots', async ({ page }) => {
     await shoot(page, '03-comparison-view');
   }
 
-  // ── 4. Genre research progress view ─────────────────────────────────────
+  // ── 4. Genre library (the catalog grid) ─────────────────────────────────
+  // Reject pending drafts again — a prior run's step-6 research may have
+  // landed in pending_review *after* its capture exited (research is async
+  // on the backend), leaving the library page topped with a stale tile.
+  await rejectPendingDrafts();
+  console.log('[4/6] Genre library');
+  await page.goto(`${FRONTEND}/genres`, { waitUntil: 'domcontentloaded' });
+  // Wait for at least a few genre tiles to render
+  await page.getByText('Dream Pop').first().waitFor({ timeout: 15_000 });
+  await page.waitForTimeout(800);
+  await shoot(page, '04-genre-library');
+
+  // ── 5. Genre detail drawer (rules + vocabulary for a single genre) ──────
+  // Drawer state lives in `?detail=<slug>` so we can deep-link directly.
+  console.log('[5/6] Genre detail drawer');
+  await page.goto(`${FRONTEND}/genres?detail=dream_pop`, { waitUntil: 'domcontentloaded' });
+  // The drawer's heading "Dream Pop" appears once data loads.
+  await page.getByRole('heading', { name: /Dream Pop/i }).first().waitFor({ timeout: 15_000 });
+  await page.waitForTimeout(1000);
+  await shoot(page, '05-genre-detail');
+
+  // ── 6. Genre research progress view ─────────────────────────────────────
   // The progress view is a component-local state inside GenreManagement —
   // it only renders after clicking "Research New Genre" and submitting the
   // form, not by visiting `/genres` while a job runs in the background.
-  console.log('[4/4] Genre research progress');
+  console.log('[6/6] Genre research progress');
   await page.goto(`${FRONTEND}/genres`, { waitUntil: 'domcontentloaded' });
   await page.getByRole('button', { name: /research new genre/i }).click();
   await page.locator('input[placeholder*="Shoegaze"]').fill(RESEARCH_GENRE);
@@ -151,7 +194,7 @@ test('capture README screenshots', async ({ page }) => {
   // alive in the screenshot.
   await page.getByText('Research', { exact: true }).first().waitFor({ timeout: 30_000 });
   await page.waitForTimeout(5000);
-  await shoot(page, '04-genre-research');
+  await shoot(page, '06-genre-research');
 
   console.log('\ndone');
 });

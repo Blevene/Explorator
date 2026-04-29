@@ -13,6 +13,8 @@ A creative copilot for music producers. Generate chord progressions, realize the
 - Score arrangements across 12 dimensions (deterministic music theory + Gemini)
 - Mutate promising candidates: substitute, extend, transform — guided by user feedback
 
+![Session workspace — generated candidates with chord symbols, intent tags, and scores](docs/images/01-session-workspace.png)
+
 **Refine**
 - Multi-round exploration with per-round finalists (safest / best-loop / most-experimental)
 - Plain-text feedback reweights the scorer across rounds
@@ -23,6 +25,8 @@ A creative copilot for music producers. Generate chord progressions, realize the
 - Tone.js playback with genre-matched synth presets
 - DAW-style comparison view: load multiple finalists into mute/solo lanes with synchronized transport
 
+![DAW-style comparison view — two arrangements side by side with score breakdown](docs/images/03-comparison-view.png)
+
 **Export & curate**
 - MIDI + JSON export of any arrangement, with Gemini-generated explanation and full provenance trace
 - Pattern library: every finalist auto-harvests its progression, voicing, bass, groove, and melody patterns
@@ -30,7 +34,13 @@ A creative copilot for music producers. Generate chord progressions, realize the
 
 ## The genre catalog
 
-40+ genres ship with the system. Each genre is a triplet of YAML files that together drive every musical decision the engine makes:
+40+ genres ship with the system. Browse them in `/genres`; click any tile to open a side drawer with the genre's harmonic vocabulary, tendencies, anti-patterns, and voicing/bass/groove preferences.
+
+![Genre library — installed genres at a glance](docs/images/04-genre-library.png)
+
+![Genre detail drawer — vocabulary, tendencies, and rules for a single genre](docs/images/05-genre-detail.png)
+
+Each genre is a triplet of YAML files that together drive every musical decision the engine makes:
 
 | File | What it captures | Used by |
 |---|---|---|
@@ -59,7 +69,7 @@ Concretely, you type a genre name (e.g. *"Trip-Hop"*), optionally add reference 
 
 Approved genres land in the same three directories as the seed genres and become available for new sessions on the next backend reload — no special handling, no separate code path. The UI's step indicator + research-log view lets you watch the pipeline run live; the audit trail of critique iterations is preserved on the job record so you can see *why* a genre took the shape it did.
 
-![Genre research — five-step pipeline live](docs/images/04-genre-research.png)
+![Genre research — five-step pipeline live](docs/images/06-genre-research.png)
 
 ## Status
 
@@ -118,14 +128,9 @@ The pytest suite wipes the DB between tests, so it runs against a dedicated `neo
 
 1. **Create a session** — prompt like *"Dream pop in A major, wistful and haunted"*.
 2. **Generate** (mode: conservative / balanced / exploratory). Watch the SSE pipeline progress; candidate cards appear with chord symbols, Roman numerals, scores, and rationale.
-
-   ![Session workspace — generated candidates](docs/images/01-session-workspace.png)
-
 3. **Realize** a candidate → voicings, bass, groove, and melody are generated and evaluated. Three finalists surface with role badges.
 4. **Play** an arrangement with genre-matched synth. Mute/unmute voicing, bass, groove, melody independently.
 5. **Compare** two or three finalists in DAW-style lane view with synchronized transport.
-
-   ![Comparison view — two arrangements with score breakdown](docs/images/03-comparison-view.png)
 6. **Submit feedback** in plain text — the scorer reweights and you can launch the next round.
 7. **Mutate** a promising candidate to explore substitutions / extensions / transformations.
 8. **Export** as MIDI + JSON with explanation and provenance trace.
