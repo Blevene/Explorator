@@ -13,6 +13,7 @@ from explorator.domain.style.loader import (
     load_rules_from_yaml,
 )
 from explorator.graph.style_repo import StyleRepository
+from explorator.persistence.memory_repos import MemoryStyleRepo
 
 
 def _resolve_style_dir() -> Path:
@@ -33,11 +34,37 @@ def _resolve_style_dir() -> Path:
 STYLE_DIR = _resolve_style_dir()
 
 
-class StyleService:
-    """Retrieves genre profiles, rules, and grammars from Neo4j."""
+def load_genre_profiles_from_yaml() -> list[dict[str, Any]]:
+    """Load every genre profile from the YAML catalog.
 
-    def __init__(self, driver: AsyncDriver) -> None:
-        self.repo = StyleRepository(driver)
+    Returns the same per-profile dict shape `sync_genres_to_neo4j` upserts and
+    `StyleRepository.list_genre_profiles` yields: the `GenreProfileYAML` fields
+    plus the stamped `id`/`type`/`status`. Pure (no I/O beyond reading YAML, no
+    database); used by both the Neo4j sync and `MemoryStyleRepo`.
+    """
+    profiles: list[dict[str, Any]] = []
+    for genre_name in discover_genres(STYLE_DIR):
+        profile = load_genre_from_yaml(STYLE_DIR / "genres" / f"{genre_name}.yaml")
+        profile_data = profile.model_dump(mode="json")
+        profile_data["id"] = f"genre_{genre_name}_01"
+        profile_data["type"] = "genre_profile"
+        profile_data["status"] = "active"
+        profiles.append(profile_data)
+    return profiles
+
+
+class StyleService:
+    """Retrieves genre profiles, rules, and grammars.
+
+    With a driver it reads from Neo4j; with `driver=None` it serves genre
+    profiles straight from YAML (memory mode) and `sync_genres_to_neo4j` no-ops.
+    """
+
+    def __init__(self, driver: AsyncDriver | None) -> None:
+        self._driver = driver
+        self.repo: StyleRepository | MemoryStyleRepo = (
+            MemoryStyleRepo() if driver is None else StyleRepository(driver)
+        )
 
     async def get_genre_profile(self, genre: str) -> dict[str, Any] | None:
         """Get a genre profile by genre name."""
@@ -48,7 +75,13 @@ class StyleService:
         return await self.repo.list_genre_profiles()
 
     async def sync_genres_to_neo4j(self) -> int:
-        """Load all genre YAML files and sync to Neo4j. Returns count synced."""
+        """Load all genre YAML files and sync to Neo4j. Returns count synced.
+
+        No-op returning 0 in memory mode (driver is None).
+        """
+        if self._driver is None:
+            return 0
+        repo = StyleRepository(self._driver)
         genre_names = discover_genres(STYLE_DIR)
         count = 0
 
@@ -61,7 +94,7 @@ class StyleService:
             profile_data["id"] = genre_id
             profile_data["type"] = "genre_profile"
             profile_data["status"] = "active"
-            await self.repo.upsert_genre_profile(genre_id, profile_data)
+            await repo.upsert_genre_profile(genre_id, profile_data)
 
             # Load and sync rules
             rules_path = STYLE_DIR / "rules" / f"{genre_name}_rules.yaml"
@@ -74,7 +107,7 @@ class StyleService:
                     rule_data["type"] = "genre_rule"
                     rule_data["status"] = "active"
                     rule_data["genre"] = genre_name
-                    await self.repo.upsert_genre_rule(rule_id, genre_id, rule_data)
+                    await repo.upsert_genre_rule(rule_id, genre_id, rule_data)
 
                 for i, ap in enumerate(rules.anti_patterns):
                     ap_id = f"anti_{genre_name}_{i:03d}"
@@ -83,7 +116,7 @@ class StyleService:
                     ap_data["type"] = "anti_pattern"
                     ap_data["status"] = "active"
                     ap_data["genre"] = genre_name
-                    await self.repo.upsert_anti_pattern(ap_id, genre_id, ap_data)
+                    await repo.upsert_anti_pattern(ap_id, genre_id, ap_data)
 
             # Load and sync grammar
             grammar_path = STYLE_DIR / "grammars" / f"{genre_name}_grammar.yaml"
@@ -95,7 +128,7 @@ class StyleService:
                 grammar_data["type"] = "harmonic_grammar"
                 grammar_data["status"] = "active"
                 grammar_data["genre_profile_id"] = genre_id
-                await self.repo.upsert_harmonic_grammar(grammar_id, genre_id, grammar_data)
+                await repo.upsert_harmonic_grammar(grammar_id, genre_id, grammar_data)
 
             count += 1
 
