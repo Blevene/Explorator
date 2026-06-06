@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGenreResearchStore } from '../stores/genreResearchStore';
+import { useCapabilitiesStore } from '../stores/capabilitiesStore';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useGenreDetailDrawer } from '../hooks/useGenreDetailDrawer';
 import { logError } from '../lib/log';
@@ -266,6 +267,7 @@ export default function GenreManagement() {
     reset,
   } = useGenreResearchStore();
 
+  const canResearch = useCapabilitiesStore((s) => s.can)('genre_research');
   const [view, setView] = useState<ViewState>('library');
   const [showForm, setShowForm] = useState(false);
   const [genreName, setGenreName] = useState('');
@@ -378,19 +380,21 @@ export default function GenreManagement() {
           </p>
         </div>
 
-        {/* Actions */}
-        <div className="mb-8 flex items-center gap-4">
-          <button
-            onClick={() => setShowForm((v) => !v)}
-            className="px-5 py-2 rounded-lg font-medium text-sm transition-all"
-            style={{ background: 'var(--accent-primary)', color: 'var(--surface-0)' }}
-          >
-            Research New Genre
-          </button>
-        </div>
+        {/* Actions — genre research requires the database (hidden in limited mode) */}
+        {canResearch && (
+          <div className="mb-8 flex items-center gap-4">
+            <button
+              onClick={() => setShowForm((v) => !v)}
+              className="px-5 py-2 rounded-lg font-medium text-sm transition-all"
+              style={{ background: 'var(--accent-primary)', color: 'var(--surface-0)' }}
+            >
+              Research New Genre
+            </button>
+          </div>
+        )}
 
         {/* Inline request form */}
-        {showForm && (
+        {canResearch && showForm && (
           <div
             className="rounded-xl p-5 mb-8 card-animated"
             style={{ background: 'var(--surface-2)', border: '1px solid var(--border-subtle)' }}
@@ -451,7 +455,7 @@ export default function GenreManagement() {
         )}
 
         {/* Pending drafts */}
-        {pendingDrafts.length > 0 && (
+        {canResearch && pendingDrafts.length > 0 && (
           <div className="mb-6">
             <h2
               className="text-xs font-medium uppercase tracking-widest mb-3"

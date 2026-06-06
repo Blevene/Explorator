@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { PatternItem } from '../../api/types';
 import { usePatternLibraryStore } from '../../stores/patternLibraryStore';
+import { useCapabilitiesStore } from '../../stores/capabilitiesStore';
 import { StarButton } from '../StarButton';
 import Dialog from '../Dialog';
 
@@ -16,6 +17,7 @@ function shortHash(id: string): string {
 export function PatternCard({ pattern, onDelete }: Props) {
   const score = pattern.success_metrics.weighted_total ?? 0;
   const toggleCuration = usePatternLibraryStore((s) => s.toggleCuration);
+  const can = useCapabilitiesStore((s) => s.can);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const handleDelete = () => setConfirmOpen(true);
   const confirmDelete = () => {
@@ -57,6 +59,8 @@ export function PatternCard({ pattern, onDelete }: Props) {
         <div className="flex items-center gap-1">
           <StarButton
             isCurated={pattern.is_curated}
+            disabled={!can('curation')}
+            disabledTitle="Curation requires the database (limited mode)"
             onToggle={(next) => {
               void toggleCuration(pattern.source_candidate_id, next).catch(() => {
                 // Store already toasts on failure; swallow.

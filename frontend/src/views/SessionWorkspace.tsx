@@ -17,12 +17,14 @@ import ExportModal from '../components/ExportModal';
 import ComparisonView from '../components/ComparisonView';
 import SessionHistory from '../components/SessionHistory';
 import { useExportStore } from '../stores/exportStore';
+import { useCapabilitiesStore } from '../stores/capabilitiesStore';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import * as audioEngine from '../services/audioEngine';
 
 export default function SessionWorkspace() {
   const { id } = useParams<{ id: string }>();
   const [session, setSession] = useState<SessionSummary | null>(null);
+  const can = useCapabilitiesStore((s) => s.can);
   useDocumentTitle(session?.prompt ?? 'Session');
   const [prompt, setPrompt] = useState('');
   const [generationMode, setGenerationMode] = useState('balanced');
@@ -352,10 +354,12 @@ export default function SessionWorkspace() {
             )
           )}
 
-          <LineageTree
-            candidates={candidates}
-            onSelectCandidate={(cid) => handleRealize(cid)}
-          />
+          {can('lineage') && (
+            <LineageTree
+              candidates={candidates}
+              onSelectCandidate={(cid) => handleRealize(cid)}
+            />
+          )}
 
           {/* Comparison view */}
           {showComparison && (
@@ -419,7 +423,7 @@ export default function SessionWorkspace() {
       )}
 
       {/* Session history */}
-      {id && <SessionHistory sessionId={id} />}
+      {id && can('session_history') && <SessionHistory sessionId={id} />}
     </div>
   );
 }

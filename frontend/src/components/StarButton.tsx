@@ -3,12 +3,17 @@ import { useEffect, useRef, useState } from 'react';
 interface Props {
   isCurated: boolean | null;
   onToggle: (nextState: boolean) => void;
+  // External disable (e.g. limited mode where curation requires the database).
+  // Suppresses onToggle and dims the control, same as the null-isCurated case.
+  disabled?: boolean;
+  // Tooltip override used when the control is externally disabled.
+  disabledTitle?: string;
 }
 
 const DEBOUNCE_MS = 300;
 
-export function StarButton({ isCurated, onToggle }: Props) {
-  const disabled = isCurated === null;
+export function StarButton({ isCurated, onToggle, disabled: disabledProp = false, disabledTitle }: Props) {
+  const disabled = isCurated === null || disabledProp;
   const label = isCurated ? 'Remove from curated' : 'Mark as curated';
   const filled = isCurated === true;
   const [busy, setBusy] = useState(false);
@@ -34,7 +39,15 @@ export function StarButton({ isCurated, onToggle }: Props) {
       disabled={disabled}
       aria-label={label}
       aria-pressed={isCurated === true}
-      title={disabled ? 'Available after the round completes' : label}
+      title={
+        disabled
+          ? disabledProp && disabledTitle
+            ? disabledTitle
+            : isCurated === null
+              ? 'Available after the round completes'
+              : (disabledTitle ?? label)
+          : label
+      }
       className="p-1 rounded transition-opacity"
       style={{
         color: 'var(--accent-primary)',

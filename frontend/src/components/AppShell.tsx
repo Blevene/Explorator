@@ -1,8 +1,16 @@
 import { NavLink, Link, Outlet } from 'react-router-dom';
+import { useCapabilitiesStore } from '../stores/capabilitiesStore';
 
-const NAV_ITEMS = [
+interface NavItem {
+  to: string;
+  label: string;
+  // Feature flag gating this entry; omitted entries are always shown.
+  feature?: string;
+}
+
+const NAV_ITEMS: NavItem[] = [
   { to: '/genres', label: 'Genres' },
-  { to: '/patterns', label: 'Patterns' },
+  { to: '/patterns', label: 'Patterns', feature: 'pattern_library' },
 ];
 
 function navLinkClass({ isActive }: { isActive: boolean }) {
@@ -14,7 +22,32 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
     : `${base} text-[var(--text-muted)] hover:text-[var(--accent-primary)] focus-visible:text-[var(--accent-primary)]`;
 }
 
+function LimitedModeBanner() {
+  return (
+    <div
+      role="status"
+      data-testid="limited-mode-banner"
+      className="px-6 py-2 text-xs text-center"
+      style={{
+        background: 'var(--score-mid-faint)',
+        borderBottom: '1px solid var(--score-mid)',
+        color: 'var(--score-mid)',
+      }}
+    >
+      <span style={{ color: 'var(--text-secondary)' }}>
+        <strong style={{ color: 'var(--score-mid)' }}>Limited mode</strong>
+        {' — long-term memory is off (pattern library, history, lineage, and learning are '}
+        disabled). Generation works normally.
+      </span>
+    </div>
+  );
+}
+
 export default function AppShell() {
+  const can = useCapabilitiesStore((s) => s.can);
+  const isMemoryMode = useCapabilitiesStore((s) => s.isMemoryMode);
+  const visibleNav = NAV_ITEMS.filter((item) => !item.feature || can(item.feature));
+
   return (
     <div className="min-h-dvh flex flex-col">
       <header
@@ -33,7 +66,7 @@ export default function AppShell() {
         </Link>
         <nav aria-label="Primary">
           <ul className="flex items-center gap-2">
-            {NAV_ITEMS.map((item) => (
+            {visibleNav.map((item) => (
               <li key={item.to}>
                 <NavLink to={item.to} className={navLinkClass}>
                   {item.label}
@@ -43,6 +76,7 @@ export default function AppShell() {
           </ul>
         </nav>
       </header>
+      {isMemoryMode() && <LimitedModeBanner />}
       <main id="main" className="flex-1">
         <Outlet />
       </main>

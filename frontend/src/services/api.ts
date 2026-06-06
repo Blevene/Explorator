@@ -1,5 +1,16 @@
 const API_BASE = '/v1';
 
+export interface Capabilities {
+  persistence_mode: 'neo4j' | 'memory';
+  features: Record<string, boolean>;
+}
+
+export async function getCapabilities(): Promise<Capabilities> {
+  const res = await fetch(`${API_BASE}/capabilities`);
+  if (!res.ok) throw new Error(`Failed to fetch capabilities: ${res.status}`);
+  return res.json();
+}
+
 export interface SessionSummary {
   session_id: string;
   status: string;
