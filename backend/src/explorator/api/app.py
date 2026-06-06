@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from explorator.api.middleware import AuthStubMiddleware
 from explorator.api.routes import candidates, genres, rounds, sessions
+from explorator.api.routes.capabilities import router as capabilities_router
 from explorator.api.routes.comparisons import router as comparisons_router
 from explorator.api.routes.explanations import router as explanations_router
 from explorator.api.routes.exports import router as exports_router
@@ -16,25 +17,28 @@ from explorator.api.routes.genre_research import router as genre_research_router
 from explorator.api.routes.mutations import router as mutations_router
 from explorator.api.routes.patterns import router as patterns_router
 from explorator.api.routes.realization_rounds import router as realization_router
-from explorator.graph.connection import close_driver, get_driver
-from explorator.graph.schema import init_schema
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Application lifespan: init Neo4j schema and sync genres on startup."""
+    """Init Neo4j schema + sync genres if reachable; else run in memory mode."""
     import logging
 
+    from explorator.graph.connection import close_driver, probe_driver
+
     logger = logging.getLogger(__name__)
-    driver = await get_driver()
-    await init_schema(driver)
+    driver = await probe_driver()
+    if driver is not None:
+        from explorator.domain.style.service import StyleService
+        from explorator.graph.schema import init_schema
 
-    # Sync genre YAML files to Neo4j
-    from explorator.domain.style.service import StyleService
-
-    style_service = StyleService(driver)
-    count = await style_service.sync_genres_to_neo4j()
-    logger.info("Synced %d genre profiles to Neo4j", count)
+        await init_schema(driver)
+        count = await StyleService(driver).sync_genres_to_neo4j()
+        logger.info("Neo4j mode — synced %d genre profiles", count)
+        app.state.persistence_mode = "neo4j"
+    else:
+        logger.warning("In-memory mode — long-term memory features disabled")
+        app.state.persistence_mode = "memory"
 
     yield
     await close_driver()
@@ -58,6 +62,7 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(AuthStubMiddleware)
 
+    app.include_router(capabilities_router, prefix="/v1")
     app.include_router(sessions.router, prefix="/v1")
     app.include_router(
         genre_research_router, prefix="/v1"
