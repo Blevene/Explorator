@@ -7,14 +7,10 @@ from neo4j import AsyncDriver
 from pydantic import BaseModel, Field
 
 from explorator.api.deps import get_neo4j_driver
-from explorator.graph.repository import BaseRepository
+from explorator.persistence.factory import make_candidate_repo
 from explorator.utils import parse_json_or_dict
 
 router = APIRouter(tags=["candidates"])
-
-
-class CandidateRepo(BaseRepository):
-    label = "ProgressionCandidate"
 
 
 class ChordEventResponse(BaseModel):
@@ -60,10 +56,10 @@ def _parse_json_field(value: str | list[object] | None) -> list[object]:
 @router.get("/sessions/{session_id}/candidates")
 async def list_candidates(
     session_id: str,
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> CandidateListResponse:
     """List all progression candidates for a session."""
-    repo = CandidateRepo(driver)
+    repo = make_candidate_repo(driver)
     all_candidates = await repo.query_by_property("session_id", session_id)
     candidates = [c for c in all_candidates if c.get("status") != "dismissed"]
 
@@ -111,10 +107,10 @@ async def list_candidates(
 @router.get("/candidates/{candidate_id}")
 async def get_candidate(
     candidate_id: str,
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> CandidateSummary:
     """Get a single candidate by ID."""
-    repo = CandidateRepo(driver)
+    repo = make_candidate_repo(driver)
     c = await repo.get_by_id(candidate_id)
     if c is None:
         raise HTTPException(status_code=404, detail="Candidate not found")
@@ -137,17 +133,13 @@ async def get_candidate(
 @router.patch("/candidates/{candidate_id}/dismiss", status_code=200)
 async def dismiss_candidate(
     candidate_id: str,
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> dict[str, str]:
-    """Mark a candidate as dismissed in Neo4j."""
-    repo = CandidateRepo(driver)
+    """Mark a candidate as dismissed. Works in both Neo4j and memory mode."""
+    repo = make_candidate_repo(driver)
     candidate = await repo.get_by_id(candidate_id)
     if candidate is None:
         raise HTTPException(status_code=404, detail="Candidate not found")
 
-    async with driver.session() as session:
-        await session.run(
-            "MATCH (n:ProgressionCandidate {id: $id}) SET n.status = 'dismissed'",
-            id=candidate_id,
-        )
+    await repo.update_status(candidate_id, "dismissed")
     return {"status": "dismissed"}

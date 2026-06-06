@@ -8,13 +8,10 @@ Full flow: parse_intent → load_genre → generate → evaluate_progressions
 """
 
 from functools import partial
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any
 
 from langgraph.graph import END, StateGraph
 from neo4j import AsyncDriver
-
-if TYPE_CHECKING:
-    from explorator.graph.pattern_library_repo import PatternLibraryRepo
 
 from explorator.adapters.gemini import GeminiClient
 from explorator.engine.nodes.assemble_arrangements import assemble_arrangements
@@ -106,8 +103,8 @@ def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver | None) ->
 
     # M5d-1: auto-harvest finalist patterns between persist_realization and persist_round.
     # In memory mode this is a NullPatternLibraryRepo (no-op upsert → 0 harvested);
-    # cast keeps the harvest_patterns signature unchanged (widened in Task 4.4).
-    pattern_repo = cast("PatternLibraryRepo", make_pattern_library_repo(driver))
+    # harvest_patterns accepts either repo type.
+    pattern_repo = make_pattern_library_repo(driver)
     graph.add_node("harvest_patterns", partial(harvest_patterns, repo=pattern_repo))
 
     # Persistence

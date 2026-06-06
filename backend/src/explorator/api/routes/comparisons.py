@@ -8,8 +8,8 @@ from pydantic import BaseModel
 from ulid import ULID
 
 from explorator.api.deps import get_neo4j_driver
-from explorator.graph.comparison_view_repo import ComparisonViewRepo
 from explorator.models.export import ComparisonView
+from explorator.persistence.factory import make_comparison_view_repo
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["comparisons"])
@@ -27,7 +27,7 @@ class ComparisonRequestBody(BaseModel):
 async def record_comparison(
     session_id: str,
     body: ComparisonRequestBody,
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> dict[str, str]:
     """Record a comparison event for provenance.
 
@@ -51,22 +51,24 @@ async def record_comparison(
         labels=body.labels,
     )
 
-    repo = ComparisonViewRepo(driver)
+    repo = make_comparison_view_repo(driver)
     try:
         await repo.create(comparison)
 
-        # Create relationships: (ComparisonView)-[:COMPARES]->(ArrangementCandidate)
-        async with driver.session() as neo_session:
-            for cid in body.candidate_ids:
-                await neo_session.run(
-                    """
-                    MATCH (cv:ComparisonView {id: $cv_id})
-                    MATCH (ac:ArrangementCandidate {id: $ac_id})
-                    MERGE (cv)-[:COMPARES]->(ac)
-                    """,
-                    cv_id=comparison_id,
-                    ac_id=cid,
-                )
+        # Create relationships: (ComparisonView)-[:COMPARES]->(ArrangementCandidate).
+        # Memory mode: the comparison record is a no-op and there are no edges.
+        if driver is not None:
+            async with driver.session() as neo_session:
+                for cid in body.candidate_ids:
+                    await neo_session.run(
+                        """
+                        MATCH (cv:ComparisonView {id: $cv_id})
+                        MATCH (ac:ArrangementCandidate {id: $ac_id})
+                        MERGE (cv)-[:COMPARES]->(ac)
+                        """,
+                        cv_id=comparison_id,
+                        ac_id=cid,
+                    )
     except Exception:
         logger.exception("Failed to persist comparison view %s", comparison_id)
         raise HTTPException(status_code=500, detail="Failed to record comparison") from None

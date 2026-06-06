@@ -12,7 +12,6 @@ from typing import Any
 from neo4j.exceptions import Neo4jError
 
 from explorator.domain.memory.pattern_harvesting import harvest_finalist
-from explorator.graph.pattern_library_repo import PatternLibraryRepo
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +58,7 @@ def _index_by_id(items: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
 async def harvest_session_finalists_from_state(
     state: dict[str, Any],
     *,
-    pattern_library_repo: PatternLibraryRepo,
+    pattern_library_repo: Any,  # PatternLibraryRepo | NullPatternLibraryRepo
 ) -> HarvestReport:
     """Harvest patterns from a LangGraph state dict.
 
@@ -198,7 +197,9 @@ class HarvestRepos:
     is reconstructed from state or from the ArrangementCandidateRepo's metadata.
     """
 
-    pattern_library: PatternLibraryRepo
+    # PatternLibraryRepo in Neo4j mode; NullPatternLibraryRepo (no-op upsert) in
+    # memory mode — both expose .upsert(), the only method harvest calls here.
+    pattern_library: Any  # PatternLibraryRepo | NullPatternLibraryRepo
     arrangement_candidate: Any  # ArrangementCandidateRepo (imported at call site)
     bass_line: Any  # BassLineRepo
     voicing_plan: Any  # VoicingPlanRepo

@@ -1,0 +1,238 @@
+"""Memory-mode (Neo4j-absent) API endpoint behaviour.
+
+Uses the `client_memory` fixture (forces `persistence_mode == "memory"` by
+patching `probe_driver`→None before lifespan). Contract: generation-path reads
+work off the in-memory store; learning/recall endpoints return empty/neutral with
+200 — never 500. Curation degrades to 409.
+
+`client_memory` is a synchronous `TestClient`, so these tests are sync.
+"""
+import pytest
+
+from explorator.persistence.memory_store import get_memory_store
+
+
+@pytest.fixture(autouse=True)
+def _mock_gemini(monkeypatch):
+    """Use the fake Gemini client so routes with a `gemini` dep can resolve it.
+
+    `get_gemini_client` is lru_cached, so clear it after setting the env var.
+    """
+    from explorator.api.deps import get_gemini_client
+
+    monkeypatch.setenv("GEMINI_MOCK", "true")
+    get_gemini_client.cache_clear()
+    yield
+    get_gemini_client.cache_clear()
+
+
+@pytest.fixture(autouse=True)
+def _clean_store():
+    """Isolate the process-singleton MemoryStore between tests."""
+    get_memory_store().clear()
+    yield
+    get_memory_store().clear()
+
+
+def test_create_then_list_sessions(client_memory):
+    resp = client_memory.post(
+        "/v1/sessions", json={"mode": "full_exploration", "prompt": "dreamy pad"}
+    )
+    assert resp.status_code == 201
+    session_id = resp.json()["session_id"]
+    assert session_id
+
+    listed = client_memory.get("/v1/sessions")
+    assert listed.status_code == 200
+    ids = [s["session_id"] for s in listed.json()["items"]]
+    assert session_id in ids
+
+
+def test_get_session_roundtrip(client_memory):
+    session_id = client_memory.post(
+        "/v1/sessions", json={"prompt": "lofi"}
+    ).json()["session_id"]
+    got = client_memory.get(f"/v1/sessions/{session_id}")
+    assert got.status_code == 200
+    assert got.json()["prompt"] == "lofi"
+
+
+def test_list_genres_from_yaml(client_memory):
+    """Genres are served from YAML even without a database."""
+    resp = client_memory.get("/v1/genres")
+    assert resp.status_code == 200
+    items = resp.json()["items"]
+    assert len(items) > 0
+    assert all("genre" in g for g in items)
+
+
+def test_get_genre_detail_from_yaml(client_memory):
+    genres = client_memory.get("/v1/genres").json()["items"]
+    genre = genres[0]["genre"]
+    detail = client_memory.get(f"/v1/genres/{genre}")
+    assert detail.status_code == 200
+    assert detail.json().get("genre") == genre
+
+
+def test_list_patterns_empty_200(client_memory):
+    resp = client_memory.get("/v1/patterns")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["items"] == []
+    assert body["next_cursor"] is None
+
+
+def test_feedback_is_noop_200(client_memory):
+    session_id = client_memory.post(
+        "/v1/sessions", json={"prompt": "test"}
+    ).json()["session_id"]
+    resp = client_memory.post(
+        f"/v1/sessions/{session_id}/feedback",
+        json={"candidate_id": "c1", "content": "more jazzy"},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    # Neutral, no learning: returns canonical default weights.
+    assert body["satisfaction"] == "neutral"
+    assert body["adjusted_weights"]  # non-empty default weights
+
+
+def test_feedback_unknown_session_404(client_memory):
+    resp = client_memory.post(
+        "/v1/sessions/sess_missing/feedback",
+        json={"candidate_id": "c1", "content": "x"},
+    )
+    assert resp.status_code == 404
+
+
+def test_provenance_empty_200(client_memory):
+    session_id = client_memory.post(
+        "/v1/sessions", json={"prompt": "x"}
+    ).json()["session_id"]
+    resp = client_memory.get(f"/v1/sessions/{session_id}/provenance")
+    assert resp.status_code == 200
+    assert resp.json()["events"] == []
+
+
+def test_genre_research_drafts_empty_200(client_memory):
+    resp = client_memory.get("/v1/genres/drafts")
+    assert resp.status_code == 200
+    assert resp.json()["items"] == []
+
+
+def test_explanation_get_404_when_absent(client_memory):
+    """No cached explanation in memory mode → 404 (existing semantic), not 500."""
+    resp = client_memory.get("/v1/candidates/c_missing/explanation")
+    assert resp.status_code == 404
+
+
+def test_comparison_record_noop_201(client_memory):
+    session_id = client_memory.post(
+        "/v1/sessions", json={"prompt": "x"}
+    ).json()["session_id"]
+    resp = client_memory.post(
+        f"/v1/sessions/{session_id}/comparisons",
+        json={"candidate_ids": ["a", "b"]},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["comparison_id"].startswith("cv_")
+
+
+def test_curation_409_in_memory_mode(client_memory):
+    resp = client_memory.post(
+        "/v1/arrangements/arr_any/curation", json={"curated": True}
+    )
+    assert resp.status_code == 409
+
+
+def test_seeded_candidate_read(client_memory):
+    """A manually-seeded in-memory progression candidate reads back over the API."""
+    store = get_memory_store()
+    store.create(
+        "ProgressionCandidate",
+        {
+            "id": "prog_seed1",
+            "type": "progression_candidate",
+            "status": "candidate",
+            "session_id": "sess_seed",
+            "key_center": "C",
+            "mode": "major",
+            "rationale": "seeded",
+            "chord_events": [
+                {"bar": 1, "beat": 1.0, "duration_beats": 4.0, "symbol": "Cmaj7"},
+            ],
+            "intent_tags": ["warm"],
+            "metadata": {},
+        },
+    )
+
+    listed = client_memory.get("/v1/sessions/sess_seed/candidates")
+    assert listed.status_code == 200
+    items = listed.json()["items"]
+    assert any(c["candidate_id"] == "prog_seed1" for c in items)
+
+    detail = client_memory.get("/v1/candidates/prog_seed1")
+    assert detail.status_code == 200
+    assert detail.json()["chord_symbols"] == ["Cmaj7"]
+
+
+def test_seeded_arrangement_export_succeeds(client_memory, tmp_path, monkeypatch):
+    """Export of an in-memory arrangement renders artifacts and returns 200."""
+    from explorator.config import settings
+
+    monkeypatch.setattr(settings, "export_dir", str(tmp_path))
+    store = get_memory_store()
+    store.create(
+        "Session",
+        {"id": "sess_exp", "type": "session", "status": "active"},
+    )
+    store.create(
+        "VoicingPlan",
+        {
+            "id": "vp1",
+            "type": "voicing_plan",
+            "status": "active",
+            "voicing_events": [
+                {
+                    "bar": 1,
+                    "beat": 1.0,
+                    "duration_beats": 4.0,
+                    "chord_symbol": "Cmaj7",
+                    "pitches": ["C4", "E4", "G4", "B4"],
+                },
+            ],
+        },
+    )
+    store.create(
+        "BassLine",
+        {
+            "id": "bl1",
+            "type": "bass_line",
+            "status": "active",
+            "note_events": [
+                {"bar": 1, "beat": 1.0, "duration_beats": 4.0, "pitch": "C2"},
+            ],
+        },
+    )
+    store.create(
+        "ArrangementCandidate",
+        {
+            "id": "arr_exp1",
+            "type": "arrangement_candidate",
+            "status": "active",
+            "session_id": "sess_exp",
+            "progression_candidate_id": "prog_x",
+            "voicing_plan_id": "vp1",
+            "bass_line_id": "bl1",
+            "rationale": "seeded",
+            "metadata": {"label": "arr"},
+        },
+    )
+
+    resp = client_memory.post(
+        "/v1/sessions/sess_exp/export",
+        json={"arrangement_candidate_ids": ["arr_exp1"], "formats": ["midi_combined"]},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["artifact_count"] >= 1

@@ -12,9 +12,9 @@ from ulid import ULID
 
 from explorator.api.deps import get_neo4j_driver, get_session_repo
 from explorator.config import settings
-from explorator.graph.provenance_trace_repo import ProvenanceTraceRepo
 from explorator.graph.session_repo import SessionRepository
 from explorator.models.session import Session
+from explorator.persistence.factory import make_provenance_trace_repo
 from explorator.utils import parse_json_or_dict
 
 router = APIRouter(tags=["sessions"])
@@ -114,7 +114,7 @@ async def get_session(
 async def delete_session(
     session_id: str,
     repo: SessionRepository = Depends(get_session_repo),  # noqa: B008
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> None:
     """Delete a session and all its child nodes from Neo4j."""
     session = await repo.get_by_id(session_id)
@@ -125,6 +125,12 @@ async def delete_session(
     export_dir = os.path.join(settings.export_dir, session_id)
     if os.path.isdir(export_dir):
         shutil.rmtree(export_dir)
+
+    # Memory mode: filesystem export cleanup above is sufficient. The graph
+    # cascade below (child nodes, relationships, library rows) is a Neo4j-only
+    # concern; in-memory state is process-lifetime and lost on restart anyway.
+    if driver is None:
+        return
 
     # All three deletes share one transaction so a transient failure mid-cascade
     # cannot leave orphaned nodes (e.g. PatternLibraryEntry rows surviving while
@@ -170,14 +176,14 @@ class ProvenanceResponse(BaseModel):
 @router.get("/sessions/{session_id}/provenance")
 async def get_provenance(
     session_id: str,
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> ProvenanceResponse:
     """Return the provenance trace for a session.
 
     Returns an empty events list if no trace exists yet
-    (session hasn't been explored).
+    (session hasn't been explored). Memory mode always returns empty.
     """
-    repo = ProvenanceTraceRepo(driver)
+    repo = make_provenance_trace_repo(driver)
     trace = await repo.get_by_session_id(session_id)
     if trace is None:
         return ProvenanceResponse(session_id=session_id, events=[])

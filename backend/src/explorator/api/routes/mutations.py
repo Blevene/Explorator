@@ -15,8 +15,8 @@ from explorator.api.deps import get_gemini_client, get_neo4j_driver
 from explorator.api.sse import SSEChannel
 from explorator.domain.harmony.mutator import HarmonyMutator
 from explorator.engine.graph import build_realization_subgraph
-from explorator.graph.repository import ProgressionCandidateRepo
-from explorator.graph.session_repo import SessionRepository
+from explorator.models.harmony import ProgressionCandidate
+from explorator.persistence.factory import make_candidate_repo, make_session_repo
 from explorator.utils import parse_json_or_dict, utc_now
 
 logger = logging.getLogger(__name__)
@@ -37,13 +37,13 @@ async def trigger_mutation(
     session_id: str,
     request: TriggerMutationRequest,
     gemini: GeminiClient = Depends(get_gemini_client),  # noqa: B008
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> EventSourceResponse:
     """Trigger user-initiated mutations on specific candidates.
 
     Returns 409 if a round is already in-flight for this session.
     """
-    repo = SessionRepository(driver)
+    repo = make_session_repo(driver)
     session = await repo.get_by_id(session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -62,7 +62,7 @@ async def trigger_mutation(
     async def run_mutation() -> None:
         try:
             mutator = HarmonyMutator(gemini)
-            prog_repo = ProgressionCandidateRepo(driver)
+            prog_repo = make_candidate_repo(driver)
             results: list[dict[str, Any]] = []
 
             for cid in request.candidate_ids:
@@ -146,14 +146,21 @@ async def trigger_mutation(
                         )
                 new_candidate_data["chord_events"] = new_events
 
-                from explorator.graph.repository import _neo4j_safe
+                # Persist the mutated candidate. Neo4j mode keeps the original
+                # raw-CREATE path (tolerant of JSON-string fields the node carries);
+                # memory mode validates into the model and uses the repo.
+                if driver is not None:
+                    from explorator.graph.repository import _neo4j_safe
 
-                safe_data = _neo4j_safe(new_candidate_data)
-                async with driver.session() as neo_session:
-                    await neo_session.run(
-                        "CREATE (n:ProgressionCandidate $props) SET n.id = $props.id",
-                        props=safe_data,
-                    )
+                    safe_data = _neo4j_safe(new_candidate_data)
+                    async with driver.session() as neo_session:
+                        await neo_session.run(
+                            "CREATE (n:ProgressionCandidate $props) SET n.id = $props.id",
+                            props=safe_data,
+                        )
+                else:
+                    new_candidate = ProgressionCandidate.model_validate(new_candidate_data)
+                    await prog_repo.create(new_candidate)
 
                 results.append(
                     {

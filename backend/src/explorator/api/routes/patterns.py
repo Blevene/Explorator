@@ -143,7 +143,7 @@ async def harvest_session_finalists_endpoint(
 async def post_curation(
     arrangement_id: str,
     request: CurationRequest,
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> CurationResponse:
     try:
         result = await curate_arrangement(

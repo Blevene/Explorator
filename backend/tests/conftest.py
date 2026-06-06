@@ -43,10 +43,22 @@ def _test_neo4j_auth() -> tuple[str, str]:
 
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def neo4j_driver() -> AsyncGenerator[AsyncDriver, None]:
-    """Connect to the isolated test Neo4j (session-scoped for efficiency)."""
+    """Connect to the isolated test Neo4j (session-scoped for efficiency).
+
+    Also registers the driver as the connection module's active driver so
+    ``get_optional_driver()`` (used by the API deps/routes) returns it in tests
+    that build the app via ``create_app()`` without running its lifespan. This
+    mirrors what ``probe_driver()`` does at startup in production.
+    """
+    import explorator.graph.connection as conn
+
     driver = AsyncGraphDatabase.driver(_test_neo4j_uri(), auth=_test_neo4j_auth())
     await init_schema(driver)
+    conn._driver = driver
+    conn._available = True
     yield driver
+    conn._driver = None
+    conn._available = False
     await driver.close()
 
 

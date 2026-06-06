@@ -103,6 +103,9 @@ class NullObjectiveWeightsRepo:
     canonical default weights, so there is no learning in memory mode.
     """
 
+    async def create(self, entity: BaseModel) -> None:
+        return None
+
     async def get_latest_for_session(self, session_id: str) -> dict[str, Any] | None:
         return None
 

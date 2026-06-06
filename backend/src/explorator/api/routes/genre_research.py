@@ -66,7 +66,17 @@ async def start_research(
     repo: GenreResearchRepository = Depends(get_genre_research_repo),  # noqa: B008
     driver: Any = Depends(get_neo4j_driver),  # noqa: B008
 ) -> StartResearchResponse:
-    """Kick off a genre research job."""
+    """Kick off a genre research job.
+
+    Requires a durable backend: genre research persists drafts and syncs to the
+    graph. In memory mode it is disabled (409), matching the limited-mode UI.
+    """
+    if driver is None:
+        raise HTTPException(
+            status_code=409,
+            detail="Genre research requires the database (unavailable in limited mode)",
+        )
+
     genre_name = request.genre_name.lower().strip()
 
     if not _GENRE_NAME_RE.match(genre_name):

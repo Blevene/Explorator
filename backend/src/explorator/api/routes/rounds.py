@@ -13,7 +13,7 @@ from explorator.adapters.gemini import GeminiClient
 from explorator.api.deps import get_gemini_client, get_neo4j_driver
 from explorator.api.sse import SSEChannel
 from explorator.engine.graph import build_exploration_graph
-from explorator.graph.session_repo import SessionRepository
+from explorator.persistence.factory import make_session_repo
 from explorator.utils import parse_json_or_dict
 
 logger = logging.getLogger(__name__)
@@ -43,11 +43,11 @@ async def trigger_round(
     session_id: str,
     request: TriggerRoundRequest,
     gemini: GeminiClient = Depends(get_gemini_client),  # noqa: B008
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> EventSourceResponse:
     """Trigger a generation round and stream progress via SSE."""
     # Verify session exists
-    repo = SessionRepository(driver)
+    repo = make_session_repo(driver)
     session = await repo.get_by_id(session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")

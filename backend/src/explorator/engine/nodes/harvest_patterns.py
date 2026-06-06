@@ -11,13 +11,16 @@ All orchestration (state indexing, per-finalist loop, repo upsert, error handlin
 lives in the service module.
 """
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from explorator.engine.state import ExplorationState
-from explorator.graph.pattern_library_repo import PatternLibraryRepo
 from explorator.services.pattern_library.harvest_service import (
     harvest_session_finalists_from_state,
 )
+
+if TYPE_CHECKING:
+    from explorator.graph.pattern_library_repo import PatternLibraryRepo
+    from explorator.persistence.null_repos import NullPatternLibraryRepo
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +28,7 @@ logger = logging.getLogger(__name__)
 async def harvest_patterns(
     state: ExplorationState,
     *,
-    repo: PatternLibraryRepo,
+    repo: "PatternLibraryRepo | NullPatternLibraryRepo",
 ) -> dict[str, Any]:
     callback = state.get("on_progress")
     if callback is not None:
