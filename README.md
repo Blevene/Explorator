@@ -93,13 +93,22 @@ cd Explorator
 cp .env.example backend/.env
 # Edit backend/.env and set GEMINI_API_KEY
 
-# Bring up Neo4j (dev container on :7688)
+# Bring up Neo4j (dev container on :7688) — OPTIONAL.
+# Skip this to run in limited mode (generation works; durable storage and
+# long-term-memory features are off). See "Neo4j is optional" below.
 make neo4j-up
 
 # Install deps
 cd backend  && uv sync --all-extras && cd ..
 cd frontend && npm install         && cd ..
 ```
+
+> **Neo4j is optional.** The full generation flow — M1 progressions → M2
+> realization → M3 mutations — runs without a database via a process-lifetime
+> in-memory store. `make neo4j-up` is required only for *durable* storage and the
+> long-term-memory features: pattern library, feedback learning, session
+> history, lineage, genre research, and curation. See
+> [Neo4j is optional (limited mode)](#neo4j-is-optional-limited-mode).
 
 **Run**
 
@@ -138,15 +147,40 @@ The pytest suite wipes the DB between tests, so it runs against a dedicated `neo
 
 ## Architecture (overview)
 
-Single-process FastAPI app driving a LangGraph orchestration engine, persisted to Neo4j, served to a React SPA. Three LangGraph graphs compose at startup: an exploration pipeline (intent → generate → evaluate → rank → persist), a realization sub-graph (voicing → bass → groove → melody → assemble → evaluate → rank → persist → harvest), and a genre-research sub-graph (research → draft → critique → refine → validate).
+Single-process FastAPI app driving a LangGraph orchestration engine, persisted to Neo4j when present, served to a React SPA. Three LangGraph graphs compose at startup: an exploration pipeline (intent → generate → evaluate → rank → persist), a realization sub-graph (voicing → bass → groove → melody → assemble → evaluate → rank → persist → harvest), and a genre-research sub-graph (research → draft → critique → refine → validate).
 
 **Key design choices**
-- **Neo4j is the single source of truth** — sessions, candidates, arrangements, scorecards, feedback events, pattern library, lineage. No relational adjunct.
+- **Neo4j is the durable backend when present** — sessions, candidates, arrangements, scorecards, feedback events, pattern library, lineage. No relational adjunct. When Neo4j is absent, an ephemeral in-memory store backs the generation path only (see [Neo4j is optional (limited mode)](#neo4j-is-optional-limited-mode)).
 - **Domain services are pure Python** — generators, evaluators, adapters know nothing about HTTP or graph orchestration.
 - **Append-only event log + denormalized read cache** — feedback events and pattern curation events are append-only; denormalized fields (e.g. `is_curated` on `PatternLibraryEntry`) are dual-written in the same Neo4j transaction for fast filter queries.
 - **Provenance is first-class** — every candidate carries `parent_candidate_id`, `mutation_op`, `session_id`, `round`, `family_id`. Powers explanation, comparison, and export features.
 
 Full architecture, data model, and pipeline diagrams: [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
+
+## Neo4j is optional (limited mode)
+
+Neo4j is auto-detected, not required. On startup the backend probes Neo4j once; if it is unreachable, the backend logs a warning and runs in **limited mode** backed by a process-lifetime in-memory store instead of hard-failing.
+
+**What works without Neo4j**
+
+Generation runs end to end in memory — M1 progressions → M2 realization → M3 mutations, with full genre data (profiles and rules are served from the genre YAML in memory mode), arrangement scoring/ranking, and MIDI + JSON export.
+
+**What needs Neo4j**
+
+The long-term-memory features require durable storage and are disabled in limited mode:
+
+- Pattern library (browse / harvest)
+- Feedback learning (re-weighting carries over between rounds)
+- Session history / provenance timeline
+- Lineage tree
+- Genre research jobs
+- Curation (star / unstar)
+
+In-memory data is lost on backend restart — there is no durable non-Neo4j persistence by design.
+
+**Frontend limited-mode banner**
+
+When the backend reports memory mode (via `GET /v1/capabilities`), the UI shows a "limited mode" banner under the header. The Patterns nav entry is hidden, the genre-research affordances are hidden (the genre *library* stays visible — it's served from YAML), session history and lineage are hidden in the session workspace, and star (curation) buttons are disabled. To get these features, bring up Neo4j with `make neo4j-up` and restart the backend.
 
 ## Project layout
 
