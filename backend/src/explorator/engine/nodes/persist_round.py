@@ -8,12 +8,13 @@ from neo4j.exceptions import Neo4jError
 from ulid import ULID
 
 from explorator.engine.state import ExplorationState
-from explorator.graph.mutation_record_repo import MutationRecordRepo
-from explorator.graph.provenance_trace_repo import ProvenanceTraceRepo
-from explorator.graph.repository import ProgressionCandidateRepo
-from explorator.graph.search_round_repo import SearchRoundRepo
 from explorator.models.export import ProvenanceTrace
 from explorator.models.search import MutationRecord, SearchRound
+from explorator.persistence.factory import (
+    make_candidate_repo,
+    make_mutation_record_repo,
+    make_search_round_repo,
+)
 from explorator.utils import utc_now
 
 logger = logging.getLogger(__name__)
@@ -21,20 +22,24 @@ logger = logging.getLogger(__name__)
 
 
 
-async def persist_round(state: ExplorationState, *, driver: AsyncDriver) -> dict[str, Any]:
-    """Save all candidates and evaluations to Neo4j."""
+async def persist_round(
+    state: ExplorationState, *, driver: AsyncDriver | None
+) -> dict[str, Any]:
+    """Save all candidates and evaluations to Neo4j (or the in-memory store)."""
     callback = state.get("on_progress")
     if callback:
         await callback("node_started", {"node": "persist_round"})
 
     from explorator.models.harmony import ProgressionCandidate
 
-    repo = ProgressionCandidateRepo(driver)
+    repo = make_candidate_repo(driver)
 
-    # Persist genre on Session so M2 realization can load the correct genre profile
+    # Persist genre on Session so M2 realization can load the correct genre profile.
+    # Graph-only concern (the genre read path uses GenreProfile nodes); in memory
+    # mode genre flows through state, so this direct-Cypher write is skipped.
     session_id = state.get("session_id", "")
     genre = state.get("genre", "")
-    if session_id and genre:
+    if driver is not None and session_id and genre:
         try:
             async with driver.session() as neo_session:
                 await neo_session.run(
@@ -92,13 +97,13 @@ async def persist_round(state: ExplorationState, *, driver: AsyncDriver) -> dict
         selected_candidate_ids=[p.get("id", "") for p in state.get("top_progressions", [])],
     )
     try:
-        sr_repo = SearchRoundRepo(driver)
+        sr_repo = make_search_round_repo(driver)
         await sr_repo.create(search_round)
     except Exception:
         logger.exception("Failed to persist SearchRound")
 
     # --- M3a: Persist MutationRecords ---
-    mr_repo = MutationRecordRepo(driver)
+    mr_repo = make_mutation_record_repo(driver)
     for mr_data in state.get("mutation_records", []):
         try:
             mr = MutationRecord.model_validate(mr_data)
@@ -107,8 +112,11 @@ async def persist_round(state: ExplorationState, *, driver: AsyncDriver) -> dict
             logger.exception("Failed to persist MutationRecord %s", mr_data.get("id"))
 
     # --- M4b: Persist provenance events ---
+    # Provenance is a learning/lineage concern that degrades in memory mode
+    # (empty timeline), so the trace write only runs with a real driver.
     provenance_events = state.get("provenance_events", [])
-    if provenance_events:
+    if driver is not None and provenance_events:
+        from explorator.graph.provenance_trace_repo import ProvenanceTraceRepo
         try:
             prov_repo = ProvenanceTraceRepo(driver)
             existing_trace = await prov_repo.get_by_session_id(session_id)

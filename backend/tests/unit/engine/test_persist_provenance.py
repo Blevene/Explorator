@@ -39,13 +39,13 @@ class TestPersistRoundProvenance:
         ]
 
         with patch(
-            "explorator.engine.nodes.persist_round.ProvenanceTraceRepo"
+            "explorator.graph.provenance_trace_repo.ProvenanceTraceRepo"
         ) as MockRepo, patch(
-            "explorator.engine.nodes.persist_round.ProgressionCandidateRepo"
+            "explorator.engine.nodes.persist_round.make_candidate_repo"
         ), patch(
-            "explorator.engine.nodes.persist_round.SearchRoundRepo"
+            "explorator.engine.nodes.persist_round.make_search_round_repo"
         ) as MockSR, patch(
-            "explorator.engine.nodes.persist_round.MutationRecordRepo"
+            "explorator.engine.nodes.persist_round.make_mutation_record_repo"
         ) as MockMR:
             repo_instance = MockRepo.return_value
             repo_instance.get_by_session_id = AsyncMock(return_value=None)
@@ -78,13 +78,13 @@ class TestPersistRoundProvenance:
         ]
 
         with patch(
-            "explorator.engine.nodes.persist_round.ProvenanceTraceRepo"
+            "explorator.graph.provenance_trace_repo.ProvenanceTraceRepo"
         ) as MockRepo, patch(
-            "explorator.engine.nodes.persist_round.ProgressionCandidateRepo"
+            "explorator.engine.nodes.persist_round.make_candidate_repo"
         ), patch(
-            "explorator.engine.nodes.persist_round.SearchRoundRepo"
+            "explorator.engine.nodes.persist_round.make_search_round_repo"
         ) as MockSR, patch(
-            "explorator.engine.nodes.persist_round.MutationRecordRepo"
+            "explorator.engine.nodes.persist_round.make_mutation_record_repo"
         ) as MockMR:
             repo_instance = MockRepo.return_value
             repo_instance.get_by_session_id = AsyncMock(return_value={
@@ -115,13 +115,13 @@ class TestPersistRoundProvenance:
         mock_driver.session.return_value.__aexit__ = AsyncMock(return_value=False)
 
         with patch(
-            "explorator.engine.nodes.persist_round.ProvenanceTraceRepo"
+            "explorator.graph.provenance_trace_repo.ProvenanceTraceRepo"
         ) as MockRepo, patch(
-            "explorator.engine.nodes.persist_round.ProgressionCandidateRepo"
+            "explorator.engine.nodes.persist_round.make_candidate_repo"
         ), patch(
-            "explorator.engine.nodes.persist_round.SearchRoundRepo"
+            "explorator.engine.nodes.persist_round.make_search_round_repo"
         ) as MockSR, patch(
-            "explorator.engine.nodes.persist_round.MutationRecordRepo"
+            "explorator.engine.nodes.persist_round.make_mutation_record_repo"
         ) as MockMR:
             repo_instance = MockRepo.return_value
             repo_instance.get_by_session_id = AsyncMock()

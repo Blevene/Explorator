@@ -18,9 +18,9 @@ async def test_load_memory_returns_defaults_when_no_feedback() -> None:
     mock_driver = AsyncMock()
 
     with patch(
-        "explorator.engine.nodes.load_memory.FeedbackEventRepo"
+        "explorator.engine.nodes.load_memory.make_feedback_event_repo"
     ) as MockFBRepo, patch(
-        "explorator.engine.nodes.load_memory.ObjectiveWeightsRepo"
+        "explorator.engine.nodes.load_memory.make_objective_weights_repo"
     ) as MockOWRepo:
         MockFBRepo.return_value.list_by_session = AsyncMock(return_value=[])
         MockOWRepo.return_value.get_latest_for_session = AsyncMock(return_value=None)
@@ -40,9 +40,9 @@ async def test_load_memory_returns_existing_feedback() -> None:
     custom_weights = {"genre_fit": 0.20, "novelty": 0.15}
 
     with patch(
-        "explorator.engine.nodes.load_memory.FeedbackEventRepo"
+        "explorator.engine.nodes.load_memory.make_feedback_event_repo"
     ) as MockFBRepo, patch(
-        "explorator.engine.nodes.load_memory.ObjectiveWeightsRepo"
+        "explorator.engine.nodes.load_memory.make_objective_weights_repo"
     ) as MockOWRepo:
         MockFBRepo.return_value.list_by_session = AsyncMock(return_value=feedback)
         MockOWRepo.return_value.get_latest_for_session = AsyncMock(
@@ -62,9 +62,9 @@ async def test_load_memory_timeout_returns_defaults() -> None:
     mock_driver = AsyncMock()
 
     with patch(
-        "explorator.engine.nodes.load_memory.FeedbackEventRepo"
+        "explorator.engine.nodes.load_memory.make_feedback_event_repo"
     ) as MockFBRepo, patch(
-        "explorator.engine.nodes.load_memory.ObjectiveWeightsRepo"
+        "explorator.engine.nodes.load_memory.make_objective_weights_repo"
     ) as MockOWRepo:
         MockFBRepo.return_value.list_by_session = AsyncMock(
             side_effect=TimeoutError("Neo4j timeout")

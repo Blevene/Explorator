@@ -8,10 +8,13 @@ Full flow: parse_intent → load_genre → generate → evaluate_progressions
 """
 
 from functools import partial
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from langgraph.graph import END, StateGraph
 from neo4j import AsyncDriver
+
+if TYPE_CHECKING:
+    from explorator.graph.pattern_library_repo import PatternLibraryRepo
 
 from explorator.adapters.gemini import GeminiClient
 from explorator.engine.nodes.assemble_arrangements import assemble_arrangements
@@ -34,13 +37,13 @@ from explorator.engine.nodes.plan_voicings import plan_voicings
 from explorator.engine.nodes.rank_and_select import rank_and_select
 from explorator.engine.nodes.select_top_progressions import select_top_progressions
 from explorator.engine.state import ExplorationState
-from explorator.graph.pattern_library_repo import PatternLibraryRepo
+from explorator.persistence.factory import make_pattern_library_repo
 
 
 def _add_m2_nodes(
     graph: StateGraph[Any],
     gemini: GeminiClient,
-    driver: AsyncDriver,
+    driver: AsyncDriver | None,
 ) -> None:
     """Register M2 realization nodes on a graph. Shared by full and sub-graph builders."""
     graph.add_node("load_context", partial(load_context, driver=driver))
@@ -84,7 +87,7 @@ def _route_after_mutate(state: ExplorationState) -> str:
     return "evaluate_arrangements"
 
 
-def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver) -> Any:
+def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver | None) -> Any:
     """Build and compile the unified M1+M2 LangGraph exploration flow."""
     graph = StateGraph(ExplorationState)
 
@@ -101,8 +104,10 @@ def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver) -> Any:
     # M2 nodes (shared registration)
     _add_m2_nodes(graph, gemini, driver)
 
-    # M5d-1: auto-harvest finalist patterns between persist_realization and persist_round
-    pattern_repo = PatternLibraryRepo(driver)
+    # M5d-1: auto-harvest finalist patterns between persist_realization and persist_round.
+    # In memory mode this is a NullPatternLibraryRepo (no-op upsert → 0 harvested);
+    # cast keeps the harvest_patterns signature unchanged (widened in Task 4.4).
+    pattern_repo = cast("PatternLibraryRepo", make_pattern_library_repo(driver))
     graph.add_node("harvest_patterns", partial(harvest_patterns, repo=pattern_repo))
 
     # Persistence
@@ -143,7 +148,7 @@ def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver) -> Any:
     return graph.compile()
 
 
-def build_realization_subgraph(gemini: GeminiClient, driver: AsyncDriver) -> Any:
+def build_realization_subgraph(gemini: GeminiClient, driver: AsyncDriver | None) -> Any:
     """Build M2-only subgraph for independent realization (used by realization endpoint)."""
     graph = StateGraph(ExplorationState)
 

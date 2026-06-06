@@ -86,6 +86,17 @@ class MemorySessionRepo(_MemoryCrud):
         rows = self._store.all("Session")
         return sorted(rows, key=lambda r: r.get("created_at") or "", reverse=True)
 
+    async def set_final_selection(
+        self, session_id: str, payload: dict[str, Any]
+    ) -> None:
+        """Store the round's final selection on the Session record.
+
+        No-op if the session isn't in the store. Stored as the native dict (the
+        memory store keeps deserialized shapes), unlike the JSON string the Neo4j
+        repo writes — final selection is optional UI sugar in either mode.
+        """
+        self._store.update("Session", session_id, final_selection=payload)
+
 
 class MemoryArrangementCandidateRepo(_MemoryCrud):
     label = "ArrangementCandidate"
