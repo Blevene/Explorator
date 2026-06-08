@@ -20,8 +20,10 @@ export function useGenerationFlow(sessionId: string | undefined) {
 
   const { setCandidates, setFinalSelection } = useCandidateStore();
 
-  const generate = useCallback(async (prompt: string, generationMode: string) => {
-    if (!sessionId || !prompt.trim() || loading) return;
+  const generate = useCallback(async (prompt: string, genre?: string) => {
+    // A round can run with either a prompt or a selected genre (or both).
+    if (!sessionId || loading) return;
+    if (!prompt.trim() && !genre) return;
 
     setLoading(true);
     setCurrentNode(null);
@@ -32,7 +34,7 @@ export function useGenerationFlow(sessionId: string | undefined) {
       const response = await fetch(`${API_BASE}/sessions/${sessionId}/rounds`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt.trim(), generation_mode: generationMode }),
+        body: JSON.stringify({ prompt: prompt.trim(), genre }),
       });
 
       if (!response.ok) throw new Error(`Round failed: ${response.status}`);

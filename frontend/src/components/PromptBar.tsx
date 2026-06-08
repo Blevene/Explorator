@@ -1,19 +1,18 @@
+import GenrePicker from './GenrePicker';
+import type { GenreSummary } from '../services/api';
+
 interface PromptBarProps {
   prompt: string;
   onPromptChange: (value: string) => void;
-  generationMode: string;
-  onModeChange: (mode: string) => void;
   onGenerate: () => void;
   loading: boolean;
   currentNode: string | null;
   flowType?: 'generation' | 'realization';
+  /** Genre picker is only shown for the generation flow. */
+  genre?: string;
+  onGenreChange?: (genre: string) => void;
+  genres?: GenreSummary[];
 }
-
-const MODES = [
-  { value: 'conservative', label: 'Conservative', desc: 'Fewer candidates, safer choices' },
-  { value: 'balanced', label: 'Balanced', desc: 'Default — good variety' },
-  { value: 'exploratory', label: 'Exploratory', desc: 'More candidates, bolder experiments' },
-];
 
 const GENERATION_STEPS = [
   { key: 'parse_intent', label: 'Intent' },
@@ -46,13 +45,15 @@ const REALIZATION_STEPS = [
 export default function PromptBar({
   prompt,
   onPromptChange,
-  generationMode,
-  onModeChange,
   onGenerate,
   loading,
   currentNode,
   flowType = 'generation',
+  genre = '',
+  onGenreChange,
+  genres = [],
 }: PromptBarProps) {
+  const showGenrePicker = flowType === 'generation' && !!onGenreChange;
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !loading) onGenerate();
   };
@@ -71,6 +72,15 @@ export default function PromptBar({
     <div className="flex flex-col gap-2">
       {/* Input row */}
       <div className="flex gap-2">
+        {showGenrePicker && (
+          <GenrePicker
+            value={genre}
+            onChange={onGenreChange!}
+            genres={genres}
+            disabled={loading}
+            compact
+          />
+        )}
         <input
           type="text"
           value={prompt}
@@ -88,7 +98,7 @@ export default function PromptBar({
         />
         <button
           onClick={onGenerate}
-          disabled={loading || !prompt.trim()}
+          disabled={loading || (!prompt.trim() && !(showGenrePicker && genre))}
           className="px-5 py-2 rounded-lg font-medium text-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           style={{
             background: loading ? 'var(--surface-3)' : 'var(--accent-primary)',
@@ -97,39 +107,6 @@ export default function PromptBar({
         >
           {loading ? 'Running...' : 'Generate'}
         </button>
-      </div>
-
-      {/* Mode toggle */}
-      <div
-        role="radiogroup"
-        aria-label="Generation mode"
-        className="flex items-center gap-2"
-      >
-        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Mode</span>
-        <div className="flex gap-1">
-          {MODES.map((m) => {
-            const active = generationMode === m.value;
-            return (
-              <button
-                key={m.value}
-                role="radio"
-                aria-checked={active}
-                aria-label={`${m.label}: ${m.desc}`}
-                onClick={() => onModeChange(m.value)}
-                disabled={loading}
-                title={m.desc}
-                className="text-xs px-3 py-1 rounded transition-colors disabled:opacity-40"
-                style={{
-                  background: active ? 'var(--accent-primary-dim)' : 'var(--surface-3)',
-                  color: active ? 'var(--accent-primary)' : 'var(--text-muted)',
-                  border: active ? '1px solid var(--accent-primary)' : '1px solid transparent',
-                }}
-              >
-                {m.label}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* Pipeline progress */}

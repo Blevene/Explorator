@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createSession, listSessions } from '../services/api';
+import { createSession, listSessions, getGenres } from '../services/api';
+import type { GenreSummary } from '../services/api';
+import GenrePicker from '../components/GenrePicker';
 import { useSessionStore } from '../stores/sessionStore';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { logError } from '../lib/log';
@@ -9,6 +11,8 @@ export default function Dashboard() {
   useDocumentTitle(null);
   const { sessions, setSessions } = useSessionStore();
   const [prompt, setPrompt] = useState('');
+  const [genres, setGenres] = useState<GenreSummary[]>([]);
+  const [genre, setGenre] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -18,11 +22,17 @@ export default function Dashboard() {
       .catch((err) => logError('Dashboard.listSessions', err));
   }, [setSessions]);
 
+  useEffect(() => {
+    getGenres()
+      .then((items) => setGenres(items))
+      .catch((err) => logError('Dashboard.getGenres', err));
+  }, []);
+
   const handleCreate = async () => {
-    if (!prompt.trim()) return;
+    if (!genre) return;
     setLoading(true);
     try {
-      const session = await createSession(prompt);
+      const session = await createSession(genre, prompt);
       navigate(`/session/${session.session_id}`);
     } catch (err) {
       logError('Dashboard.createSession', err);
@@ -66,12 +76,13 @@ export default function Dashboard() {
           >
             <div className="rounded-xl p-5" style={{ background: 'var(--surface-2)' }}>
               <div className="flex flex-col sm:flex-row gap-3">
+                <GenrePicker value={genre} onChange={setGenre} genres={genres} />
                 <input
                   type="text"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                  placeholder="Dream pop in A major, wistful and haunted, 8 bars..."
+                  placeholder="mood, feeling, customization (optional)…"
                   aria-label="Session prompt"
                   className="flex-1 px-4 py-2.5 rounded-lg text-sm placeholder-opacity-40 focus:outline-none transition-colors"
                   style={{
@@ -82,7 +93,7 @@ export default function Dashboard() {
                 />
                 <button
                   onClick={handleCreate}
-                  disabled={loading || !prompt.trim()}
+                  disabled={loading || !genre}
                   className="px-6 py-2.5 rounded-lg font-medium text-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   style={{
                     background: 'var(--accent-primary)',

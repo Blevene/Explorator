@@ -7,11 +7,14 @@ export interface TestSession {
   prompt: string;
 }
 
-async function createTestSession(prompt = 'Dream pop in A major, wistful, 4 bars'): Promise<TestSession> {
+async function createTestSession(
+  prompt = 'Dream pop in A major, wistful, 4 bars',
+  genre = 'dream_pop',
+): Promise<TestSession> {
   const res = await fetch(`${API_BASE}/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, mode: 'full_exploration' }),
+    body: JSON.stringify({ genre, prompt, mode: 'full_exploration' }),
   });
   if (!res.ok) throw new Error(`Failed to create session: ${res.status}`);
   const data = await res.json();

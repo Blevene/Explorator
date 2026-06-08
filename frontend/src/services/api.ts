@@ -33,11 +33,15 @@ export interface GenreListResponse {
   items: GenreSummary[];
 }
 
-export async function createSession(prompt: string, mode = 'full_exploration'): Promise<SessionSummary> {
+export async function createSession(
+  genre: string,
+  prompt = '',
+  mode = 'full_exploration',
+): Promise<SessionSummary> {
   const res = await fetch(`${API_BASE}/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, mode }),
+    body: JSON.stringify({ genre, prompt: prompt ?? '', mode }),
   });
   if (!res.ok) throw new Error(`Failed to create session: ${res.status}`);
   return res.json();
@@ -59,6 +63,12 @@ export async function listGenres(): Promise<GenreListResponse> {
   const res = await fetch(`${API_BASE}/genres`);
   if (!res.ok) throw new Error(`Failed to list genres: ${res.status}`);
   return res.json();
+}
+
+/** Convenience wrapper that returns the genre items array directly. */
+export async function getGenres(): Promise<GenreSummary[]> {
+  const data = await listGenres();
+  return data.items;
 }
 
 export interface GenreDetail {
@@ -119,13 +129,13 @@ export async function dismissCandidate(candidateId: string): Promise<void> {
 
 export async function triggerRoundSSE(
   sessionId: string,
-  prompt: string,
-  generationMode: string,
+  prompt?: string,
+  genre?: string,
 ): Promise<Response> {
   const res = await fetch(`${API_BASE}/sessions/${sessionId}/rounds`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, generation_mode: generationMode }),
+    body: JSON.stringify({ prompt, genre }),
   });
   if (!res.ok) throw new Error(`Failed to trigger round: ${res.status}`);
   return res;

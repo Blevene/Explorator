@@ -44,7 +44,7 @@ async function createSessionViaApi(): Promise<string> {
     headers: { 'Content-Type': 'application/json' },
     // `conservative` keeps n_candidates low (4) so real Gemini finishes in
     // ~30–60s rather than the 2–3 min for full_exploration's 12 candidates.
-    body: JSON.stringify({ prompt: PROMPT, mode: 'conservative' }),
+    body: JSON.stringify({ genre: 'dream_pop', prompt: PROMPT, mode: 'conservative' }),
   });
   if (!res.ok) throw new Error(`createSession: ${res.status} ${await res.text()}`);
   const data = (await res.json()) as { session_id: string };
