@@ -3,13 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { createSession, listSessions, getGenres } from '../services/api';
 import type { GenreSummary } from '../services/api';
 import GenrePicker from '../components/GenrePicker';
+import LimitedModeBanner from '../components/LimitedModeBanner';
 import { useSessionStore } from '../stores/sessionStore';
+import { useCan, useIsMemoryMode } from '../stores/capabilitiesStore';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { logError } from '../lib/log';
 
 export default function Dashboard() {
   useDocumentTitle(null);
   const { sessions, setSessions } = useSessionStore();
+  const canPatternLibrary = useCan('pattern_library');
+  const isMemoryMode = useIsMemoryMode();
   const [prompt, setPrompt] = useState('');
   const [genres, setGenres] = useState<GenreSummary[]>([]);
   const [genre, setGenre] = useState('');
@@ -43,6 +47,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-dvh flex flex-col">
+      {isMemoryMode && <LimitedModeBanner />}
       {/* Hero */}
       <div className="flex-1 flex flex-col items-center justify-center px-8 pb-16 pt-24">
         <div className="text-center mb-12">
@@ -59,12 +64,14 @@ export default function Dashboard() {
             >
               Manage Genres &rarr;
             </a>
-            <a
-              href="/patterns"
-              className="text-xs tracking-wider uppercase transition-colors text-[var(--text-muted)] hover:text-[var(--accent-primary)] focus-visible:text-[var(--accent-primary)]"
-            >
-              Pattern Library &rarr;
-            </a>
+            {canPatternLibrary && (
+              <a
+                href="/patterns"
+                className="text-xs tracking-wider uppercase transition-colors text-[var(--text-muted)] hover:text-[var(--accent-primary)] focus-visible:text-[var(--accent-primary)]"
+              >
+                Pattern Library &rarr;
+              </a>
+            )}
           </div>
         </div>
 

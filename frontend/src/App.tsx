@@ -8,7 +8,7 @@ import GenreManagement from './components/GenreManagement';
 import PatternLibraryBrowser from './views/PatternLibraryBrowser';
 import AppShell from './components/AppShell';
 import LimitedModePlaceholder from './components/LimitedModePlaceholder';
-import { useCapabilitiesStore } from './stores/capabilitiesStore';
+import { useCapabilitiesStore, useCan } from './stores/capabilitiesStore';
 
 const queryClient = new QueryClient();
 
@@ -25,8 +25,7 @@ function SkipLink() {
 }
 
 function PatternsRoute() {
-  const can = useCapabilitiesStore((s) => s.can);
-  if (!can('pattern_library')) return <LimitedModePlaceholder feature="Pattern library" />;
+  if (!useCan('pattern_library')) return <LimitedModePlaceholder feature="Pattern library" />;
   return <PatternLibraryBrowser />;
 }
 

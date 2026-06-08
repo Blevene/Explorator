@@ -30,11 +30,23 @@ export function useGenerationFlow(sessionId: string | undefined) {
     nodeRef.current = null;
     setError(null);
 
+    // Bound the whole round (including a stream that opens then hangs with no
+    // bytes) with an AbortController. `reader.read()` rejects on abort, so a
+    // true hang can't block forever and server-side work is cancelled.
+    const TIMEOUT_MS = 600_000;
+    const controller = new AbortController();
+    let timedOut = false;
+    const timeoutId = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, TIMEOUT_MS);
+
     try {
       const response = await fetch(`${API_BASE}/sessions/${sessionId}/rounds`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: prompt.trim(), genre }),
+        signal: controller.signal,
       });
 
       if (!response.ok) throw new Error(`Round failed: ${response.status}`);
@@ -43,17 +55,9 @@ export function useGenerationFlow(sessionId: string | undefined) {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-      const TIMEOUT_MS = 600_000;
 
       try {
-        const deadline = Date.now() + TIMEOUT_MS;
-
         while (true) {
-          if (Date.now() > deadline) {
-            setError('Round timed out after 10 minutes.');
-            break;
-          }
-
           const { done, value } = await reader.read();
           if (done) break;
 
@@ -115,8 +119,13 @@ export function useGenerationFlow(sessionId: string | undefined) {
         setError('Failed to reload candidates after round.');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to trigger round.');
+      if (timedOut) {
+        setError('Round timed out after 10 minutes.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to trigger round.');
+      }
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
       setCurrentNode(null);
     }

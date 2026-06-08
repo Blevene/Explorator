@@ -72,4 +72,63 @@ describe('GenrePicker', () => {
     fireEvent.focus(input);
     expect(input).toHaveAttribute('aria-expanded', 'true');
   });
+
+  it('points aria-activedescendant at the highlighted option', () => {
+    const { input } = setup();
+    fireEvent.focus(input);
+    // highlight starts at 0 (dream_pop)
+    const first = screen.getByTestId('genre-option-dream_pop');
+    expect(input.getAttribute('aria-activedescendant')).toBe(first.id);
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    const second = screen.getByTestId('genre-option-shoegaze');
+    expect(input.getAttribute('aria-activedescendant')).toBe(second.id);
+  });
+
+  it('does not select a stale highlight after the filtered list shrinks', () => {
+    const { input, onChange } = setup();
+    fireEvent.focus(input);
+    // Move highlight to index 2 (synthwave), then filter down to a 1-item list.
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.change(input, { target: { value: 'shoe' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    // Enter selects the clamped highlight (the only remaining match), never undefined.
+    expect(onChange).toHaveBeenCalledWith('shoegaze');
+  });
+
+  it('reverts to the selected display_name when the field is cleared', () => {
+    const { input } = setup('dream_pop');
+    expect(input).toHaveValue('Dream Pop');
+    fireEvent.change(input, { target: { value: 'shoe' } });
+    expect(input).toHaveValue('shoe');
+    fireEvent.change(input, { target: { value: '' } });
+    // Empty input reverts to the selected genre rather than going blank.
+    expect(input).toHaveValue('Dream Pop');
+  });
+
+  it('renders a non-selectable "No matches" row when nothing matches', () => {
+    const { input, onChange } = setup();
+    fireEvent.change(input, { target: { value: 'zzzzz' } });
+    expect(screen.queryByRole('option')).toBeNull();
+    const noMatches = screen.getByTestId('genre-no-matches');
+    expect(noMatches).toHaveTextContent('No matches');
+    // The listbox is still present, so aria-expanded stays honest.
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the raw value when it is not a known genre', () => {
+    const { input } = setup('unknown_genre');
+    expect(input).toHaveValue('unknown_genre');
+  });
+
+  it('closes and blurs the input on Escape', () => {
+    const { input } = setup();
+    fireEvent.focus(input);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(input).not.toHaveFocus();
+  });
 });

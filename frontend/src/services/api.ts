@@ -127,20 +127,6 @@ export async function dismissCandidate(candidateId: string): Promise<void> {
   if (!res.ok) throw new Error(`Failed to dismiss candidate: ${res.status}`);
 }
 
-export async function triggerRoundSSE(
-  sessionId: string,
-  prompt?: string,
-  genre?: string,
-): Promise<Response> {
-  const res = await fetch(`${API_BASE}/sessions/${sessionId}/rounds`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, genre }),
-  });
-  if (!res.ok) throw new Error(`Failed to trigger round: ${res.status}`);
-  return res;
-}
-
 // --- M2c Arrangement Types ---
 
 export interface VoicingEvent {

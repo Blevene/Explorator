@@ -24,19 +24,24 @@ export default function GenrePicker({
   compact = false,
 }: GenrePickerProps) {
   const listboxId = useId();
+  const optionId = (genre: string) => `${listboxId}-opt-${genre}`;
   const [open, setOpen] = useState(false);
   // `query` is the raw text in the input. `null` means "show the selected
   // genre's display_name"; a string means the user is actively typing a filter.
+  // An empty string is normalised to `null` (revert to selected) on change.
   const [query, setQuery] = useState<string | null>(null);
   const [highlight, setHighlight] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const selected = useMemo(
     () => genres.find((g) => g.genre === value) ?? null,
     [genres, value],
   );
 
-  const displayValue = query ?? selected?.display_name ?? '';
+  // When the selected `value` isn't in `genres` (stale/loading), fall back to
+  // displaying the raw id so the input is never mysteriously blank.
+  const displayValue = query ?? selected?.display_name ?? value ?? '';
 
   const filtered = useMemo(() => {
     const q = (query ?? '').trim().toLowerCase();
@@ -47,6 +52,11 @@ export default function GenrePicker({
         g.genre.toLowerCase().includes(q),
     );
   }, [genres, query]);
+
+  // `highlight` can point past a shrunken `filtered` list after a re-filter.
+  // Clamp to a valid index (>= 0) for styling, aria, and Enter selection.
+  const safeHighlight = Math.min(highlight, filtered.length - 1);
+  const activeOption = safeHighlight >= 0 ? filtered[safeHighlight] : undefined;
 
   // Close on outside click.
   useEffect(() => {
@@ -74,36 +84,42 @@ export default function GenrePicker({
         setOpen(true);
         return;
       }
-      setHighlight((h) => Math.min(h + 1, filtered.length - 1));
+      setHighlight(() => Math.min(safeHighlight + 1, filtered.length - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setHighlight((h) => Math.max(h - 1, 0));
+      setHighlight(() => Math.max(safeHighlight - 1, 0));
     } else if (e.key === 'Enter') {
-      if (open && filtered[highlight]) {
+      if (open && activeOption) {
         e.preventDefault();
-        select(filtered[highlight]);
+        select(activeOption);
       }
     } else if (e.key === 'Escape') {
       setOpen(false);
       setQuery(null);
+      inputRef.current?.blur();
     }
   };
 
   return (
     <div ref={rootRef} className="relative" style={{ minWidth: compact ? '9rem' : '11rem' }}>
       <input
+        ref={inputRef}
         type="text"
         role="combobox"
         data-testid="genre-picker-input"
+        // Stay honest: only claim expanded when an actual listbox is rendered.
         aria-expanded={open}
         aria-autocomplete="list"
         aria-controls={listboxId}
+        aria-activedescendant={open && activeOption ? optionId(activeOption.genre) : undefined}
         aria-label="Genre"
         placeholder="Genre"
         disabled={disabled}
         value={displayValue}
         onChange={(e) => {
-          setQuery(e.target.value);
+          const v = e.target.value;
+          // Empty input reverts to showing the selected genre, not a blank.
+          setQuery(v === '' ? null : v);
           setOpen(true);
           setHighlight(0);
         }}
@@ -116,7 +132,7 @@ export default function GenrePicker({
           color: 'var(--text-primary)',
         }}
       />
-      {open && filtered.length > 0 && (
+      {open && (
         <ul
           id={listboxId}
           role="listbox"
@@ -127,31 +143,43 @@ export default function GenrePicker({
             border: '1px solid var(--border-default)',
           }}
         >
-          {filtered.map((g, i) => {
-            const isHighlighted = i === highlight;
-            const isSelected = g.genre === value;
-            return (
-              <li
-                key={g.genre}
-                role="option"
-                data-testid={`genre-option-${g.genre}`}
-                aria-selected={isSelected}
-                onMouseDown={(e) => {
-                  // Prevent the input blur from closing the list before select.
-                  e.preventDefault();
-                  select(g);
-                }}
-                onMouseEnter={() => setHighlight(i)}
-                className="cursor-pointer px-4 py-2 text-sm transition-colors"
-                style={{
-                  background: isHighlighted ? 'var(--surface-3)' : 'transparent',
-                  color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)',
-                }}
-              >
-                {g.display_name}
-              </li>
-            );
-          })}
+          {filtered.length === 0 ? (
+            <li
+              data-testid="genre-no-matches"
+              aria-disabled="true"
+              className="px-4 py-2 text-sm"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              No matches
+            </li>
+          ) : (
+            filtered.map((g, i) => {
+              const isHighlighted = i === safeHighlight;
+              const isSelected = g.genre === value;
+              return (
+                <li
+                  key={g.genre}
+                  id={optionId(g.genre)}
+                  role="option"
+                  data-testid={`genre-option-${g.genre}`}
+                  aria-selected={isSelected}
+                  onMouseDown={(e) => {
+                    // Prevent the input blur from closing the list before select.
+                    e.preventDefault();
+                    select(g);
+                  }}
+                  onMouseEnter={() => setHighlight(i)}
+                  className="cursor-pointer px-4 py-2 text-sm transition-colors"
+                  style={{
+                    background: isHighlighted ? 'var(--surface-3)' : 'transparent',
+                    color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)',
+                  }}
+                >
+                  {g.display_name}
+                </li>
+              );
+            })
+          )}
         </ul>
       )}
     </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGenreResearchStore } from '../stores/genreResearchStore';
-import { useCapabilitiesStore } from '../stores/capabilitiesStore';
+import { useCan } from '../stores/capabilitiesStore';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useGenreDetailDrawer } from '../hooks/useGenreDetailDrawer';
 import { logError } from '../lib/log';
@@ -267,7 +267,7 @@ export default function GenreManagement() {
     reset,
   } = useGenreResearchStore();
 
-  const canResearch = useCapabilitiesStore((s) => s.can)('genre_research');
+  const canResearch = useCan('genre_research');
   const [view, setView] = useState<ViewState>('library');
   const [showForm, setShowForm] = useState(false);
   const [genreName, setGenreName] = useState('');

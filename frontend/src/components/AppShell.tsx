@@ -1,5 +1,6 @@
 import { NavLink, Link, Outlet } from 'react-router-dom';
-import { useCapabilitiesStore } from '../stores/capabilitiesStore';
+import { useCapabilitiesStore, useIsMemoryMode } from '../stores/capabilitiesStore';
+import LimitedModeBanner from './LimitedModeBanner';
 
 interface NavItem {
   to: string;
@@ -22,31 +23,14 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
     : `${base} text-[var(--text-muted)] hover:text-[var(--accent-primary)] focus-visible:text-[var(--accent-primary)]`;
 }
 
-function LimitedModeBanner() {
-  return (
-    <div
-      role="status"
-      data-testid="limited-mode-banner"
-      className="px-6 py-2 text-xs text-center"
-      style={{
-        background: 'var(--score-mid-faint)',
-        borderBottom: '1px solid var(--score-mid)',
-        color: 'var(--score-mid)',
-      }}
-    >
-      <span style={{ color: 'var(--text-secondary)' }}>
-        <strong style={{ color: 'var(--score-mid)' }}>Limited mode</strong>
-        {' — long-term memory is off (pattern library, history, lineage, and learning are '}
-        disabled). Generation works normally.
-      </span>
-    </div>
-  );
-}
-
 export default function AppShell() {
-  const can = useCapabilitiesStore((s) => s.can);
-  const isMemoryMode = useCapabilitiesStore((s) => s.isMemoryMode);
-  const visibleNav = NAV_ITEMS.filter((item) => !item.feature || can(item.feature));
+  // Subscribe to the features VALUE so nav gating re-renders when capabilities
+  // load. Fail closed: empty map until loaded, so gated entries stay hidden.
+  const features = useCapabilitiesStore((s) => s.capabilities?.features);
+  const isMemoryMode = useIsMemoryMode();
+  const visibleNav = NAV_ITEMS.filter(
+    (item) => !item.feature || (features?.[item.feature] ?? false),
+  );
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -76,7 +60,7 @@ export default function AppShell() {
           </ul>
         </nav>
       </header>
-      {isMemoryMode() && <LimitedModeBanner />}
+      {isMemoryMode && <LimitedModeBanner />}
       <main id="main" className="flex-1">
         <Outlet />
       </main>

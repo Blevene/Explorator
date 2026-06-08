@@ -1,6 +1,6 @@
 import type { ArrangementSummary, FinalSelection } from '../services/api';
 import { useArrangementStore } from '../stores/arrangementStore';
-import { useCapabilitiesStore } from '../stores/capabilitiesStore';
+import { useCan } from '../stores/capabilitiesStore';
 import { scoreColorVar, scoreTierGlyph } from '../utils/designTokens';
 import { StarButton } from './StarButton';
 
@@ -25,7 +25,7 @@ export default function FinalistPanel({
 }: FinalistPanelProps) {
   const { selection_roles, selected_candidate_ids } = finalSelection;
   const toggleCuration = useArrangementStore((s) => s.toggleCuration);
-  const can = useCapabilitiesStore((s) => s.can);
+  const canCurate = useCan('curation');
   if (selected_candidate_ids.length === 0) return null;
 
   const arrLookup = new Map(arrangements.map((a) => [a.id, a]));
@@ -86,7 +86,7 @@ export default function FinalistPanel({
                   </span>
                   <StarButton
                     isCurated={isCurated}
-                    disabled={!can('curation')}
+                    disabled={!canCurate}
                     disabledTitle="Curation requires the database (limited mode)"
                     onToggle={(next) => {
                       void toggleCuration(id, next).catch(() => {

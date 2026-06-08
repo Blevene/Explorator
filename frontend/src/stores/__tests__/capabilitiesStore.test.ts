@@ -37,11 +37,12 @@ describe('capabilitiesStore', () => {
     vi.restoreAllMocks();
   });
 
-  it('defaults: not memory mode and can() optimistic-true before load', () => {
+  it('defaults: not memory mode and can() fails closed before load', () => {
     const s = useCapabilitiesStore.getState();
     expect(s.isMemoryMode()).toBe(false);
-    expect(s.can('pattern_library')).toBe(true);
-    expect(s.can('curation')).toBe(true);
+    // Fail closed: gated features are off until capabilities load.
+    expect(s.can('pattern_library')).toBe(false);
+    expect(s.can('curation')).toBe(false);
   });
 
   it('populates capabilities on fetch (neo4j mode)', async () => {
@@ -78,5 +79,16 @@ describe('capabilitiesStore', () => {
     expect(s.error).toBe('boom');
     expect(s.loading).toBe(false);
     expect(s.capabilities).toBeNull();
+  });
+
+  it('fails closed after a failed fetch (no DB-only features leak through)', async () => {
+    vi.spyOn(api, 'getCapabilities').mockRejectedValue(new Error('boom'));
+    await useCapabilitiesStore.getState().fetch();
+    const s = useCapabilitiesStore.getState();
+    expect(s.isMemoryMode()).toBe(false);
+    expect(s.can('pattern_library')).toBe(false);
+    expect(s.can('curation')).toBe(false);
+    expect(s.can('session_history')).toBe(false);
+    expect(s.can('lineage')).toBe(false);
   });
 });

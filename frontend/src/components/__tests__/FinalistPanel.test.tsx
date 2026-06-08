@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import FinalistPanel from '../FinalistPanel';
 import { useArrangementStore } from '../../stores/arrangementStore';
+import { useCapabilitiesStore } from '../../stores/capabilitiesStore';
 
 const finalSelection = {
   selected_candidate_ids: ['arr_1', 'arr_2'],
@@ -16,6 +17,11 @@ const arrangements = [
 describe('FinalistPanel curation', () => {
   beforeEach(() => {
     useArrangementStore.getState().reset();
+    // Curation is a DB-only feature; gating now fails closed, so the star is
+    // only interactive once capabilities report it enabled (neo4j mode).
+    useCapabilitiesStore.setState({
+      capabilities: { persistence_mode: 'neo4j', features: { curation: true } },
+    });
   });
 
   it('no longer renders the "Save to library" button', () => {

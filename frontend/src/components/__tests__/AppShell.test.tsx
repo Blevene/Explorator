@@ -51,10 +51,12 @@ describe('AppShell limited mode', () => {
     useCapabilitiesStore.setState({ capabilities: null, loading: false, error: null });
   });
 
-  it('shows no banner and full nav before capabilities load (optimistic)', () => {
+  it('hides gated nav (Patterns) and shows no banner before capabilities load (fail closed)', () => {
     renderShell();
     expect(screen.queryByTestId('limited-mode-banner')).toBeNull();
-    expect(screen.getByRole('link', { name: 'Patterns' })).toBeInTheDocument();
+    // Gated nav stays hidden until capabilities confirm the feature is on.
+    expect(screen.queryByRole('link', { name: 'Patterns' })).toBeNull();
+    // Ungated nav is always visible.
     expect(screen.getByRole('link', { name: 'Genres' })).toBeInTheDocument();
   });
 
