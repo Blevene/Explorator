@@ -18,6 +18,7 @@ async def test_create_session(client: AsyncClient) -> None:
     response = await client.post(
         "/v1/sessions",
         json={
+            "genre": "dream_pop",
             "mode": "full_exploration",
             "prompt": "Dream pop in A major, wistful and haunted, 8 bars",
         },
@@ -26,17 +27,18 @@ async def test_create_session(client: AsyncClient) -> None:
     data = response.json()
     assert "session_id" in data
     assert data["status"] == "active"
+    assert data["genre"] == "dream_pop"
 
 
 async def test_list_sessions(client: AsyncClient) -> None:
     # Create two sessions
     await client.post(
         "/v1/sessions",
-        json={"mode": "full_exploration", "prompt": "Dream pop test 1"},
+        json={"genre": "dream_pop", "mode": "full_exploration", "prompt": "Dream pop test 1"},
     )
     await client.post(
         "/v1/sessions",
-        json={"mode": "full_exploration", "prompt": "Synthwave test 2"},
+        json={"genre": "synthwave", "mode": "full_exploration", "prompt": "Synthwave test 2"},
     )
     response = await client.get("/v1/sessions")
     assert response.status_code == 200
@@ -47,12 +49,13 @@ async def test_list_sessions(client: AsyncClient) -> None:
 async def test_get_session(client: AsyncClient) -> None:
     create_resp = await client.post(
         "/v1/sessions",
-        json={"mode": "full_exploration", "prompt": "Cinematic test"},
+        json={"genre": "cinematic", "mode": "full_exploration", "prompt": "Cinematic test"},
     )
     session_id = create_resp.json()["session_id"]
     response = await client.get(f"/v1/sessions/{session_id}")
     assert response.status_code == 200
     assert response.json()["session_id"] == session_id
+    assert response.json()["genre"] == "cinematic"
 
 
 async def test_get_session_not_found(client: AsyncClient) -> None:

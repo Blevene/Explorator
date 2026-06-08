@@ -103,6 +103,28 @@ async def test_session_list_ordering() -> None:
     assert ids == ["new", "mid", "old"]
 
 
+async def test_session_update_metadata() -> None:
+    store = MemoryStore()
+    repo = MemorySessionRepo(store)
+    session = Session(
+        id="S",
+        type="session",
+        status="active",
+        created_at="2026-01-01T00:00:00+00:00",
+        metadata={"prompt": "lofi", "genre": "dream_pop"},
+    )
+    await repo.create(session)
+
+    await repo.update_metadata("S", {"prompt": "lofi", "genre": "synthwave"})
+    got = await repo.get_by_id("S")
+    assert got is not None
+    assert got["metadata"] == {"prompt": "lofi", "genre": "synthwave"}
+
+    # No-op for an unknown session (mirrors the Neo4j MATCH semantics).
+    await repo.update_metadata("missing", {"genre": "cinematic"})
+    assert await repo.get_by_id("missing") is None
+
+
 async def test_arrangement_finalist_role_filtering() -> None:
     store = MemoryStore()
     repo = MemoryArrangementCandidateRepo(store)

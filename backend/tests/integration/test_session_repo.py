@@ -36,6 +36,23 @@ async def test_list_sessions(neo4j_driver: AsyncDriver) -> None:
     assert len(results) == 3
 
 
+async def test_update_metadata(neo4j_driver: AsyncDriver) -> None:
+    repo = SessionRepository(neo4j_driver)
+    session = Session(
+        id="sess_md_01",
+        type="session",
+        status="active",
+        mode="full_exploration",
+        metadata={"prompt": "lofi", "genre": "dream_pop"},
+    )
+    await repo.create(session)
+    await repo.update_metadata("sess_md_01", {"prompt": "lofi", "genre": "synthwave"})
+    result = await repo.get_by_id("sess_md_01")
+    assert result is not None
+    # Stored as JSON, deserialised back to a dict on read.
+    assert result["metadata"] == {"prompt": "lofi", "genre": "synthwave"}
+
+
 async def test_update_session_status(neo4j_driver: AsyncDriver) -> None:
     repo = SessionRepository(neo4j_driver)
     session = Session(

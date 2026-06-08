@@ -36,7 +36,8 @@ def _clean_store():
 
 def test_create_then_list_sessions(client_memory):
     resp = client_memory.post(
-        "/v1/sessions", json={"mode": "full_exploration", "prompt": "dreamy pad"}
+        "/v1/sessions",
+        json={"genre": "dream_pop", "mode": "full_exploration", "prompt": "dreamy pad"},
     )
     assert resp.status_code == 201
     session_id = resp.json()["session_id"]
@@ -50,11 +51,12 @@ def test_create_then_list_sessions(client_memory):
 
 def test_get_session_roundtrip(client_memory):
     session_id = client_memory.post(
-        "/v1/sessions", json={"prompt": "lofi"}
+        "/v1/sessions", json={"genre": "dream_pop", "prompt": "lofi"}
     ).json()["session_id"]
     got = client_memory.get(f"/v1/sessions/{session_id}")
     assert got.status_code == 200
     assert got.json()["prompt"] == "lofi"
+    assert got.json()["genre"] == "dream_pop"
 
 
 def test_list_genres_from_yaml(client_memory):
@@ -84,7 +86,7 @@ def test_list_patterns_empty_200(client_memory):
 
 def test_feedback_is_noop_200(client_memory):
     session_id = client_memory.post(
-        "/v1/sessions", json={"prompt": "test"}
+        "/v1/sessions", json={"genre": "dream_pop", "prompt": "test"}
     ).json()["session_id"]
     resp = client_memory.post(
         f"/v1/sessions/{session_id}/feedback",
@@ -107,7 +109,7 @@ def test_feedback_unknown_session_404(client_memory):
 
 def test_provenance_empty_200(client_memory):
     session_id = client_memory.post(
-        "/v1/sessions", json={"prompt": "x"}
+        "/v1/sessions", json={"genre": "dream_pop", "prompt": "x"}
     ).json()["session_id"]
     resp = client_memory.get(f"/v1/sessions/{session_id}/provenance")
     assert resp.status_code == 200
@@ -128,7 +130,7 @@ def test_explanation_get_404_when_absent(client_memory):
 
 def test_comparison_record_noop_201(client_memory):
     session_id = client_memory.post(
-        "/v1/sessions", json={"prompt": "x"}
+        "/v1/sessions", json={"genre": "dream_pop", "prompt": "x"}
     ).json()["session_id"]
     resp = client_memory.post(
         f"/v1/sessions/{session_id}/comparisons",
@@ -136,6 +138,63 @@ def test_comparison_record_noop_201(client_memory):
     )
     assert resp.status_code == 201
     assert resp.json()["comparison_id"].startswith("cv_")
+
+
+def test_round_persists_in_session_genre_switch(client_memory, monkeypatch):
+    """Triggering a round with a new genre updates the stored session metadata.
+
+    The graph is stubbed to a no-op so the test exercises only the resolution +
+    persistence seam in the round handler, not the full generation pipeline.
+    """
+    from unittest.mock import AsyncMock, MagicMock
+
+    import explorator.api.routes.rounds as rounds
+
+    fake_graph = MagicMock()
+    fake_graph.ainvoke = AsyncMock(return_value={})
+    monkeypatch.setattr(rounds, "build_exploration_graph", lambda *a, **k: fake_graph)
+
+    session_id = client_memory.post(
+        "/v1/sessions", json={"genre": "dream_pop", "prompt": "dreamy"}
+    ).json()["session_id"]
+
+    # Drain the SSE stream so the background task runs to completion.
+    with client_memory.stream(
+        "POST", f"/v1/sessions/{session_id}/rounds", json={"genre": "synthwave"}
+    ) as resp:
+        assert resp.status_code == 200
+        for _ in resp.iter_lines():
+            pass
+
+    got = client_memory.get(f"/v1/sessions/{session_id}")
+    assert got.json()["genre"] == "synthwave"
+    # Mood/prompt is untouched when the round request omits a prompt.
+    assert got.json()["prompt"] == "dreamy"
+
+
+def test_round_without_genre_keeps_stored_genre(client_memory, monkeypatch):
+    """A round triggered without a genre leaves the stored genre intact."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    import explorator.api.routes.rounds as rounds
+
+    fake_graph = MagicMock()
+    fake_graph.ainvoke = AsyncMock(return_value={})
+    monkeypatch.setattr(rounds, "build_exploration_graph", lambda *a, **k: fake_graph)
+
+    session_id = client_memory.post(
+        "/v1/sessions", json={"genre": "cinematic", "prompt": "lush"}
+    ).json()["session_id"]
+
+    with client_memory.stream(
+        "POST", f"/v1/sessions/{session_id}/rounds", json={}
+    ) as resp:
+        assert resp.status_code == 200
+        for _ in resp.iter_lines():
+            pass
+
+    got = client_memory.get(f"/v1/sessions/{session_id}")
+    assert got.json()["genre"] == "cinematic"
 
 
 def test_curation_409_in_memory_mode(client_memory):

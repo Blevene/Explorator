@@ -24,6 +24,19 @@ class SessionRepository(BaseRepository):
         async with self.driver.session() as session:
             await session.run(query, id=session_id, fs=fs_json)
 
+    async def update_metadata(
+        self, session_id: str, metadata: dict[str, Any]
+    ) -> None:
+        """Overwrite the Session node's metadata.
+
+        Stored as a JSON string (matching how `create` serialises nested dicts),
+        so reads via `get_by_id` deserialise it back to a dict.
+        """
+        md_json = json.dumps(metadata)
+        query = "MATCH (s:Session {id: $id}) SET s.metadata = $md"
+        async with self.driver.session() as session:
+            await session.run(query, id=session_id, md=md_json)
+
     async def list_sessions(self) -> list[dict[str, Any]]:
         """List all sessions ordered by creation time."""
         query = """

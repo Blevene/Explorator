@@ -20,17 +20,17 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["rounds"])
 
-# Generation mode → (n_candidates, k_selection)
-MODE_PARAMS: dict[str, tuple[int, int]] = {
-    "conservative": (8, 3),
-    "balanced": (12, 4),
-    "exploratory": (16, 6),
-}
+# Single, non-configurable generation profile: conservative breadth (8 candidates,
+# top 3 selected) with a 2-round guided-search budget. Keeps real-Gemini rounds
+# fast enough to finish within the client timeout.
+N_CANDIDATES = 8
+K_SELECTION = 3
+MAX_ROUNDS = 2
 
 
 class TriggerRoundRequest(BaseModel):
     prompt: str | None = None
-    generation_mode: str = "balanced"
+    genre: str | None = None
 
 
 class RoundResponse(BaseModel):
@@ -52,23 +52,36 @@ async def trigger_round(
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # Resolve prompt: use request prompt or fall back to session's stored prompt
+    # Resolve genre and mood. The explicit request value wins, then the stored
+    # session metadata, then a sane default. The engine's parser still needs a
+    # non-empty prompt for context, so an empty mood falls back to the genre.
     metadata = parse_json_or_dict(session.get("metadata"))
+    session_genre = metadata.get("genre", "")
     session_prompt = metadata.get("prompt", "")
-    prompt = request.prompt or session_prompt
+    genre = request.genre or session_genre or "dream_pop"
+    mood = request.prompt or session_prompt or ""
+    prompt = mood or genre
+
+    # Persist in-session genre/mood switches so reload sticks.
+    if request.genre and request.genre != session_genre:
+        new_metadata = dict(metadata)
+        new_metadata["genre"] = request.genre
+        if request.prompt:
+            new_metadata["prompt"] = request.prompt
+        await repo.update_metadata(session_id, new_metadata)
 
     channel = SSEChannel()
     graph = build_exploration_graph(gemini, driver)
 
-    n, k = MODE_PARAMS.get(request.generation_mode, (12, 4))
-
     initial_state: dict[str, Any] = {
         "session_id": session_id,
         "prompt": prompt,
-        "generation_mode": request.generation_mode,
+        "genre": genre,
+        "generation_mode": "conservative",
         "round_number": 1,
-        "n_candidates": n,
-        "k_selection": k,
+        "n_candidates": N_CANDIDATES,
+        "k_selection": K_SELECTION,
+        "search_plan": {"stop_conditions": {"max_rounds": MAX_ROUNDS}},
         "on_progress": channel.send,
         "provenance_events": [],
     }

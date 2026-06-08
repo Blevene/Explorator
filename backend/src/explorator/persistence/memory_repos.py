@@ -86,6 +86,12 @@ class MemorySessionRepo(_MemoryCrud):
         rows = self._store.all("Session")
         return sorted(rows, key=lambda r: r.get("created_at") or "", reverse=True)
 
+    async def update_metadata(
+        self, session_id: str, metadata: dict[str, Any]
+    ) -> None:
+        """Overwrite the Session record's metadata (native dict, no-op if absent)."""
+        self._store.update("Session", session_id, metadata=metadata)
+
     async def set_final_selection(
         self, session_id: str, payload: dict[str, Any]
     ) -> None:

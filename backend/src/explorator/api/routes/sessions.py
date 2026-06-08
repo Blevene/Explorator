@@ -23,8 +23,9 @@ router = APIRouter(tags=["sessions"])
 class CreateSessionRequest(BaseModel):
     """Request body for creating a session."""
 
+    genre: str
     mode: str = "full_exploration"
-    prompt: str
+    prompt: str = ""
 
 
 class SessionResponse(BaseModel):
@@ -35,6 +36,7 @@ class SessionResponse(BaseModel):
     mode: str
     created_at: str
     prompt: str
+    genre: str
 
 
 class SessionListResponse(BaseModel):
@@ -59,7 +61,7 @@ async def create_session(
         mode=request.mode,
         created_at=now,
         updated_at=now,
-        metadata={"prompt": request.prompt},
+        metadata={"prompt": request.prompt, "genre": request.genre},
     )
     await repo.create(session)
 
@@ -69,6 +71,7 @@ async def create_session(
         mode=request.mode,
         created_at=now.isoformat(),
         prompt=request.prompt,
+        genre=request.genre,
     )
 
 
@@ -78,16 +81,19 @@ async def list_sessions(
 ) -> SessionListResponse:
     """List all sessions."""
     sessions = await repo.list_sessions()
-    items = [
-        SessionResponse(
-            session_id=s["id"],
-            status=s.get("status", "unknown"),
-            mode=s.get("mode", "unknown"),
-            created_at=s.get("created_at", ""),
-            prompt=parse_json_or_dict(s.get("metadata")).get("prompt", ""),
+    items = []
+    for s in sessions:
+        metadata = parse_json_or_dict(s.get("metadata"))
+        items.append(
+            SessionResponse(
+                session_id=s["id"],
+                status=s.get("status", "unknown"),
+                mode=s.get("mode", "unknown"),
+                created_at=s.get("created_at", ""),
+                prompt=metadata.get("prompt", ""),
+                genre=metadata.get("genre", ""),
+            )
         )
-        for s in sessions
-    ]
     return SessionListResponse(items=items)
 
 
@@ -107,6 +113,7 @@ async def get_session(
         mode=session.get("mode", "unknown"),
         created_at=session.get("created_at", ""),
         prompt=metadata.get("prompt", ""),
+        genre=metadata.get("genre", ""),
     )
 
 
