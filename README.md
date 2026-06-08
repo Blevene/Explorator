@@ -93,11 +93,6 @@ cd Explorator
 cp .env.example backend/.env
 # Edit backend/.env and set GEMINI_API_KEY
 
-# Bring up Neo4j (dev container on :7688) — OPTIONAL.
-# Skip this to run in limited mode (generation works; durable storage and
-# long-term-memory features are off). See "Neo4j is optional" below.
-make neo4j-up
-
 # Install deps
 cd backend  && uv sync --all-extras && cd ..
 cd frontend && npm install         && cd ..
@@ -110,17 +105,29 @@ cd frontend && npm install         && cd ..
 > history, lineage, genre research, and curation. See
 > [Neo4j is optional (limited mode)](#neo4j-is-optional-limited-mode).
 
-**Run**
+**Run** — two modes, no config flag to switch between them. The backend probes
+Neo4j once on startup and picks the mode automatically.
+
+*Full mode — with Neo4j* (all features, durable across restarts):
 
 ```bash
-# Terminal 1 — Backend on :8000
-make backend
-
-# Terminal 2 — Frontend (Vite dev server, default :5173, proxies /v1)
-cd frontend && npm run dev -- --host 0.0.0.0
+make neo4j-up                                  # dev Neo4j on :7688
+make backend                                   # FastAPI on :8000 — connects to Neo4j
+cd frontend && npm run dev -- --host 0.0.0.0   # Vite on :5173
 ```
 
-Open http://localhost:5173.
+*Limited mode — no Neo4j* (in-memory; generation only). Just don't start Neo4j —
+the backend finds it absent and runs against a process-lifetime in-memory store:
+
+```bash
+make backend                                   # logs "in-memory mode — long-term memory features disabled"
+cd frontend && npm run dev -- --host 0.0.0.0   # the UI shows a "limited mode" banner
+```
+
+Open http://localhost:5173. Generation (M1 → M2 → M3) works in **both** modes;
+limited mode turns off the long-term-memory features and loses data on restart —
+see [Neo4j is optional (limited mode)](#neo4j-is-optional-limited-mode). Check the
+live mode any time with `curl localhost:8000/v1/capabilities`.
 
 **Test**
 
@@ -128,7 +135,13 @@ Open http://localhost:5173.
 make test                       # Backend full suite (auto-starts isolated test Neo4j on :7689)
 make lint                       # ruff + mypy strict
 cd frontend && npm run test:unit
-make e2e                        # Playwright — spawns its own backend + frontend internally
+
+# End-to-end (Playwright spawns its own servers):
+make e2e-parallel               # UI/generation specs — fully parallel, each worker on its
+                                #   own in-memory backend; no Neo4j needed (~30s)
+make e2e-neo4j                  # durable-feature specs (pattern library, genre research,
+                                #   feedback/lineage) — serial against the dev Neo4j
+make e2e                        # both lanes
 ```
 
 The pytest suite wipes the DB between tests, so it runs against a dedicated `neo4j-test` container on port 7689 — the dev DB on 7688 is never touched. `make test*` brings the test container up automatically; if you invoke pytest directly, run `make neo4j-test-up` first.
