@@ -221,44 +221,44 @@ async def persist_realization(
             logger.exception("Unexpected error persisting ArrangementFamily %s", fam.id)
 
     # 5. Persist evaluation entities (direct-Cypher, graph-only — skip in memory mode)
-    from explorator.graph.repository import _neo4j_safe
-    for ev_data in state.get("evaluations", []) if driver is not None else []:
-        assert driver is not None  # narrowed by the loop guard above
-        arrangement_id = ev_data.get("arrangement_candidate_id", "")
-        for eval_type in ("voice_leading", "register_density", "playability"):
-            eval_entry = ev_data.get(eval_type, {})
-            eval_node = eval_entry.get("evaluation")
-            if not eval_node:
-                continue
-            eval_id = eval_node.get("id", "")
-            if not eval_id:
-                continue
-            label = {
-                "voice_leading": "VoiceLeadingEvaluation",
-                "register_density": "RegisterDensityEvaluation",
-                "playability": "PlayabilityEvaluation",
-            }[eval_type]
-            query = (
-                f"MERGE (e:{label} {{id: $id}}) "
-                "SET e += $props"
-            )
-            props = _neo4j_safe({k: v for k, v in eval_node.items() if k != "id"})
-            try:
-                async with driver.session() as session:
-                    await session.run(query, id=eval_id, props=props)
-                # Link arrangement → evaluation
-                await _create_relationship(
-                    driver,
-                    "ArrangementCandidate",
-                    arrangement_id,
-                    "HAS_EVALUATION",
-                    label,
-                    eval_id,
+    if driver is not None:
+        from explorator.graph.repository import _neo4j_safe
+        for ev_data in state.get("evaluations", []):
+            arrangement_id = ev_data.get("arrangement_candidate_id", "")
+            for eval_type in ("voice_leading", "register_density", "playability"):
+                eval_entry = ev_data.get(eval_type, {})
+                eval_node = eval_entry.get("evaluation")
+                if not eval_node:
+                    continue
+                eval_id = eval_node.get("id", "")
+                if not eval_id:
+                    continue
+                label = {
+                    "voice_leading": "VoiceLeadingEvaluation",
+                    "register_density": "RegisterDensityEvaluation",
+                    "playability": "PlayabilityEvaluation",
+                }[eval_type]
+                query = (
+                    f"MERGE (e:{label} {{id: $id}}) "
+                    "SET e += $props"
                 )
-            except Neo4jError as e:
-                logger.error("Failed to persist %s %s: %s", label, eval_id, e)
-            except Exception:
-                logger.exception("Unexpected error persisting %s %s", label, eval_id)
+                props = _neo4j_safe({k: v for k, v in eval_node.items() if k != "id"})
+                try:
+                    async with driver.session() as session:
+                        await session.run(query, id=eval_id, props=props)
+                    # Link arrangement → evaluation
+                    await _create_relationship(
+                        driver,
+                        "ArrangementCandidate",
+                        arrangement_id,
+                        "HAS_EVALUATION",
+                        label,
+                        eval_id,
+                    )
+                except Neo4jError as e:
+                    logger.error("Failed to persist %s %s: %s", label, eval_id, e)
+                except Exception:
+                    logger.exception("Unexpected error persisting %s %s", label, eval_id)
 
     # 6. Persist AggregateScorecard nodes + relationships.
     # CRITICAL: the scorecard write goes through the factory repo so it lands in

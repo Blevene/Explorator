@@ -8,6 +8,7 @@ from httpx import ASGITransport, AsyncClient
 
 import explorator.graph.connection as conn
 from explorator.api.app import create_app
+from explorator.persistence.memory_store import get_memory_store
 
 
 @pytest_asyncio.fixture
@@ -40,5 +41,11 @@ def client_memory(monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     monkeypatch.setattr(conn, "_driver", None)
     monkeypatch.setattr(conn, "_available", False)
 
-    with TestClient(create_app()) as c:  # context manager runs lifespan
-        yield c
+    # The memory store is a process-singleton; reset it so each test starts
+    # clean rather than relying on per-file autouse clears (order-dependent).
+    get_memory_store().clear()
+    try:
+        with TestClient(create_app()) as c:  # context manager runs lifespan
+            yield c
+    finally:
+        get_memory_store().clear()

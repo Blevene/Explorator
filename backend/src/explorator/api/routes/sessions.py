@@ -133,10 +133,15 @@ async def delete_session(
     if os.path.isdir(export_dir):
         shutil.rmtree(export_dir)
 
-    # Memory mode: filesystem export cleanup above is sufficient. The graph
-    # cascade below (child nodes, relationships, library rows) is a Neo4j-only
-    # concern; in-memory state is process-lifetime and lost on restart anyway.
+    # Memory mode: remove the Session from the store so a subsequent get_by_id
+    # returns 404. Child nodes aren't cascaded — in-memory state is
+    # process-lifetime and lost on restart anyway. The graph cascade below
+    # (child nodes, relationships, library rows) is a Neo4j-only concern.
     if driver is None:
+        from explorator.persistence.memory_repos import MemorySessionRepo
+
+        assert isinstance(repo, MemorySessionRepo)
+        await repo.delete(session_id)
         return
 
     # All three deletes share one transaction so a transient failure mid-cascade

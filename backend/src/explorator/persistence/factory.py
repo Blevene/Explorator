@@ -43,6 +43,7 @@ if TYPE_CHECKING:
         MemoryArrangementCandidateRepo,
         MemoryArrangementFamilyRepo,
         MemoryBassLineRepo,
+        MemoryCandidateExplanationRepo,
         MemoryCandidateRepo,
         MemoryCreativeBriefRepo,
         MemoryGroovePatternRepo,
@@ -55,7 +56,6 @@ if TYPE_CHECKING:
         MemoryVoicingPlanRepo,
     )
     from explorator.persistence.null_repos import (
-        NullCandidateExplanationRepo,
         NullComparisonViewRepo,
         NullExportPackageRepo,
         NullFeedbackEventRepo,
@@ -307,11 +307,13 @@ def make_comparison_view_repo(
 
 def make_candidate_explanation_repo(
     driver: AsyncDriver | None,
-) -> CandidateExplanationRepo | NullCandidateExplanationRepo:
+) -> CandidateExplanationRepo | MemoryCandidateExplanationRepo:
     if driver is None:
-        from explorator.persistence.null_repos import NullCandidateExplanationRepo
+        # Real within-process caching (not a null repo) so `POST /explain`
+        # doesn't re-invoke Gemini PRO on every call in memory mode.
+        from explorator.persistence.memory_repos import MemoryCandidateExplanationRepo
 
-        return NullCandidateExplanationRepo()
+        return MemoryCandidateExplanationRepo(get_memory_store())
     from explorator.graph.candidate_explanation_repo import CandidateExplanationRepo
 
     return CandidateExplanationRepo(driver)

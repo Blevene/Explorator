@@ -18,6 +18,7 @@ from explorator.persistence.factory import (
     make_scorecard_repo,
     make_session_repo,
 )
+from explorator.utils import parse_json_or_dict
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["realization"])
@@ -47,9 +48,17 @@ async def trigger_realization(
     channel = SSEChannel()
     graph = build_realization_subgraph(gemini, driver)
 
+    # Resolve the session's genre from its metadata so load_context loads the
+    # correct genre profile. In memory mode persist_round never writes
+    # `Session.genre` and no CreativeBrief is persisted, so without this the
+    # load_context fallback chain would default to "dream_pop".
+    metadata = parse_json_or_dict(session.get("metadata"))
+    genre = metadata.get("genre") or "dream_pop"
+
     initial_state = {
         "session_id": session_id,
         "progression_candidate_ids": request.progression_candidate_ids,
+        "genre": genre,
         "on_progress": channel.send,
     }
 

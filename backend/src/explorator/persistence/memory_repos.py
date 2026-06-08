@@ -92,6 +92,14 @@ class MemorySessionRepo(_MemoryCrud):
         """Overwrite the Session record's metadata (native dict, no-op if absent)."""
         self._store.update("Session", session_id, metadata=metadata)
 
+    async def delete(self, session_id: str) -> bool:
+        """Remove the Session record from the store. Returns True if it existed.
+
+        Child nodes are not cascaded (memory state is process-lifetime and lost
+        on restart); this just makes a subsequent `get_by_id` return None.
+        """
+        return self._store.delete("Session", session_id)
+
     async def set_final_selection(
         self, session_id: str, payload: dict[str, Any]
     ) -> None:
@@ -179,3 +187,25 @@ class MemoryStyleRepo:
 
     async def list_genre_profiles(self) -> list[dict[str, Any]]:
         return [dict(p) for p in self._profiles()]
+
+
+# NOTE: MemoryStyleRepo returns native Python dicts (nested dicts/lists intact),
+# whereas StyleRepository.get_genre_profile returns dicts whose nested values are
+# JSON *strings* (Neo4j can't store nested structures). This shape divergence is
+# benign: both forms are normalized downstream via `parse_json_field`, which is a
+# no-op on already-decoded dicts/lists and decodes the Neo4j JSON strings.
+
+
+class MemoryCandidateExplanationRepo(_MemoryCrud):
+    """In-memory cache for candidate explanations.
+
+    Backed by the process-singleton store so a `POST /explain` result is cached
+    within the process and subsequent calls skip the (expensive) Gemini PRO
+    invocation — matching the Neo4j repo's caching behaviour. Lost on restart.
+    """
+
+    label = "CandidateExplanation"
+
+    async def get_by_candidate_id(self, candidate_id: str) -> dict[str, Any] | None:
+        rows = self._store.query(self.label, "candidate_id", candidate_id)
+        return rows[0] if rows else None

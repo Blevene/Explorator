@@ -10,6 +10,7 @@ import asyncio
 import logging
 
 from neo4j import AsyncDriver, AsyncGraphDatabase
+from neo4j.exceptions import ServiceUnavailable
 
 from explorator.config import settings
 
@@ -25,6 +26,12 @@ async def probe_driver(timeout: float = 3.0) -> AsyncDriver | None:
 
     Sets module availability state. Safe to call once at startup. On failure the
     half-open driver is closed so we don't leak sockets.
+
+    Only *connectivity* failures (Neo4j down / wrong host / socket errors /
+    timeout) degrade to memory mode. Configuration failures — a wrong
+    NEO4J_PASSWORD (``AuthError``) or a malformed URI/auth
+    (``ConfigurationError``) — propagate so a misconfigured-but-intended Neo4j
+    fails loudly at startup instead of silently booting in-memory.
     """
     global _driver, _available
     async with _lock:
@@ -36,12 +43,19 @@ async def probe_driver(timeout: float = 3.0) -> AsyncDriver | None:
         )
         try:
             await asyncio.wait_for(driver.verify_connectivity(), timeout=timeout)
-        except (OSError, TimeoutError, Exception) as exc:  # noqa: BLE001
+        except (ServiceUnavailable, OSError, TimeoutError) as exc:
             logger.warning("Neo4j unreachable (%s) — running in in-memory mode", exc)
             await driver.close()
             _driver = None
             _available = False
             return None
+        except BaseException:
+            # AuthError / ConfigurationError (or anything else) is a real
+            # misconfiguration — close the half-open driver and re-raise.
+            await driver.close()
+            _driver = None
+            _available = False
+            raise
         _driver = driver
         _available = True
         return _driver

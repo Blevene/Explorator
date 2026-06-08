@@ -13,6 +13,14 @@ from typing import Any
 
 
 class MemoryStore:
+    """Unbounded in-memory node store. Known limitation: it grows for the
+    process lifetime with no eviction — every created node stays resident until
+    the process exits or ``clear()`` is called. ``MemorySessionRepo.list_sessions``
+    therefore returns *every* session created this process. This is acceptable
+    because memory mode is ephemeral (single-user, restart loses everything);
+    add eviction only if memory mode ever needs to be long-lived.
+    """
+
     def __init__(self) -> None:
         self._nodes: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
 
@@ -57,6 +65,10 @@ class MemoryStore:
                 return
         self.create(label, props)
 
+    def delete(self, label: str, node_id: str) -> bool:
+        """Remove a node by label+id. Returns True if it existed."""
+        return self._nodes[label].pop(node_id, None) is not None
+
     def clear(self) -> None:
         self._nodes.clear()
 
@@ -65,7 +77,13 @@ _store: MemoryStore | None = None
 
 
 def get_memory_store() -> MemoryStore:
-    """Return the process-singleton store (shared by engine + API)."""
+    """Return the process-singleton store (shared by engine + API).
+
+    This is a single process-lifetime instance with no eviction (see
+    :class:`MemoryStore`). It is never cleared automatically — tests call
+    ``.clear()`` for isolation; in production it accumulates for the process
+    lifetime.
+    """
     global _store
     if _store is None:
         _store = MemoryStore()

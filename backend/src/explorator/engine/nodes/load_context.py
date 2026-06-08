@@ -50,10 +50,14 @@ async def load_context(
         raise ValueError("No progression candidate IDs provided")
     session_id = candidates[0].get("session_id", "")
 
+    # Prefer the genre carried on state (set by the realization trigger route
+    # from session metadata, or by rounds.py in the combined flow). This is the
+    # only reliable source in memory mode, where persist_round skips the
+    # `Session.genre` write and no CreativeBrief is persisted.
+    genre = state.get("genre", "")
     # Fetch session to get genre name (persisted by M1 persist_round)
     session_data = await session_repo.get_by_id(session_id)
-    genre = ""
-    if session_data:
+    if not genre and session_data:
         genre = session_data.get("genre", "")
     # Fallback chain: creative brief → candidate metadata → default
     if not genre:

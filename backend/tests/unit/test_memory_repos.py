@@ -4,12 +4,14 @@ These exercise the real Pydantic models so the stored/returned dict shapes are
 exactly what the Neo4j repos yield after deserialization.
 """
 
+from explorator.models.export import CandidateExplanation
 from explorator.models.harmony import ChordEvent, ProgressionCandidate
 from explorator.models.realization import ArrangementCandidate, BassLine, VoicingPlan
 from explorator.models.session import CreativeBrief, Session
 from explorator.persistence.memory_repos import (
     MemoryArrangementCandidateRepo,
     MemoryBassLineRepo,
+    MemoryCandidateExplanationRepo,
     MemoryCandidateRepo,
     MemoryCreativeBriefRepo,
     MemorySessionRepo,
@@ -123,6 +125,47 @@ async def test_session_update_metadata() -> None:
     # No-op for an unknown session (mirrors the Neo4j MATCH semantics).
     await repo.update_metadata("missing", {"genre": "cinematic"})
     assert await repo.get_by_id("missing") is None
+
+
+async def test_session_delete() -> None:
+    store = MemoryStore()
+    repo = MemorySessionRepo(store)
+    await repo.create(_session("S", "2026-01-01T00:00:00+00:00"))
+    assert await repo.get_by_id("S") is not None
+
+    assert await repo.delete("S") is True
+    assert await repo.get_by_id("S") is None
+
+    # Deleting a missing session is a no-op returning False.
+    assert await repo.delete("S") is False
+
+
+async def test_candidate_explanation_cache_roundtrip() -> None:
+    store = MemoryStore()
+    repo = MemoryCandidateExplanationRepo(store)
+
+    # Cold cache → None (would trigger Gemini in the route).
+    assert await repo.get_by_candidate_id("arr1") is None
+
+    expl = CandidateExplanation(
+        id="ce1",
+        type="candidate_explanation",
+        status="active",
+        session_id="S",
+        candidate_id="arr1",
+        summary="warm pad voicing",
+        why_it_works=["smooth voice leading"],
+    )
+    await repo.create(expl)
+
+    # Warm cache → returns the stored explanation (skips Gemini).
+    got = await repo.get_by_candidate_id("arr1")
+    assert got is not None
+    assert got["id"] == "ce1"
+    assert got["summary"] == "warm pad voicing"
+    assert got["why_it_works"] == ["smooth voice leading"]
+    # Distinct candidate id is still a miss.
+    assert await repo.get_by_candidate_id("arr2") is None
 
 
 async def test_arrangement_finalist_role_filtering() -> None:

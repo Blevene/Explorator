@@ -59,6 +59,20 @@ def test_get_session_roundtrip(client_memory):
     assert got.json()["genre"] == "dream_pop"
 
 
+def test_delete_session_memory_mode(client_memory):
+    """DELETE actually removes the session from the in-memory store."""
+    session_id = client_memory.post(
+        "/v1/sessions", json={"genre": "dream_pop", "prompt": "lofi"}
+    ).json()["session_id"]
+    assert client_memory.get(f"/v1/sessions/{session_id}").status_code == 200
+
+    resp = client_memory.delete(f"/v1/sessions/{session_id}")
+    assert resp.status_code == 204
+
+    # After delete the session is gone (was previously a no-op returning 200).
+    assert client_memory.get(f"/v1/sessions/{session_id}").status_code == 404
+
+
 def test_list_genres_from_yaml(client_memory):
     """Genres are served from YAML even without a database."""
     resp = client_memory.get("/v1/genres")
