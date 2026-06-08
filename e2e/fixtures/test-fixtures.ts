@@ -1,5 +1,6 @@
 import { test as base, type Page } from '@playwright/test';
 import { spawn, type ChildProcess } from 'child_process';
+import net from 'net';
 import path from 'path';
 
 /**
@@ -17,6 +18,13 @@ import path from 'path';
  * Because Playwright workers are separate processes, a module-level `activeApiBase`
  * set by the worker-scoped fixture is worker-local — free helpers below read it
  * without threading the base through every call site.
+ *
+ * INVARIANT: every free helper that reads `activeApiBase` (createTestSession and
+ * anything it calls) MUST run from within a test that uses the `servers` /
+ * `testSession` fixture. Those fixtures are what assign `activeApiBase` to this
+ * worker's actual backend; a helper invoked before either fixture has run (e.g.
+ * from a bare `beforeAll` or top-level module code) would silently read the stale
+ * SHARED-lane default and hit the wrong (or non-existent) backend.
  */
 const PER_WORKER = process.env.E2E_PER_WORKER_BACKEND === '1';
 const SHARED_BACKEND_PORT = 8100;
@@ -35,7 +43,7 @@ interface WorkerServers {
   frontendURL: string;
 }
 
-async function waitForHealth(url: string, timeoutMs = 60_000): Promise<void> {
+async function waitForHealth(url: string, timeoutMs = 90_000): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     try {
@@ -45,6 +53,33 @@ async function waitForHealth(url: string, timeoutMs = 60_000): Promise<void> {
     await new Promise((r) => setTimeout(r, 300));
   }
   throw new Error(`Health check failed: ${url} not ready after ${timeoutMs}ms`);
+}
+
+/**
+ * Fast pre-flight: throw immediately if `port` is already bound (a leaked/stale
+ * uvicorn or vite from a poisoned prior run). Without this, a busy port turns
+ * into a slow death — vite --strictPort exits and uvicorn fails to bind, but the
+ * subsequent waitForHealth would spin the full timeout before surfacing it.
+ */
+async function assertPortFree(port: number, label: string): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const sock = new net.Socket();
+    const done = (err?: Error): void => {
+      sock.removeAllListeners();
+      sock.destroy();
+      err ? reject(err) : resolve();
+    };
+    sock.setTimeout(500);
+    // A successful connect means something is already listening → port busy.
+    sock.once('connect', () => done(
+      new Error(`Port ${port} (${label}) is already in use — a stale/leaked ` +
+                `process is holding it. Kill it before re-running the e2e suite.`),
+    ));
+    // Connection refused (or any connect error) means the port is free.
+    sock.once('error', () => done());
+    sock.once('timeout', () => done());
+    sock.connect(port, '127.0.0.1');
+  });
 }
 
 function spawnBackend(port: number): ChildProcess {
@@ -76,9 +111,42 @@ function spawnFrontend(port: number, backendPort: number): ChildProcess {
   );
 }
 
-function killTree(proc: ChildProcess): void {
+/**
+ * Tear down a detached child's whole process group. SIGTERM first, then await
+ * the child's 'exit' (so we don't return while ports are still bound); if it
+ * hasn't exited within `graceMs`, escalate to SIGKILL on the group. Best-effort:
+ * a process that's already gone (ESRCH) is fine. `unref()` so a hung kill can
+ * never keep this worker alive.
+ */
+async function killTree(proc: ChildProcess, graceMs = 5_000): Promise<void> {
   if (proc.pid === undefined) return;
-  try { process.kill(-proc.pid, 'SIGTERM'); } catch { /* already gone */ }
+  const pid = proc.pid;
+  proc.unref();
+
+  // Already exited? Nothing to do.
+  if (proc.exitCode !== null || proc.signalCode !== null) return;
+
+  const exited = new Promise<void>((resolve) => proc.once('exit', () => resolve()));
+
+  try { process.kill(-pid, 'SIGTERM'); } catch { /* already gone */ return; }
+
+  let timer: NodeJS.Timeout | undefined;
+  const timedOut = new Promise<'timeout'>((resolve) => {
+    timer = setTimeout(() => resolve('timeout'), graceMs);
+    timer.unref();
+  });
+
+  const result = await Promise.race([exited.then(() => 'exited' as const), timedOut]);
+  if (timer) clearTimeout(timer);
+
+  if (result === 'timeout') {
+    try { process.kill(-pid, 'SIGKILL'); } catch { /* already gone */ }
+    // Give the group a brief moment to actually die after SIGKILL.
+    await Promise.race([
+      exited,
+      new Promise<void>((resolve) => setTimeout(resolve, 1_000).unref()),
+    ]);
+  }
 }
 
 async function createTestSession(
@@ -146,17 +214,25 @@ export const test = base.extend<
     const backendPort = 8200 + idx;
     const frontendPort = 5300 + idx;
 
-    const backend = spawnBackend(backendPort);
-    await waitForHealth(`http://localhost:${backendPort}/v1/capabilities`);
-    const frontend = spawnFrontend(frontendPort, backendPort);
-    await waitForHealth(`http://localhost:${frontendPort}`);
-
-    activeApiBase = `http://localhost:${backendPort}/v1`;
+    // Declared before the spawns so the finally can clean up whichever handle
+    // exists if a later spawn or health check throws — otherwise the already-
+    // spawned detached process leaks and poisons later runs by holding its port.
+    let backend: ChildProcess | undefined;
+    let frontend: ChildProcess | undefined;
     try {
+      await assertPortFree(backendPort, 'backend');
+      backend = spawnBackend(backendPort);
+      await waitForHealth(`http://localhost:${backendPort}/v1/capabilities`);
+
+      await assertPortFree(frontendPort, 'frontend');
+      frontend = spawnFrontend(frontendPort, backendPort);
+      await waitForHealth(`http://localhost:${frontendPort}`);
+
+      activeApiBase = `http://localhost:${backendPort}/v1`;
       await use({ apiBase: activeApiBase, frontendURL: `http://localhost:${frontendPort}` });
     } finally {
-      killTree(frontend);
-      killTree(backend);
+      if (frontend) await killTree(frontend);
+      if (backend) await killTree(backend);
     }
   }, { scope: 'worker' }],
 

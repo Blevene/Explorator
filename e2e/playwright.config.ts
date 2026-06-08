@@ -9,16 +9,14 @@ export default defineConfig({
   // These need durable Neo4j-backed learning features and run serially in the
   // Neo4j lane (playwright.neo4j.config.ts):
   //   genre-research / pattern-library — gated off entirely in memory mode
-  //   m3-features (feedback) / error-edge — poke learning/lineage surfaces
+  //   m3-features (feedback) — pokes learning surfaces
+  // error-edge is memory-safe (only page/testSession, absence-based lineage
+  // assertions) so it runs here in parallel.
   // Everything else is generation / realization / UI and is memory-safe.
   testIgnore: [
     '**/genre-research.spec.ts',
     '**/pattern-library.spec.ts',
     '**/m3-features.spec.ts',
-    '**/error-edge.spec.ts',
-    // 2-lane comparison view doesn't fully come up under in-memory mode; runs
-    // in the Neo4j lane where it passes.
-    '**/comparison-playback.spec.ts',
   ],
   fullyParallel: true,
   workers: process.env.E2E_WORKERS ? Number(process.env.E2E_WORKERS) : 4,

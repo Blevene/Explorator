@@ -12,8 +12,6 @@ export default defineConfig({
     '**/genre-research.spec.ts',
     '**/pattern-library.spec.ts',
     '**/m3-features.spec.ts',
-    '**/error-edge.spec.ts',
-    '**/comparison-playback.spec.ts',
   ],
   fullyParallel: false,
   workers: 1,
