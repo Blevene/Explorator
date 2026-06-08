@@ -4,6 +4,8 @@ import asyncio
 import logging
 from typing import Any
 
+from pydantic import ValidationError
+
 from explorator.adapters.gemini import GeminiClient, ModelTier
 from explorator.domain.realization.voicing import VoicingGenerator
 from explorator.engine.state import ExplorationState
@@ -19,12 +21,62 @@ from explorator.utils import parse_json_field, parse_json_or_dict
 logger = logging.getLogger(__name__)
 
 
+# The genre catalog (esp. LLM-generated genres) uses a richer voicing vocabulary
+# than the VoicingPreferences model's Literal types. Map catalog terms onto the
+# supported set so a genre's voicing block can never crash a round; unknown
+# values fall back to the field default (and unknown variant entries are dropped).
+_VOICING_TYPE_MAP = {
+    "open": "open", "close": "close", "closed": "close",
+    "drop2": "drop2", "drop3": "drop3",
+    "cluster": "close", "quartal": "open",
+}
+_DENSITY_MAP = {
+    "thin": "thin", "sparse": "thin", "low": "thin",
+    "medium": "medium", "low_medium": "medium", "moderate": "medium",
+    "full": "full", "high": "full", "dense": "full", "active": "full",
+}
+_REGISTER_MAP = {
+    "low": "low", "mid": "mid", "middle": "mid", "medium": "mid",
+    "mid_high": "mid_high", "high": "high",
+}
+
+
+def _norm(value: Any, mapping: dict[str, str], default: str | None) -> str | None:
+    """Map a catalog term onto a supported literal, or `default` if unknown."""
+    if not isinstance(value, str):
+        return default
+    return mapping.get(value.strip().lower().replace("-", "_"), default)
+
+
 def _build_voicing_prefs(genre_profile: dict[str, Any]) -> VoicingPreferences:
-    """Extract VoicingPreferences from a genre profile dict."""
+    """Extract VoicingPreferences from a genre profile dict, tolerant of the
+    catalog's extended vocabulary (sparse/dense/high density, closed/cluster/
+    quartal voicings, etc.)."""
     raw = parse_json_field(genre_profile, "voicing_preferences")
-    if isinstance(raw, dict):
-        return VoicingPreferences.model_validate(raw)
-    return VoicingPreferences()
+    if not isinstance(raw, dict):
+        return VoicingPreferences()
+
+    data = dict(raw)
+    for field, mapping, default in (
+        ("default_voicing_type", _VOICING_TYPE_MAP, "open"),
+        ("default_density", _DENSITY_MAP, "medium"),
+        ("default_register", _REGISTER_MAP, "mid"),
+    ):
+        if field in data:
+            data[field] = _norm(data[field], mapping, default)
+    if isinstance(data.get("variant_voicing_types"), list):
+        normalized: list[str] = []
+        for v in data["variant_voicing_types"]:
+            mapped = _norm(v, _VOICING_TYPE_MAP, None)
+            if mapped is not None and mapped not in normalized:
+                normalized.append(mapped)
+        data["variant_voicing_types"] = normalized or ["open", "drop2", "close"]
+
+    try:
+        return VoicingPreferences.model_validate(data)
+    except ValidationError:
+        logger.warning("Unparseable voicing_preferences; using defaults", exc_info=True)
+        return VoicingPreferences()
 
 
 def _default_strategy(
