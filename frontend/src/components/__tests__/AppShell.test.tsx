@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import AppShell from '../AppShell';
 import { useCapabilitiesStore } from '../../stores/capabilitiesStore';
@@ -64,6 +64,20 @@ describe('AppShell limited mode', () => {
     useCapabilitiesStore.setState({ capabilities: NEO4J });
     renderShell();
     expect(screen.queryByTestId('limited-mode-banner')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Patterns' })).toBeInTheDocument();
+  });
+
+  it('reveals gated Patterns nav when capabilities transition null -> neo4j without remount', () => {
+    // Render with capabilities pending: the gated nav must be hidden (fail closed).
+    renderShell();
+    expect(screen.queryByRole('link', { name: 'Patterns' })).toBeNull();
+
+    // Flip capabilities in the store WITHOUT remounting. The reactive value
+    // subscription must re-render the live tree and reveal the gated entry.
+    act(() => {
+      useCapabilitiesStore.setState({ capabilities: NEO4J });
+    });
+
     expect(screen.getByRole('link', { name: 'Patterns' })).toBeInTheDocument();
   });
 

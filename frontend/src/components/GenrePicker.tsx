@@ -110,7 +110,9 @@ export default function GenrePicker({
         // Stay honest: only claim expanded when an actual listbox is rendered.
         aria-expanded={open}
         aria-autocomplete="list"
-        aria-controls={listboxId}
+        // Only reference the listbox while it's actually rendered (open), so the
+        // control never points at a non-existent element.
+        aria-controls={open ? listboxId : undefined}
         aria-activedescendant={open && activeOption ? optionId(activeOption.genre) : undefined}
         aria-label="Genre"
         placeholder="Genre"

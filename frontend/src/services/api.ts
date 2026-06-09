@@ -214,11 +214,13 @@ export async function getArrangement(arrangementId: string): Promise<Arrangement
 export async function triggerRealizationSSE(
   sessionId: string,
   progressionCandidateIds: string[],
+  signal?: AbortSignal,
 ): Promise<Response> {
   return fetch(`${API_BASE}/sessions/${sessionId}/realization-rounds`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ progression_candidate_ids: progressionCandidateIds }),
+    signal,
   })
 }
 
@@ -226,6 +228,7 @@ export async function triggerMutation(
   sessionId: string,
   candidateIds: string[],
   guidance?: string,
+  signal?: AbortSignal,
 ): Promise<Response> {
   const res = await fetch(`${API_BASE}/sessions/${sessionId}/mutate`, {
     method: 'POST',
@@ -234,6 +237,7 @@ export async function triggerMutation(
       candidate_ids: candidateIds,
       guidance: guidance || null,
     }),
+    signal,
   });
   if (!res.ok) {
     if (res.status === 409) throw new Error('A mutation is already in progress');

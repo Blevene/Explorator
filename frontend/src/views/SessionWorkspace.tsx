@@ -116,8 +116,8 @@ export default function SessionWorkspace() {
 
   const handleRealize = async (candidateId: string) => {
     const result = await realization.realize(candidateId);
-    if (result === 'error') {
-      generation.setError('Realization failed');
+    if (result.status === 'error') {
+      generation.setError(result.error);
     } else {
       setViewMode('realization');
     }

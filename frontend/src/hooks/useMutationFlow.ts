@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { triggerMutation, listCandidates } from '../services/api';
 import { useCandidateStore } from '../stores/candidateStore';
+import { streamSSE, SSETimeoutError } from './streamSSE';
 
 export interface MutationResult {
   source_id: string;
@@ -46,46 +47,27 @@ export function useMutationFlow(sessionId: string | undefined) {
     setLastResult(null);
 
     try {
-      const response = await triggerMutation(sessionId, [targetId], guidance || undefined);
-      if (!response.body) return 'No response body';
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
       let mutResult: MutationResult | null = null;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split(/\r?\n\r?\n/);
-        buffer = parts.pop() ?? '';
-
-        for (const part of parts) {
-          if (!part.trim()) continue;
-          let eventType = '';
-          let dataStr = '';
-          for (const line of part.split(/\r?\n/)) {
-            if (line.startsWith('event: ')) eventType = line.slice(7).trim();
-            else if (line.startsWith('data: ')) dataStr = line.slice(6).trim();
-          }
-          if (!eventType || !dataStr) continue;
-          try {
-            const data = JSON.parse(dataStr);
-            if (eventType === 'mutation_completed' && data.results) {
-              const r = data.results[0];
-              if (r) {
-                mutResult = {
-                  source_id: r.source_id ?? targetId,
-                  mutated_chord_symbols: r.mutated_chord_symbols ?? [],
-                  mutations: r.mutations ?? [],
-                };
-              }
+      // Bounded by an AbortController + timeout via streamSSE, so a stream that
+      // opens then hangs with zero bytes can't leave the mutation stuck inFlight.
+      await streamSSE({
+        open: (signal) => triggerMutation(sessionId, [targetId], guidance || undefined, signal),
+        notOkMessage: (status) => `Mutation failed: ${status}`,
+        onEvent: ({ event: eventType, data }) => {
+          if (eventType === 'mutation_completed' && data.results) {
+            const results = data.results as Array<Record<string, unknown>>;
+            const r = results[0];
+            if (r) {
+              mutResult = {
+                source_id: (r.source_id as string) ?? targetId,
+                mutated_chord_symbols: (r.mutated_chord_symbols as string[]) ?? [],
+                mutations: (r.mutations as MutationResult['mutations']) ?? [],
+              };
             }
-          } catch { /* skip */ }
-        }
-      }
-      reader.releaseLock();
+          }
+        },
+      });
 
       if (mutResult) setLastResult(mutResult);
 
@@ -93,6 +75,7 @@ export function useMutationFlow(sessionId: string | undefined) {
       setCandidates(res.items);
       return null;
     } catch (err) {
+      if (err instanceof SSETimeoutError) return 'Mutation timed out after 10 minutes.';
       return err instanceof Error ? err.message : 'Mutation failed';
     } finally {
       setInFlight(false);

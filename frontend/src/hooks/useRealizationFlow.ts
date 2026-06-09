@@ -3,6 +3,12 @@ import { listArrangements, getArrangement, triggerRealizationSSE } from '../serv
 import type { FinalSelection } from '../services/api';
 import { useArrangementStore } from '../stores/arrangementStore';
 import { useCandidateStore } from '../stores/candidateStore';
+import { streamSSE, SSETimeoutError } from './streamSSE';
+
+/** Outcome of a realization attempt; `error` carries the reason on failure. */
+export type RealizeResult =
+  | { status: 'cached' | 'realized' }
+  | { status: 'error'; error: string };
 
 /**
  * Reconstruct finalSelection from arrangement metadata roles.
@@ -37,8 +43,8 @@ export function useRealizationFlow(sessionId: string | undefined) {
     arrangementStore.setSelectedDetail(detail);
   };
 
-  const realize = async (candidateId: string): Promise<'cached' | 'realized' | 'error'> => {
-    if (!sessionId) return 'error';
+  const realize = async (candidateId: string): Promise<RealizeResult> => {
+    if (!sessionId) return { status: 'error', error: 'No active session' };
 
     // Check cache first
     try {
@@ -54,7 +60,7 @@ export function useRealizationFlow(sessionId: string | undefined) {
           (a.weighted_total ?? 0) > (b.weighted_total ?? 0) ? a : b
         );
         await selectArrangement(best.id);
-        return 'cached';
+        return { status: 'cached' };
       }
     } catch { /* no cache */ }
 
@@ -64,37 +70,17 @@ export function useRealizationFlow(sessionId: string | undefined) {
     setLoading(true);
 
     try {
-      const response = await triggerRealizationSSE(sessionId, [candidateId]);
-      if (!response.ok || !response.body) throw new Error('Realization failed');
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split(/\r?\n\r?\n/);
-        buffer = parts.pop() || '';
-
-        for (const part of parts) {
-          if (!part.trim()) continue;
-          let eventType = '';
-          let dataStr = '';
-          for (const line of part.split(/\r?\n/)) {
-            if (line.startsWith('event: ')) eventType = line.slice(7).trim();
-            else if (line.startsWith('data: ')) dataStr = line.slice(6).trim();
-          }
-          if (!dataStr) continue;
-          try {
-            const data = JSON.parse(dataStr);
-            const node = data.node as string | undefined;
-            if (eventType === 'node_started' && node) setCurrentNode(node);
-            else if (eventType === 'realization_completed') setCurrentNode(null);
-          } catch { /* skip */ }
-        }
-      }
+      // Bounded by an AbortController + timeout via streamSSE, so a stream that
+      // opens then hangs with zero bytes can't leave realization stuck loading.
+      await streamSSE({
+        open: (signal) => triggerRealizationSSE(sessionId, [candidateId], signal),
+        notOkMessage: (status) => `Realization failed: ${status}`,
+        onEvent: ({ event: eventType, data }) => {
+          const node = data.node as string | undefined;
+          if (eventType === 'node_started' && node) setCurrentNode(node);
+          else if (eventType === 'realization_completed') setCurrentNode(null);
+        },
+      });
 
       const arrangements = await listArrangements(candidateId);
       arrangementStore.setArrangements(arrangements);
@@ -108,9 +94,15 @@ export function useRealizationFlow(sessionId: string | undefined) {
         );
         await selectArrangement(best.id);
       }
-      return 'realized';
-    } catch {
-      return 'error';
+      return { status: 'realized' };
+    } catch (err) {
+      // Surface the real reason so a timeout is distinguishable from a 500.
+      const error = err instanceof SSETimeoutError
+        ? 'Realization timed out after 10 minutes.'
+        : err instanceof Error
+          ? err.message
+          : 'Realization failed';
+      return { status: 'error', error };
     } finally {
       setLoading(false);
       setCurrentNode(null);
