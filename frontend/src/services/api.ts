@@ -18,6 +18,8 @@ export interface SessionSummary {
   created_at: string;
   prompt: string;
   genre?: string;
+  key: string;
+  musical_mode: string;
 }
 
 export interface SessionListResponse {
@@ -35,13 +37,15 @@ export interface GenreListResponse {
 
 export async function createSession(
   genre: string,
+  key = 'C',
+  musical_mode = 'major',
   prompt = '',
   mode = 'full_exploration',
 ): Promise<SessionSummary> {
   const res = await fetch(`${API_BASE}/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ genre, prompt: prompt ?? '', mode }),
+    body: JSON.stringify({ genre, key, musical_mode, prompt: prompt ?? '', mode }),
   });
   if (!res.ok) throw new Error(`Failed to create session: ${res.status}`);
   return res.json();

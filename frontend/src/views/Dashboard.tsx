@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { createSession, listSessions, getGenres } from '../services/api';
 import type { GenreSummary } from '../services/api';
 import GenrePicker from '../components/GenrePicker';
+import KeyPicker from '../components/KeyPicker';
+import ModePicker from '../components/ModePicker';
+import { DEFAULT_KEY, DEFAULT_MODE } from '../components/musicOptions';
 import LimitedModeBanner from '../components/LimitedModeBanner';
 import { useSessionStore } from '../stores/sessionStore';
 import { useCan, useIsMemoryMode } from '../stores/capabilitiesStore';
@@ -17,6 +20,8 @@ export default function Dashboard() {
   const [prompt, setPrompt] = useState('');
   const [genres, setGenres] = useState<GenreSummary[]>([]);
   const [genre, setGenre] = useState('');
+  const [key, setKey] = useState(DEFAULT_KEY);
+  const [musicalMode, setMusicalMode] = useState(DEFAULT_MODE);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -36,7 +41,7 @@ export default function Dashboard() {
     if (!genre) return;
     setLoading(true);
     try {
-      const session = await createSession(genre, prompt);
+      const session = await createSession(genre, key, musicalMode, prompt);
       navigate(`/session/${session.session_id}`);
     } catch (err) {
       logError('Dashboard.createSession', err);
@@ -81,9 +86,15 @@ export default function Dashboard() {
             className="rounded-xl p-px"
             style={{ background: `linear-gradient(135deg, var(--border-subtle), var(--border-default), var(--border-subtle))` }}
           >
-            <div className="rounded-xl p-5" style={{ background: 'var(--surface-2)' }}>
-              <div className="flex flex-col sm:flex-row gap-3">
+            <div className="rounded-xl p-5 flex flex-col gap-3" style={{ background: 'var(--surface-2)' }}>
+              {/* Genre / key / mode pickers wrap onto as many rows as needed */}
+              <div className="flex flex-wrap items-center gap-2">
                 <GenrePicker value={genre} onChange={setGenre} genres={genres} />
+                <KeyPicker value={key} onChange={setKey} />
+                <ModePicker value={musicalMode} onChange={setMusicalMode} />
+              </div>
+              {/* Mood / feeling input + Explore */}
+              <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="text"
                   value={prompt}
@@ -91,7 +102,7 @@ export default function Dashboard() {
                   onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
                   placeholder="mood, feeling, customization (optional)…"
                   aria-label="Session prompt"
-                  className="flex-1 px-4 py-2.5 rounded-lg text-sm placeholder-opacity-40 focus:outline-none transition-colors"
+                  className="flex-1 min-w-0 px-4 py-2.5 rounded-lg text-sm placeholder-opacity-40 focus:outline-none transition-colors"
                   style={{
                     background: 'var(--surface-1)',
                     border: '1px solid var(--border-subtle)',

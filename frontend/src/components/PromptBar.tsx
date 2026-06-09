@@ -1,4 +1,6 @@
 import GenrePicker from './GenrePicker';
+import KeyPicker from './KeyPicker';
+import ModePicker from './ModePicker';
 import type { GenreSummary } from '../services/api';
 
 interface PromptBarProps {
@@ -8,10 +10,14 @@ interface PromptBarProps {
   loading: boolean;
   currentNode: string | null;
   flowType?: 'generation' | 'realization';
-  /** Genre picker is only shown for the generation flow. */
+  /** Genre / key / mode pickers are only shown for the generation flow. */
   genre?: string;
   onGenreChange?: (genre: string) => void;
   genres?: GenreSummary[];
+  musicalKey?: string;
+  onKeyChange?: (key: string) => void;
+  musicalMode?: string;
+  onMusicalModeChange?: (musicalMode: string) => void;
 }
 
 const GENERATION_STEPS = [
@@ -52,8 +58,14 @@ export default function PromptBar({
   genre = '',
   onGenreChange,
   genres = [],
+  musicalKey = 'C',
+  onKeyChange,
+  musicalMode = 'major',
+  onMusicalModeChange,
 }: PromptBarProps) {
   const showGenrePicker = flowType === 'generation' && !!onGenreChange;
+  const showKeyPicker = flowType === 'generation' && !!onKeyChange;
+  const showModePicker = flowType === 'generation' && !!onMusicalModeChange;
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !loading) onGenerate();
   };
@@ -70,26 +82,39 @@ export default function PromptBar({
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Input row */}
+      {/* Genre / key / mode pickers — their own wrapping row so the mood box
+          keeps full width and nothing gets cut off when all three show. */}
+      {(showGenrePicker || showKeyPicker || showModePicker) && (
+        <div className="flex flex-wrap items-center gap-2">
+          {showGenrePicker && (
+            <GenrePicker
+              value={genre}
+              onChange={onGenreChange!}
+              genres={genres}
+              disabled={loading}
+              compact
+            />
+          )}
+          {showKeyPicker && (
+            <KeyPicker value={musicalKey} onChange={onKeyChange!} disabled={loading} compact />
+          )}
+          {showModePicker && (
+            <ModePicker value={musicalMode} onChange={onMusicalModeChange!} disabled={loading} compact />
+          )}
+        </div>
+      )}
+
+      {/* Mood / feeling input + generate */}
       <div className="flex gap-2">
-        {showGenrePicker && (
-          <GenrePicker
-            value={genre}
-            onChange={onGenreChange!}
-            genres={genres}
-            disabled={loading}
-            compact
-          />
-        )}
         <input
           type="text"
           value={prompt}
           onChange={(e) => onPromptChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Describe the mood, genre, or style you want to explore..."
+          placeholder="Mood, feeling, customization (optional)…"
           aria-label="Generation prompt"
           disabled={loading}
-          className="flex-1 px-4 py-2 rounded-lg text-sm focus:outline-none disabled:opacity-40 transition-colors"
+          className="flex-1 min-w-0 px-4 py-2 rounded-lg text-sm focus:outline-none disabled:opacity-40 transition-colors"
           style={{
             background: 'var(--surface-1)',
             border: '1px solid var(--border-subtle)',
