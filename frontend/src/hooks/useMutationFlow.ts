@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { triggerMutation, listCandidates } from '../services/api';
 import { useCandidateStore } from '../stores/candidateStore';
-import { streamSSE, SSETimeoutError } from './streamSSE';
+import { streamSSE, SSETimeoutError, USER_ABORT } from './streamSSE';
 
 export interface MutationResult {
   source_id: string;
@@ -21,8 +21,15 @@ export function useMutationFlow(sessionId: string | undefined) {
   const [inFlightLabel, setInFlightLabel] = useState<string>('');
   const [inFlightChords, setInFlightChords] = useState<string[]>([]);
   const [lastResult, setLastResult] = useState<MutationResult | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const { candidates, setCandidates } = useCandidateStore();
+
+  // Abort any in-flight mutation on unmount / session change so the request and
+  // server work don't leak until the 10-minute timeout.
+  useEffect(() => {
+    return () => abortRef.current?.abort(USER_ABORT);
+  }, [sessionId]);
 
   const LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
@@ -46,15 +53,25 @@ export function useMutationFlow(sessionId: string | undefined) {
     setInFlightChords(chords);
     setLastResult(null);
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       let mutResult: MutationResult | null = null;
 
       // Bounded by an AbortController + timeout via streamSSE, so a stream that
       // opens then hangs with zero bytes can't leave the mutation stuck inFlight.
       await streamSSE({
+        signal: controller.signal,
         open: (signal) => triggerMutation(sessionId, [targetId], guidance || undefined, signal),
         notOkMessage: (status) => `Mutation failed: ${status}`,
         onEvent: ({ event: eventType, data }) => {
+          // The mutate route can emit *_error over a 200 stream; without this a
+          // failed mutation ends the stream normally and returns a false success.
+          // Throw so it propagates → submit() returns the real error.
+          if (eventType === 'mutation_error' || eventType === 'realization_error') {
+            throw new Error((data.error as string) ?? 'Mutation failed');
+          }
           if (eventType === 'mutation_completed' && data.results) {
             const results = data.results as Array<Record<string, unknown>>;
             const r = results[0];
@@ -75,9 +92,14 @@ export function useMutationFlow(sessionId: string | undefined) {
       setCandidates(res.items);
       return null;
     } catch (err) {
+      // A caller-driven abort (unmount / session change) isn't a failure to report.
+      if (controller.signal.aborted && !(err instanceof SSETimeoutError)) {
+        return 'Mutation cancelled';
+      }
       if (err instanceof SSETimeoutError) return 'Mutation timed out after 10 minutes.';
       return err instanceof Error ? err.message : 'Mutation failed';
     } finally {
+      if (abortRef.current === controller) abortRef.current = null;
       setInFlight(false);
     }
   };

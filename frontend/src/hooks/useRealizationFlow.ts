@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { listArrangements, getArrangement, triggerRealizationSSE } from '../services/api';
 import type { FinalSelection } from '../services/api';
 import { useArrangementStore } from '../stores/arrangementStore';
 import { useCandidateStore } from '../stores/candidateStore';
-import { streamSSE, SSETimeoutError } from './streamSSE';
+import { streamSSE, SSETimeoutError, USER_ABORT } from './streamSSE';
 
 /** Outcome of a realization attempt; `error` carries the reason on failure. */
 export type RealizeResult =
@@ -34,8 +34,15 @@ function reconstructFinalSelection(arrangements: any[]): FinalSelection | null {
 export function useRealizationFlow(sessionId: string | undefined) {
   const [loading, setLoading] = useState(false);
   const [currentNode, setCurrentNode] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const arrangementStore = useArrangementStore();
+
+  // Abort any in-flight realization on unmount / session change so the request
+  // and server work don't leak until the 10-minute timeout.
+  useEffect(() => {
+    return () => abortRef.current?.abort(USER_ABORT);
+  }, [sessionId]);
 
   const selectArrangement = async (arrangementId: string) => {
     arrangementStore.setSelectedArrangementId(arrangementId);
@@ -69,16 +76,27 @@ export function useRealizationFlow(sessionId: string | undefined) {
     setCurrentNode('load_context');
     setLoading(true);
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       // Bounded by an AbortController + timeout via streamSSE, so a stream that
       // opens then hangs with zero bytes can't leave realization stuck loading.
       await streamSSE({
+        signal: controller.signal,
         open: (signal) => triggerRealizationSSE(sessionId, [candidateId], signal),
         notOkMessage: (status) => `Realization failed: ${status}`,
         onEvent: ({ event: eventType, data }) => {
           const node = data.node as string | undefined;
           if (eventType === 'node_started' && node) setCurrentNode(node);
           else if (eventType === 'realization_completed') setCurrentNode(null);
+          // The backend emits realization_error over a 200 stream. Without this
+          // the stream would end normally and we'd return {status:'realized'}
+          // with empty arrangements — silently swallowing the failure. Throw so
+          // it propagates through streamSSE into the catch → {status:'error'}.
+          else if (eventType === 'realization_error') {
+            throw new Error((data.error as string) ?? 'Realization failed');
+          }
         },
       });
 
@@ -96,6 +114,10 @@ export function useRealizationFlow(sessionId: string | undefined) {
       }
       return { status: 'realized' };
     } catch (err) {
+      // A caller-driven abort (unmount / session change) isn't a failure to report.
+      if (controller.signal.aborted && !(err instanceof SSETimeoutError)) {
+        return { status: 'error', error: 'Realization cancelled' };
+      }
       // Surface the real reason so a timeout is distinguishable from a 500.
       const error = err instanceof SSETimeoutError
         ? 'Realization timed out after 10 minutes.'
@@ -104,6 +126,7 @@ export function useRealizationFlow(sessionId: string | undefined) {
           : 'Realization failed';
       return { status: 'error', error };
     } finally {
+      if (abortRef.current === controller) abortRef.current = null;
       setLoading(false);
       setCurrentNode(null);
     }

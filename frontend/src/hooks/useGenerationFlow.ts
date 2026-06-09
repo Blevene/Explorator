@@ -1,9 +1,9 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { listCandidates } from '../services/api';
 import type { FinalSelection } from '../services/api';
 import { useCandidateStore } from '../stores/candidateStore';
 import { toast } from '../lib/toast';
-import { streamSSE, STOP_STREAM, SSETimeoutError } from './streamSSE';
+import { streamSSE, STOP_STREAM, SSETimeoutError, USER_ABORT } from './streamSSE';
 
 const API_BASE = '/v1';
 
@@ -18,8 +18,15 @@ export function useGenerationFlow(sessionId: string | undefined) {
   const [currentNode, setCurrentNode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const nodeRef = useRef<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const { setCandidates, setFinalSelection } = useCandidateStore();
+
+  // Abort any in-flight round on unmount / when the session changes, so we don't
+  // leak the request + server work until the 10-minute timeout fires.
+  useEffect(() => {
+    return () => abortRef.current?.abort(USER_ABORT);
+  }, [sessionId]);
 
   const generate = useCallback(async (prompt: string, genre?: string) => {
     // A round can run with either a prompt or a selected genre (or both).
@@ -36,8 +43,12 @@ export function useGenerationFlow(sessionId: string | undefined) {
     // reload can't clobber the error UX or overwrite the failed-round candidates.
     let streamFailed = false;
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       await streamSSE({
+        signal: controller.signal,
         open: (signal) =>
           fetch(`${API_BASE}/sessions/${sessionId}/rounds`, {
             method: 'POST',
@@ -65,9 +76,12 @@ export function useGenerationFlow(sessionId: string | undefined) {
             nodeRef.current = 'mutation_completed';
             setCurrentNode(`mutation_completed:${round}:${mutCount}`);
           } else if (eventType === 'mutation_error') {
+            // Non-fatal in the exploration round: a mutation node erroring does
+            // not abort the round — it still emits `round_completed` and the
+            // post-stream reload pulls whatever candidates were produced. So we
+            // surface the error but DON'T set streamFailed / STOP_STREAM, and we
+            // let the candidate reload run.
             setError((data.error as string) ?? 'Mutation error');
-            streamFailed = true;
-            throw STOP_STREAM;
           } else if (eventType === 'realization_completed') {
             nodeRef.current = 'persist_realization';
             setCurrentNode('persist_realization');
@@ -91,12 +105,17 @@ export function useGenerationFlow(sessionId: string | undefined) {
         }
       }
     } catch (err) {
+      // A caller-driven abort (unmount / session change) is not a failure to report.
+      if (controller.signal.aborted && !(err instanceof SSETimeoutError)) {
+        return;
+      }
       if (err instanceof SSETimeoutError) {
         setError('Round timed out after 10 minutes.');
       } else {
         setError(err instanceof Error ? err.message : 'Failed to trigger round.');
       }
     } finally {
+      if (abortRef.current === controller) abortRef.current = null;
       setLoading(false);
       setCurrentNode(null);
     }
