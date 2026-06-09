@@ -211,6 +211,87 @@ def test_round_without_genre_keeps_stored_genre(client_memory, monkeypatch):
     assert got.json()["genre"] == "cinematic"
 
 
+def test_mutation_threads_session_genre(client_memory, monkeypatch):
+    """The mutation path threads the session's genre to BOTH seams.
+
+    A session created with genre "synthwave" must (1) call the harmony mutator
+    with genre="synthwave" and (2) invoke the re-realization subgraph with
+    initial_state["genre"]="synthwave". In memory mode neither is gated on
+    Neo4j, and without the fix the mutator gets "" and load_context defaults to
+    "dream_pop". The mutator and realization subgraph are stubbed so the test
+    exercises only the genre-resolution seam.
+    """
+    from unittest.mock import AsyncMock, MagicMock
+
+    import explorator.api.routes.mutations as mutations
+    from explorator.domain.harmony.mutator import MutationResponse
+
+    captured: dict[str, object] = {}
+
+    # Stub the mutator to capture the genre it is called with and return a
+    # deterministic mutated progression.
+    class _FakeMutator:
+        def __init__(self, _gemini):
+            pass
+
+        async def mutate_harmonic(self, *, chord_symbols, genre, scores, guidance):
+            captured["mutator_genre"] = genre
+            return MutationResponse(
+                mutated_chord_symbols=["Dmaj7"],
+                mutations=[],
+            )
+
+    monkeypatch.setattr(mutations, "HarmonyMutator", _FakeMutator)
+
+    # Stub the realization subgraph to capture the initial state's genre.
+    fake_graph = MagicMock()
+
+    async def _capture_ainvoke(initial_state, *a, **k):
+        captured["realization_genre"] = initial_state.get("genre")
+        return {}
+
+    fake_graph.ainvoke = AsyncMock(side_effect=_capture_ainvoke)
+    monkeypatch.setattr(
+        mutations, "build_realization_subgraph", lambda *a, **k: fake_graph
+    )
+
+    session_id = client_memory.post(
+        "/v1/sessions", json={"genre": "synthwave", "prompt": "moody"}
+    ).json()["session_id"]
+
+    # Seed a candidate the mutation can operate on.
+    store = get_memory_store()
+    store.create(
+        "ProgressionCandidate",
+        {
+            "id": "prog_mut1",
+            "type": "progression_candidate",
+            "status": "candidate",
+            "session_id": session_id,
+            "key_center": "C",
+            "mode": "major",
+            "rationale": "seeded",
+            "chord_events": [
+                {"bar": 1, "beat": 1.0, "duration_beats": 4.0, "symbol": "Cmaj7"},
+            ],
+            "chord_symbols": ["Cmaj7"],
+            "metadata": {},
+        },
+    )
+
+    with client_memory.stream(
+        "POST",
+        f"/v1/sessions/{session_id}/mutate",
+        json={"candidate_ids": ["prog_mut1"]},
+    ) as resp:
+        assert resp.status_code == 200
+        for _ in resp.iter_lines():
+            pass
+
+    assert captured.get("mutator_genre") == "synthwave"
+    assert captured.get("realization_genre") == "synthwave"
+
+
 def test_curation_409_in_memory_mode(client_memory):
     resp = client_memory.post(
         "/v1/arrangements/arr_any/curation", json={"curated": True}

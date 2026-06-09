@@ -17,7 +17,7 @@ from explorator.domain.harmony.mutator import HarmonyMutator
 from explorator.engine.graph import build_realization_subgraph
 from explorator.models.harmony import ProgressionCandidate
 from explorator.persistence.factory import make_candidate_repo, make_session_repo
-from explorator.utils import parse_json_or_dict, utc_now
+from explorator.utils import parse_json_or_dict, resolve_session_genre, utc_now
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["mutations"])
@@ -57,6 +57,13 @@ async def trigger_mutation(
         )
     _busy_sessions.add(session_id)
 
+    # Resolve the session's genre from its metadata so both the mutator and the
+    # re-realization subgraph run under the correct genre. In memory mode the
+    # Session has no top-level genre and no CreativeBrief is persisted, so
+    # without this both paths would default (mutator to "", load_context to
+    # "dream_pop").
+    genre = resolve_session_genre(session)
+
     channel = SSEChannel()
 
     async def run_mutation() -> None:
@@ -88,7 +95,7 @@ async def trigger_mutation(
 
                 response = await mutator.mutate_harmonic(
                     chord_symbols=chord_symbols,
-                    genre=session.get("genre", ""),
+                    genre=genre,
                     scores=scores,
                     guidance=request.guidance,
                 )
@@ -182,6 +189,7 @@ async def trigger_mutation(
                         {
                             "session_id": session_id,
                             "progression_candidate_ids": new_ids,
+                            "genre": genre,
                             "on_progress": channel.send,
                         },
                         {"recursion_limit": 100},

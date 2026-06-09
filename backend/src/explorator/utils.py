@@ -87,3 +87,14 @@ def parse_json_or_dict(value: Any) -> dict[str, Any]:
         except (json.JSONDecodeError, TypeError):
             pass
     return {}
+
+
+def resolve_session_genre(session: dict[str, Any]) -> str:
+    """Resolve a session's genre from its ``metadata`` (single source of truth).
+
+    Genre is persisted only in ``metadata.genre`` (set in sessions.py); the
+    ``Session`` model has no top-level ``genre`` field. In memory mode neither
+    a ``Session.genre`` property nor a CreativeBrief is written, so this is the
+    only reliable genre source. Falls back to ``"dream_pop"`` when absent.
+    """
+    return parse_json_or_dict(session.get("metadata")).get("genre") or "dream_pop"

@@ -28,10 +28,15 @@ async def probe_driver(timeout: float = 3.0) -> AsyncDriver | None:
     half-open driver is closed so we don't leak sockets.
 
     Only *connectivity* failures (Neo4j down / wrong host / socket errors /
-    timeout) degrade to memory mode. Configuration failures — a wrong
-    NEO4J_PASSWORD (``AuthError``) or a malformed URI/auth
-    (``ConfigurationError``) — propagate so a misconfigured-but-intended Neo4j
-    fails loudly at startup instead of silently booting in-memory.
+    timeout), raised by ``verify_connectivity()`` inside the try, degrade to
+    memory mode. Configuration failures fail loudly at startup instead of
+    silently booting in-memory, via two distinct paths:
+
+    - A malformed URI raises ``ConfigurationError`` at ``driver(...)``
+      construction time — *outside* the try — so it propagates directly.
+    - A wrong NEO4J_PASSWORD raises ``AuthError`` from
+      ``verify_connectivity()``; the broad ``except BaseException`` re-raises
+      it (after closing the half-open driver) rather than degrading.
     """
     global _driver, _available
     async with _lock:
@@ -50,8 +55,11 @@ async def probe_driver(timeout: float = 3.0) -> AsyncDriver | None:
             _available = False
             return None
         except BaseException:
-            # AuthError / ConfigurationError (or anything else) is a real
-            # misconfiguration — close the half-open driver and re-raise.
+            # AuthError (or anything else verify_connectivity raises that isn't
+            # a connectivity failure) is a real misconfiguration — close the
+            # half-open driver and re-raise. Note: ConfigurationError from a
+            # malformed URI is raised at driver() construction above, outside
+            # this try, and propagates without reaching here.
             await driver.close()
             _driver = None
             _available = False

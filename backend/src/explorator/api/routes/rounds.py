@@ -62,10 +62,15 @@ async def trigger_round(
     mood = request.prompt or session_prompt or ""
     prompt = mood or genre
 
-    # Persist in-session genre/mood switches so reload sticks.
-    if request.genre and request.genre != session_genre:
+    # Persist in-session genre/mood switches so reload sticks. Symmetric on both
+    # fields: a round that changes only the mood (prompt) with the same genre
+    # must still persist the new mood.
+    genre_changed = bool(request.genre) and request.genre != session_genre
+    prompt_changed = bool(request.prompt) and request.prompt != session_prompt
+    if genre_changed or prompt_changed:
         new_metadata = dict(metadata)
-        new_metadata["genre"] = request.genre
+        if request.genre:
+            new_metadata["genre"] = request.genre
         if request.prompt:
             new_metadata["prompt"] = request.prompt
         await repo.update_metadata(session_id, new_metadata)

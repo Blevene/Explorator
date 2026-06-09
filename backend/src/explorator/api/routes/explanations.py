@@ -14,9 +14,10 @@ from explorator.persistence.factory import (
     make_arrangement_candidate_repo,
     make_candidate_explanation_repo,
     make_candidate_repo,
+    make_session_repo,
 )
 from explorator.prompts.explanation import explanation_prompt
-from explorator.utils import parse_json_or_dict
+from explorator.utils import parse_json_or_dict, resolve_session_genre
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["explanations"])
@@ -106,6 +107,13 @@ async def generate_or_get_explanation(
     mode = prog_data.get("mode", "major")
     prog_meta = parse_json_or_dict(prog_data.get("metadata", {}))
     genre = prog_meta.get("genre", prog_data.get("genre", ""))
+    # Candidate metadata carries no genre in memory mode; fall back to the
+    # session's genre (single source of truth) so the explanation prompt and
+    # genre-rule lookup run under the correct genre.
+    if not genre and session_id:
+        session = await make_session_repo(driver).get_by_id(session_id)
+        if session is not None:
+            genre = resolve_session_genre(session)
 
     # Scores from arrangement metadata/scorecard
     ac_meta = parse_json_or_dict(ac_data.get("metadata", {}))
