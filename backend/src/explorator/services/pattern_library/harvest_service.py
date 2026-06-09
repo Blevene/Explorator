@@ -69,6 +69,19 @@ async def harvest_session_finalists_from_state(
     session_id and delegates to this function.
     """
     session_id = state.get("session_id", "")
+
+    # Memory mode has no durable pattern library (the repo is a no-op Null repo),
+    # so report an honest zero instead of a fabricated upserted_count. This keeps
+    # the harvest report consistent with capabilities.pattern_library=false.
+    from explorator.persistence.null_repos import NullPatternLibraryRepo
+
+    if isinstance(pattern_library_repo, NullPatternLibraryRepo):
+        return HarvestReport(
+            session_id=session_id,
+            upserted_count=0,
+            skipped_count=0,
+        )
+
     final_selection = state.get("final_selection") or {}
     selected_ids: list[str] = final_selection.get("selected_candidate_ids") or []
     genre = state.get("genre")

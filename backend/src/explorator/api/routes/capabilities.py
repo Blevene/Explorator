@@ -9,6 +9,10 @@ _NEO4J_ONLY = (
     "durable_persistence",
     "pattern_library",
     "feedback_learning",
+    # "session_history" gates the in-session PROVENANCE timeline drawer
+    # (frontend SessionHistory → getProvenance), which is empty in memory mode
+    # via NullProvenanceTraceRepo — NOT the session LIST (GET /v1/sessions),
+    # which is ungated and works in memory mode. Correctly false here.
     "session_history",
     "lineage",
     "genre_research",

@@ -196,6 +196,28 @@ class MemoryStyleRepo:
 # no-op on already-decoded dicts/lists and decodes the Neo4j JSON strings.
 
 
+class MemoryExportPackageRepo(_MemoryCrud):
+    """In-memory store for ExportPackage nodes.
+
+    Plain CRUD: `list_exports` queries by `session_id` via `query_by_property`,
+    so export create→list works in memory mode just as in Neo4j mode (only the
+    lineage relationships are Neo4j-only). Lost on restart.
+    """
+
+    label = "ExportPackage"
+
+
+class MemoryRenderArtifactRepo(_MemoryCrud):
+    """In-memory store for RenderArtifact nodes.
+
+    Plain CRUD: `download_artifact` fetches by id via `get_by_id`, so the file
+    written to disk during export is downloadable in memory mode. Lost on
+    restart (the artifact node, not the file on disk).
+    """
+
+    label = "RenderArtifact"
+
+
 class MemoryCandidateExplanationRepo(_MemoryCrud):
     """In-memory cache for candidate explanations.
 

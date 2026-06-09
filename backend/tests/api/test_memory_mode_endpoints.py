@@ -292,6 +292,36 @@ def test_mutation_threads_session_genre(client_memory, monkeypatch):
     assert captured.get("realization_genre") == "synthwave"
 
 
+def test_harvest_reports_zero_in_memory_mode(client_memory):
+    """Harvest is an honest no-op in memory mode (no durable pattern library).
+
+    Even with a finalist arrangement seeded, the report must show
+    upserted_count=0 / empty ids — previously it fabricated a positive count via
+    the Null repo's silent no-op upsert.
+    """
+    store = get_memory_store()
+    store.create("Session", {"id": "sess_h", "type": "session", "status": "active"})
+    store.create(
+        "ArrangementCandidate",
+        {
+            "id": "arr_h1",
+            "type": "arrangement_candidate",
+            "status": "active",
+            "session_id": "sess_h",
+            "progression_candidate_id": "prog_h1",
+            "genre": "dream_pop",
+            "weighted_total": 0.9,
+            "metadata": {"role": "best_overall", "label": "arr"},
+        },
+    )
+
+    resp = client_memory.post("/v1/sessions/sess_h/finalists/harvest")
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["upserted_count"] == 0
+    assert body["upserted_pattern_ids"] == []
+
+
 def test_curation_409_in_memory_mode(client_memory):
     resp = client_memory.post(
         "/v1/arrangements/arr_any/curation", json={"curated": True}
@@ -390,3 +420,18 @@ def test_seeded_arrangement_export_succeeds(client_memory, tmp_path, monkeypatch
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body["artifact_count"] >= 1
+
+    # End-to-end: the export package is persisted to the in-memory store, so
+    # list + download both resolve (previously a silent dead-end via Null repos).
+    package_id = body["id"]
+    artifact_id = body["artifacts"][0]["id"]
+
+    listed = client_memory.get("/v1/sessions/sess_exp/exports")
+    assert listed.status_code == 200
+    assert any(p["id"] == package_id for p in listed.json())
+
+    download = client_memory.get(
+        f"/v1/exports/{package_id}/artifacts/{artifact_id}/download"
+    )
+    assert download.status_code == 200
+    assert download.content  # the rendered MIDI bytes

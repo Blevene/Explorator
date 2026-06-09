@@ -42,6 +42,11 @@ class MemoryStore:
         return [copy.deepcopy(n) for n in self._nodes[label].values()]
 
     def update(self, label: str, node_id: str, **changes: Any) -> None:
+        # NOTE: a compound read-modify-write across awaits (e.g. get_by_id →
+        # update_metadata) is NOT transactional in memory mode — two concurrent
+        # callers can interleave and lose an update. This is the same
+        # lost-update window as Neo4j mode (no app-level locking) and is
+        # acceptable for the single-user/ephemeral memory mode.
         node = self._nodes[label].get(node_id)
         if node is not None:
             node.update(copy.deepcopy(changes))

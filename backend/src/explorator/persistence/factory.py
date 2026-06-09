@@ -46,9 +46,11 @@ if TYPE_CHECKING:
         MemoryCandidateExplanationRepo,
         MemoryCandidateRepo,
         MemoryCreativeBriefRepo,
+        MemoryExportPackageRepo,
         MemoryGroovePatternRepo,
         MemoryMelodicComplementRepo,
         MemoryMutationRecordRepo,
+        MemoryRenderArtifactRepo,
         MemoryScorecardRepo,
         MemorySearchRoundRepo,
         MemorySessionRepo,
@@ -57,13 +59,11 @@ if TYPE_CHECKING:
     )
     from explorator.persistence.null_repos import (
         NullComparisonViewRepo,
-        NullExportPackageRepo,
         NullFeedbackEventRepo,
         NullGenreResearchRepo,
         NullObjectiveWeightsRepo,
         NullPatternLibraryRepo,
         NullProvenanceTraceRepo,
-        NullRenderArtifactRepo,
     )
 
 
@@ -321,11 +321,14 @@ def make_candidate_explanation_repo(
 
 def make_export_package_repo(
     driver: AsyncDriver | None,
-) -> ExportPackageRepo | NullExportPackageRepo:
+) -> ExportPackageRepo | MemoryExportPackageRepo:
     if driver is None:
-        from explorator.persistence.null_repos import NullExportPackageRepo
+        # MEMORY (not Null): export is a working surface in memory mode — you
+        # export the arrangements you just generated, so the package node must
+        # persist for list/download to find it.
+        from explorator.persistence.memory_repos import MemoryExportPackageRepo
 
-        return NullExportPackageRepo()
+        return MemoryExportPackageRepo(get_memory_store())
     from explorator.graph.export_package_repo import ExportPackageRepo
 
     return ExportPackageRepo(driver)
@@ -333,11 +336,13 @@ def make_export_package_repo(
 
 def make_render_artifact_repo(
     driver: AsyncDriver | None,
-) -> RenderArtifactRepo | NullRenderArtifactRepo:
+) -> RenderArtifactRepo | MemoryRenderArtifactRepo:
     if driver is None:
-        from explorator.persistence.null_repos import NullRenderArtifactRepo
+        # MEMORY (not Null): the artifact node must persist so download_artifact
+        # can resolve the on-disk path written during export.
+        from explorator.persistence.memory_repos import MemoryRenderArtifactRepo
 
-        return NullRenderArtifactRepo()
+        return MemoryRenderArtifactRepo(get_memory_store())
     from explorator.graph.render_artifact_repo import RenderArtifactRepo
 
     return RenderArtifactRepo(driver)
