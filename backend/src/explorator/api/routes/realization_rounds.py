@@ -11,7 +11,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from explorator.adapters.gemini import GeminiClient
 from explorator.api.deps import get_gemini_client, get_neo4j_driver
-from explorator.api.sse import SSEChannel
+from explorator.api.sse import SSEChannel, cancel_on_disconnect
 from explorator.engine.graph import build_realization_subgraph
 from explorator.persistence.factory import (
     make_arrangement_candidate_repo,
@@ -72,8 +72,9 @@ async def trigger_realization(
         finally:
             await channel.close()
 
-    asyncio.create_task(run_and_close())
-    return EventSourceResponse(channel.stream())
+    # Cancel the detached round if the client disconnects before it finishes.
+    task = asyncio.create_task(run_and_close())
+    return EventSourceResponse(cancel_on_disconnect(channel, task))
 
 
 @router.get("/candidates/{candidate_id}/arrangements")

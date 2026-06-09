@@ -12,7 +12,7 @@ from ulid import ULID
 
 from explorator.adapters.gemini import GeminiClient
 from explorator.api.deps import get_gemini_client, get_neo4j_driver
-from explorator.api.sse import SSEChannel
+from explorator.api.sse import SSEChannel, cancel_on_disconnect
 from explorator.domain.harmony.mutator import HarmonyMutator
 from explorator.engine.graph import build_realization_subgraph
 from explorator.models.harmony import ProgressionCandidate
@@ -205,5 +205,8 @@ async def trigger_mutation(
             _busy_sessions.discard(session_id)
             await channel.close()
 
-    asyncio.create_task(run_mutation())
-    return EventSourceResponse(channel.stream())
+    # Cancel the detached mutation if the client disconnects before it finishes.
+    # run_mutation's `finally` (which clears the _busy_sessions guard and closes
+    # the channel) still runs on cancellation, so the session isn't left wedged.
+    task = asyncio.create_task(run_mutation())
+    return EventSourceResponse(cancel_on_disconnect(channel, task))

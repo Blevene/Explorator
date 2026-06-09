@@ -11,7 +11,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from explorator.adapters.gemini import GeminiClient
 from explorator.api.deps import get_gemini_client, get_neo4j_driver
-from explorator.api.sse import SSEChannel
+from explorator.api.sse import SSEChannel, cancel_on_disconnect
 from explorator.engine.graph import build_exploration_graph
 from explorator.persistence.factory import make_session_repo
 from explorator.utils import parse_json_or_dict
@@ -100,7 +100,9 @@ async def trigger_round(
         finally:
             await channel.close()
 
-    # Start the round in the background
-    asyncio.create_task(run_and_close())
+    # Start the round in the background, but cancel it if the client disconnects
+    # before it finishes (otherwise graph.ainvoke + its Gemini spend run to
+    # completion against a stream nobody is reading).
+    task = asyncio.create_task(run_and_close())
 
-    return EventSourceResponse(channel.stream())
+    return EventSourceResponse(cancel_on_disconnect(channel, task))
