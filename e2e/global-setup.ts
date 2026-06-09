@@ -3,6 +3,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } f
 import { tmpdir } from 'os';
 import path from 'path';
 import { ensureFreshBuild } from './global-setup.parallel';
+import { assertPortFree } from './fixtures/test-fixtures';
 
 const BACKEND_PORT = 8100;
 const FRONTEND_PORT = 5199;
@@ -126,6 +127,14 @@ export default async function globalSetup() {
 
   const styleDir = prepareTempCatalog();
   console.log(`[e2e] Catalog staged at ${styleDir}`);
+
+  // Pre-flight: fail fast with a clear message if a prior run's uvicorn/vite is
+  // still holding a port. Otherwise a stale bind degrades into a slow death —
+  // uvicorn can't bind and `vite preview --strictPort` exits, but the spawns are
+  // detached and stdio-piped, so the only symptom would be waitForHealth spinning
+  // its full timeout before surfacing an opaque failure.
+  await assertPortFree(BACKEND_PORT, 'backend');
+  await assertPortFree(FRONTEND_PORT, 'frontend');
 
   console.log(`[e2e] Starting backend on port ${BACKEND_PORT} (GEMINI_MOCK=true)`);
   const backend = spawn(

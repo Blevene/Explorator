@@ -136,13 +136,22 @@ make test                       # Backend full suite (auto-starts isolated test 
 make lint                       # ruff + mypy strict
 cd frontend && npm run test:unit
 
-# End-to-end (Playwright spawns its own servers):
+# End-to-end (Playwright spawns its own servers, all under GEMINI_MOCK=true — no
+# API key needed for e2e):
 make e2e-parallel               # UI/generation specs — fully parallel, each worker on its
                                 #   own in-memory backend; no Neo4j needed (~30s)
+make neo4j-up                   # REQUIRED before e2e-neo4j / e2e: dev Neo4j on :7688
 make e2e-neo4j                  # durable-feature specs (pattern library, genre research,
                                 #   feedback/lineage) — serial against the dev Neo4j
-make e2e                        # both lanes
+make e2e                        # both lanes (also needs `make neo4j-up` first)
 ```
+
+`make e2e-neo4j` — and the Neo4j half of `make e2e` — require the dev Neo4j to be
+running; bring it up with `make neo4j-up` first. Setup hard-fails with a clear
+message if the backend can't reach Neo4j (it would otherwise boot in memory mode
+and the learning specs would fail with confusing UI errors). `make e2e-parallel`
+needs no Neo4j. None of the lanes need a `GEMINI_API_KEY`: e2e always runs with
+`GEMINI_MOCK=true`.
 
 The pytest suite wipes the DB between tests, so it runs against a dedicated `neo4j-test` container on port 7689 — the dev DB on 7688 is never touched. `make test*` brings the test container up automatically; if you invoke pytest directly, run `make neo4j-test-up` first.
 

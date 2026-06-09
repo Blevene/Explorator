@@ -43,13 +43,18 @@ interface WorkerServers {
   frontendURL: string;
 }
 
-// 40s default per health check. The worker fixture calls this TWICE (backend,
-// then frontend) and that whole setup is charged to the first test, which runs
-// under playwright.config.ts `timeout: 60_000`. A memory-mode backend + vite
-// preview cold-boot in ~2-5s, so 40s is ample headroom while still fitting two
-// calls + the test body comfortably under the 60s per-test budget — keeping a
-// genuinely slow boot from masquerading as a misleading "Test timeout".
-async function waitForHealth(url: string, timeoutMs = 40_000): Promise<void> {
+// CI-aware default per health check. Locally 40s is ample: a memory-mode backend
+// + vite preview cold-boot in ~2-5s, and the worker fixture calls this TWICE
+// (backend, then frontend) with the whole setup charged to the first test under
+// playwright.config.ts `timeout: 60_000` — so 40s leaves headroom for two calls
+// + the test body while keeping a genuinely slow boot from masquerading as a
+// misleading "Test timeout". On CI we bump to 90s because a loaded runner
+// cold-booting up to 4 concurrent backends can legitimately exceed 40s; the win
+// is that when it does, the eventual failure is an explicit "not ready after
+// 90000ms" health error (with retries: 1 giving a clean second shot) instead of
+// an opaque per-test timeout that hides the real cause.
+const HEALTH_TIMEOUT_MS = process.env.CI ? 90_000 : 40_000;
+async function waitForHealth(url: string, timeoutMs = HEALTH_TIMEOUT_MS): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     try {
@@ -73,7 +78,7 @@ async function waitForHealth(url: string, timeoutMs = 40_000): Promise<void> {
  * something abnormal (a half-open / filtered listener), which we treat as busy
  * and reject rather than blindly proceeding.
  */
-async function assertPortFree(port: number, label: string): Promise<void> {
+export async function assertPortFree(port: number, label: string): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const sock = new net.Socket();
     const done = (err?: Error): void => {
@@ -126,6 +131,40 @@ function spawnFrontend(port: number, backendPort: number): ChildProcess {
       detached: true,
     },
   );
+}
+
+/** True iff `pid` (a process *group* leader) still has any live member. */
+function groupAlive(pid: number): boolean {
+  try {
+    // Signal 0 = existence check only; throws ESRCH once the group is gone.
+    process.kill(-pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Tear down a detached process *group* by pid, with no ChildProcess handle to
+ * listen on (e.g. global-teardown only has pids persisted to disk). Mirrors
+ * killTree's escalation: SIGTERM, poll for the group to actually die within
+ * `graceMs`, then SIGKILL the group if it's still alive, plus a short settle so
+ * a back-to-back run's assertPortFree doesn't trip on a still-bound socket.
+ * Best-effort: an already-gone group (ESRCH) is fine.
+ */
+export async function killProcessGroup(pid: number, graceMs = 5_000): Promise<void> {
+  try { process.kill(-pid, 'SIGTERM'); } catch { /* already gone */ return; }
+
+  const deadline = Date.now() + graceMs;
+  while (Date.now() < deadline) {
+    if (!groupAlive(pid)) return; // exited gracefully — sockets released
+    await new Promise((r) => setTimeout(r, 100));
+  }
+
+  // Still alive after the grace window → escalate.
+  try { process.kill(-pid, 'SIGKILL'); } catch { /* raced to exit */ }
+  // Give the OS a beat to reap the group and release its bound ports.
+  await new Promise((r) => setTimeout(r, 500));
 }
 
 /**

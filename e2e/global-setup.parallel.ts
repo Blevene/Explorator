@@ -10,6 +10,15 @@ import path from 'path';
  * Shared by BOTH global-setups — the parallel lane (per-worker preview servers)
  * and the Neo4j lane (single shared preview on :5199) — so neither ever serves
  * a stale or missing bundle after frontend edits.
+ *
+ * NOTE: this `rm -rf dist` + rebuild runs once per lane *process*, so under
+ * `make e2e` the frontend is built twice (once per lane). That's intentional —
+ * correctness over speed, each lane guarantees its own fresh bundle. The catch:
+ * because it blows away `dist`, the two lanes MUST NOT run CONCURRENTLY — one
+ * lane's `rm -rf dist` would yank the bundle out from under the other's running
+ * `vite preview`. `make e2e` runs them SEQUENTIALLY (e2e-parallel, then
+ * e2e-neo4j), so the double build is harmless there; only ad-hoc parallel
+ * invocation would race.
  */
 export function ensureFreshBuild(): void {
   const root = path.resolve(__dirname, '..');
