@@ -2,6 +2,7 @@ import { spawn } from 'child_process';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import path from 'path';
+import { ensureFreshBuild } from './global-setup.parallel';
 
 const BACKEND_PORT = 8100;
 const FRONTEND_PORT = 5199;
@@ -38,6 +39,29 @@ async function cleanTestSessions(): Promise<void> {
   } catch {
     // Backend not ready yet or no sessions — fine
   }
+}
+
+/**
+ * The Neo4j lane's learning specs (pattern-library / genre-research / m3) need a
+ * real Neo4j behind the backend. The backend auto-detects: if the dev Neo4j
+ * (:7688) is down it silently boots in MEMORY mode, and those specs then fail
+ * with confusing UI errors instead of a clear cause. Assert we're actually in
+ * neo4j mode here, at setup, so the failure is obvious and actionable.
+ */
+async function assertNeo4jMode(): Promise<void> {
+  const res = await fetch(`http://localhost:${BACKEND_PORT}/v1/capabilities`);
+  if (!res.ok) {
+    throw new Error(`[e2e] /v1/capabilities returned ${res.status}; cannot verify persistence mode.`);
+  }
+  const data = await res.json();
+  const mode = data.persistence_mode;
+  if (mode !== 'neo4j') {
+    throw new Error(
+      `[e2e] Neo4j lane requires Neo4j, but the backend is in '${mode}' mode. ` +
+      'The dev Neo4j is likely down — run `make neo4j-up` and retry.',
+    );
+  }
+  console.log('[e2e] Backend persistence mode: neo4j');
 }
 
 /**
@@ -95,6 +119,11 @@ function prepareTempCatalog(): string {
 }
 
 export default async function globalSetup() {
+  // Build a fresh dist BEFORE spawning `vite preview` below. Without this, a
+  // standalone `make e2e-neo4j` serves no dist on a fresh checkout, or a STALE
+  // dist after frontend edits (only the parallel lane used to rebuild).
+  ensureFreshBuild();
+
   const styleDir = prepareTempCatalog();
   console.log(`[e2e] Catalog staged at ${styleDir}`);
 
@@ -134,6 +163,11 @@ export default async function globalSetup() {
 
   await waitForHealth(`http://localhost:${BACKEND_PORT}/v1/sessions`);
   console.log('[e2e] Backend ready');
+
+  // Hard-fail early if Neo4j isn't actually backing the backend — the learning
+  // specs in this lane need it, and a silent memory-mode boot only surfaces as
+  // confusing UI errors deep into the run.
+  await assertNeo4jMode();
 
   // Clean stale sessions from prior test runs to avoid strict mode violations
   await cleanTestSessions();

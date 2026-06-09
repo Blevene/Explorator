@@ -43,7 +43,13 @@ interface WorkerServers {
   frontendURL: string;
 }
 
-async function waitForHealth(url: string, timeoutMs = 90_000): Promise<void> {
+// 40s default per health check. The worker fixture calls this TWICE (backend,
+// then frontend) and that whole setup is charged to the first test, which runs
+// under playwright.config.ts `timeout: 60_000`. A memory-mode backend + vite
+// preview cold-boot in ~2-5s, so 40s is ample headroom while still fitting two
+// calls + the test body comfortably under the 60s per-test budget — keeping a
+// genuinely slow boot from masquerading as a misleading "Test timeout".
+async function waitForHealth(url: string, timeoutMs = 40_000): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     try {
@@ -60,6 +66,12 @@ async function waitForHealth(url: string, timeoutMs = 90_000): Promise<void> {
  * uvicorn or vite from a poisoned prior run). Without this, a busy port turns
  * into a slow death — vite --strictPort exits and uvicorn fails to bind, but the
  * subsequent waitForHealth would spin the full timeout before surfacing it.
+ *
+ * Best-effort only: this is a TOCTOU probe, not a lock — the port can still be
+ * grabbed between this check and our spawn. On loopback a free port refuses the
+ * connection essentially instantly, so a 500ms timeout is NOT "free": it implies
+ * something abnormal (a half-open / filtered listener), which we treat as busy
+ * and reject rather than blindly proceeding.
  */
 async function assertPortFree(port: number, label: string): Promise<void> {
   await new Promise<void>((resolve, reject) => {
@@ -77,7 +89,12 @@ async function assertPortFree(port: number, label: string): Promise<void> {
     ));
     // Connection refused (or any connect error) means the port is free.
     sock.once('error', () => done());
-    sock.once('timeout', () => done());
+    // A timeout on loopback is indeterminate (a refused port answers instantly),
+    // so treat it as busy/abnormal and reject rather than reporting "free".
+    sock.once('timeout', () => done(
+      new Error(`Port ${port} (${label}) probe timed out — indeterminate, ` +
+                `treating as busy. Check for a stale/half-open listener.`),
+    ));
     sock.connect(port, '127.0.0.1');
   });
 }
@@ -146,6 +163,11 @@ async function killTree(proc: ChildProcess, graceMs = 5_000): Promise<void> {
       exited,
       new Promise<void>((resolve) => setTimeout(resolve, 1_000).unref()),
     ]);
+  } else {
+    // Graceful exit: for npm→vite the child can report 'exit' while the listening
+    // socket lingers briefly in the OS. Settle for a beat (mirroring the SIGKILL
+    // path) so a back-to-back run's assertPortFree doesn't trip on the stale bind.
+    await new Promise<void>((resolve) => setTimeout(resolve, 500).unref());
   }
 }
 

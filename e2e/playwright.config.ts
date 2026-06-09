@@ -10,8 +10,9 @@ export default defineConfig({
   // Neo4j lane (playwright.neo4j.config.ts):
   //   genre-research / pattern-library — gated off entirely in memory mode
   //   m3-features (feedback) — pokes learning surfaces
-  // error-edge is memory-safe (only page/testSession, absence-based lineage
-  // assertions) so it runs here in parallel.
+  // error-edge is memory-safe (only page/testSession; it asserts no orphaned
+  // spinners via animate-pulse count == 0 and that candidate action buttons
+  // render) so it runs here in parallel.
   // Everything else is generation / realization / UI and is memory-safe.
   testIgnore: [
     '**/genre-research.spec.ts',

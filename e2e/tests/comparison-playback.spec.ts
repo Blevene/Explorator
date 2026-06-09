@@ -63,11 +63,13 @@ test.describe('Comparison Playback (M4c)', () => {
 
     await openComparison(page, 2)
 
-    // Target the lane solo/mute controls by their accessible names
-    // ("Solo <lane>" / "Mute <lane>", toggling to "Unsolo"/"Unmute") rather than
-    // a bare "S"/"M" text match, which is ambiguous with other buttons.
-    const soloButtons = page.getByRole('button', { name: /(un)?solo /i })
-    const muteButtons = page.getByRole('button', { name: /(un)?mute /i })
+    // Target the lane solo/mute controls by stable data-testids on LaneSidebar.
+    // A role-name match like /(un)?mute /i is ambiguous: the per-track buttons in
+    // ComparisonView use title="Mute <track>", so that pattern also matches the
+    // 3 track buttons × N lanes (8 total for 2 lanes). The testids are
+    // unambiguously lane-scoped.
+    const soloButtons = page.locator('[data-testid="lane-solo"]')
+    const muteButtons = page.locator('[data-testid="lane-mute"]')
 
     // One solo + one mute per compared lane (2 lanes selected above).
     await expect(soloButtons).toHaveCount(2)
