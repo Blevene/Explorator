@@ -18,7 +18,12 @@ from explorator.persistence.factory import (
     make_scorecard_repo,
     make_session_repo,
 )
-from explorator.utils import resolve_session_genre
+from explorator.utils import (
+    normalize_key_and_mode,
+    resolve_session_genre,
+    resolve_session_key,
+    resolve_session_mode,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["realization"])
@@ -26,6 +31,8 @@ router = APIRouter(tags=["realization"])
 
 class TriggerRealizationRequest(BaseModel):
     progression_candidate_ids: list[str]
+    key: str | None = None
+    musical_mode: str | None = None
 
 
 @router.post("/sessions/{session_id}/realization-rounds")
@@ -54,10 +61,19 @@ async def trigger_realization(
     # load_context fallback chain would default to "dream_pop".
     genre = resolve_session_genre(session)
 
+    # Effective key + musical mode: request override → session metadata →
+    # default, normalized so a bad value never crashes generation.
+    key, musical_mode = normalize_key_and_mode(
+        request.key or resolve_session_key(session),
+        request.musical_mode or resolve_session_mode(session),
+    )
+
     initial_state = {
         "session_id": session_id,
         "progression_candidate_ids": request.progression_candidate_ids,
         "genre": genre,
+        "key_center": key,
+        "mode": musical_mode,
         "on_progress": channel.send,
     }
 

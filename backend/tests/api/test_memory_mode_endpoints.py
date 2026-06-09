@@ -186,6 +186,81 @@ def test_round_persists_in_session_genre_switch(client_memory, monkeypatch):
     assert got.json()["prompt"] == "dreamy"
 
 
+def test_round_threads_session_key_and_mode(client_memory, monkeypatch):
+    """A session created with key='A', musical_mode='dorian' must thread those
+    into the exploration graph's initial_state as key_center / mode (the
+    generator's param names). Without the fix key_center stays None and the
+    generator defaults to C major."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    import explorator.api.routes.rounds as rounds
+
+    captured: dict[str, object] = {}
+
+    async def _capture(initial_state, *a, **k):
+        captured["key_center"] = initial_state.get("key_center")
+        captured["mode"] = initial_state.get("mode")
+        return {}
+
+    fake_graph = MagicMock()
+    fake_graph.ainvoke = AsyncMock(side_effect=_capture)
+    monkeypatch.setattr(rounds, "build_exploration_graph", lambda *a, **k: fake_graph)
+
+    session_id = client_memory.post(
+        "/v1/sessions",
+        json={"genre": "dream_pop", "prompt": "modal", "key": "A", "musical_mode": "dorian"},
+    ).json()["session_id"]
+
+    with client_memory.stream(
+        "POST", f"/v1/sessions/{session_id}/rounds", json={}
+    ) as resp:
+        assert resp.status_code == 200
+        for _ in resp.iter_lines():
+            pass
+
+    assert captured["key_center"] == "A"
+    assert captured["mode"] == "dorian"
+
+
+def test_round_persists_in_session_key_mode_switch(client_memory, monkeypatch):
+    """Switching key/mode in a round request persists to session metadata and
+    reaches the graph."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    import explorator.api.routes.rounds as rounds
+
+    captured: dict[str, object] = {}
+
+    async def _capture(initial_state, *a, **k):
+        captured["key_center"] = initial_state.get("key_center")
+        captured["mode"] = initial_state.get("mode")
+        return {}
+
+    fake_graph = MagicMock()
+    fake_graph.ainvoke = AsyncMock(side_effect=_capture)
+    monkeypatch.setattr(rounds, "build_exploration_graph", lambda *a, **k: fake_graph)
+
+    session_id = client_memory.post(
+        "/v1/sessions", json={"genre": "dream_pop", "prompt": "x"}
+    ).json()["session_id"]
+
+    with client_memory.stream(
+        "POST",
+        f"/v1/sessions/{session_id}/rounds",
+        json={"key": "Eb", "musical_mode": "lydian"},
+    ) as resp:
+        assert resp.status_code == 200
+        for _ in resp.iter_lines():
+            pass
+
+    assert captured["key_center"] == "Eb"
+    assert captured["mode"] == "lydian"
+
+    got = client_memory.get(f"/v1/sessions/{session_id}")
+    assert got.json()["key"] == "Eb"
+    assert got.json()["musical_mode"] == "lydian"
+
+
 def test_round_without_genre_keeps_stored_genre(client_memory, monkeypatch):
     """A round triggered without a genre leaves the stored genre intact."""
     from unittest.mock import AsyncMock, MagicMock

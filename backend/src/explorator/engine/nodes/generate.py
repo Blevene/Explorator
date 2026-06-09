@@ -21,8 +21,10 @@ async def generate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str
     candidates = await generator.generate(
         session_id=state["session_id"],
         genre=state.get("genre", "dream_pop"),
-        key_center=brief.get("key_center", "C"),
-        mode=brief.get("mode", "major"),
+        # `key_center` may be present-but-null (parser leaves it None when no
+        # explicit key); coerce that to "C" rather than passing None through.
+        key_center=brief.get("key_center") or "C",
+        mode=brief.get("mode") or "major",
         bars=brief.get("phrase_length_bars", 8),
         generation_mode=state.get("generation_mode", "balanced"),
         n_candidates=state.get("n_candidates", 12),

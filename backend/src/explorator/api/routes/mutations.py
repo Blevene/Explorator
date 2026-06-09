@@ -17,7 +17,14 @@ from explorator.domain.harmony.mutator import HarmonyMutator
 from explorator.engine.graph import build_realization_subgraph
 from explorator.models.harmony import ProgressionCandidate
 from explorator.persistence.factory import make_candidate_repo, make_session_repo
-from explorator.utils import parse_json_or_dict, resolve_session_genre, utc_now
+from explorator.utils import (
+    normalize_key_and_mode,
+    parse_json_or_dict,
+    resolve_session_genre,
+    resolve_session_key,
+    resolve_session_mode,
+    utc_now,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["mutations"])
@@ -30,6 +37,8 @@ class TriggerMutationRequest(BaseModel):
     candidate_ids: list[str]
     guidance: str | None = None
     operations: list[str] | None = None
+    key: str | None = None
+    musical_mode: str | None = None
 
 
 @router.post("/sessions/{session_id}/mutate")
@@ -63,6 +72,13 @@ async def trigger_mutation(
     # without this both paths would default (mutator to "", load_context to
     # "dream_pop").
     genre = resolve_session_genre(session)
+
+    # Effective key + musical mode for the re-realization subgraph: request
+    # override → session metadata → default, normalized at the boundary.
+    key, musical_mode = normalize_key_and_mode(
+        request.key or resolve_session_key(session),
+        request.musical_mode or resolve_session_mode(session),
+    )
 
     channel = SSEChannel()
 
@@ -190,6 +206,8 @@ async def trigger_mutation(
                             "session_id": session_id,
                             "progression_candidate_ids": new_ids,
                             "genre": genre,
+                            "key_center": key,
+                            "mode": musical_mode,
                             "on_progress": channel.send,
                         },
                         {"recursion_limit": 100},

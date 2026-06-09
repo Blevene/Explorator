@@ -86,6 +86,25 @@ def _normalize_chord_symbol(symbol: str) -> str:
     return s
 
 
+def _normalize_key_for_music21(key: str) -> str:
+    """Normalize a key tonic spelling for music21.
+
+    music21 uses '-' for flats (Eb→E-, Ab→A-, Bb→B-, Db→D-, Gb→G-); sharps
+    (C#, F#) stay as-is. Known project gotcha: music21 wants 'B-' not 'Bb'.
+    """
+    s = key.strip()
+    if not s:
+        return s
+    # Capitalize the letter, lowercase any trailing accidental text.
+    letter = s[0].upper()
+    accidental = s[1:].strip()
+    if accidental in ("b", "B"):
+        return f"{letter}-"
+    if accidental == "#":
+        return f"{letter}#"
+    return letter
+
+
 class ChordInfo(BaseModel):
     """Parsed chord information."""
 
@@ -138,14 +157,24 @@ def analyze_roman_numerals(
     from music21 import harmony, roman
     from music21 import key as m21_key
 
+    # music21 wants '-' for flats; normalize the tonic spelling first.
+    m21_tonic = _normalize_key_for_music21(key)
+    # music21's Key(tonic, mode) supports 'major', 'minor', and the church
+    # modes 'dorian'/'phrygian'/'lydian'/'mixolydian'/'locrian'. Pass the mode
+    # through (normalized), falling back to major on any failure.
+    m21_mode = (mode or "major").strip().lower()
     try:
-        analysis_key = m21_key.Key(key, "minor") if mode == "minor" else m21_key.Key(key, "major")
+        analysis_key = m21_key.Key(m21_tonic, m21_mode)
     except Exception:
-        logger.warning("Failed to create key: %s %s", key, mode)
-        return [
-            RomanNumeralResult(chord_symbol=s, roman_numeral="?", confidence=0.0)
-            for s in chord_symbols
-        ]
+        logger.warning("Failed to create key: %s %s — falling back to major", key, mode)
+        try:
+            analysis_key = m21_key.Key(m21_tonic, "major")
+        except Exception:
+            logger.warning("Failed to create fallback key: %s major", key)
+            return [
+                RomanNumeralResult(chord_symbol=s, roman_numeral="?", confidence=0.0)
+                for s in chord_symbols
+            ]
 
     results: list[RomanNumeralResult] = []
     for symbol in chord_symbols:

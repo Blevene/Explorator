@@ -17,6 +17,11 @@ class ExplorationState(TypedDict, total=False):
     session_id: str
     prompt: str
     genre: str
+    # Explicit key + musical mode, threaded from the route like genre. These map
+    # to the generator's key_center/mode params (mode = major/minor/church mode),
+    # distinct from `generation_mode` (the breadth profile).
+    key_center: str
+    mode: str
     generation_mode: str
 
     # Parsed intent

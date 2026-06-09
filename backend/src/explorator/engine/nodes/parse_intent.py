@@ -22,6 +22,16 @@ async def parse_intent(state: ExplorationState, *, gemini: GeminiClient) -> dict
     genre = state.get("genre") or brief.genre
     brief.genre = genre
 
+    # Explicit key + musical mode (threaded via state, like genre) win over the
+    # brittle regex-parsed brief values. Without this the regex KEY_PATTERN
+    # rarely fires and key_center stays None → generator defaults to C major.
+    state_key = state.get("key_center")
+    if state_key:
+        brief.key_center = str(state_key)
+    state_mode = state.get("mode")
+    if state_mode:
+        brief.mode = str(state_mode)
+
     # Update state with parsed intent
     result = {
         "creative_brief": brief.model_dump(mode="json"),

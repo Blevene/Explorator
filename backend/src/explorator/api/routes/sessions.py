@@ -15,7 +15,12 @@ from explorator.config import settings
 from explorator.graph.session_repo import SessionRepository
 from explorator.models.session import Session
 from explorator.persistence.factory import make_provenance_trace_repo
-from explorator.utils import parse_json_or_dict
+from explorator.utils import (
+    DEFAULT_KEY,
+    DEFAULT_MODE,
+    normalize_key_and_mode,
+    parse_json_or_dict,
+)
 
 router = APIRouter(tags=["sessions"])
 
@@ -26,6 +31,8 @@ class CreateSessionRequest(BaseModel):
     genre: str
     mode: str = "full_exploration"
     prompt: str = ""
+    key: str = DEFAULT_KEY
+    musical_mode: str = DEFAULT_MODE
 
 
 class SessionResponse(BaseModel):
@@ -37,6 +44,8 @@ class SessionResponse(BaseModel):
     created_at: str
     prompt: str
     genre: str
+    key: str
+    musical_mode: str
 
 
 class SessionListResponse(BaseModel):
@@ -54,6 +63,9 @@ async def create_session(
     session_id = f"sess_{ULID()}"
     now = datetime.datetime.now(datetime.UTC)
 
+    # Normalize at the boundary so a bad key/mode can never reach generation.
+    key, musical_mode = normalize_key_and_mode(request.key, request.musical_mode)
+
     session = Session(
         id=session_id,
         type="session",
@@ -61,7 +73,12 @@ async def create_session(
         mode=request.mode,
         created_at=now,
         updated_at=now,
-        metadata={"prompt": request.prompt, "genre": request.genre},
+        metadata={
+            "prompt": request.prompt,
+            "genre": request.genre,
+            "key": key,
+            "musical_mode": musical_mode,
+        },
     )
     await repo.create(session)
 
@@ -72,6 +89,8 @@ async def create_session(
         created_at=now.isoformat(),
         prompt=request.prompt,
         genre=request.genre,
+        key=key,
+        musical_mode=musical_mode,
     )
 
 
@@ -92,6 +111,8 @@ async def list_sessions(
                 created_at=s.get("created_at", ""),
                 prompt=metadata.get("prompt", ""),
                 genre=metadata.get("genre", ""),
+                key=metadata.get("key", DEFAULT_KEY),
+                musical_mode=metadata.get("musical_mode", DEFAULT_MODE),
             )
         )
     return SessionListResponse(items=items)
@@ -114,6 +135,8 @@ async def get_session(
         created_at=session.get("created_at", ""),
         prompt=metadata.get("prompt", ""),
         genre=metadata.get("genre", ""),
+        key=metadata.get("key", DEFAULT_KEY),
+        musical_mode=metadata.get("musical_mode", DEFAULT_MODE),
     )
 
 

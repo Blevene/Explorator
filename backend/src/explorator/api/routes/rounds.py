@@ -14,7 +14,12 @@ from explorator.api.deps import get_gemini_client, get_neo4j_driver
 from explorator.api.sse import SSEChannel, cancel_on_disconnect
 from explorator.engine.graph import build_exploration_graph
 from explorator.persistence.factory import make_session_repo
-from explorator.utils import parse_json_or_dict
+from explorator.utils import (
+    DEFAULT_KEY,
+    DEFAULT_MODE,
+    normalize_key_and_mode,
+    parse_json_or_dict,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +36,8 @@ MAX_ROUNDS = 2
 class TriggerRoundRequest(BaseModel):
     prompt: str | None = None
     genre: str | None = None
+    key: str | None = None
+    musical_mode: str | None = None
 
 
 class RoundResponse(BaseModel):
@@ -62,17 +69,31 @@ async def trigger_round(
     mood = request.prompt or session_prompt or ""
     prompt = mood or genre
 
-    # Persist in-session genre/mood switches so reload sticks. Symmetric on both
-    # fields: a round that changes only the mood (prompt) with the same genre
-    # must still persist the new mood.
+    # Resolve effective key + musical mode: request override → session metadata
+    # → default, then normalize so a bad value never crashes generation.
+    session_key = metadata.get("key", DEFAULT_KEY)
+    session_mode = metadata.get("musical_mode", DEFAULT_MODE)
+    key, musical_mode = normalize_key_and_mode(
+        request.key or session_key, request.musical_mode or session_mode
+    )
+
+    # Persist in-session genre/mood/key/mode switches so reload sticks. Symmetric
+    # on all fields: a round that changes only one with the same others must
+    # still persist the new value.
     genre_changed = bool(request.genre) and request.genre != session_genre
     prompt_changed = bool(request.prompt) and request.prompt != session_prompt
-    if genre_changed or prompt_changed:
+    key_changed = bool(request.key) and key != session_key
+    mode_changed = bool(request.musical_mode) and musical_mode != session_mode
+    if genre_changed or prompt_changed or key_changed or mode_changed:
         new_metadata = dict(metadata)
         if request.genre:
             new_metadata["genre"] = request.genre
         if request.prompt:
             new_metadata["prompt"] = request.prompt
+        if request.key:
+            new_metadata["key"] = key
+        if request.musical_mode:
+            new_metadata["musical_mode"] = musical_mode
         await repo.update_metadata(session_id, new_metadata)
 
     channel = SSEChannel()
@@ -82,6 +103,8 @@ async def trigger_round(
         "session_id": session_id,
         "prompt": prompt,
         "genre": genre,
+        "key_center": key,
+        "mode": musical_mode,
         "generation_mode": "conservative",
         "round_number": 1,
         "n_candidates": N_CANDIDATES,

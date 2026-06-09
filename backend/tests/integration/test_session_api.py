@@ -58,6 +58,40 @@ async def test_get_session(client: AsyncClient) -> None:
     assert response.json()["genre"] == "cinematic"
 
 
+async def test_create_session_default_key_mode(client: AsyncClient) -> None:
+    """When key/musical_mode are omitted they default to C/major."""
+    resp = await client.post(
+        "/v1/sessions",
+        json={"genre": "dream_pop", "prompt": "no key given"},
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["key"] == "C"
+    assert data["musical_mode"] == "major"
+
+
+async def test_create_session_key_mode_roundtrip(client: AsyncClient) -> None:
+    """An explicit key + church mode survives create and GET."""
+    create = await client.post(
+        "/v1/sessions",
+        json={
+            "genre": "cinematic",
+            "prompt": "modal piece",
+            "key": "A",
+            "musical_mode": "dorian",
+        },
+    )
+    assert create.status_code == 201
+    assert create.json()["key"] == "A"
+    assert create.json()["musical_mode"] == "dorian"
+
+    session_id = create.json()["session_id"]
+    got = await client.get(f"/v1/sessions/{session_id}")
+    assert got.status_code == 200
+    assert got.json()["key"] == "A"
+    assert got.json()["musical_mode"] == "dorian"
+
+
 async def test_get_session_not_found(client: AsyncClient) -> None:
     response = await client.get("/v1/sessions/sess_DOESNOTEXIST")
     assert response.status_code == 404
