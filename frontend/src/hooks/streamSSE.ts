@@ -6,14 +6,15 @@
  * leaving the calling flow stuck in its in-flight state (the `finally` that
  * resets `loading`/`inFlight` never runs). To bound that, every stream is wrapped
  * in an AbortController with a hard timeout: `reader.read()` rejects on abort, so
- * a true hang can't block forever. Aborting the fetch only cancels the in-flight
- * request and (best-effort) signals the server to stop the underlying work — it
+ * a true hang can't block forever. Aborting the fetch closes the client request;
+ * the backend cancels the in-flight round on disconnect (best-effort). This
  * happens on the timeout or when a caller-supplied signal aborts (e.g. unmount),
  * not on a normal stream end.
  *
  * Callers may pass an external `AbortSignal` (composed with the internal timeout
- * controller) so they can abort the request on unmount / when the session changes,
- * instead of leaking the request + server work until the timeout fires.
+ * controller) so they can abort the request on unmount / when the session changes.
+ * Aborting closes the client request; the backend cancels the in-flight round on
+ * disconnect (best-effort), instead of leaking it until the timeout fires.
  *
  * The timer is cleared on ALL exit paths (success, parse handler throw, error,
  * abort) so it can never fire late against an unrelated round.

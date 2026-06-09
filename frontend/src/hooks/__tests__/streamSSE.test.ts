@@ -143,4 +143,28 @@ describe('streamSSE', () => {
     await vi.runAllTimersAsync();
     await assertion;
   });
+
+  it('aborts mid-stream (after the reader is draining) without being mislabeled as a timeout', async () => {
+    // Delivers one event, then hangs: the reader is already draining when the
+    // external signal aborts, so this exercises the read-loop abort path (not
+    // the pre-fetch one above). The hanging read rejects off the composed signal.
+    const controller = new AbortController();
+    const seen: string[] = [];
+    const chunks = [enc('event: node_started\r\ndata: {"node":"a"}\r\n\r\n')];
+    const promise = streamSSE({
+      open: (signal) => Promise.resolve(streamResponse(chunks, { hang: true, signal })),
+      onEvent: (e) => {
+        seen.push(e.event);
+        // Abort only after the first event is delivered and the loop loops back
+        // into a hanging read() — i.e. mid-drain, not before fetch.
+        controller.abort();
+      },
+      signal: controller.signal,
+    });
+    const assertion = expect(promise).rejects.not.toBeInstanceOf(SSETimeoutError);
+    await vi.runAllTimersAsync();
+    await assertion;
+    // The first event was processed before the mid-stream abort tore it down.
+    expect(seen).toEqual(['node_started']);
+  });
 });

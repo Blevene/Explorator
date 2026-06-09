@@ -35,11 +35,23 @@ export function useRealizationFlow(sessionId: string | undefined) {
   const [loading, setLoading] = useState(false);
   const [currentNode, setCurrentNode] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
 
   const arrangementStore = useArrangementStore();
 
-  // Abort any in-flight realization on unmount / session change so the request
-  // and server work don't leak until the 10-minute timeout.
+  // Track mount status so post-await / `finally` setState calls can be gated:
+  // a caller abort fired from the unmount cleanup still runs `finally`, which
+  // would otherwise update state on an unmounted (dead) fiber.
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Abort any in-flight realization on unmount / session change. Aborting closes
+  // the client request; the backend cancels the in-flight round on disconnect
+  // (best-effort), instead of leaking it until the timeout fires.
   useEffect(() => {
     return () => abortRef.current?.abort(USER_ABORT);
   }, [sessionId]);
@@ -76,6 +88,9 @@ export function useRealizationFlow(sessionId: string | undefined) {
     setCurrentNode('load_context');
     setLoading(true);
 
+    // Abort any prior in-flight controller before replacing it, so a re-entrant
+    // call can't orphan a stream that's then only abortable by the timeout.
+    abortRef.current?.abort(USER_ABORT);
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -101,6 +116,8 @@ export function useRealizationFlow(sessionId: string | undefined) {
       });
 
       const arrangements = await listArrangements(candidateId);
+      // Unmounted mid-flight (caller abort): skip the post-await state writes.
+      if (!mountedRef.current) return { status: 'realized' };
       arrangementStore.setArrangements(arrangements);
       // Reconstruct finalist roles from arrangement metadata
       const fs = reconstructFinalSelection(arrangements);
@@ -126,9 +143,15 @@ export function useRealizationFlow(sessionId: string | undefined) {
           : 'Realization failed';
       return { status: 'error', error };
     } finally {
+      // Ref reset is unconditional (not state). The state resets are gated on
+      // mount: a caller abort fired from unmount cleanup still runs `finally`,
+      // and updating state on a dead fiber is a no-op bug. Normal completion
+      // runs with mountedRef.current === true, so loading still resets.
       if (abortRef.current === controller) abortRef.current = null;
-      setLoading(false);
-      setCurrentNode(null);
+      if (mountedRef.current) {
+        setLoading(false);
+        setCurrentNode(null);
+      }
     }
   };
 
