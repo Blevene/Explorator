@@ -87,8 +87,9 @@ export default function Dashboard() {
             style={{ background: `linear-gradient(135deg, var(--border-subtle), var(--border-default), var(--border-subtle))` }}
           >
             <div className="rounded-xl p-5 flex flex-col gap-3" style={{ background: 'var(--surface-2)' }}>
-              {/* Genre / key / mode pickers wrap onto as many rows as needed */}
-              <div className="flex flex-wrap items-center gap-2">
+              {/* Genre / key / mode pickers share one row as equal columns that
+                  shrink to fit — the mood input keeps full width on its own row. */}
+              <div className="grid grid-cols-3 gap-2">
                 <GenrePicker value={genre} onChange={setGenre} genres={genres} />
                 <KeyPicker value={key} onChange={setKey} />
                 <ModePicker value={musicalMode} onChange={setMusicalMode} />

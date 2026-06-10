@@ -109,7 +109,7 @@ export default function OptionPicker({
   };
 
   return (
-    <div ref={rootRef} className="relative" style={{ minWidth: compact ? '7rem' : '9rem' }}>
+    <div ref={rootRef} className="relative min-w-0">
       <input
         ref={inputRef}
         type="text"

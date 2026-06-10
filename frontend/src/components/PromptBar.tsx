@@ -82,10 +82,10 @@ export default function PromptBar({
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Genre / key / mode pickers — their own wrapping row so the mood box
-          keeps full width and nothing gets cut off when all three show. */}
+      {/* Genre / key / mode pickers — equal columns on their own row so the mood
+          box keeps full width and nothing gets cut off when all three show. */}
       {(showGenrePicker || showKeyPicker || showModePicker) && (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {showGenrePicker && (
             <GenrePicker
               value={genre}

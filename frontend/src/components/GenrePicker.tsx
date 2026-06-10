@@ -101,7 +101,7 @@ export default function GenrePicker({
   };
 
   return (
-    <div ref={rootRef} className="relative" style={{ minWidth: compact ? '9rem' : '11rem' }}>
+    <div ref={rootRef} className="relative min-w-0">
       <input
         ref={inputRef}
         type="text"
