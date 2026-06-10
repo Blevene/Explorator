@@ -1,6 +1,5 @@
 """Generate bass node — deterministic bass line generation per progression candidate."""
 
-import logging
 from typing import Any
 
 from explorator.domain.realization.bass import BassLineGenerator
@@ -9,8 +8,6 @@ from explorator.models.groove import GroovePattern
 from explorator.models.harmony import ProgressionCandidate
 from explorator.models.realization import BassPreferences
 from explorator.utils import parse_json_field, parse_json_or_dict
-
-logger = logging.getLogger(__name__)
 
 
 def _build_bass_prefs(genre_profile: dict[str, Any]) -> BassPreferences:
@@ -33,11 +30,6 @@ async def generate_bass(state: ExplorationState) -> dict[str, Any]:
 
     prefs = _build_bass_prefs(genre_profile)
     genre = genre_profile.get("genre", creative_brief.get("genre", "dream_pop"))
-    logger.warning(
-        "generate_bass: genre_profile bass_preferences=%s, type=%s",
-        genre_profile.get("bass_preferences"),
-        type(genre_profile.get("bass_preferences")).__name__,
-    )
 
     variant_modes = prefs.variant_bass_modes
 
