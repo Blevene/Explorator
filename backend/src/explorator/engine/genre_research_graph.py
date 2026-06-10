@@ -51,7 +51,7 @@ def route_after_validate(state: dict[str, Any]) -> str:
     return "output"
 
 
-def build_genre_research_graph(gemini: GeminiClient, driver: AsyncDriver) -> Any:
+def build_genre_research_graph(gemini: GeminiClient, driver: AsyncDriver | None) -> Any:
     """Build and compile the genre research LangGraph pipeline."""
     graph = StateGraph(GenreResearchState)
 

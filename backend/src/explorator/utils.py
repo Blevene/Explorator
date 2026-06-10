@@ -87,3 +87,102 @@ def parse_json_or_dict(value: Any) -> dict[str, Any]:
         except (json.JSONDecodeError, TypeError):
             pass
     return {}
+
+
+def resolve_session_genre(session: dict[str, Any]) -> str:
+    """Resolve a session's genre from its ``metadata`` (single source of truth).
+
+    Genre is persisted only in ``metadata.genre`` (set in sessions.py); the
+    ``Session`` model has no top-level ``genre`` field. In memory mode neither
+    a ``Session.genre`` property nor a CreativeBrief is written, so this is the
+    only reliable genre source. Falls back to ``"dream_pop"`` when absent.
+    """
+    return parse_json_or_dict(session.get("metadata")).get("genre") or "dream_pop"
+
+
+# --- Key + musical-mode selection -------------------------------------------
+# Explicit key/mode are threaded through generation like genre. They are
+# persisted in ``metadata.key`` / ``metadata.musical_mode`` (the latter avoids
+# colliding with the session workflow ``mode`` = "full_exploration"). These map
+# to the generator's ``key_center`` / ``mode`` params and ``CreativeBrief``.
+
+DEFAULT_KEY = "C"
+DEFAULT_MODE = "major"
+
+# Canonical key spellings the frontend sends (12 pitch classes).
+SUPPORTED_KEYS = {"C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"}
+
+# Supported musical modes (major/minor + the five common church modes).
+SUPPORTED_MODES = {
+    "major",
+    "minor",
+    "dorian",
+    "phrygian",
+    "lydian",
+    "mixolydian",
+    "locrian",
+}
+
+# Enharmonic / formatting aliases → canonical key spelling. Accepts music21's
+# dash-flat form, lowercase, and a few common enharmonic spellings so a value
+# coming from anywhere normalizes cleanly instead of falling back to C.
+_KEY_ALIASES = {
+    "DB": "C#",
+    "C#": "C#",
+    "D#": "Eb",
+    "E-": "Eb",
+    "EB": "Eb",
+    "GB": "F#",
+    "F#": "F#",
+    "G#": "Ab",
+    "A-": "Ab",
+    "AB": "Ab",
+    "A#": "Bb",
+    "B-": "Bb",
+    "BB": "Bb",
+    "C-": "B",
+    "F-": "E",
+    "E#": "F",
+    "B#": "C",
+}
+
+
+def normalize_key_and_mode(key: str | None, musical_mode: str | None) -> tuple[str, str]:
+    """Normalize an arbitrary key + musical mode to a supported pair.
+
+    All 12 keys x 7 modes are valid — this normalizes (case, enharmonic,
+    dash-flat) rather than rejecting, and falls back to C/major for anything
+    unrecognized so a bad value can never crash generation. Used at the route
+    boundary.
+    """
+    raw_key = (key or "").strip()
+    if raw_key:
+        # Canonicalize accidental case: 'eb' → 'Eb', 'f#' → 'F#'.
+        if len(raw_key) > 1:
+            canon = raw_key[0].upper() + raw_key[1:].replace("B", "b")
+        else:
+            canon = raw_key.upper()
+        if canon in SUPPORTED_KEYS:
+            norm_key = canon
+        else:
+            norm_key = _KEY_ALIASES.get(raw_key.upper(), DEFAULT_KEY)
+    else:
+        norm_key = DEFAULT_KEY
+
+    raw_mode = (musical_mode or "").strip().lower()
+    norm_mode = raw_mode if raw_mode in SUPPORTED_MODES else DEFAULT_MODE
+    return norm_key, norm_mode
+
+
+def resolve_session_key(session: dict[str, Any]) -> str:
+    """Resolve a session's key from its ``metadata.key`` (default ``"C"``)."""
+    return parse_json_or_dict(session.get("metadata")).get("key") or DEFAULT_KEY
+
+
+def resolve_session_mode(session: dict[str, Any]) -> str:
+    """Resolve a session's musical mode from ``metadata.musical_mode``.
+
+    Defaults to ``"major"``. Reads ``musical_mode`` (not ``mode``) to avoid
+    colliding with the session workflow ``mode``.
+    """
+    return parse_json_or_dict(session.get("metadata")).get("musical_mode") or DEFAULT_MODE

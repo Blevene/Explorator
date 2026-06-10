@@ -6,7 +6,9 @@ test.describe('UX Coherence', () => {
     await expect(page.locator('text=Explorator')).toBeVisible();
 
     // Create session
-    await page.locator('input').first().fill('Navigation test, dream pop, 4 bars');
+    await page.locator('[data-testid="genre-picker-input"]').fill('dream');
+    await page.locator('[data-testid="genre-option-dream_pop"]').click();
+    await page.getByLabel('Session prompt').fill('Navigation test, dream pop, 4 bars');
     await page.getByRole('button', { name: /explore/i }).click();
     await page.waitForURL(/\/session\//);
 
@@ -64,7 +66,7 @@ test.describe('UX Coherence', () => {
 
     // The session was created with a prompt, so auto-generate may fire.
     // Wait for candidates to appear (auto-generate) or for a settled state.
-    const input = page.locator('input').first();
+    const input = page.getByLabel('Generation prompt');
 
     // Wait for either candidates or the generate button to be available
     await page.locator('text=→').or(page.getByRole('button', { name: /generate/i })).first().waitFor({ timeout: 30_000 });
@@ -75,10 +77,10 @@ test.describe('UX Coherence', () => {
     if (hasCards) {
       await expect(genButton).not.toBeDisabled();
     } else {
-      // No auto-generate — test disabled state
-      await input.fill('');
-      await page.waitForTimeout(200);
-      await expect(genButton).toBeDisabled();
+      // No auto-generate fired. Generate is enabled as soon as a genre is
+      // selected (the in-session picker is seeded from the session's genre),
+      // so the button is expected to be enabled here regardless of the prompt.
+      await expect(genButton).not.toBeDisabled();
       await input.fill(testSession.prompt);
       await genButton.click();
       await page.locator('text=→').first().waitFor({ timeout: 60_000 });

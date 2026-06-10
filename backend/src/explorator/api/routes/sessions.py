@@ -12,10 +12,15 @@ from ulid import ULID
 
 from explorator.api.deps import get_neo4j_driver, get_session_repo
 from explorator.config import settings
-from explorator.graph.provenance_trace_repo import ProvenanceTraceRepo
 from explorator.graph.session_repo import SessionRepository
 from explorator.models.session import Session
-from explorator.utils import parse_json_or_dict
+from explorator.persistence.factory import make_provenance_trace_repo
+from explorator.utils import (
+    DEFAULT_KEY,
+    DEFAULT_MODE,
+    normalize_key_and_mode,
+    parse_json_or_dict,
+)
 
 router = APIRouter(tags=["sessions"])
 
@@ -23,8 +28,11 @@ router = APIRouter(tags=["sessions"])
 class CreateSessionRequest(BaseModel):
     """Request body for creating a session."""
 
+    genre: str
     mode: str = "full_exploration"
-    prompt: str
+    prompt: str = ""
+    key: str = DEFAULT_KEY
+    musical_mode: str = DEFAULT_MODE
 
 
 class SessionResponse(BaseModel):
@@ -35,6 +43,9 @@ class SessionResponse(BaseModel):
     mode: str
     created_at: str
     prompt: str
+    genre: str
+    key: str
+    musical_mode: str
 
 
 class SessionListResponse(BaseModel):
@@ -52,6 +63,9 @@ async def create_session(
     session_id = f"sess_{ULID()}"
     now = datetime.datetime.now(datetime.UTC)
 
+    # Normalize at the boundary so a bad key/mode can never reach generation.
+    key, musical_mode = normalize_key_and_mode(request.key, request.musical_mode)
+
     session = Session(
         id=session_id,
         type="session",
@@ -59,7 +73,12 @@ async def create_session(
         mode=request.mode,
         created_at=now,
         updated_at=now,
-        metadata={"prompt": request.prompt},
+        metadata={
+            "prompt": request.prompt,
+            "genre": request.genre,
+            "key": key,
+            "musical_mode": musical_mode,
+        },
     )
     await repo.create(session)
 
@@ -69,6 +88,9 @@ async def create_session(
         mode=request.mode,
         created_at=now.isoformat(),
         prompt=request.prompt,
+        genre=request.genre,
+        key=key,
+        musical_mode=musical_mode,
     )
 
 
@@ -78,16 +100,21 @@ async def list_sessions(
 ) -> SessionListResponse:
     """List all sessions."""
     sessions = await repo.list_sessions()
-    items = [
-        SessionResponse(
-            session_id=s["id"],
-            status=s.get("status", "unknown"),
-            mode=s.get("mode", "unknown"),
-            created_at=s.get("created_at", ""),
-            prompt=parse_json_or_dict(s.get("metadata")).get("prompt", ""),
+    items = []
+    for s in sessions:
+        metadata = parse_json_or_dict(s.get("metadata"))
+        items.append(
+            SessionResponse(
+                session_id=s["id"],
+                status=s.get("status", "unknown"),
+                mode=s.get("mode", "unknown"),
+                created_at=s.get("created_at", ""),
+                prompt=metadata.get("prompt", ""),
+                genre=metadata.get("genre", ""),
+                key=metadata.get("key", DEFAULT_KEY),
+                musical_mode=metadata.get("musical_mode", DEFAULT_MODE),
+            )
         )
-        for s in sessions
-    ]
     return SessionListResponse(items=items)
 
 
@@ -107,6 +134,9 @@ async def get_session(
         mode=session.get("mode", "unknown"),
         created_at=session.get("created_at", ""),
         prompt=metadata.get("prompt", ""),
+        genre=metadata.get("genre", ""),
+        key=metadata.get("key", DEFAULT_KEY),
+        musical_mode=metadata.get("musical_mode", DEFAULT_MODE),
     )
 
 
@@ -114,7 +144,7 @@ async def get_session(
 async def delete_session(
     session_id: str,
     repo: SessionRepository = Depends(get_session_repo),  # noqa: B008
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> None:
     """Delete a session and all its child nodes from Neo4j."""
     session = await repo.get_by_id(session_id)
@@ -125,6 +155,17 @@ async def delete_session(
     export_dir = os.path.join(settings.export_dir, session_id)
     if os.path.isdir(export_dir):
         shutil.rmtree(export_dir)
+
+    # Memory mode: remove the Session from the store so a subsequent get_by_id
+    # returns 404. Child nodes aren't cascaded — in-memory state is
+    # process-lifetime and lost on restart anyway. The graph cascade below
+    # (child nodes, relationships, library rows) is a Neo4j-only concern.
+    if driver is None:
+        from explorator.persistence.memory_repos import MemorySessionRepo
+
+        assert isinstance(repo, MemorySessionRepo)
+        await repo.delete(session_id)
+        return
 
     # All three deletes share one transaction so a transient failure mid-cascade
     # cannot leave orphaned nodes (e.g. PatternLibraryEntry rows surviving while
@@ -170,14 +211,14 @@ class ProvenanceResponse(BaseModel):
 @router.get("/sessions/{session_id}/provenance")
 async def get_provenance(
     session_id: str,
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> ProvenanceResponse:
     """Return the provenance trace for a session.
 
     Returns an empty events list if no trace exists yet
-    (session hasn't been explored).
+    (session hasn't been explored). Memory mode always returns empty.
     """
-    repo = ProvenanceTraceRepo(driver)
+    repo = make_provenance_trace_repo(driver)
     trace = await repo.get_by_session_id(session_id)
     if trace is None:
         return ProvenanceResponse(session_id=session_id, events=[])

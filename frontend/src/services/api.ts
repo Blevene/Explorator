@@ -1,5 +1,16 @@
 const API_BASE = '/v1';
 
+export interface Capabilities {
+  persistence_mode: 'neo4j' | 'memory';
+  features: Record<string, boolean>;
+}
+
+export async function getCapabilities(): Promise<Capabilities> {
+  const res = await fetch(`${API_BASE}/capabilities`);
+  if (!res.ok) throw new Error(`Failed to fetch capabilities: ${res.status}`);
+  return res.json();
+}
+
 export interface SessionSummary {
   session_id: string;
   status: string;
@@ -7,6 +18,8 @@ export interface SessionSummary {
   created_at: string;
   prompt: string;
   genre?: string;
+  key: string;
+  musical_mode: string;
 }
 
 export interface SessionListResponse {
@@ -22,11 +35,17 @@ export interface GenreListResponse {
   items: GenreSummary[];
 }
 
-export async function createSession(prompt: string, mode = 'full_exploration'): Promise<SessionSummary> {
+export async function createSession(
+  genre: string,
+  key = 'C',
+  musical_mode = 'major',
+  prompt = '',
+  mode = 'full_exploration',
+): Promise<SessionSummary> {
   const res = await fetch(`${API_BASE}/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, mode }),
+    body: JSON.stringify({ genre, key, musical_mode, prompt: prompt ?? '', mode }),
   });
   if (!res.ok) throw new Error(`Failed to create session: ${res.status}`);
   return res.json();
@@ -48,6 +67,12 @@ export async function listGenres(): Promise<GenreListResponse> {
   const res = await fetch(`${API_BASE}/genres`);
   if (!res.ok) throw new Error(`Failed to list genres: ${res.status}`);
   return res.json();
+}
+
+/** Convenience wrapper that returns the genre items array directly. */
+export async function getGenres(): Promise<GenreSummary[]> {
+  const data = await listGenres();
+  return data.items;
 }
 
 export interface GenreDetail {
@@ -104,20 +129,6 @@ export async function listCandidates(sessionId: string): Promise<CandidateListRe
 export async function dismissCandidate(candidateId: string): Promise<void> {
   const res = await fetch(`${API_BASE}/candidates/${candidateId}/dismiss`, { method: 'PATCH' });
   if (!res.ok) throw new Error(`Failed to dismiss candidate: ${res.status}`);
-}
-
-export async function triggerRoundSSE(
-  sessionId: string,
-  prompt: string,
-  generationMode: string,
-): Promise<Response> {
-  const res = await fetch(`${API_BASE}/sessions/${sessionId}/rounds`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, generation_mode: generationMode }),
-  });
-  if (!res.ok) throw new Error(`Failed to trigger round: ${res.status}`);
-  return res;
 }
 
 // --- M2c Arrangement Types ---
@@ -207,11 +218,13 @@ export async function getArrangement(arrangementId: string): Promise<Arrangement
 export async function triggerRealizationSSE(
   sessionId: string,
   progressionCandidateIds: string[],
+  signal?: AbortSignal,
 ): Promise<Response> {
   return fetch(`${API_BASE}/sessions/${sessionId}/realization-rounds`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ progression_candidate_ids: progressionCandidateIds }),
+    signal,
   })
 }
 
@@ -219,6 +232,7 @@ export async function triggerMutation(
   sessionId: string,
   candidateIds: string[],
   guidance?: string,
+  signal?: AbortSignal,
 ): Promise<Response> {
   const res = await fetch(`${API_BASE}/sessions/${sessionId}/mutate`, {
     method: 'POST',
@@ -227,6 +241,7 @@ export async function triggerMutation(
       candidate_ids: candidateIds,
       guidance: guidance || null,
     }),
+    signal,
   });
   if (!res.ok) {
     if (res.status === 409) throw new Error('A mutation is already in progress');

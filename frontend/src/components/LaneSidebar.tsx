@@ -43,6 +43,7 @@ export default function LaneSidebar({ candidateId, label, score, audible }: Lane
           title={isSoloed ? "Unsolo" : "Solo"}
           aria-label={`${isSoloed ? "Unsolo" : "Solo"} ${label}`}
           aria-pressed={isSoloed}
+          data-testid="lane-solo"
           className="w-8 h-8 flex items-center justify-center rounded-sm text-[10px] font-bold border-none cursor-pointer"
           style={{
             background: isSoloed ? "var(--accent-primary)" : "var(--surface-3)",
@@ -56,6 +57,7 @@ export default function LaneSidebar({ candidateId, label, score, audible }: Lane
           title={isMuted ? "Unmute" : "Mute"}
           aria-label={`${isMuted ? "Unmute" : "Mute"} ${label}`}
           aria-pressed={isMuted}
+          data-testid="lane-mute"
           className="w-8 h-8 flex items-center justify-center rounded-sm text-[10px] font-bold border-none cursor-pointer"
           style={{
             background: isMuted ? "var(--score-low)" : "var(--surface-3)",

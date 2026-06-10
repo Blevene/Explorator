@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { triggerMutation, listCandidates } from '../services/api';
 import { useCandidateStore } from '../stores/candidateStore';
+import { streamSSE, SSETimeoutError, USER_ABORT } from './streamSSE';
 
 export interface MutationResult {
   source_id: string;
@@ -20,8 +21,27 @@ export function useMutationFlow(sessionId: string | undefined) {
   const [inFlightLabel, setInFlightLabel] = useState<string>('');
   const [inFlightChords, setInFlightChords] = useState<string[]>([]);
   const [lastResult, setLastResult] = useState<MutationResult | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
 
   const { candidates, setCandidates } = useCandidateStore();
+
+  // Track mount status so post-await / `finally` setState calls can be gated:
+  // a caller abort fired from the unmount cleanup still runs `finally`, which
+  // would otherwise update state on an unmounted (dead) fiber.
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Abort any in-flight mutation on unmount / session change. Aborting closes
+  // the client request; the backend cancels the in-flight round on disconnect
+  // (best-effort), instead of leaking it until the timeout fires.
+  useEffect(() => {
+    return () => abortRef.current?.abort(USER_ABORT);
+  }, [sessionId]);
 
   const LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
@@ -45,57 +65,61 @@ export function useMutationFlow(sessionId: string | undefined) {
     setInFlightChords(chords);
     setLastResult(null);
 
-    try {
-      const response = await triggerMutation(sessionId, [targetId], guidance || undefined);
-      if (!response.body) return 'No response body';
+    // Abort any prior in-flight controller before replacing it, so a re-entrant
+    // call can't orphan a stream that's then only abortable by the timeout.
+    abortRef.current?.abort(USER_ABORT);
+    const controller = new AbortController();
+    abortRef.current = controller;
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
+    try {
       let mutResult: MutationResult | null = null;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split(/\r?\n\r?\n/);
-        buffer = parts.pop() ?? '';
-
-        for (const part of parts) {
-          if (!part.trim()) continue;
-          let eventType = '';
-          let dataStr = '';
-          for (const line of part.split(/\r?\n/)) {
-            if (line.startsWith('event: ')) eventType = line.slice(7).trim();
-            else if (line.startsWith('data: ')) dataStr = line.slice(6).trim();
+      // Bounded by an AbortController + timeout via streamSSE, so a stream that
+      // opens then hangs with zero bytes can't leave the mutation stuck inFlight.
+      await streamSSE({
+        signal: controller.signal,
+        open: (signal) => triggerMutation(sessionId, [targetId], guidance || undefined, signal),
+        notOkMessage: (status) => `Mutation failed: ${status}`,
+        onEvent: ({ event: eventType, data }) => {
+          // The mutate route can emit *_error over a 200 stream; without this a
+          // failed mutation ends the stream normally and returns a false success.
+          // Throw so it propagates → submit() returns the real error.
+          if (eventType === 'mutation_error' || eventType === 'realization_error') {
+            throw new Error((data.error as string) ?? 'Mutation failed');
           }
-          if (!eventType || !dataStr) continue;
-          try {
-            const data = JSON.parse(dataStr);
-            if (eventType === 'mutation_completed' && data.results) {
-              const r = data.results[0];
-              if (r) {
-                mutResult = {
-                  source_id: r.source_id ?? targetId,
-                  mutated_chord_symbols: r.mutated_chord_symbols ?? [],
-                  mutations: r.mutations ?? [],
-                };
-              }
+          if (eventType === 'mutation_completed' && data.results) {
+            const results = data.results as Array<Record<string, unknown>>;
+            const r = results[0];
+            if (r) {
+              mutResult = {
+                source_id: (r.source_id as string) ?? targetId,
+                mutated_chord_symbols: (r.mutated_chord_symbols as string[]) ?? [],
+                mutations: (r.mutations as MutationResult['mutations']) ?? [],
+              };
             }
-          } catch { /* skip */ }
-        }
-      }
-      reader.releaseLock();
+          }
+        },
+      });
 
-      if (mutResult) setLastResult(mutResult);
+      if (mutResult && mountedRef.current) setLastResult(mutResult);
 
       const res = await listCandidates(sessionId);
-      setCandidates(res.items);
+      if (mountedRef.current) setCandidates(res.items);
       return null;
     } catch (err) {
+      // A caller-driven abort (unmount / session change) isn't a failure to report.
+      if (controller.signal.aborted && !(err instanceof SSETimeoutError)) {
+        return 'Mutation cancelled';
+      }
+      if (err instanceof SSETimeoutError) return 'Mutation timed out after 10 minutes.';
       return err instanceof Error ? err.message : 'Mutation failed';
     } finally {
-      setInFlight(false);
+      // Ref reset is unconditional (not state). The state reset is gated on
+      // mount: a caller abort fired from unmount cleanup still runs `finally`,
+      // and updating state on a dead fiber is a no-op bug. Normal completion
+      // runs with mountedRef.current === true, so inFlight still resets.
+      if (abortRef.current === controller) abortRef.current = null;
+      if (mountedRef.current) setInFlight(false);
     }
   };
 

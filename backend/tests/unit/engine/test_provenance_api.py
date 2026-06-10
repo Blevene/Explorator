@@ -46,9 +46,11 @@ class TestProvenanceEndpoint:
                 "explorator.api.routes.sessions.get_neo4j_driver",
                 new=AsyncMock(return_value=MagicMock()),
             ),
-            patch("explorator.api.routes.sessions.ProvenanceTraceRepo") as MockRepo,
+            patch(
+                "explorator.api.routes.sessions.make_provenance_trace_repo"
+            ) as MakeRepo,
         ):
-            MockRepo.return_value.get_by_session_id = AsyncMock(return_value=trace)
+            MakeRepo.return_value.get_by_session_id = AsyncMock(return_value=trace)
 
             client = TestClient(app)
             resp = client.get("/v1/sessions/sess_1/provenance")
@@ -65,9 +67,11 @@ class TestProvenanceEndpoint:
                 "explorator.api.routes.sessions.get_neo4j_driver",
                 new=AsyncMock(return_value=MagicMock()),
             ),
-            patch("explorator.api.routes.sessions.ProvenanceTraceRepo") as MockRepo,
+            patch(
+                "explorator.api.routes.sessions.make_provenance_trace_repo"
+            ) as MakeRepo,
         ):
-            MockRepo.return_value.get_by_session_id = AsyncMock(return_value=None)
+            MakeRepo.return_value.get_by_session_id = AsyncMock(return_value=None)
 
             client = TestClient(app)
             resp = client.get("/v1/sessions/sess_1/provenance")

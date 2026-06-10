@@ -37,11 +37,19 @@ async def neo4j_driver() -> AsyncGenerator[AsyncDriver, None]:  # type: ignore[o
     global _neo4j_available
     from neo4j.exceptions import ServiceUnavailable
 
+    import explorator.graph.connection as conn
+
     drv = AsyncGraphDatabase.driver(_neo4j_uri(), auth=_neo4j_auth())
     try:
         await init_schema(drv)
         _neo4j_available = True
+        # Register as the connection module's active driver so API deps/routes
+        # using get_optional_driver() operate in Neo4j mode (see tests/conftest).
+        conn._driver = drv
+        conn._available = True
         yield drv
+        conn._driver = None
+        conn._available = False
         await drv.close()
     except ServiceUnavailable:
         _neo4j_available = False

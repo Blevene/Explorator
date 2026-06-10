@@ -181,8 +181,8 @@ class TestLoadMemoryProvenance:
         mock_driver = MagicMock()
 
         with (
-            patch("explorator.engine.nodes.load_memory.FeedbackEventRepo") as MockFB,
-            patch("explorator.engine.nodes.load_memory.ObjectiveWeightsRepo") as MockOW,
+            patch("explorator.engine.nodes.load_memory.make_feedback_event_repo") as MockFB,
+            patch("explorator.engine.nodes.load_memory.make_objective_weights_repo") as MockOW,
         ):
             fb_instance = MockFB.return_value
             fb_instance.list_by_session = AsyncMock(
@@ -209,8 +209,8 @@ class TestLoadMemoryProvenance:
         mock_driver = MagicMock()
 
         with (
-            patch("explorator.engine.nodes.load_memory.FeedbackEventRepo") as MockFB,
-            patch("explorator.engine.nodes.load_memory.ObjectiveWeightsRepo") as MockOW,
+            patch("explorator.engine.nodes.load_memory.make_feedback_event_repo") as MockFB,
+            patch("explorator.engine.nodes.load_memory.make_objective_weights_repo") as MockOW,
         ):
             fb_instance = MockFB.return_value
             fb_instance.list_by_session = AsyncMock(return_value=[])

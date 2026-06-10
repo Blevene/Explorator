@@ -93,25 +93,41 @@ cd Explorator
 cp .env.example backend/.env
 # Edit backend/.env and set GEMINI_API_KEY
 
-# Bring up Neo4j (dev container on :7688)
-make neo4j-up
-
 # Install deps
 cd backend  && uv sync --all-extras && cd ..
 cd frontend && npm install         && cd ..
 ```
 
-**Run**
+> **Neo4j is optional.** The full generation flow — M1 progressions → M2
+> realization → M3 mutations — runs without a database via a process-lifetime
+> in-memory store. `make neo4j-up` is required only for *durable* storage and the
+> long-term-memory features: pattern library, feedback learning, session
+> history, lineage, genre research, and curation. See
+> [Neo4j is optional (limited mode)](#neo4j-is-optional-limited-mode).
+
+**Run** — two modes, no config flag to switch between them. The backend probes
+Neo4j once on startup and picks the mode automatically.
+
+*Full mode — with Neo4j* (all features, durable across restarts):
 
 ```bash
-# Terminal 1 — Backend on :8000
-make backend
-
-# Terminal 2 — Frontend (Vite dev server, default :5173, proxies /v1)
-cd frontend && npm run dev -- --host 0.0.0.0
+make neo4j-up                                  # dev Neo4j on :7688
+make backend                                   # FastAPI on :8000 — connects to Neo4j
+cd frontend && npm run dev -- --host 0.0.0.0   # Vite on :5173
 ```
 
-Open http://localhost:5173.
+*Limited mode — no Neo4j* (in-memory; generation only). Just don't start Neo4j —
+the backend finds it absent and runs against a process-lifetime in-memory store:
+
+```bash
+make backend                                   # logs "in-memory mode — long-term memory features disabled"
+cd frontend && npm run dev -- --host 0.0.0.0   # the UI shows a "limited mode" banner
+```
+
+Open http://localhost:5173. Generation (M1 → M2 → M3) works in **both** modes;
+limited mode turns off the long-term-memory features and loses data on restart —
+see [Neo4j is optional (limited mode)](#neo4j-is-optional-limited-mode). Check the
+live mode any time with `curl localhost:8000/v1/capabilities`.
 
 **Test**
 
@@ -119,8 +135,23 @@ Open http://localhost:5173.
 make test                       # Backend full suite (auto-starts isolated test Neo4j on :7689)
 make lint                       # ruff + mypy strict
 cd frontend && npm run test:unit
-make e2e                        # Playwright — spawns its own backend + frontend internally
+
+# End-to-end (Playwright spawns its own servers, all under GEMINI_MOCK=true — no
+# API key needed for e2e):
+make e2e-parallel               # UI/generation specs — fully parallel, each worker on its
+                                #   own in-memory backend; no Neo4j needed (~30s)
+make neo4j-up                   # REQUIRED before e2e-neo4j / e2e: dev Neo4j on :7688
+make e2e-neo4j                  # durable-feature specs (pattern library, genre research,
+                                #   feedback/lineage) — serial against the dev Neo4j
+make e2e                        # both lanes (also needs `make neo4j-up` first)
 ```
+
+`make e2e-neo4j` — and the Neo4j half of `make e2e` — require the dev Neo4j to be
+running; bring it up with `make neo4j-up` first. Setup hard-fails with a clear
+message if the backend can't reach Neo4j (it would otherwise boot in memory mode
+and the learning specs would fail with confusing UI errors). `make e2e-parallel`
+needs no Neo4j. None of the lanes need a `GEMINI_API_KEY`: e2e always runs with
+`GEMINI_MOCK=true`.
 
 The pytest suite wipes the DB between tests, so it runs against a dedicated `neo4j-test` container on port 7689 — the dev DB on 7688 is never touched. `make test*` brings the test container up automatically; if you invoke pytest directly, run `make neo4j-test-up` first.
 
@@ -138,15 +169,40 @@ The pytest suite wipes the DB between tests, so it runs against a dedicated `neo
 
 ## Architecture (overview)
 
-Single-process FastAPI app driving a LangGraph orchestration engine, persisted to Neo4j, served to a React SPA. Three LangGraph graphs compose at startup: an exploration pipeline (intent → generate → evaluate → rank → persist), a realization sub-graph (voicing → bass → groove → melody → assemble → evaluate → rank → persist → harvest), and a genre-research sub-graph (research → draft → critique → refine → validate).
+Single-process FastAPI app driving a LangGraph orchestration engine, persisted to Neo4j when present, served to a React SPA. Three LangGraph graphs compose at startup: an exploration pipeline (intent → generate → evaluate → rank → persist), a realization sub-graph (voicing → bass → groove → melody → assemble → evaluate → rank → persist → harvest), and a genre-research sub-graph (research → draft → critique → refine → validate).
 
 **Key design choices**
-- **Neo4j is the single source of truth** — sessions, candidates, arrangements, scorecards, feedback events, pattern library, lineage. No relational adjunct.
+- **Neo4j is the durable backend when present** — sessions, candidates, arrangements, scorecards, feedback events, pattern library, lineage. No relational adjunct. When Neo4j is absent, an ephemeral in-memory store backs the generation path only (see [Neo4j is optional (limited mode)](#neo4j-is-optional-limited-mode)).
 - **Domain services are pure Python** — generators, evaluators, adapters know nothing about HTTP or graph orchestration.
 - **Append-only event log + denormalized read cache** — feedback events and pattern curation events are append-only; denormalized fields (e.g. `is_curated` on `PatternLibraryEntry`) are dual-written in the same Neo4j transaction for fast filter queries.
 - **Provenance is first-class** — every candidate carries `parent_candidate_id`, `mutation_op`, `session_id`, `round`, `family_id`. Powers explanation, comparison, and export features.
 
 Full architecture, data model, and pipeline diagrams: [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
+
+## Neo4j is optional (limited mode)
+
+Neo4j is auto-detected, not required. On startup the backend probes Neo4j once; if it is unreachable, the backend logs a warning and runs in **limited mode** backed by a process-lifetime in-memory store instead of hard-failing.
+
+**What works without Neo4j**
+
+Generation runs end to end in memory — M1 progressions → M2 realization → M3 mutations, with full genre data (profiles and rules are served from the genre YAML in memory mode), arrangement scoring/ranking, and MIDI + JSON export.
+
+**What needs Neo4j**
+
+The long-term-memory features require durable storage and are disabled in limited mode:
+
+- Pattern library (browse / harvest)
+- Feedback learning (re-weighting carries over between rounds)
+- Session history / provenance timeline
+- Lineage tree
+- Genre research jobs
+- Curation (star / unstar)
+
+In-memory data is lost on backend restart — there is no durable non-Neo4j persistence by design.
+
+**Frontend limited-mode banner**
+
+When the backend reports memory mode (via `GET /v1/capabilities`), the UI shows a "limited mode" banner under the header. The Patterns nav entry is hidden, the genre-research affordances are hidden (the genre *library* stays visible — it's served from YAML), session history and lineage are hidden in the session workspace, and star (curation) buttons are disabled. To get these features, bring up Neo4j with `make neo4j-up` and restart the backend.
 
 ## Project layout
 

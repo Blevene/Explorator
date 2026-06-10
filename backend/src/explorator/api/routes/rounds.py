@@ -11,26 +11,33 @@ from sse_starlette.sse import EventSourceResponse
 
 from explorator.adapters.gemini import GeminiClient
 from explorator.api.deps import get_gemini_client, get_neo4j_driver
-from explorator.api.sse import SSEChannel
+from explorator.api.sse import SSEChannel, cancel_on_disconnect
 from explorator.engine.graph import build_exploration_graph
-from explorator.graph.session_repo import SessionRepository
-from explorator.utils import parse_json_or_dict
+from explorator.persistence.factory import make_session_repo
+from explorator.utils import (
+    DEFAULT_KEY,
+    DEFAULT_MODE,
+    normalize_key_and_mode,
+    parse_json_or_dict,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["rounds"])
 
-# Generation mode → (n_candidates, k_selection)
-MODE_PARAMS: dict[str, tuple[int, int]] = {
-    "conservative": (8, 3),
-    "balanced": (12, 4),
-    "exploratory": (16, 6),
-}
+# Single, non-configurable generation profile: conservative breadth (8 candidates,
+# top 3 selected) with a 2-round guided-search budget. Keeps real-Gemini rounds
+# fast enough to finish within the client timeout.
+N_CANDIDATES = 8
+K_SELECTION = 3
+MAX_ROUNDS = 2
 
 
 class TriggerRoundRequest(BaseModel):
     prompt: str | None = None
-    generation_mode: str = "balanced"
+    genre: str | None = None
+    key: str | None = None
+    musical_mode: str | None = None
 
 
 class RoundResponse(BaseModel):
@@ -43,32 +50,66 @@ async def trigger_round(
     session_id: str,
     request: TriggerRoundRequest,
     gemini: GeminiClient = Depends(get_gemini_client),  # noqa: B008
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> EventSourceResponse:
     """Trigger a generation round and stream progress via SSE."""
     # Verify session exists
-    repo = SessionRepository(driver)
+    repo = make_session_repo(driver)
     session = await repo.get_by_id(session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # Resolve prompt: use request prompt or fall back to session's stored prompt
+    # Resolve genre and mood. The explicit request value wins, then the stored
+    # session metadata, then a sane default. The engine's parser still needs a
+    # non-empty prompt for context, so an empty mood falls back to the genre.
     metadata = parse_json_or_dict(session.get("metadata"))
+    session_genre = metadata.get("genre", "")
     session_prompt = metadata.get("prompt", "")
-    prompt = request.prompt or session_prompt
+    genre = request.genre or session_genre or "dream_pop"
+    mood = request.prompt or session_prompt or ""
+    prompt = mood or genre
+
+    # Resolve effective key + musical mode: request override → session metadata
+    # → default, then normalize so a bad value never crashes generation.
+    session_key = metadata.get("key", DEFAULT_KEY)
+    session_mode = metadata.get("musical_mode", DEFAULT_MODE)
+    key, musical_mode = normalize_key_and_mode(
+        request.key or session_key, request.musical_mode or session_mode
+    )
+
+    # Persist in-session genre/mood/key/mode switches so reload sticks. Symmetric
+    # on all fields: a round that changes only one with the same others must
+    # still persist the new value.
+    genre_changed = bool(request.genre) and request.genre != session_genre
+    prompt_changed = bool(request.prompt) and request.prompt != session_prompt
+    key_changed = bool(request.key) and key != session_key
+    mode_changed = bool(request.musical_mode) and musical_mode != session_mode
+    if genre_changed or prompt_changed or key_changed or mode_changed:
+        new_metadata = dict(metadata)
+        if request.genre:
+            new_metadata["genre"] = request.genre
+        if request.prompt:
+            new_metadata["prompt"] = request.prompt
+        if request.key:
+            new_metadata["key"] = key
+        if request.musical_mode:
+            new_metadata["musical_mode"] = musical_mode
+        await repo.update_metadata(session_id, new_metadata)
 
     channel = SSEChannel()
     graph = build_exploration_graph(gemini, driver)
 
-    n, k = MODE_PARAMS.get(request.generation_mode, (12, 4))
-
     initial_state: dict[str, Any] = {
         "session_id": session_id,
         "prompt": prompt,
-        "generation_mode": request.generation_mode,
+        "genre": genre,
+        "key_center": key,
+        "mode": musical_mode,
+        "generation_mode": "conservative",
         "round_number": 1,
-        "n_candidates": n,
-        "k_selection": k,
+        "n_candidates": N_CANDIDATES,
+        "k_selection": K_SELECTION,
+        "search_plan": {"stop_conditions": {"max_rounds": MAX_ROUNDS}},
         "on_progress": channel.send,
         "provenance_events": [],
     }
@@ -82,7 +123,9 @@ async def trigger_round(
         finally:
             await channel.close()
 
-    # Start the round in the background
-    asyncio.create_task(run_and_close())
+    # Start the round in the background, but cancel it if the client disconnects
+    # before it finishes (otherwise graph.ainvoke + its Gemini spend run to
+    # completion against a stream nobody is reading).
+    task = asyncio.create_task(run_and_close())
 
-    return EventSourceResponse(channel.stream())
+    return EventSourceResponse(cancel_on_disconnect(channel, task))

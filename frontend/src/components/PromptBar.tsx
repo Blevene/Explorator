@@ -1,19 +1,25 @@
+import { useEffect, useRef, useState } from 'react';
+import GenrePicker from './GenrePicker';
+import KeyPicker from './KeyPicker';
+import ModePicker from './ModePicker';
+import type { GenreSummary } from '../services/api';
+
 interface PromptBarProps {
   prompt: string;
   onPromptChange: (value: string) => void;
-  generationMode: string;
-  onModeChange: (mode: string) => void;
   onGenerate: () => void;
   loading: boolean;
   currentNode: string | null;
   flowType?: 'generation' | 'realization';
+  /** Genre / key / mode pickers are only shown for the generation flow. */
+  genre?: string;
+  onGenreChange?: (genre: string) => void;
+  genres?: GenreSummary[];
+  musicalKey?: string;
+  onKeyChange?: (key: string) => void;
+  musicalMode?: string;
+  onMusicalModeChange?: (musicalMode: string) => void;
 }
-
-const MODES = [
-  { value: 'conservative', label: 'Conservative', desc: 'Fewer candidates, safer choices' },
-  { value: 'balanced', label: 'Balanced', desc: 'Default — good variety' },
-  { value: 'exploratory', label: 'Exploratory', desc: 'More candidates, bolder experiments' },
-];
 
 const GENERATION_STEPS = [
   { key: 'parse_intent', label: 'Intent' },
@@ -25,11 +31,14 @@ const GENERATION_STEPS = [
   { key: 'load_context', label: 'Context' },
   { key: 'plan_voicings', label: 'Voicings' },
   { key: 'generate_bass', label: 'Bass' },
+  { key: 'generate_groove', label: 'Groove' },
+  { key: 'generate_melody', label: 'Melody' },
   { key: 'assemble', label: 'Assemble' },
   { key: 'evaluate_arrangements', label: 'Eval Arr.' },
   { key: 'rank_and_select', label: 'Rank' },
   { key: 'check_stop', label: 'Check' },
   { key: 'persist_realization', label: 'Save' },
+  { key: 'harvest_patterns', label: 'Patterns' },
   { key: 'persist_round', label: 'Done' },
 ];
 
@@ -37,6 +46,8 @@ const REALIZATION_STEPS = [
   { key: 'load_context', label: 'Context' },
   { key: 'plan_voicings', label: 'Voicings' },
   { key: 'generate_bass', label: 'Bass' },
+  { key: 'generate_groove', label: 'Groove' },
+  { key: 'generate_melody', label: 'Melody' },
   { key: 'assemble', label: 'Assemble' },
   { key: 'evaluate_arrangements', label: 'Eval Arr.' },
   { key: 'rank_and_select', label: 'Rank' },
@@ -46,13 +57,21 @@ const REALIZATION_STEPS = [
 export default function PromptBar({
   prompt,
   onPromptChange,
-  generationMode,
-  onModeChange,
   onGenerate,
   loading,
   currentNode,
   flowType = 'generation',
+  genre = '',
+  onGenreChange,
+  genres = [],
+  musicalKey = 'C',
+  onKeyChange,
+  musicalMode = 'major',
+  onMusicalModeChange,
 }: PromptBarProps) {
+  const showGenrePicker = flowType === 'generation' && !!onGenreChange;
+  const showKeyPicker = flowType === 'generation' && !!onKeyChange;
+  const showModePicker = flowType === 'generation' && !!onMusicalModeChange;
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !loading) onGenerate();
   };
@@ -63,23 +82,72 @@ export default function PromptBar({
     ? steps.findIndex((s) => s.key === currentNode)
     : -1;
 
-  const pct = loading && stepIndex >= 0
-    ? Math.round(((stepIndex + 1) / steps.length) * 100)
-    : loading ? 3 : 0;
+  // Monotonic progress across the pipeline's refinement rounds. A round re-enters
+  // an earlier node, so a naive per-node bar sweeps to 100% then snaps back to 0.
+  // Instead we count rounds (graph nodes fire in order, so any backward step is a
+  // new round) and fill a shrinking slice of what remains each round, keeping pct
+  // a running max so it only ever moves forward within a single generation.
+  const [{ pct, round }, setProgress] = useState({ pct: 0, round: 1 });
+  const prevStepRef = useRef(-1);
+
+  useEffect(() => {
+    const prevStep = prevStepRef.current;
+    prevStepRef.current = !loading ? -1 : stepIndex >= 0 ? stepIndex : prevStep;
+    setProgress((prev) => {
+      // Reset between generations; hold steady on transient nodes (e.g. round
+      // boundaries) that don't map to a step.
+      if (!loading) return prev.pct === 0 && prev.round === 1 ? prev : { pct: 0, round: 1 };
+      if (stepIndex < 0) return prev;
+      // Nodes execute in list order within a round, so any backward step (the
+      // refinement loop re-entering evaluate_progressions or evaluate_arrangements)
+      // is a new round.
+      const newRound = prevStep >= 0 && stepIndex < prevStep;
+      const round = prev.round + (newRound ? 1 : 0);
+      const within = (stepIndex + 1) / steps.length;
+      // Round N fills up to (1 - 0.1·0.5^(N-1)): round 1 → 90%, 2 → 95%, 3 → 97.5%…
+      // never reaching 100% while work continues (the bar unmounts on completion).
+      const ceiling = 1 - 0.1 * Math.pow(0.5, round - 1);
+      const floorPct = round <= 1 ? 0 : 1 - 0.1 * Math.pow(0.5, round - 2);
+      const raw = Math.round((floorPct + (ceiling - floorPct) * within) * 100);
+      return { pct: Math.max(prev.pct, raw), round };
+    });
+  }, [stepIndex, loading, steps.length]);
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Input row */}
+      {/* Genre / key / mode pickers — equal columns on their own row so the mood
+          box keeps full width and nothing gets cut off when all three show. */}
+      {(showGenrePicker || showKeyPicker || showModePicker) && (
+        <div className="grid grid-cols-3 gap-2">
+          {showGenrePicker && (
+            <GenrePicker
+              value={genre}
+              onChange={onGenreChange!}
+              genres={genres}
+              disabled={loading}
+              compact
+            />
+          )}
+          {showKeyPicker && (
+            <KeyPicker value={musicalKey} onChange={onKeyChange!} disabled={loading} compact />
+          )}
+          {showModePicker && (
+            <ModePicker value={musicalMode} onChange={onMusicalModeChange!} disabled={loading} compact />
+          )}
+        </div>
+      )}
+
+      {/* Mood / feeling input + generate */}
       <div className="flex gap-2">
         <input
           type="text"
           value={prompt}
           onChange={(e) => onPromptChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Describe the mood, genre, or style you want to explore..."
+          placeholder="Mood, feeling, customization (optional)…"
           aria-label="Generation prompt"
           disabled={loading}
-          className="flex-1 px-4 py-2 rounded-lg text-sm focus:outline-none disabled:opacity-40 transition-colors"
+          className="flex-1 min-w-0 px-4 py-2 rounded-lg text-sm focus:outline-none disabled:opacity-40 transition-colors"
           style={{
             background: 'var(--surface-1)',
             border: '1px solid var(--border-subtle)',
@@ -88,7 +156,7 @@ export default function PromptBar({
         />
         <button
           onClick={onGenerate}
-          disabled={loading || !prompt.trim()}
+          disabled={loading || (!prompt.trim() && !(showGenrePicker && genre))}
           className="px-5 py-2 rounded-lg font-medium text-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           style={{
             background: loading ? 'var(--surface-3)' : 'var(--accent-primary)',
@@ -99,39 +167,6 @@ export default function PromptBar({
         </button>
       </div>
 
-      {/* Mode toggle */}
-      <div
-        role="radiogroup"
-        aria-label="Generation mode"
-        className="flex items-center gap-2"
-      >
-        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Mode</span>
-        <div className="flex gap-1">
-          {MODES.map((m) => {
-            const active = generationMode === m.value;
-            return (
-              <button
-                key={m.value}
-                role="radio"
-                aria-checked={active}
-                aria-label={`${m.label}: ${m.desc}`}
-                onClick={() => onModeChange(m.value)}
-                disabled={loading}
-                title={m.desc}
-                className="text-xs px-3 py-1 rounded transition-colors disabled:opacity-40"
-                style={{
-                  background: active ? 'var(--accent-primary-dim)' : 'var(--surface-3)',
-                  color: active ? 'var(--accent-primary)' : 'var(--text-muted)',
-                  border: active ? '1px solid var(--accent-primary)' : '1px solid transparent',
-                }}
-              >
-                {m.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Pipeline progress */}
       {loading && (
         <div
@@ -139,11 +174,15 @@ export default function PromptBar({
           aria-live="polite"
           aria-label={
             stepIndex >= 0
-              ? `Pipeline progress: ${steps[stepIndex]?.label ?? 'starting'}, step ${stepIndex + 1} of ${steps.length}`
+              ? `Pipeline progress${round > 1 ? `, round ${round}` : ''}: ${steps[stepIndex]?.label ?? 'starting'}, step ${stepIndex + 1} of ${steps.length}`
               : 'Pipeline starting'
           }
           className="flex flex-col gap-1.5 mt-1"
         >
+          <div className="flex items-center justify-between font-mono" style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+            <span>{round > 1 ? `Round ${round} · refining` : 'Generating'}</span>
+            <span>{pct}%</span>
+          </div>
           <div
             role="progressbar"
             aria-valuenow={pct}

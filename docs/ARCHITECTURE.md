@@ -8,11 +8,13 @@ This document is the developer-onboarding reference for how Explorator is wired 
 
 ## Architectural style
 
-A single-process FastAPI app driving a LangGraph orchestration engine, persisted to Neo4j, served to a React SPA. No microservices, no message queue, no separate OLTP database. The app is designed for one human operator per backend instance — the simplifying assumption that lets us treat Neo4j as authoritative for everything (sessions, candidates, lineage, feedback events, pattern library) without a relational adjunct.
+A single-process FastAPI app driving a LangGraph orchestration engine, persisted to Neo4j when present, served to a React SPA. No microservices, no message queue, no separate OLTP database. The app is designed for one human operator per backend instance — the simplifying assumption that lets us treat Neo4j as authoritative for everything (sessions, candidates, lineage, feedback events, pattern library) without a relational adjunct.
+
+Neo4j is **optional and auto-detected**. When it is reachable, behaviour is as described throughout this document. When it is not, the backend runs in a degraded "memory mode" that keeps generation fully working off an in-memory store and disables the long-term-memory features. See [Persistence backends](#persistence-backends) for the mechanism and the per-feature contract.
 
 **Key principles:**
 
-1. **Neo4j is the source of truth.** All durable state lives in the graph. There is no PostgreSQL, no Redis, no S3. Exports land on the local filesystem.
+1. **Neo4j is the durable source of truth — when present.** All durable state lives in the graph. There is no PostgreSQL, no Redis, no S3. Exports land on the local filesystem. When Neo4j is absent, an ephemeral in-memory store backs the generation path only (see [Persistence backends](#persistence-backends)).
 2. **LangGraph orchestrates; domain services are pure Python.** Generators, evaluators, and adapters know nothing about graph nodes or HTTP. LangGraph wires them together. FastAPI exposes them.
 3. **Provenance is a first-class concern.** Every candidate carries its lineage (parent_candidate_id, mutation_op, session_id, round, family_id). The explanation, comparison, and export features all consume this lineage data.
 4. **Append-only event logs + denormalized read caches.** User feedback events and pattern curation events are append-only. Where queries need fast scans (e.g., the `/patterns?curated_only=true` filter), we dual-write a denormalized property inside the same Neo4j transaction.
@@ -203,6 +205,53 @@ Created at app startup (or via migration scripts in `backend/scripts/migrations/
 - `PatternLibraryEntry.deleted_at` tombstones rows. `list_page` / `iter_all` / `get_by_id` filter `WHERE deleted_at IS NULL`. Re-harvest unconditionally clears `deleted_at` (resurrects the row).
 - `is_curated` / `curated_at` are **excluded** from the upsert's `ON MATCH` clause via the `immutable_on_match` tuple, so re-harvest cannot wipe user curation. Tested explicitly in `test_upsert_on_match_preserves_curation_fields`.
 - The `CURATION_FANOUT_CYPHER` query lives in `pattern_library_repo.py` as a module constant, shared by both `PatternLibraryRepo.toggle_curation` (standalone) and `curation_service.curate_arrangement` (transactional). Single Cypher string, two callers — eliminates drift risk.
+
+---
+
+## Persistence backends
+
+Neo4j is optional. The backend selects between two persistence backends at startup based on whether Neo4j is reachable — there is exactly one branch point, so the rest of the codebase is backend-agnostic.
+
+### Auto-detect at startup
+
+`graph/connection.py` exposes `probe_driver()`: it creates the driver, verifies connectivity with a timeout, and returns the live `AsyncDriver` if reachable or `None` if not (any connection failure means "no Neo4j" — it never crashes startup). The FastAPI `lifespan` probes once and records the result on `app.state.persistence_mode` (`"neo4j"` or `"memory"`). In Neo4j mode it also initializes the schema and syncs genre profiles; in memory mode it logs a warning that long-term-memory features are disabled.
+
+`GET /v1/capabilities` exposes the mode plus per-feature boolean flags (`durable_persistence`, `pattern_library`, `feedback_learning`, `session_history`, `lineage`, `genre_research`, `curation`) — all `false` in memory mode. The frontend reads this on boot to drive the limited-mode banner and hide/disable the unavailable surfaces.
+
+### The `persistence/` package
+
+`backend/src/explorator/persistence/` is the single place the "which backend?" decision lives:
+
+- **`memory_store.py`** — a process-singleton `MemoryStore` (`label → {id → props}`). Stores `model_dump(mode="json")` dicts and returns deep copies, so reads match the deserialized shape the Neo4j repos already return. Not durable: data is lost on restart, by design.
+- **`protocols.py`** — `typing.Protocol` contracts for the generation-path repos, so the factory's union return types stay checkable under mypy strict across both backends.
+- **`memory_repos.py`** — in-memory repo implementations with **real** behaviour for the generation path (sessions, candidates, arrangements, scorecards, etc.). Because the engine and API share the `MemoryStore` singleton in one process, engine writes are visible to API reads — exactly the M1→M2 handoff generation needs.
+- **`null_repos.py`** — no-op implementations for the learning/recall repos (pattern library, feedback events, objective weights, genre research, provenance, comparisons, explanations, exports/render artifacts). Reads return empties, writes are no-ops — so those endpoints return 200 with neutral data instead of 500.
+- **`factory.py`** — `make_<repo>(driver)` helpers: `driver is None` selects the memory/null repo, otherwise the existing Neo4j repo. This is the **only** module that branches on driver presence; nothing else should.
+
+Engine nodes and API dependencies accept `AsyncDriver | None` and resolve their repos through the factory rather than constructing `SessionRepository(driver)` (etc.) directly.
+
+### Genres in memory mode
+
+Genres are special: `StyleService.sync_genres_to_neo4j()` already reads genre YAML from disk and only *writes* to Neo4j. `StyleService` branches internally — in memory mode it serves `get_genre_profile` / `list_genres` straight from the YAML loader, so generation has full genre data with no database.
+
+### Degradation contract
+
+What "graceful" means per feature:
+
+| Feature | Neo4j present | Neo4j absent (memory mode) |
+|---|---|---|
+| Session create/list | full | full (in-memory) |
+| M1 generation + candidates | full | full |
+| M2 realization + arrangements | full | full |
+| M3 mutations | full | full |
+| Genre profiles / rules | from Neo4j | from YAML |
+| Feedback re-weighting (load_memory) | full | canonical default weights (no learning) |
+| Pattern library (browse/harvest) | full | empty list / no-op harvest |
+| Curation (star/unstar) | full | disabled in UI; API 200 no-op or 409 |
+| Session history / provenance | full | empty timeline (hidden in UI) |
+| Lineage tree | full | derived from candidate metadata only (hidden in UI) |
+| Genre research jobs | full | empty / disabled in UI |
+| Export | full | works (reads in-memory arrangements) |
 
 ---
 

@@ -63,16 +63,22 @@ test.describe('Comparison Playback (M4c)', () => {
 
     await openComparison(page, 2)
 
-    // S and M buttons visible (one per lane)
-    await expect(page.locator('button:text("S")').first()).toBeVisible()
-    await expect(page.locator('button:text("M")').first()).toBeVisible()
+    // Target the lane solo/mute controls by stable data-testids on LaneSidebar.
+    // A role-name match like /(un)?mute /i is ambiguous: the per-track buttons in
+    // ComparisonView use title="Mute <track>", so that pattern also matches the
+    // 3 track buttons × N lanes (8 total for 2 lanes). The testids are
+    // unambiguously lane-scoped.
+    const soloButtons = page.locator('[data-testid="lane-solo"]')
+    const muteButtons = page.locator('[data-testid="lane-mute"]')
 
-    // Click solo on first lane
-    await page.locator('button:text("S")').first().click()
+    // One solo + one mute per compared lane (2 lanes selected above).
+    await expect(soloButtons).toHaveCount(2)
+    await expect(muteButtons).toHaveCount(2)
+
+    // Solo the first lane, mute the second.
+    await soloButtons.first().click()
     await page.waitForTimeout(200)
-
-    // Click mute on second lane
-    await page.locator('button:text("M")').nth(1).click()
+    await muteButtons.nth(1).click()
     await page.waitForTimeout(200)
   })
 

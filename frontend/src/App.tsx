@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
@@ -6,6 +7,8 @@ import SessionWorkspace from './views/SessionWorkspace';
 import GenreManagement from './components/GenreManagement';
 import PatternLibraryBrowser from './views/PatternLibraryBrowser';
 import AppShell from './components/AppShell';
+import LimitedModePlaceholder from './components/LimitedModePlaceholder';
+import { useCapabilitiesStore, useCan } from './stores/capabilitiesStore';
 
 const queryClient = new QueryClient();
 
@@ -21,7 +24,18 @@ function SkipLink() {
   );
 }
 
+function PatternsRoute() {
+  if (!useCan('pattern_library')) return <LimitedModePlaceholder feature="Pattern library" />;
+  return <PatternLibraryBrowser />;
+}
+
 export default function App() {
+  useEffect(() => {
+    // Fetch runtime capabilities once on app mount so limited-mode gating
+    // and the banner reflect the backend's persistence mode.
+    void useCapabilitiesStore.getState().fetch();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -30,7 +44,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route element={<AppShell />}>
             <Route path="/genres" element={<GenreManagement />} />
-            <Route path="/patterns" element={<PatternLibraryBrowser />} />
+            <Route path="/patterns" element={<PatternsRoute />} />
             <Route path="/session/:id" element={<SessionWorkspace />} />
           </Route>
         </Routes>

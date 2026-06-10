@@ -9,7 +9,10 @@ from neo4j import AsyncDriver
 
 from explorator.domain.evaluation.ranking import CANONICAL_DEFAULT_WEIGHTS
 from explorator.engine.state import ExplorationState
-from explorator.graph.feedback_repo import FeedbackEventRepo, ObjectiveWeightsRepo
+from explorator.persistence.factory import (
+    make_feedback_event_repo,
+    make_objective_weights_repo,
+)
 from explorator.utils import utc_now
 
 logger = logging.getLogger(__name__)
@@ -20,7 +23,7 @@ _TIMEOUT_SECONDS = 5
 async def load_memory(
     state: ExplorationState,
     *,
-    driver: AsyncDriver,
+    driver: AsyncDriver | None,
 ) -> dict[str, Any]:
     """Load feedback history and objective weights from Neo4j.
 
@@ -31,8 +34,8 @@ async def load_memory(
         await callback("node_started", {"node": "load_memory"})
 
     session_id = state.get("session_id", "")
-    fb_repo = FeedbackEventRepo(driver)
-    ow_repo = ObjectiveWeightsRepo(driver)
+    fb_repo = make_feedback_event_repo(driver)
+    ow_repo = make_objective_weights_repo(driver)
 
     feedback_history: list[dict[str, Any]] = []
     objective_weights: dict[str, float] = dict(CANONICAL_DEFAULT_WEIGHTS.weights)

@@ -32,13 +32,4 @@ test.describe('Pipeline & SSE', () => {
     // Should have at least as many candidates
     expect(await realizeButtons.count()).toBeGreaterThanOrEqual(count1);
   });
-
-  test('16: generation-mode-switching', async ({ page, testSession }) => {
-    await goToWorkspace(page, testSession.sessionId);
-
-    await page.getByRole('radio', { name: /exploratory/i }).click();
-    await generateCandidates(page, testSession.prompt);
-
-    await expect(page.getByRole('radio', { name: /exploratory/i })).toBeVisible();
-  });
 });

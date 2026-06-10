@@ -11,13 +11,19 @@ from sse_starlette.sse import EventSourceResponse
 
 from explorator.adapters.gemini import GeminiClient
 from explorator.api.deps import get_gemini_client, get_neo4j_driver
-from explorator.api.sse import SSEChannel
+from explorator.api.sse import SSEChannel, cancel_on_disconnect
 from explorator.engine.graph import build_realization_subgraph
-from explorator.graph.arrangement_candidate_repo import (
-    ArrangementCandidateRepo as ArrangementCandidateGraphRepo,
+from explorator.persistence.factory import (
+    make_arrangement_candidate_repo,
+    make_scorecard_repo,
+    make_session_repo,
 )
-from explorator.graph.repository import BaseRepository
-from explorator.graph.session_repo import SessionRepository
+from explorator.utils import (
+    normalize_key_and_mode,
+    resolve_session_genre,
+    resolve_session_key,
+    resolve_session_mode,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["realization"])
@@ -25,14 +31,8 @@ router = APIRouter(tags=["realization"])
 
 class TriggerRealizationRequest(BaseModel):
     progression_candidate_ids: list[str]
-
-
-class ArrangementCandidateRepo(BaseRepository):
-    label = "ArrangementCandidate"
-
-
-class ScorecardRepo(BaseRepository):
-    label = "AggregateScorecard"
+    key: str | None = None
+    musical_mode: str | None = None
 
 
 @router.post("/sessions/{session_id}/realization-rounds")
@@ -40,10 +40,10 @@ async def trigger_realization(
     session_id: str,
     request: TriggerRealizationRequest,
     gemini: GeminiClient = Depends(get_gemini_client),  # noqa: B008
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> EventSourceResponse:
     """Trigger a realization round and stream progress via SSE."""
-    repo = SessionRepository(driver)
+    repo = make_session_repo(driver)
     session = await repo.get_by_id(session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -55,9 +55,25 @@ async def trigger_realization(
     channel = SSEChannel()
     graph = build_realization_subgraph(gemini, driver)
 
+    # Resolve the session's genre from its metadata so load_context loads the
+    # correct genre profile. In memory mode persist_round never writes
+    # `Session.genre` and no CreativeBrief is persisted, so without this the
+    # load_context fallback chain would default to "dream_pop".
+    genre = resolve_session_genre(session)
+
+    # Effective key + musical mode: request override → session metadata →
+    # default, normalized so a bad value never crashes generation.
+    key, musical_mode = normalize_key_and_mode(
+        request.key or resolve_session_key(session),
+        request.musical_mode or resolve_session_mode(session),
+    )
+
     initial_state = {
         "session_id": session_id,
         "progression_candidate_ids": request.progression_candidate_ids,
+        "genre": genre,
+        "key_center": key,
+        "mode": musical_mode,
         "on_progress": channel.send,
     }
 
@@ -72,20 +88,21 @@ async def trigger_realization(
         finally:
             await channel.close()
 
-    asyncio.create_task(run_and_close())
-    return EventSourceResponse(channel.stream())
+    # Cancel the detached round if the client disconnects before it finishes.
+    task = asyncio.create_task(run_and_close())
+    return EventSourceResponse(cancel_on_disconnect(channel, task))
 
 
 @router.get("/candidates/{candidate_id}/arrangements")
 async def list_arrangements(
     candidate_id: str,
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> list[dict[str, Any]]:
     """List arrangement candidates for a progression candidate."""
-    repo = ArrangementCandidateRepo(driver)
+    repo = make_arrangement_candidate_repo(driver)
     results = await repo.query_by_property("progression_candidate_id", candidate_id)
 
-    sc_repo = ScorecardRepo(driver)
+    sc_repo = make_scorecard_repo(driver)
     for r in results:
         scorecards = await sc_repo.query_by_property("candidate_id", r.get("id"))
         if scorecards:
@@ -93,10 +110,10 @@ async def list_arrangements(
             r["weighted_total"] = sc.get("weighted_total", 0.0)
             r["rank_within_round"] = sc.get("rank_within_round", 0)
 
-    # Batch-derive curation state for all returned arrangements in one query.
-    graph_repo = ArrangementCandidateGraphRepo(driver)
+    # Batch-derive curation state for all returned arrangements. Memory mode
+    # returns (None, None) per id.
     arr_ids = [r["id"] for r in results if r.get("id")]
-    curation = await graph_repo.fetch_curation_state(arr_ids)
+    curation = await repo.fetch_curation_state(arr_ids)
     for r in results:
         is_curated, curated_at = curation.get(r.get("id") or "", (None, None))
         r["is_curated"] = is_curated
@@ -108,15 +125,17 @@ async def list_arrangements(
 @router.get("/arrangements/{arrangement_id}")
 async def get_arrangement(
     arrangement_id: str,
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> dict[str, Any]:
     """Get a single arrangement with its voicing plan and bass line."""
-    from explorator.graph.bass_line_repo import BassLineRepo
-    from explorator.graph.groove_pattern_repo import GroovePatternRepo
-    from explorator.graph.melodic_complement_repo import MelodicComplementRepo
-    from explorator.graph.voicing_plan_repo import VoicingPlanRepo
+    from explorator.persistence.factory import (
+        make_bass_line_repo,
+        make_groove_pattern_repo,
+        make_melodic_complement_repo,
+        make_voicing_plan_repo,
+    )
 
-    ac_repo = ArrangementCandidateRepo(driver)
+    ac_repo = make_arrangement_candidate_repo(driver)
     arrangement = await ac_repo.get_by_id(arrangement_id)
     if arrangement is None:
         raise HTTPException(status_code=404, detail="Arrangement not found")
@@ -125,24 +144,26 @@ async def get_arrangement(
     bl_id = arrangement.get("bass_line_id")
     gp_id = arrangement.get("groove_pattern_id")
     if vp_id:
-        arrangement["voicing_plan"] = await VoicingPlanRepo(driver).get_by_id(vp_id)
+        arrangement["voicing_plan"] = await make_voicing_plan_repo(driver).get_by_id(vp_id)
     if bl_id:
-        arrangement["bass_line"] = await BassLineRepo(driver).get_by_id(bl_id)
+        arrangement["bass_line"] = await make_bass_line_repo(driver).get_by_id(bl_id)
     if gp_id:
-        arrangement["groove_pattern"] = await GroovePatternRepo(driver).get_by_id(gp_id)
+        arrangement["groove_pattern"] = await make_groove_pattern_repo(driver).get_by_id(gp_id)
 
     mc_id = arrangement.get("melodic_complement_id")
     if mc_id:
-        arrangement["melodic_complement"] = await MelodicComplementRepo(driver).get_by_id(mc_id)
+        arrangement["melodic_complement"] = await make_melodic_complement_repo(
+            driver
+        ).get_by_id(mc_id)
 
-    sc_repo = ScorecardRepo(driver)
+    sc_repo = make_scorecard_repo(driver)
     scorecards = await sc_repo.query_by_property("candidate_id", arrangement_id)
     if scorecards:
         arrangement["scorecard"] = scorecards[0]
 
-    # Curation state derivation (M5d-3). Nullable; see spec.
-    graph_repo = ArrangementCandidateGraphRepo(driver)
-    curation = await graph_repo.fetch_curation_state([arrangement_id])
+    # Curation state derivation (M5d-3). Nullable; memory mode returns
+    # (None, None) so the arrangement is still returned with curation null.
+    curation = await ac_repo.fetch_curation_state([arrangement_id])
     is_curated, curated_at = curation.get(arrangement_id, (None, None))
     arrangement["is_curated"] = is_curated
     arrangement["curated_at"] = curated_at

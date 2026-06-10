@@ -46,17 +46,25 @@ class CurationResult:
 
 async def curate_arrangement(
     *,
-    driver: AsyncDriver,
+    driver: AsyncDriver | None,
     arrangement_id: str,
     is_curated: bool,
 ) -> CurationResult:
     """Toggle curation on an arrangement. Atomic: event + fan-out in one tx.
 
+    Memory mode: when ``driver is None`` there is no pattern library to curate,
+    so this raises :class:`PatternsNotHarvested` (the route maps it to 409 and the
+    frontend disables the star).
+
     Raises:
-        ArrangementNotFound: no ArrangementCandidate with that id.
-        PatternsNotHarvested: arrangement exists but no non-deleted
-            PatternLibraryEntry rows match (no event is written).
+        PatternsNotHarvested: ``driver is None`` (memory mode), or the arrangement
+            exists but no non-deleted PatternLibraryEntry rows match (no event is
+            written).
+        ArrangementNotFound: no ArrangementCandidate with that id (Neo4j mode).
     """
+    if driver is None:
+        raise PatternsNotHarvested(arrangement_id)
+
     now = utc_now()
     content = "curated" if is_curated else "uncurated"
 

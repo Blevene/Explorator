@@ -1,4 +1,4 @@
-.PHONY: dev test lint neo4j-up neo4j-down neo4j-test-up neo4j-test-down sync-genres backend frontend e2e e2e-headed screenshots
+.PHONY: dev test lint neo4j-up neo4j-down neo4j-test-up neo4j-test-down sync-genres backend frontend e2e e2e-parallel e2e-neo4j e2e-headed screenshots
 
 # Infrastructure
 neo4j-up:
@@ -42,9 +42,20 @@ sync-genres:
 frontend:
 	cd frontend && npm run dev
 
-# E2E Tests (requires Neo4j running)
-e2e:
+# E2E Tests.
+#   e2e-parallel: generation/realization/UI specs, fully parallel, each worker
+#                 on its own in-memory backend (no Neo4j needed).
+#   e2e-neo4j:    learning-feature specs (pattern library, genre research, etc.),
+#                 serial against the shared Neo4j backend (requires Neo4j running;
+#                 set NEO4J_CONTAINER for cypher cleanup).
+#   e2e:          both lanes.
+e2e: e2e-parallel e2e-neo4j
+
+e2e-parallel:
 	cd e2e && npx playwright test
+
+e2e-neo4j:
+	cd e2e && npx playwright test --config playwright.neo4j.config.ts
 
 e2e-headed:
 	cd e2e && npx playwright test --headed

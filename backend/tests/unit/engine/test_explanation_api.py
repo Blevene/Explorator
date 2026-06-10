@@ -120,9 +120,9 @@ class TestExplanationRoute:
             "explorator.api.routes.explanations.get_neo4j_driver",
             new=AsyncMock(return_value=MagicMock()),
         ), patch(
-            "explorator.api.routes.explanations.CandidateExplanationRepo"
-        ) as MockRepo:
-            MockRepo.return_value.get_by_candidate_id = AsyncMock(return_value=None)
+            "explorator.api.routes.explanations.make_candidate_explanation_repo"
+        ) as MakeRepo:
+            MakeRepo.return_value.get_by_candidate_id = AsyncMock(return_value=None)
 
             client = TestClient(app)
             resp = client.get("/v1/candidates/arr_x/explanation")
@@ -146,9 +146,9 @@ class TestExplanationRoute:
             "explorator.api.routes.explanations.get_neo4j_driver",
             new=AsyncMock(return_value=MagicMock()),
         ), patch(
-            "explorator.api.routes.explanations.CandidateExplanationRepo"
-        ) as MockRepo:
-            MockRepo.return_value.get_by_candidate_id = AsyncMock(return_value=cached)
+            "explorator.api.routes.explanations.make_candidate_explanation_repo"
+        ) as MakeRepo:
+            MakeRepo.return_value.get_by_candidate_id = AsyncMock(return_value=cached)
 
             client = TestClient(app)
             resp = client.get("/v1/candidates/arr_x/explanation")

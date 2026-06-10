@@ -12,12 +12,19 @@ from ulid import ULID
 
 from explorator.adapters.gemini import GeminiClient
 from explorator.api.deps import get_gemini_client, get_neo4j_driver
-from explorator.api.sse import SSEChannel
+from explorator.api.sse import SSEChannel, cancel_on_disconnect
 from explorator.domain.harmony.mutator import HarmonyMutator
 from explorator.engine.graph import build_realization_subgraph
-from explorator.graph.repository import ProgressionCandidateRepo
-from explorator.graph.session_repo import SessionRepository
-from explorator.utils import parse_json_or_dict, utc_now
+from explorator.models.harmony import ProgressionCandidate
+from explorator.persistence.factory import make_candidate_repo, make_session_repo
+from explorator.utils import (
+    normalize_key_and_mode,
+    parse_json_or_dict,
+    resolve_session_genre,
+    resolve_session_key,
+    resolve_session_mode,
+    utc_now,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["mutations"])
@@ -30,6 +37,8 @@ class TriggerMutationRequest(BaseModel):
     candidate_ids: list[str]
     guidance: str | None = None
     operations: list[str] | None = None
+    key: str | None = None
+    musical_mode: str | None = None
 
 
 @router.post("/sessions/{session_id}/mutate")
@@ -37,13 +46,13 @@ async def trigger_mutation(
     session_id: str,
     request: TriggerMutationRequest,
     gemini: GeminiClient = Depends(get_gemini_client),  # noqa: B008
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> EventSourceResponse:
     """Trigger user-initiated mutations on specific candidates.
 
     Returns 409 if a round is already in-flight for this session.
     """
-    repo = SessionRepository(driver)
+    repo = make_session_repo(driver)
     session = await repo.get_by_id(session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -57,12 +66,26 @@ async def trigger_mutation(
         )
     _busy_sessions.add(session_id)
 
+    # Resolve the session's genre from its metadata so both the mutator and the
+    # re-realization subgraph run under the correct genre. In memory mode the
+    # Session has no top-level genre and no CreativeBrief is persisted, so
+    # without this both paths would default (mutator to "", load_context to
+    # "dream_pop").
+    genre = resolve_session_genre(session)
+
+    # Effective key + musical mode for the re-realization subgraph: request
+    # override → session metadata → default, normalized at the boundary.
+    key, musical_mode = normalize_key_and_mode(
+        request.key or resolve_session_key(session),
+        request.musical_mode or resolve_session_mode(session),
+    )
+
     channel = SSEChannel()
 
     async def run_mutation() -> None:
         try:
             mutator = HarmonyMutator(gemini)
-            prog_repo = ProgressionCandidateRepo(driver)
+            prog_repo = make_candidate_repo(driver)
             results: list[dict[str, Any]] = []
 
             for cid in request.candidate_ids:
@@ -88,7 +111,7 @@ async def trigger_mutation(
 
                 response = await mutator.mutate_harmonic(
                     chord_symbols=chord_symbols,
-                    genre=session.get("genre", ""),
+                    genre=genre,
                     scores=scores,
                     guidance=request.guidance,
                 )
@@ -146,14 +169,21 @@ async def trigger_mutation(
                         )
                 new_candidate_data["chord_events"] = new_events
 
-                from explorator.graph.repository import _neo4j_safe
+                # Persist the mutated candidate. Neo4j mode keeps the original
+                # raw-CREATE path (tolerant of JSON-string fields the node carries);
+                # memory mode validates into the model and uses the repo.
+                if driver is not None:
+                    from explorator.graph.repository import _neo4j_safe
 
-                safe_data = _neo4j_safe(new_candidate_data)
-                async with driver.session() as neo_session:
-                    await neo_session.run(
-                        "CREATE (n:ProgressionCandidate $props) SET n.id = $props.id",
-                        props=safe_data,
-                    )
+                    safe_data = _neo4j_safe(new_candidate_data)
+                    async with driver.session() as neo_session:
+                        await neo_session.run(
+                            "CREATE (n:ProgressionCandidate $props) SET n.id = $props.id",
+                            props=safe_data,
+                        )
+                else:
+                    new_candidate = ProgressionCandidate.model_validate(new_candidate_data)
+                    await prog_repo.create(new_candidate)
 
                 results.append(
                     {
@@ -175,6 +205,9 @@ async def trigger_mutation(
                         {
                             "session_id": session_id,
                             "progression_candidate_ids": new_ids,
+                            "genre": genre,
+                            "key_center": key,
+                            "mode": musical_mode,
                             "on_progress": channel.send,
                         },
                         {"recursion_limit": 100},
@@ -190,5 +223,8 @@ async def trigger_mutation(
             _busy_sessions.discard(session_id)
             await channel.close()
 
-    asyncio.create_task(run_mutation())
-    return EventSourceResponse(channel.stream())
+    # Cancel the detached mutation if the client disconnects before it finishes.
+    # run_mutation's `finally` (which clears the _busy_sessions guard and closes
+    # the channel) still runs on cancellation, so the session isn't left wedged.
+    task = asyncio.create_task(run_mutation())
+    return EventSourceResponse(cancel_on_disconnect(channel, task))

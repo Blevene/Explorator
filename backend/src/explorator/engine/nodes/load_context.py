@@ -5,32 +5,20 @@ from typing import Any
 
 from neo4j import AsyncDriver
 
+from explorator.domain.style.service import StyleService
 from explorator.engine.state import ExplorationState
-from explorator.graph.repository import BaseRepository, ProgressionCandidateRepo
-from explorator.graph.session_repo import SessionRepository
+from explorator.persistence.factory import (
+    make_candidate_repo,
+    make_creative_brief_repo,
+    make_session_repo,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class GenreProfileRepo(BaseRepository):
-    label = "GenreProfile"
-
-    async def get_by_genre(self, genre: str) -> dict[str, Any] | None:
-        """Fetch a genre profile by its genre name field."""
-        results = await self.query_by_property("genre", genre)
-        return results[0] if results else None
-
-
-class CreativeBriefRepo(BaseRepository):
-    label = "CreativeBrief"
-
-    async def get_by_session_id(self, session_id: str) -> dict[str, Any] | None:
-        """Fetch the creative brief associated with a session."""
-        results = await self.query_by_property("session_id", session_id)
-        return results[0] if results else None
-
-
-async def load_context(state: ExplorationState, *, driver: AsyncDriver) -> dict[str, Any]:
+async def load_context(
+    state: ExplorationState, *, driver: AsyncDriver | None
+) -> dict[str, Any]:
     """Fetch progression candidates, session, genre profile, and creative brief from Neo4j."""
     callback = state.get("on_progress")
     if callback:
@@ -44,10 +32,10 @@ async def load_context(state: ExplorationState, *, driver: AsyncDriver) -> dict[
 
     candidate_ids = state.get("progression_candidate_ids", [])
 
-    candidate_repo = ProgressionCandidateRepo(driver)
-    session_repo = SessionRepository(driver)
-    genre_profile_repo = GenreProfileRepo(driver)
-    brief_repo = CreativeBriefRepo(driver)
+    candidate_repo = make_candidate_repo(driver)
+    session_repo = make_session_repo(driver)
+    style_service = StyleService(driver)
+    brief_repo = make_creative_brief_repo(driver)
 
     # Fetch all progression candidates
     candidates: list[dict[str, Any]] = []
@@ -62,10 +50,14 @@ async def load_context(state: ExplorationState, *, driver: AsyncDriver) -> dict[
         raise ValueError("No progression candidate IDs provided")
     session_id = candidates[0].get("session_id", "")
 
+    # Prefer the genre carried on state (set by the realization trigger route
+    # from session metadata, or by rounds.py in the combined flow). This is the
+    # only reliable source in memory mode, where persist_round skips the
+    # `Session.genre` write and no CreativeBrief is persisted.
+    genre = state.get("genre", "")
     # Fetch session to get genre name (persisted by M1 persist_round)
     session_data = await session_repo.get_by_id(session_id)
-    genre = ""
-    if session_data:
+    if not genre and session_data:
         genre = session_data.get("genre", "")
     # Fallback chain: creative brief → candidate metadata → default
     if not genre:
@@ -82,10 +74,12 @@ async def load_context(state: ExplorationState, *, driver: AsyncDriver) -> dict[
         logger.warning("No genre found for session %s — defaulting to dream_pop", session_id)
         genre = "dream_pop"
 
-    # Fetch genre profile
+    # Fetch genre profile via StyleService — Neo4j mode runs the same
+    # `MATCH (n:GenreProfile {genre: $genre})` lookup the inline GenreProfileRepo
+    # used; memory mode serves the equivalent profile straight from YAML.
     genre_profile: dict[str, Any] = {}
     if genre:
-        gp = await genre_profile_repo.get_by_genre(genre)
+        gp = await style_service.get_genre_profile(genre)
         if gp:
             genre_profile = gp
 

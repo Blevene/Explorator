@@ -5,7 +5,9 @@ test.describe('Happy Path', () => {
     await page.goto('/');
     await expect(page.locator('text=Explorator')).toBeVisible();
 
-    await page.locator('input').first().fill('Dream pop in A major, wistful, 4 bars');
+    await page.locator('[data-testid="genre-picker-input"]').fill('dream');
+    await page.locator('[data-testid="genre-option-dream_pop"]').click();
+    await page.getByLabel('Session prompt').fill('Dream pop in A major, wistful, 4 bars');
     await page.getByRole('button', { name: /explore/i }).click();
 
     await page.waitForURL(/\/session\//);

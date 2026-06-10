@@ -9,26 +9,18 @@ from ulid import ULID
 
 from explorator.adapters.gemini import GeminiClient, ModelTier
 from explorator.api.deps import get_gemini_client, get_neo4j_driver
-from explorator.graph.candidate_explanation_repo import CandidateExplanationRepo
-from explorator.graph.repository import BaseRepository
 from explorator.models.export import CandidateExplanation
+from explorator.persistence.factory import (
+    make_arrangement_candidate_repo,
+    make_candidate_explanation_repo,
+    make_candidate_repo,
+    make_session_repo,
+)
 from explorator.prompts.explanation import explanation_prompt
-from explorator.utils import parse_json_or_dict
+from explorator.utils import parse_json_or_dict, resolve_session_genre
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["explanations"])
-
-
-class ArrangementCandidateRepo(BaseRepository):
-    label = "ArrangementCandidate"
-
-
-class ProgressionCandidateRepo(BaseRepository):
-    label = "ProgressionCandidate"
-
-
-class GenreRuleRepo(BaseRepository):
-    label = "GenreRule"
 
 
 class ExplanationResponse(BaseModel):
@@ -52,10 +44,10 @@ class GeminiExplanationOutput(BaseModel):
 @router.get("/candidates/{candidate_id}/explanation")
 async def get_explanation(
     candidate_id: str,
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> ExplanationResponse:
     """Get a cached explanation for a candidate (404 if not generated)."""
-    repo = CandidateExplanationRepo(driver)
+    repo = make_candidate_explanation_repo(driver)
     cached = await repo.get_by_candidate_id(candidate_id)
     if cached is None:
         raise HTTPException(status_code=404, detail="Explanation not generated yet")
@@ -70,15 +62,15 @@ async def get_explanation(
 @router.post("/candidates/{candidate_id}/explain")
 async def generate_or_get_explanation(
     candidate_id: str,
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
     gemini: GeminiClient = Depends(get_gemini_client),  # noqa: B008
 ) -> ExplanationResponse:
     """Generate or return cached explanation for a candidate.
 
-    Checks Neo4j cache first. If not found, loads context,
-    calls Gemini Pro, persists, and returns.
+    Checks the cache first. If not found, loads context, calls Gemini Pro,
+    persists (no-op in memory mode), and returns.
     """
-    explanation_repo = CandidateExplanationRepo(driver)
+    explanation_repo = make_candidate_explanation_repo(driver)
 
     # Check cache
     cached = await explanation_repo.get_by_candidate_id(candidate_id)
@@ -91,14 +83,14 @@ async def generate_or_get_explanation(
         )
 
     # Load ArrangementCandidate
-    ac_repo = ArrangementCandidateRepo(driver)
+    ac_repo = make_arrangement_candidate_repo(driver)
     ac_data = await ac_repo.get_by_id(candidate_id)
     if ac_data is None:
         raise HTTPException(status_code=404, detail="ArrangementCandidate not found")
 
     # Load parent ProgressionCandidate
     prog_id = ac_data.get("progression_candidate_id", "")
-    prog_repo = ProgressionCandidateRepo(driver)
+    prog_repo = make_candidate_repo(driver)
     prog_data = await prog_repo.get_by_id(prog_id) if prog_id else None
     if prog_data is None:
         raise HTTPException(
@@ -115,6 +107,13 @@ async def generate_or_get_explanation(
     mode = prog_data.get("mode", "major")
     prog_meta = parse_json_or_dict(prog_data.get("metadata", {}))
     genre = prog_meta.get("genre", prog_data.get("genre", ""))
+    # Candidate metadata carries no genre in memory mode; fall back to the
+    # session's genre (single source of truth) so the explanation prompt and
+    # genre-rule lookup run under the correct genre.
+    if not genre and session_id:
+        session = await make_session_repo(driver).get_by_id(session_id)
+        if session is not None:
+            genre = resolve_session_genre(session)
 
     # Scores from arrangement metadata/scorecard
     ac_meta = parse_json_or_dict(ac_data.get("metadata", {}))
@@ -122,12 +121,19 @@ async def generate_or_get_explanation(
     if not scores:
         scores = prog_meta.get("scores", {})
 
-    # Genre rules
+    # Genre rules (Neo4j-only; absent in memory mode → empty context).
     genre_rules: list[str] = []
-    if genre:
-        rule_repo = GenreRuleRepo(driver)
-        rules_data = await rule_repo.query_by_property("genre", genre)
-        genre_rules = [r.get("description", "") for r in rules_data if r.get("description")]
+    if genre and driver is not None:
+        async with driver.session() as neo_session:
+            result = await neo_session.run(
+                "MATCH (r:GenreRule {genre: $genre}) RETURN r",
+                genre=genre,
+            )
+            genre_rules = [
+                desc
+                async for record in result
+                if (desc := dict(record["r"]).get("description"))
+            ]
 
     # Mutation lineage
     mutation_lineage: list[str] | None = None
@@ -179,17 +185,19 @@ async def generate_or_get_explanation(
     try:
         await explanation_repo.create(explanation)
 
-        # Create relationship: (CandidateExplanation)-[:EXPLAINS]->(ArrangementCandidate)
-        async with driver.session() as neo_session:
-            await neo_session.run(
-                """
-                MATCH (e:CandidateExplanation {id: $eid})
-                MATCH (a:ArrangementCandidate {id: $aid})
-                MERGE (e)-[:EXPLAINS]->(a)
-                """,
-                eid=explanation.id,
-                aid=candidate_id,
-            )
+        # Create relationship: (CandidateExplanation)-[:EXPLAINS]->(ArrangementCandidate).
+        # Neo4j-only; skipped (and create is a no-op) in memory mode.
+        if driver is not None:
+            async with driver.session() as neo_session:
+                await neo_session.run(
+                    """
+                    MATCH (e:CandidateExplanation {id: $eid})
+                    MATCH (a:ArrangementCandidate {id: $aid})
+                    MERGE (e)-[:EXPLAINS]->(a)
+                    """,
+                    eid=explanation.id,
+                    aid=candidate_id,
+                )
     except Exception:
         logger.exception("Failed to persist explanation for %s", candidate_id)
         # Still return the result even if persistence fails

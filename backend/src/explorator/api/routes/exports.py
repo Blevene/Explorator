@@ -14,35 +14,23 @@ from explorator.api.deps import get_neo4j_driver
 from explorator.config import settings
 from explorator.domain.export.json_renderer import JsonRenderContext
 from explorator.domain.export.orchestrator import ExportRequest, render_and_write_artifacts
-from explorator.graph.bass_line_repo import BassLineRepo
-from explorator.graph.export_package_repo import ExportPackageRepo
-from explorator.graph.render_artifact_repo import RenderArtifactRepo
-from explorator.graph.repository import BaseRepository, ProgressionCandidateRepo
-from explorator.graph.session_repo import SessionRepository
-from explorator.graph.voicing_plan_repo import VoicingPlanRepo
 from explorator.models.export import ExportPackage, RenderArtifact
 from explorator.models.realization import ArrangementCandidate, BassLine, VoicingPlan
 from explorator.models.session import CreativeBrief, Session
+from explorator.persistence.factory import (
+    make_arrangement_candidate_repo,
+    make_bass_line_repo,
+    make_candidate_repo,
+    make_creative_brief_repo,
+    make_export_package_repo,
+    make_melodic_complement_repo,
+    make_render_artifact_repo,
+    make_session_repo,
+    make_voicing_plan_repo,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["exports"])
-
-
-# ---------------------------------------------------------------------------
-# Inline repos for nodes without dedicated repo files
-# ---------------------------------------------------------------------------
-
-
-class ArrangementCandidateRepo(BaseRepository):
-    label = "ArrangementCandidate"
-
-
-class CreativeBriefRepo(BaseRepository):
-    label = "CreativeBrief"
-
-    async def get_by_session_id(self, session_id: str) -> dict[str, Any] | None:
-        results = await self.query_by_property("session_id", session_id)
-        return results[0] if results else None
 
 
 # ---------------------------------------------------------------------------
@@ -82,11 +70,16 @@ def _short_id(entity_id: str) -> str:
 async def create_export(
     session_id: str,
     body: ExportRequestBody,
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> dict[str, Any]:
-    """Create an export package for the given arrangement candidates."""
+    """Create an export package for the given arrangement candidates.
+
+    Works in both Neo4j and memory mode: artifact rendering reads the in-memory
+    arrangements; the package/artifact relationship Cypher is skipped when the
+    driver is absent.
+    """
     # Validate session exists
-    session_repo = SessionRepository(driver)
+    session_repo = make_session_repo(driver)
     session_data = await session_repo.get_by_id(session_id)
     if session_data is None:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -97,13 +90,13 @@ async def create_export(
         )
 
     # Load repos
-    ac_repo = ArrangementCandidateRepo(driver)
-    vp_repo = VoicingPlanRepo(driver)
-    bl_repo = BassLineRepo(driver)
-    prog_repo = ProgressionCandidateRepo(driver)
-    cb_repo = CreativeBriefRepo(driver)
-    artifact_repo = RenderArtifactRepo(driver)
-    package_repo = ExportPackageRepo(driver)
+    ac_repo = make_arrangement_candidate_repo(driver)
+    vp_repo = make_voicing_plan_repo(driver)
+    bl_repo = make_bass_line_repo(driver)
+    prog_repo = make_candidate_repo(driver)
+    cb_repo = make_creative_brief_repo(driver)
+    artifact_repo = make_render_artifact_repo(driver)
+    package_repo = make_export_package_repo(driver)
 
     # Load creative brief for BPM and meter
     brief_data = await cb_repo.get_by_session_id(session_id)
@@ -153,12 +146,11 @@ async def create_export(
         bass_line = BassLine.model_validate(bl_data)
 
         # Load optional MelodicComplement
-        from explorator.graph.melodic_complement_repo import MelodicComplementRepo
         from explorator.models.melody import MelodicComplement
         melodic_complement: MelodicComplement | None = None
         mc_id = ac_data.get("melodic_complement_id")
         if mc_id:
-            mc_repo = MelodicComplementRepo(driver)
+            mc_repo = make_melodic_complement_repo(driver)
             mc_data = await mc_repo.get_by_id(mc_id)
             if mc_data:
                 melodic_complement = MelodicComplement.model_validate(mc_data)
@@ -260,16 +252,18 @@ async def create_export(
             await artifact_repo.create(artifact)
 
             # Create Neo4j relationship: (RenderArtifact)-[:RENDERS]->(ArrangementCandidate)
-            async with driver.session() as neo_session:
-                await neo_session.run(
-                    """
-                    MATCH (a:RenderArtifact {id: $art_id})
-                    MATCH (ac:ArrangementCandidate {id: $ac_id})
-                    MERGE (a)-[:RENDERS]->(ac)
-                    """,
-                    art_id=artifact_id,
-                    ac_id=ac_id,
-                )
+            # Lineage edges are a Neo4j-only concern; skipped in memory mode.
+            if driver is not None:
+                async with driver.session() as neo_session:
+                    await neo_session.run(
+                        """
+                        MATCH (a:RenderArtifact {id: $art_id})
+                        MATCH (ac:ArrangementCandidate {id: $ac_id})
+                        MERGE (a)-[:RENDERS]->(ac)
+                        """,
+                        art_id=artifact_id,
+                        ac_id=ac_id,
+                    )
 
             all_artifact_ids.append(artifact_id)
             all_artifact_meta.append({
@@ -292,40 +286,42 @@ async def create_export(
     )
     await package_repo.create(package)
 
-    # Create Neo4j relationships for the package
-    async with driver.session() as neo_session:
-        # (Session)-[:HAS_EXPORT]->(ExportPackage)
-        await neo_session.run(
-            """
-            MATCH (s:Session {id: $sid})
-            MATCH (p:ExportPackage {id: $pkg_id})
-            MERGE (s)-[:HAS_EXPORT]->(p)
-            """,
-            sid=session_id,
-            pkg_id=package_id,
-        )
-        # (ExportPackage)-[:INCLUDES]->(RenderArtifact)  and
-        # (ExportPackage)-[:INCLUDES_CANDIDATE]->(ArrangementCandidate)
-        for art_id in all_artifact_ids:
+    # Create Neo4j relationships for the package. Skipped in memory mode — the
+    # package + artifacts are still readable via the in-memory repos.
+    if driver is not None:
+        async with driver.session() as neo_session:
+            # (Session)-[:HAS_EXPORT]->(ExportPackage)
             await neo_session.run(
                 """
+                MATCH (s:Session {id: $sid})
                 MATCH (p:ExportPackage {id: $pkg_id})
-                MATCH (a:RenderArtifact {id: $art_id})
-                MERGE (p)-[:INCLUDES]->(a)
+                MERGE (s)-[:HAS_EXPORT]->(p)
                 """,
+                sid=session_id,
                 pkg_id=package_id,
-                art_id=art_id,
             )
-        for ac_id in body.arrangement_candidate_ids:
-            await neo_session.run(
-                """
-                MATCH (p:ExportPackage {id: $pkg_id})
-                MATCH (ac:ArrangementCandidate {id: $ac_id})
-                MERGE (p)-[:INCLUDES_CANDIDATE]->(ac)
-                """,
-                pkg_id=package_id,
-                ac_id=ac_id,
-            )
+            # (ExportPackage)-[:INCLUDES]->(RenderArtifact)  and
+            # (ExportPackage)-[:INCLUDES_CANDIDATE]->(ArrangementCandidate)
+            for art_id in all_artifact_ids:
+                await neo_session.run(
+                    """
+                    MATCH (p:ExportPackage {id: $pkg_id})
+                    MATCH (a:RenderArtifact {id: $art_id})
+                    MERGE (p)-[:INCLUDES]->(a)
+                    """,
+                    pkg_id=package_id,
+                    art_id=art_id,
+                )
+            for ac_id in body.arrangement_candidate_ids:
+                await neo_session.run(
+                    """
+                    MATCH (p:ExportPackage {id: $pkg_id})
+                    MATCH (ac:ArrangementCandidate {id: $ac_id})
+                    MERGE (p)-[:INCLUDES_CANDIDATE]->(ac)
+                    """,
+                    pkg_id=package_id,
+                    ac_id=ac_id,
+                )
 
     return {
         "id": package_id,
@@ -341,16 +337,16 @@ async def create_export(
 @router.get("/sessions/{session_id}/exports")
 async def list_exports(
     session_id: str,
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> list[dict[str, Any]]:
     """List all export packages for a session."""
-    session_repo = SessionRepository(driver)
+    session_repo = make_session_repo(driver)
     session_data = await session_repo.get_by_id(session_id)
     if session_data is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    package_repo = ExportPackageRepo(driver)
-    artifact_repo = RenderArtifactRepo(driver)
+    package_repo = make_export_package_repo(driver)
+    artifact_repo = make_render_artifact_repo(driver)
     packages = await package_repo.query_by_property("session_id", session_id)
 
     # Enrich each package with artifact details
@@ -376,10 +372,10 @@ async def list_exports(
 async def download_artifact(
     package_id: str,
     artifact_id: str,
-    driver: AsyncDriver = Depends(get_neo4j_driver),  # noqa: B008
+    driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> FileResponse:
     """Download a single render artifact file."""
-    artifact_repo = RenderArtifactRepo(driver)
+    artifact_repo = make_render_artifact_repo(driver)
     artifact = await artifact_repo.get_by_id(artifact_id)
     if artifact is None:
         raise HTTPException(status_code=404, detail="Artifact not found")

@@ -105,7 +105,7 @@ test.describe('Genre Research Agent (M5c)', () => {
     const sessionRes = await fetch(`${API_BASE}/sessions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: 'Test approve genre in C major, 4 bars', mode: 'full_exploration' }),
+      body: JSON.stringify({ genre: 'test_approve_genre', prompt: 'Test approve genre in C major, 4 bars', mode: 'full_exploration' }),
     });
     expect(sessionRes.ok).toBe(true);
   });

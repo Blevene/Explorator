@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { PatternCard } from '../PatternCard';
 import type { PatternItem } from '../../../api/types';
 import { usePatternLibraryStore } from '../../../stores/patternLibraryStore';
+import { useCapabilitiesStore } from '../../../stores/capabilitiesStore';
 
 const item: PatternItem = {
   id: 'pat_0001',
@@ -53,6 +54,10 @@ describe('PatternCard', () => {
 describe('PatternCard curation', () => {
   beforeEach(() => {
     usePatternLibraryStore.getState().reset();
+    // Curation gating fails closed; enable it (neo4j mode) so the star is live.
+    useCapabilitiesStore.setState({
+      capabilities: { persistence_mode: 'neo4j', features: { curation: true } },
+    });
   });
 
   it('renders filled star when pattern.is_curated is true', () => {

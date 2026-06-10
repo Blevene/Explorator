@@ -118,11 +118,11 @@ class TestComparisonRoute:
 
         with patch(
             "explorator.api.routes.comparisons.get_neo4j_driver",
-            new=AsyncMock(return_value=MagicMock()),
+            new=AsyncMock(return_value=None),
         ), patch(
-            "explorator.api.routes.comparisons.ComparisonViewRepo"
-        ) as MockRepo:
-            MockRepo.return_value.create = AsyncMock()
+            "explorator.api.routes.comparisons.make_comparison_view_repo"
+        ) as MakeRepo:
+            MakeRepo.return_value.create = AsyncMock()
 
             status, data = await _post(
                 app,

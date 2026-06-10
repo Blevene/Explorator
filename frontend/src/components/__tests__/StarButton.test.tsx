@@ -39,6 +39,23 @@ describe('StarButton', () => {
     expect(onToggle).not.toHaveBeenCalled();
   });
 
+  it('is disabled (and shows tooltip) when disabled prop is set, even if curatable', () => {
+    const onToggle = vi.fn();
+    render(
+      <StarButton
+        isCurated={false}
+        onToggle={onToggle}
+        disabled
+        disabledTitle="Curation requires the database (limited mode)"
+      />,
+    );
+    const btn = screen.getByRole('button') as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    expect(btn).toHaveAttribute('title', 'Curation requires the database (limited mode)');
+    fireEvent.click(btn);
+    expect(onToggle).not.toHaveBeenCalled();
+  });
+
   it('debounces rapid double-clicks to a single onToggle invocation', () => {
     const onToggle = vi.fn();
     render(<StarButton isCurated={false} onToggle={onToggle} />);
