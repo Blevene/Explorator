@@ -31,11 +31,14 @@ const GENERATION_STEPS = [
   { key: 'load_context', label: 'Context' },
   { key: 'plan_voicings', label: 'Voicings' },
   { key: 'generate_bass', label: 'Bass' },
+  { key: 'generate_groove', label: 'Groove' },
+  { key: 'generate_melody', label: 'Melody' },
   { key: 'assemble', label: 'Assemble' },
   { key: 'evaluate_arrangements', label: 'Eval Arr.' },
   { key: 'rank_and_select', label: 'Rank' },
   { key: 'check_stop', label: 'Check' },
   { key: 'persist_realization', label: 'Save' },
+  { key: 'harvest_patterns', label: 'Patterns' },
   { key: 'persist_round', label: 'Done' },
 ];
 
@@ -43,6 +46,8 @@ const REALIZATION_STEPS = [
   { key: 'load_context', label: 'Context' },
   { key: 'plan_voicings', label: 'Voicings' },
   { key: 'generate_bass', label: 'Bass' },
+  { key: 'generate_groove', label: 'Groove' },
+  { key: 'generate_melody', label: 'Melody' },
   { key: 'assemble', label: 'Assemble' },
   { key: 'evaluate_arrangements', label: 'Eval Arr.' },
   { key: 'rank_and_select', label: 'Rank' },
@@ -77,15 +82,11 @@ export default function PromptBar({
     ? steps.findIndex((s) => s.key === currentNode)
     : -1;
 
-  // The pipeline can loop: a refinement round re-enters early nodes, so a naive
-  // per-node bar sweeps to 100% then snaps back to 0. Track the round (a large
-  // backward jump in stepIndex = a new round) and fill a shrinking slice of what
-  // remains each round, so the bar keeps climbing instead of resetting.
   // Monotonic progress across the pipeline's refinement rounds. A round re-enters
-  // early nodes, so a naive per-node bar sweeps to 100% then snaps back to 0.
-  // Instead we count rounds (a large backward jump in stepIndex starts one) and
-  // fill a shrinking slice of what remains each round, keeping pct a running max
-  // so it only ever moves forward within a single generation.
+  // an earlier node, so a naive per-node bar sweeps to 100% then snaps back to 0.
+  // Instead we count rounds (graph nodes fire in order, so any backward step is a
+  // new round) and fill a shrinking slice of what remains each round, keeping pct
+  // a running max so it only ever moves forward within a single generation.
   const [{ pct, round }, setProgress] = useState({ pct: 0, round: 1 });
   const prevStepRef = useRef(-1);
 
@@ -97,8 +98,10 @@ export default function PromptBar({
       // boundaries) that don't map to a step.
       if (!loading) return prev.pct === 0 && prev.round === 1 ? prev : { pct: 0, round: 1 };
       if (stepIndex < 0) return prev;
-      // A drop of more than two steps is a genuine new round, not SSE reordering.
-      const newRound = prevStep >= 0 && stepIndex + 2 < prevStep;
+      // Nodes execute in list order within a round, so any backward step (the
+      // refinement loop re-entering evaluate_progressions or evaluate_arrangements)
+      // is a new round.
+      const newRound = prevStep >= 0 && stepIndex < prevStep;
       const round = prev.round + (newRound ? 1 : 0);
       const within = (stepIndex + 1) / steps.length;
       // Round N fills up to (1 - 0.1·0.5^(N-1)): round 1 → 90%, 2 → 95%, 3 → 97.5%…
