@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import GenrePicker from './GenrePicker';
 import KeyPicker from './KeyPicker';
 import ModePicker from './ModePicker';
@@ -76,9 +77,38 @@ export default function PromptBar({
     ? steps.findIndex((s) => s.key === currentNode)
     : -1;
 
-  const pct = loading && stepIndex >= 0
-    ? Math.round(((stepIndex + 1) / steps.length) * 100)
-    : loading ? 3 : 0;
+  // The pipeline can loop: a refinement round re-enters early nodes, so a naive
+  // per-node bar sweeps to 100% then snaps back to 0. Track the round (a large
+  // backward jump in stepIndex = a new round) and fill a shrinking slice of what
+  // remains each round, so the bar keeps climbing instead of resetting.
+  // Monotonic progress across the pipeline's refinement rounds. A round re-enters
+  // early nodes, so a naive per-node bar sweeps to 100% then snaps back to 0.
+  // Instead we count rounds (a large backward jump in stepIndex starts one) and
+  // fill a shrinking slice of what remains each round, keeping pct a running max
+  // so it only ever moves forward within a single generation.
+  const [{ pct, round }, setProgress] = useState({ pct: 0, round: 1 });
+  const prevStepRef = useRef(-1);
+
+  useEffect(() => {
+    const prevStep = prevStepRef.current;
+    prevStepRef.current = !loading ? -1 : stepIndex >= 0 ? stepIndex : prevStep;
+    setProgress((prev) => {
+      // Reset between generations; hold steady on transient nodes (e.g. round
+      // boundaries) that don't map to a step.
+      if (!loading) return prev.pct === 0 && prev.round === 1 ? prev : { pct: 0, round: 1 };
+      if (stepIndex < 0) return prev;
+      // A drop of more than two steps is a genuine new round, not SSE reordering.
+      const newRound = prevStep >= 0 && stepIndex + 2 < prevStep;
+      const round = prev.round + (newRound ? 1 : 0);
+      const within = (stepIndex + 1) / steps.length;
+      // Round N fills up to (1 - 0.1·0.5^(N-1)): round 1 → 90%, 2 → 95%, 3 → 97.5%…
+      // never reaching 100% while work continues (the bar unmounts on completion).
+      const ceiling = 1 - 0.1 * Math.pow(0.5, round - 1);
+      const floorPct = round <= 1 ? 0 : 1 - 0.1 * Math.pow(0.5, round - 2);
+      const raw = Math.round((floorPct + (ceiling - floorPct) * within) * 100);
+      return { pct: Math.max(prev.pct, raw), round };
+    });
+  }, [stepIndex, loading, steps.length]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -141,11 +171,15 @@ export default function PromptBar({
           aria-live="polite"
           aria-label={
             stepIndex >= 0
-              ? `Pipeline progress: ${steps[stepIndex]?.label ?? 'starting'}, step ${stepIndex + 1} of ${steps.length}`
+              ? `Pipeline progress${round > 1 ? `, round ${round}` : ''}: ${steps[stepIndex]?.label ?? 'starting'}, step ${stepIndex + 1} of ${steps.length}`
               : 'Pipeline starting'
           }
           className="flex flex-col gap-1.5 mt-1"
         >
+          <div className="flex items-center justify-between font-mono" style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+            <span>{round > 1 ? `Round ${round} · refining` : 'Generating'}</span>
+            <span>{pct}%</span>
+          </div>
           <div
             role="progressbar"
             aria-valuenow={pct}
