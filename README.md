@@ -7,11 +7,13 @@ A creative copilot for music producers. Generate chord progressions, realize the
 ## What it does
 
 **Create**
-- Translate creative prompts (*"dream pop in A major, wistful and haunted"*) into structured musical constraints
+- Choose genre, key, and mode up front, then steer with an optional mood prompt (*"wistful and haunted, 8 bars"*) — translated into structured musical constraints
 - Generate candidate chord progressions across 40+ genre profiles via Gemini Pro
 - Realize progressions into arrangements: voicings (open, close, drop-2, drop-3), genre-specific bass modes, groove patterns, optional melodic complement
 - Score arrangements across 12 dimensions (deterministic music theory + Gemini)
 - Mutate promising candidates: substitute, extend, transform — guided by user feedback
+
+![Start a session — pick genre, key, and mode, then add an optional mood prompt](docs/images/00-dashboard.png)
 
 ![Session workspace — generated candidates with chord symbols, intent tags, and scores](docs/images/01-session-workspace.png)
 
@@ -157,8 +159,8 @@ The pytest suite wipes the DB between tests, so it runs against a dedicated `neo
 
 ## A first session
 
-1. **Create a session** — prompt like *"Dream pop in A major, wistful and haunted"*.
-2. **Generate** (mode: conservative / balanced / exploratory). Watch the SSE pipeline progress; candidate cards appear with chord symbols, Roman numerals, scores, and rationale.
+1. **Create a session** — pick a genre, key, and mode, then optionally add a mood/feeling prompt (*"wistful and haunted, 8 bars"*).
+2. **Generate**. Watch the SSE pipeline progress (it surfaces the current round as the engine refines); candidate cards appear with chord symbols, Roman numerals, scores, and rationale.
 3. **Realize** a candidate → voicings, bass, groove, and melody are generated and evaluated. Three finalists surface with role badges.
 4. **Play** an arrangement with genre-matched synth. Mute/unmute voicing, bass, groove, melody independently.
 5. **Compare** two or three finalists in DAW-style lane view with synchronized transport.
@@ -201,6 +203,8 @@ The long-term-memory features require durable storage and are disabled in limite
 In-memory data is lost on backend restart — there is no durable non-Neo4j persistence by design.
 
 **Frontend limited-mode banner**
+
+![Limited mode — banner shown when the backend runs without Neo4j](docs/images/07-limited-mode.png)
 
 When the backend reports memory mode (via `GET /v1/capabilities`), the UI shows a "limited mode" banner under the header. The Patterns nav entry is hidden, the genre-research affordances are hidden (the genre *library* stays visible — it's served from YAML), session history and lineage are hidden in the session workspace, and star (curation) buttons are disabled. To get these features, bring up Neo4j with `make neo4j-up` and restart the backend.
 
