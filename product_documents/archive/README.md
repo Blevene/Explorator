@@ -17,7 +17,7 @@ These are the original product documents written before any code was implemented
 | `MusicExplorator_PRD.md` | Initial product requirements document |
 | `MusicExplorator_FunctionalSpec.md` | Functional specification — features, flows, acceptance criteria |
 | `MusicExplorator_Architecture.md` | First-pass architecture sketch |
-| `MusicExplorator_CannonicalObjectModel.md` | Original domain object model proposal |
+| `MusicExplorator_CanonicalObjectModel.md` | Original domain object model proposal |
 | `MusicExplorator_HybridGraphModel.md` | Original graph schema design |
 
 The PRD's vision and the Functional Spec's user-flow descriptions remain the closest match to current behavior. The Architecture and HybridGraphModel docs predate the LangGraph adoption and the Pydantic/Neo4j-as-source-of-truth choices, and have diverged the most.
