@@ -50,4 +50,16 @@ describe('candidateStore token usage', () => {
     expect(useCandidateStore.getState().usages).toHaveLength(0);
     expect(useCandidateStore.getState().live).toBeNull();
   });
+
+  it('clearUsage wipes live + history without touching other state', () => {
+    const s = useCandidateStore.getState();
+    s.setLiveUsage(usage(1, 500));
+    s.commitLiveUsage();
+    s.setLiveUsage(usage(1, 300));
+    s.toggleComparison('cand-1');           // unrelated state must survive
+    s.clearUsage();
+    expect(useCandidateStore.getState().usages).toHaveLength(0);
+    expect(useCandidateStore.getState().live).toBeNull();
+    expect(useCandidateStore.getState().selectedForComparison).toEqual(['cand-1']);
+  });
 });

@@ -13,6 +13,7 @@ interface CandidateState {
   live: TokenUsage | null;
   setLiveUsage: (u: TokenUsage) => void;
   commitLiveUsage: () => void;
+  clearUsage: () => void;
   setCandidates: (candidates: CandidateSummary[]) => void;
   setFinalSelection: (fs: FinalSelection | null) => void;
   setLoading: (loading: boolean) => void;
@@ -37,6 +38,7 @@ export const useCandidateStore = create<CandidateState>((set) => ({
   setLiveUsage: (live) => set({ live }),
   commitLiveUsage: () =>
     set((state) => (state.live ? { usages: [...state.usages, state.live], live: null } : {})),
+  clearUsage: () => set({ usages: [], live: null }),
   setCandidates: (candidates) => set({ candidates }),
   setFinalSelection: (finalSelection) => set({ finalSelection }),
   setLoading: (loading) => set({ loading }),
