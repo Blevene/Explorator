@@ -111,3 +111,44 @@ async def test_mock_client_records_synthetic_usage() -> None:
             await client.generate_structured("p", SoftPreferences, tier=ModelTier.FLASH)
     assert u.totals()["total"] > 0
     assert u.by_phase["parse_intent"].calls == 1
+
+
+async def test_instrument_sets_phase_and_emits_on_change() -> None:
+    from explorator.engine.graph import _instrument
+
+    emitted: list[tuple[str, dict]] = []
+
+    async def on_progress(event_type: str, data: dict) -> None:
+        emitted.append((event_type, data))
+
+    async def fake_node(state: dict) -> dict:
+        # Simulate an LLM call attributed to this node's phase.
+        usage.record_tokens("gemini-pro-latest", 300, 100)
+        return {}
+
+    wrapped = _instrument("generate", fake_node)
+
+    with usage.track_usage() as u:
+        await wrapped({"on_progress": on_progress, "round_number": 1})
+
+    assert u.by_phase["generate"].input == 300
+    assert emitted and emitted[0][0] == "token_usage"
+    assert emitted[0][1]["total_tokens"] == 400
+
+
+async def test_instrument_skips_emit_when_unchanged() -> None:
+    from explorator.engine.graph import _instrument
+
+    emitted: list[tuple[str, dict]] = []
+
+    async def on_progress(event_type: str, data: dict) -> None:
+        emitted.append((event_type, data))
+
+    async def deterministic_node(state: dict) -> dict:
+        return {}  # no token usage
+
+    wrapped = _instrument("assemble", deterministic_node)
+    with usage.track_usage():
+        await wrapped({"on_progress": on_progress, "round_number": 1})
+
+    assert emitted == []
