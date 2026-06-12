@@ -71,6 +71,9 @@ export default function SessionHistory({ sessionId }: SessionHistoryProps) {
   }, [sessionId])
 
   useEffect(() => {
+    // fetchEvents sets a loading flag synchronously on mount — the standard
+    // data-fetch-on-mount pattern, intentional (not a cascading-render bug).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchEvents()
   }, [fetchEvents])
 
