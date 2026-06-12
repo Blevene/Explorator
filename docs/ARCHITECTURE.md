@@ -89,7 +89,7 @@ backend/src/explorator/
 │   ├── intent/         #   Prompt parser, feedback interpreter
 │   ├── memory/         #   Pattern harvesting extractors (one per pattern type)
 │   ├── realization/    #   Voicing, bass, groove, melody generators + arrangement assembler
-│   └── style/          #   40+ genre YAMLs, validation schemas, loader
+│   └── style/          #   39 genre YAMLs, validation schemas, loader
 ├── engine/             # LangGraph: state TypedDicts, nodes, graph definitions
 ├── graph/              # Neo4j repositories — one per node label (PatternLibraryRepo, FeedbackEventRepo, etc.)
 ├── models/             # Pydantic v2 — base entities, domain models, API request/response shapes
@@ -158,7 +158,7 @@ validate      — deterministic Pydantic validation against the genre schema
 [approve] writes the YAMLs to backend/src/explorator/domain/style/genres/
 ```
 
-This produced 37+ of the 40 shipped genres.
+This produced 36 of the 39 shipped genres.
 
 ---
 
