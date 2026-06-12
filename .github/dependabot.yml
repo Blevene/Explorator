@@ -26,6 +26,14 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # eslint 10 and @eslint/js 10 require eslint-plugin-react-hooks v8+, which
+      # isn't released yet; @eslint/js@10 already broke `npm ci` once. Keep this
+      # pair on 9.x until the plugin supports eslint 10, then bump them together.
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
 
   # E2E test harness (Playwright).
   - package-ecosystem: "npm"
