@@ -174,6 +174,9 @@ export default function SessionWorkspace() {
   const selectedKey = selectedForComparison.join(',');
   useEffect(() => {
     if (showComparison && selectedForComparison.length >= 2) {
+      // Reactively reload / close the comparison overlay as the selection
+      // changes — intentional UI sync, not a cascading-render bug.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadComparisonArrangements(selectedForComparison);
     } else if (showComparison && selectedForComparison.length < 1) {
       setShowComparison(false);
