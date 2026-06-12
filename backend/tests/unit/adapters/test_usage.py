@@ -40,9 +40,8 @@ def test_record_reads_usage_metadata_none_safe() -> None:
 
 def test_estimated_cost_matches_pricing() -> None:
     # Defaults: pro input 1.25/M, pro output 10.0/M.
-    with usage.track_usage() as u:
-        with usage.set_phase("generate"):
-            usage.record_tokens("gemini-pro-latest", 1000, 500)
+    with usage.track_usage() as u, usage.set_phase("generate"):
+        usage.record_tokens("gemini-pro-latest", 1000, 500)
     # (1000/1e6*1.25) + (500/1e6*10.0) = 0.00125 + 0.005 = 0.00625
     assert round(u.estimated_cost_usd(), 6) == 0.00625
 
@@ -57,9 +56,8 @@ def test_changed_since_last_emit_tracks_growth() -> None:
 
 
 def test_to_event_shape() -> None:
-    with usage.track_usage() as u:
-        with usage.set_phase("generate"):
-            usage.record_tokens("gemini-pro-latest", 100, 40)
+    with usage.track_usage() as u, usage.set_phase("generate"):
+        usage.record_tokens("gemini-pro-latest", 100, 40)
     event = u.to_event(round_number=2)
     assert event["round"] == 2
     assert event["total_input"] == 100
@@ -92,9 +90,8 @@ async def test_adapter_records_usage_within_scope() -> None:
     )
     client._client.aio.models.generate_content = AsyncMock(return_value=fake_response)
 
-    with usage.track_usage() as u:
-        with usage.set_phase("generate"):
-            await client.generate_structured("p", _Sample, tier=ModelTier.PRO)
+    with usage.track_usage() as u, usage.set_phase("generate"):
+        await client.generate_structured("p", _Sample, tier=ModelTier.PRO)
 
     assert u.totals() == {"input": 120, "output": 30, "cached": 0, "total": 150}
     assert u.by_phase["generate"].model == "pro"
@@ -106,9 +103,8 @@ async def test_mock_client_records_synthetic_usage() -> None:
     from explorator.domain.intent.parser import SoftPreferences  # noqa: F401  (registered builder)
 
     client = FakeGeminiClient()
-    with usage.track_usage() as u:
-        with usage.set_phase("parse_intent"):
-            await client.generate_structured("p", SoftPreferences, tier=ModelTier.FLASH)
+    with usage.track_usage() as u, usage.set_phase("parse_intent"):
+        await client.generate_structured("p", SoftPreferences, tier=ModelTier.FLASH)
     assert u.totals()["total"] > 0
     assert u.by_phase["parse_intent"].calls == 1
 
@@ -160,9 +156,8 @@ async def test_concurrent_gather_attributes_to_one_phase() -> None:
     async def one_call(i: int) -> None:
         usage.record_tokens("gemini-flash-latest", 100, 20)
 
-    with usage.track_usage() as u:
-        with usage.set_phase("evaluate_progressions"):
-            await asyncio.gather(*(one_call(i) for i in range(5)))
+    with usage.track_usage() as u, usage.set_phase("evaluate_progressions"):
+        await asyncio.gather(*(one_call(i) for i in range(5)))
 
     # All 5 concurrent calls attribute to the single phase set by the parent.
     assert u.by_phase["evaluate_progressions"].calls == 5
@@ -186,9 +181,8 @@ async def test_revisited_phase_accumulates_across_loop() -> None:
 
 
 async def test_synthetic_flag_surfaces_in_event() -> None:
-    with usage.track_usage() as u:
-        with usage.set_phase("parse_intent"):
-            usage.record_synthetic_tokens("gemini-flash-latest", 800, 200)
+    with usage.track_usage() as u, usage.set_phase("parse_intent"):
+        usage.record_synthetic_tokens("gemini-flash-latest", 800, 200)
     event = u.to_event(1)
     assert event["is_synthetic"] is True
     # Real recording leaves it False.

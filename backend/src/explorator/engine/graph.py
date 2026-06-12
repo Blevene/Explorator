@@ -10,7 +10,7 @@ Full flow: parse_intent → load_genre → generate → evaluate_progressions
 import contextlib
 from collections.abc import Awaitable, Callable
 from functools import partial
-from typing import Any
+from typing import Any, cast
 
 from langgraph.graph import END, StateGraph
 from neo4j import AsyncDriver
@@ -40,11 +40,16 @@ from explorator.engine.state import ExplorationState
 from explorator.persistence.factory import make_pattern_library_repo
 
 
-def _instrument(
-    name: str, fn: Callable[[ExplorationState], Awaitable[dict[str, Any]]]
-) -> Callable[[ExplorationState], Awaitable[dict[str, Any]]]:
+def _instrument[NodeFnT: Callable[[ExplorationState], Awaitable[dict[str, Any]]]](
+    name: str, fn: NodeFnT
+) -> NodeFnT:
     """Wrap a node to (a) attribute token usage to its phase and (b) emit a live
     ``token_usage`` SSE event when the round's cumulative tokens grew.
+
+    Type-transparent: returns the *same* callable type it received, which
+    LangGraph's ``add_node`` overloads already accept (a value typed as an
+    abstract ``Callable[...]`` does not resolve those overloads, but the concrete
+    node functions/partials do).
 
     Emit is best-effort and guarded: a failing/absent callback never breaks the
     graph. Deterministic nodes that spend no tokens emit nothing (no duplicate
@@ -66,7 +71,7 @@ def _instrument(
                 await callback("token_usage", accumulator.to_event(round_number))
         return result
 
-    return wrapped
+    return cast("NodeFnT", wrapped)
 
 
 def _add_m2_nodes(
