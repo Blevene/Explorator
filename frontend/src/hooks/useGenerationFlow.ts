@@ -4,6 +4,7 @@ import type { FinalSelection } from '../services/api';
 import { useCandidateStore } from '../stores/candidateStore';
 import { toast } from '../lib/toast';
 import { streamSSE, STOP_STREAM, SSETimeoutError, USER_ABORT } from './streamSSE';
+import type { TokenUsage } from '../services/sse';
 
 const API_BASE = '/v1';
 
@@ -21,7 +22,7 @@ export function useGenerationFlow(sessionId: string | undefined) {
   const abortRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
 
-  const { setCandidates, setFinalSelection } = useCandidateStore();
+  const { setCandidates, setFinalSelection, setLiveUsage, commitLiveUsage } = useCandidateStore();
 
   // Track mount status so post-await / `finally` setState calls can be gated:
   // a caller abort fired from the unmount cleanup still runs `finally`, which
@@ -84,6 +85,8 @@ export function useGenerationFlow(sessionId: string | undefined) {
           if (eventType === 'node_started' && node) {
             nodeRef.current = node;
             setCurrentNode(node);
+          } else if (eventType === 'token_usage') {
+            setLiveUsage(data as unknown as TokenUsage);
           } else if (eventType === 'round_completed') {
             nodeRef.current = 'persist_round';
             setCurrentNode('persist_round');
@@ -121,6 +124,7 @@ export function useGenerationFlow(sessionId: string | undefined) {
         try {
           const res = await listCandidates(sessionId);
           if (mountedRef.current) setCandidates(res.items);
+          commitLiveUsage();
         } catch {
           if (mountedRef.current) setError('Failed to reload candidates after round.');
         }
@@ -146,7 +150,7 @@ export function useGenerationFlow(sessionId: string | undefined) {
         setCurrentNode(null);
       }
     }
-  }, [sessionId, loading, setCandidates, setFinalSelection]);
+  }, [sessionId, loading, setCandidates, setFinalSelection, setLiveUsage, commitLiveUsage]);
 
   return { loading, currentNode, error, setError, generate };
 }
