@@ -7,6 +7,8 @@ Full flow: parse_intent → load_genre → generate → evaluate_progressions
   → persist_realization → persist_round → END
 """
 
+import contextlib
+from collections.abc import Awaitable, Callable
 from functools import partial
 from typing import Any
 
@@ -14,6 +16,7 @@ from langgraph.graph import END, StateGraph
 from neo4j import AsyncDriver
 
 from explorator.adapters.gemini import GeminiClient
+from explorator.adapters.usage import current_usage, set_phase
 from explorator.engine.nodes.assemble_arrangements import assemble_arrangements
 from explorator.engine.nodes.check_stop import check_stop
 from explorator.engine.nodes.evaluate_arrangements import evaluate_arrangements
@@ -37,21 +40,61 @@ from explorator.engine.state import ExplorationState
 from explorator.persistence.factory import make_pattern_library_repo
 
 
+def _instrument(
+    name: str, fn: Callable[[ExplorationState], Awaitable[dict[str, Any]]]
+) -> Callable[[ExplorationState], Awaitable[dict[str, Any]]]:
+    """Wrap a node to (a) attribute token usage to its phase and (b) emit a live
+    ``token_usage`` SSE event when the round's cumulative tokens grew.
+
+    Emit is best-effort and guarded: a failing/absent callback never breaks the
+    graph. Deterministic nodes that spend no tokens emit nothing (no duplicate
+    events) because ``changed_since_last_emit()`` gates the send.
+    """
+
+    async def wrapped(state: ExplorationState) -> dict[str, Any]:
+        with set_phase(name):
+            result = await fn(state)
+        callback = state.get("on_progress")
+        accumulator = current_usage()
+        if (
+            callback is not None
+            and accumulator is not None
+            and accumulator.changed_since_last_emit()
+        ):
+            round_number = state.get("round_number", 1)
+            with contextlib.suppress(Exception):
+                await callback("token_usage", accumulator.to_event(round_number))
+        return result
+
+    return wrapped
+
+
 def _add_m2_nodes(
     graph: StateGraph[Any],
     gemini: GeminiClient,
     driver: AsyncDriver | None,
 ) -> None:
     """Register M2 realization nodes on a graph. Shared by full and sub-graph builders."""
-    graph.add_node("load_context", partial(load_context, driver=driver))
-    graph.add_node("plan_voicings", partial(plan_voicings, gemini=gemini))
-    graph.add_node("generate_bass", generate_bass)
-    graph.add_node("generate_groove", generate_groove)
-    graph.add_node("generate_melody", partial(generate_melody, gemini=gemini))
-    graph.add_node("assemble", assemble_arrangements)
-    graph.add_node("evaluate_arrangements", evaluate_arrangements)
-    graph.add_node("rank_and_select", rank_and_select)
-    graph.add_node("persist_realization", partial(persist_realization, driver=driver))
+    graph.add_node(
+        "load_context", _instrument("load_context", partial(load_context, driver=driver))
+    )
+    graph.add_node(
+        "plan_voicings", _instrument("plan_voicings", partial(plan_voicings, gemini=gemini))
+    )
+    graph.add_node("generate_bass", _instrument("generate_bass", generate_bass))
+    graph.add_node("generate_groove", _instrument("generate_groove", generate_groove))
+    graph.add_node(
+        "generate_melody", _instrument("generate_melody", partial(generate_melody, gemini=gemini))
+    )
+    graph.add_node("assemble", _instrument("assemble", assemble_arrangements))
+    graph.add_node(
+        "evaluate_arrangements", _instrument("evaluate_arrangements", evaluate_arrangements)
+    )
+    graph.add_node("rank_and_select", _instrument("rank_and_select", rank_and_select))
+    graph.add_node(
+        "persist_realization",
+        _instrument("persist_realization", partial(persist_realization, driver=driver)),
+    )
 
 
 def _add_m2_edges(graph: StateGraph[Any]) -> None:
@@ -89,14 +132,21 @@ def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver | None) ->
     graph = StateGraph(ExplorationState)
 
     # M1 nodes
-    graph.add_node("parse_intent", partial(parse_intent, gemini=gemini))
-    graph.add_node("load_genre", partial(load_genre, driver=driver))
-    graph.add_node("generate", partial(generate, gemini=gemini))
-    graph.add_node("evaluate_progressions", partial(evaluate_progressions, gemini=gemini))
-    graph.add_node("select_top_progressions", select_top_progressions)
+    graph.add_node(
+        "parse_intent", _instrument("parse_intent", partial(parse_intent, gemini=gemini))
+    )
+    graph.add_node("load_genre", _instrument("load_genre", partial(load_genre, driver=driver)))
+    graph.add_node("generate", _instrument("generate", partial(generate, gemini=gemini)))
+    graph.add_node(
+        "evaluate_progressions",
+        _instrument("evaluate_progressions", partial(evaluate_progressions, gemini=gemini)),
+    )
+    graph.add_node(
+        "select_top_progressions", _instrument("select_top_progressions", select_top_progressions)
+    )
 
     # M3b: memory/feedback node
-    graph.add_node("load_memory", partial(load_memory, driver=driver))
+    graph.add_node("load_memory", _instrument("load_memory", partial(load_memory, driver=driver)))
 
     # M2 nodes (shared registration)
     _add_m2_nodes(graph, gemini, driver)
@@ -105,10 +155,15 @@ def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver | None) ->
     # In memory mode this is a NullPatternLibraryRepo (no-op upsert → 0 harvested);
     # harvest_patterns accepts either repo type.
     pattern_repo = make_pattern_library_repo(driver)
-    graph.add_node("harvest_patterns", partial(harvest_patterns, repo=pattern_repo))
+    graph.add_node(
+        "harvest_patterns",
+        _instrument("harvest_patterns", partial(harvest_patterns, repo=pattern_repo)),
+    )
 
     # Persistence
-    graph.add_node("persist_round", partial(persist_round, driver=driver))
+    graph.add_node(
+        "persist_round", _instrument("persist_round", partial(persist_round, driver=driver))
+    )
 
     # Linear flow: M1 → M2 → persist
     graph.set_entry_point("parse_intent")
@@ -121,22 +176,30 @@ def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver | None) ->
     _add_m2_edges(graph)
 
     # M3a: mutation loop
-    graph.add_node("check_stop", check_stop)
-    graph.add_node("mutate", partial(mutate, gemini=gemini))
+    graph.add_node("check_stop", _instrument("check_stop", check_stop))
+    graph.add_node("mutate", _instrument("mutate", partial(mutate, gemini=gemini)))
 
     graph.add_edge("rank_and_select", "check_stop")
 
     # Conditional: stop → persist, continue → mutate
-    graph.add_conditional_edges("check_stop", _route_after_stop, {
-        "persist_realization": "persist_realization",
-        "mutate": "mutate",
-    })
+    graph.add_conditional_edges(
+        "check_stop",
+        _route_after_stop,
+        {
+            "persist_realization": "persist_realization",
+            "mutate": "mutate",
+        },
+    )
 
     # Conditional: harmonic → evaluate_progressions, arrangement → evaluate_arrangements
-    graph.add_conditional_edges("mutate", _route_after_mutate, {
-        "evaluate_progressions": "evaluate_progressions",
-        "evaluate_arrangements": "evaluate_arrangements",
-    })
+    graph.add_conditional_edges(
+        "mutate",
+        _route_after_mutate,
+        {
+            "evaluate_progressions": "evaluate_progressions",
+            "evaluate_arrangements": "evaluate_arrangements",
+        },
+    )
 
     graph.add_edge("persist_realization", "harvest_patterns")
     graph.add_edge("harvest_patterns", "persist_round")

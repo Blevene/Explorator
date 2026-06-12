@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { CandidateSummary, FinalSelection } from '../services/api';
+import type { TokenUsage } from '../services/sse';
 
 interface CandidateState {
   candidates: CandidateSummary[];
@@ -8,6 +9,11 @@ interface CandidateState {
   progress: string | null;
   error: string | null;
   selectedForComparison: string[];
+  usages: TokenUsage[];
+  live: TokenUsage | null;
+  setLiveUsage: (u: TokenUsage) => void;
+  commitLiveUsage: () => void;
+  clearUsage: () => void;
   setCandidates: (candidates: CandidateSummary[]) => void;
   setFinalSelection: (fs: FinalSelection | null) => void;
   setLoading: (loading: boolean) => void;
@@ -27,6 +33,12 @@ export const useCandidateStore = create<CandidateState>((set) => ({
   progress: null,
   error: null,
   selectedForComparison: [],
+  usages: [],
+  live: null,
+  setLiveUsage: (live) => set({ live }),
+  commitLiveUsage: () =>
+    set((state) => (state.live ? { usages: [...state.usages, state.live], live: null } : {})),
+  clearUsage: () => set({ usages: [], live: null }),
   setCandidates: (candidates) => set({ candidates }),
   setFinalSelection: (finalSelection) => set({ finalSelection }),
   setLoading: (loading) => set({ loading }),
@@ -50,5 +62,16 @@ export const useCandidateStore = create<CandidateState>((set) => ({
       progress: null,
       error: null,
       selectedForComparison: [],
+      usages: [],
+      live: null,
     }),
 }));
+
+export function sessionTokenTotals(state: CandidateState): { tokens: number; cost: number } {
+  const committed = state.usages;
+  const all = state.live ? [...committed, state.live] : committed;
+  return {
+    tokens: all.reduce((sum, u) => sum + u.total_tokens, 0),
+    cost: all.reduce((sum, u) => sum + u.estimated_cost_usd, 0),
+  };
+}

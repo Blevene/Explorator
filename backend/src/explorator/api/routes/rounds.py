@@ -1,6 +1,7 @@
 """Round triggering and SSE progress endpoints."""
 
 import asyncio
+import contextlib
 import logging
 from typing import Any
 
@@ -10,6 +11,7 @@ from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
 from explorator.adapters.gemini import GeminiClient
+from explorator.adapters.usage import track_usage
 from explorator.api.deps import get_gemini_client, get_neo4j_driver
 from explorator.api.sse import SSEChannel, cancel_on_disconnect
 from explorator.engine.graph import build_exploration_graph
@@ -116,7 +118,26 @@ async def trigger_round(
 
     async def run_and_close() -> None:
         try:
-            await graph.ainvoke(initial_state, {"recursion_limit": 100})
+            with track_usage() as round_usage:
+                try:
+                    await graph.ainvoke(initial_state, {"recursion_limit": 100})
+                finally:
+                    # Tokens are billed even on a failed/partial round, so always
+                    # report spend before surfacing any error. Best-effort: a send
+                    # failure here must not mask the original exception. (Suppresses
+                    # Exception only — CancelledError is BaseException and still
+                    # propagates, so client-disconnect cancellation is unaffected.)
+                    total = round_usage.totals()["total"]
+                    if total == 0:
+                        logger.warning(
+                            "Round for session %s recorded zero token usage — "
+                            "instrumentation may be misconfigured", session_id,
+                        )
+                    with contextlib.suppress(Exception):
+                        await channel.send(
+                            "token_usage",
+                            round_usage.to_event(initial_state.get("round_number", 1)),
+                        )
         except Exception as e:
             logger.exception("Round failed for session %s", session_id)
             await channel.send("round_error", {"error": str(e)})

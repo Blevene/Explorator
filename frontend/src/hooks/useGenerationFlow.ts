@@ -4,6 +4,7 @@ import type { FinalSelection } from '../services/api';
 import { useCandidateStore } from '../stores/candidateStore';
 import { toast } from '../lib/toast';
 import { streamSSE, STOP_STREAM, SSETimeoutError, USER_ABORT } from './streamSSE';
+import type { TokenUsage } from '../services/sse';
 
 const API_BASE = '/v1';
 
@@ -21,7 +22,7 @@ export function useGenerationFlow(sessionId: string | undefined) {
   const abortRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
 
-  const { setCandidates, setFinalSelection } = useCandidateStore();
+  const { setCandidates, setFinalSelection, setLiveUsage, commitLiveUsage } = useCandidateStore();
 
   // Track mount status so post-await / `finally` setState calls can be gated:
   // a caller abort fired from the unmount cleanup still runs `finally`, which
@@ -84,6 +85,8 @@ export function useGenerationFlow(sessionId: string | undefined) {
           if (eventType === 'node_started' && node) {
             nodeRef.current = node;
             setCurrentNode(node);
+          } else if (eventType === 'token_usage') {
+            setLiveUsage(data as unknown as TokenUsage);
           } else if (eventType === 'round_completed') {
             nodeRef.current = 'persist_round';
             setCurrentNode('persist_round');
@@ -136,6 +139,9 @@ export function useGenerationFlow(sessionId: string | undefined) {
         setError(err instanceof Error ? err.message : 'Failed to trigger round.');
       }
     } finally {
+      // Commit spend on every round end — tokens are billed even when a round
+      // fails or is aborted. No-op when there's no live usage.
+      commitLiveUsage();
       // Ref reset is unconditional (not state). The state resets are gated on
       // mount: a caller abort fired from unmount cleanup still runs `finally`,
       // and updating state on a dead fiber is a no-op bug. Normal completion
@@ -146,7 +152,7 @@ export function useGenerationFlow(sessionId: string | undefined) {
         setCurrentNode(null);
       }
     }
-  }, [sessionId, loading, setCandidates, setFinalSelection]);
+  }, [sessionId, loading, setCandidates, setFinalSelection, setLiveUsage, commitLiveUsage]);
 
   return { loading, currentNode, error, setError, generate };
 }

@@ -13,6 +13,7 @@ from sse_starlette.sse import EventSourceResponse
 from ulid import ULID
 
 from explorator.adapters.gemini import GeminiClient
+from explorator.adapters.usage import track_usage
 from explorator.api.deps import get_gemini_client, get_genre_research_repo, get_neo4j_driver
 from explorator.api.sse import SSEChannel
 from explorator.domain.style.loader import discover_genres
@@ -123,7 +124,15 @@ async def start_research(
 
     async def run_and_close() -> None:
         try:
-            await graph.ainvoke(initial_state, {"recursion_limit": 20})
+            with track_usage() as job_usage:
+                try:
+                    await graph.ainvoke(initial_state, {"recursion_limit": 20})
+                finally:
+                    t = job_usage.totals()
+                    logger.info(
+                        "Genre research job %s token usage: %d total (in=%d out=%d, ~$%.4f est.)",
+                        job_id, t["total"], t["input"], t["output"], job_usage.estimated_cost_usd(),
+                    )
         except Exception as e:
             logger.exception("Genre research failed for job %s", job_id)
             await repo.update_job(job_id, {"status": "failed", "error_message": str(e)})

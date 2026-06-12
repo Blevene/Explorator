@@ -9,6 +9,7 @@ import { useRealizationFlow } from '../hooks/useRealizationFlow';
 import { useMutationFlow } from '../hooks/useMutationFlow';
 import CandidateCard from '../components/CandidateCard';
 import PromptBar from '../components/PromptBar';
+import TokenUsagePanel from '../components/TokenUsagePanel';
 import ArrangementList from '../components/ArrangementList';
 import ArrangementDetailView from '../components/ArrangementDetail';
 import LineageTree from '../components/LineageTree';
@@ -38,7 +39,7 @@ export default function SessionWorkspace() {
   const [showComparison, setShowComparison] = useState(false);
   const [comparisonArrangements, setComparisonArrangements] = useState<Map<string, ArrangementDetail>>(new Map());
 
-  const { candidates, setCandidates, selectedForComparison, toggleComparison } = useCandidateStore();
+  const { candidates, setCandidates, selectedForComparison, toggleComparison, clearUsage } = useCandidateStore();
   const { fetchPackages } = useExportStore();
   const arrangementStore = useArrangementStore();
 
@@ -51,6 +52,7 @@ export default function SessionWorkspace() {
 
   useEffect(() => {
     if (!id) return;
+    clearUsage();
 
     const load = async () => {
       try {
@@ -67,7 +69,7 @@ export default function SessionWorkspace() {
       } catch { /* ignore */ }
     };
     load();
-  }, [id, setCandidates]);
+  }, [id, setCandidates, clearUsage]);
 
   // Auto-generate when the session has loaded with a prompt but no candidates.
   // Gate on `session` so we never fire before the loader resolves, and derive
@@ -236,6 +238,9 @@ export default function SessionWorkspace() {
           onMusicalModeChange={setMusicalMode}
         />
       </div>
+
+      {/* Token usage */}
+      <TokenUsagePanel />
 
       {/* Error */}
       {generation.error && (
