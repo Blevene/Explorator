@@ -49,3 +49,35 @@ def test_round_emits_terminal_token_usage(client_memory, monkeypatch):
     assert final["total_tokens"] == 1400
     assert final["by_model"]["pro"]["calls"] == 1
     assert final["is_estimate"] is True
+
+
+def test_failed_round_still_emits_token_usage(client_memory, monkeypatch):
+    """A round whose graph raises after spending tokens still reports the spend."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    import explorator.api.routes.rounds as rounds
+    from explorator.adapters import usage
+
+    async def fake_ainvoke(state, *_a, **_k):
+        usage.record_tokens("gemini-flash-latest", 500, 100)
+        raise RuntimeError("boom")
+
+    fake_graph = MagicMock()
+    fake_graph.ainvoke = AsyncMock(side_effect=fake_ainvoke)
+    monkeypatch.setattr(rounds, "build_exploration_graph", lambda *a, **k: fake_graph)
+
+    session_id = client_memory.post(
+        "/v1/sessions", json={"genre": "dream_pop", "prompt": "x"}
+    ).json()["session_id"]
+
+    with client_memory.stream(
+        "POST", f"/v1/sessions/{session_id}/rounds", json={}
+    ) as resp:
+        assert resp.status_code == 200
+        events = _sse_events(resp)
+
+    names = [name for name, _ in events]
+    assert "token_usage" in names, "failed round must still report spend"
+    assert "round_error" in names
+    token = [d for n, d in events if n == "token_usage"][-1]
+    assert token["total_tokens"] == 600

@@ -125,8 +125,14 @@ async def start_research(
     async def run_and_close() -> None:
         try:
             with track_usage() as job_usage:
-                await graph.ainvoke(initial_state, {"recursion_limit": 20})
-                await channel.send("token_usage", job_usage.to_event(1))
+                try:
+                    await graph.ainvoke(initial_state, {"recursion_limit": 20})
+                finally:
+                    t = job_usage.totals()
+                    logger.info(
+                        "Genre research job %s token usage: %d total (in=%d out=%d, ~$%.4f est.)",
+                        job_id, t["total"], t["input"], t["output"], job_usage.estimated_cost_usd(),
+                    )
         except Exception as e:
             logger.exception("Genre research failed for job %s", job_id)
             await repo.update_job(job_id, {"status": "failed", "error_message": str(e)})

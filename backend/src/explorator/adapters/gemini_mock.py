@@ -216,7 +216,7 @@ class FakeGeminiClient:
             msg = f"Unsupported response_model for FakeGeminiClient: {name}"
             raise ValueError(msg)
         self.call_counts[name] += 1
-        usage.record_tokens(self.get_model_name(tier), 800, 200)
+        usage.record_synthetic_tokens(self.get_model_name(tier), 800, 200)
         logger.info("FakeGemini: %s (call #%d)", name, self.call_counts[name])
         return cast("T", builders[name]())
 
@@ -227,7 +227,7 @@ class FakeGeminiClient:
         system_prompt: str | None = None,
     ) -> str:
         self.call_counts["generate_text"] += 1
-        usage.record_tokens(self.get_model_name(tier), 1200, 400)
+        usage.record_synthetic_tokens(self.get_model_name(tier), 1200, 400)
         fixture = _genre_research_text(prompt)
         if fixture is not None:
             # Small artificial delay so the UI has time to render each stage's
