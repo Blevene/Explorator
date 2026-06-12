@@ -267,6 +267,14 @@ Long-running graph pipelines stream progress events to the frontend via `sse-sta
 
 The curation service is the canonical example: a single `async with driver.session()` opens a session, then `tx = await neo_session.begin_transaction()` opens a multi-statement transaction. All writes (event create, two relationship creates, fan-out SET) commit together or roll back together. The same pattern is used for session deletion (cascade across labels) and any other multi-write operation that needs atomicity.
 
+### Token usage instrumentation
+
+Gemini token consumption is measured at the single adapter choke point and surfaced live to the operator (ADR 011). `adapters/usage.py` holds a `UsageAccumulator` (by-model + by-phase breakdowns and an estimated cost) behind a `ContextVar`. `adapters/gemini.py` records `response.usage_metadata` after each call; `engine/graph.py` wraps every node with `_instrument(name, fn)`, which tags the active phase and emits a live `token_usage` SSE event as the round's cumulative total grows. The round route opens the scope around `graph.ainvoke` and always emits a terminal `token_usage` — even on failure, since the tokens were billed. Because `contextvars` copy by reference into asyncio child tasks, the parallel `evaluate_progressions` fan-out aggregates into the one accumulator without any per-call plumbing.
+
+The frontend stores live + committed usage (`candidateStore`) and renders `TokenUsagePanel`: round headline (tokens + estimated cost), an expandable per-phase breakdown, and a per-session footer (resets on reload — not persisted). Cost is computed from configurable per-tier rates and labeled an estimate; mock-mode numbers are flagged `is_synthetic` and badged.
+
+**Measured example** — a real `dream_pop` round consumed ~13,900 tokens (~7.6k in / 6.3k out), ~$0.022 estimated, across 21 calls (20 Flash + 1 Pro). Distribution by phase: `plan_voicings` ~64%, `generate_melody` ~15%, `evaluate_progressions` ~14%, `generate` (the single Pro call) ~5%, `parse_intent` ~1%. The cost lever is `plan_voicings`, not the Pro-tier progression generation.
+
 ### Authentication
 
 There is no authentication. The app runs locally for one operator. Adding auth is deferred until there's a real reason (sharing, multi-tenancy, deployment beyond localhost).
@@ -278,6 +286,7 @@ Environment variables in `backend/.env`:
 - `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` — driver connection
 - `GEMINI_API_KEY`, `GEMINI_PRO_MODEL`, `GEMINI_FLASH_MODEL` — Gemini integration
 - `GEMINI_MOCK=true` — substitutes `FakeGeminiClient` for E2E. The Playwright global-setup sets this when spawning the backend.
+- `GEMINI_PRICE_PRO_INPUT`, `GEMINI_PRICE_PRO_OUTPUT`, `GEMINI_PRICE_FLASH_INPUT`, `GEMINI_PRICE_FLASH_OUTPUT` — USD per 1M tokens, used for the token-usage cost *estimate* (defaults: pro 1.25 / 10.0, flash 0.30 / 2.50). Tune to your billing tier.
 
 The pytest suite ignores `NEO4J_URI` and uses `NEO4J_TEST_URI` (defaults to `bolt://localhost:7689`) — a separate Docker container with `tmpfs` storage and an autouse `MATCH (n) DETACH DELETE n` between tests. The dev DB on 7688 is never touched by tests.
 

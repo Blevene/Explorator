@@ -21,6 +21,7 @@ A creative copilot for music producers. Generate chord progressions, realize the
 - Multi-round exploration with per-round finalists (safest / best-loop / most-experimental)
 - Plain-text feedback reweights the scorer across rounds
 - Pareto ranking surfaces distinct trade-offs rather than a single "winner"
+- See the cost: a live token-usage panel shows per-round and per-phase Gemini token counts with an estimated dollar cost, ticking up as the pipeline runs
 
 **Play & compare**
 - Piano roll with amber voicing, blue bass, emerald melody, groove-accent overlay
@@ -75,12 +76,12 @@ Approved genres land in the same three directories as the seed genres and become
 
 ## Status
 
-**M0 → M5d shipped.** M6 (multi-layer mutation) is specced and pending. See [`docs/superpowers/plans/`](./docs/superpowers/plans/) for the milestone history, or [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md#pipelines) for the current pipeline shape.
+**M0 → M5d shipped**, plus cross-cutting token-usage instrumentation ([ADR 011](docs/decisions/011-token-usage-instrumentation.md)). M6 (multi-layer mutation) is specced and pending. See [`docs/superpowers/plans/`](./docs/superpowers/plans/) for the milestone history, or [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md#pipelines) for the current pipeline shape.
 
 | | |
 |---|---|
-| Backend | 645 tests (unit + integration + API), all green |
-| Frontend | 81 vitest, tsc strict, `npm run build` clean |
+| Backend | 773 tests (unit + integration + API), all green |
+| Frontend | 135 vitest, tsc strict, `npm run build` clean |
 | E2E | 41 Playwright, all green under `GEMINI_MOCK=true` (one occasional flake on `ux-coherence:11 navigation-flow` that passes in isolation) |
 
 ## Quick start
@@ -160,7 +161,7 @@ The pytest suite wipes the DB between tests, so it runs against a dedicated `neo
 ## A first session
 
 1. **Create a session** — pick a genre, key, and mode, then optionally add a mood/feeling prompt (*"wistful and haunted, 8 bars"*).
-2. **Generate**. Watch the SSE pipeline progress (it surfaces the current round as the engine refines); candidate cards appear with chord symbols, Roman numerals, scores, and rationale.
+2. **Generate**. Watch the SSE pipeline progress (it surfaces the current round as the engine refines); candidate cards appear with chord symbols, Roman numerals, scores, and rationale. A **token-usage panel** under the prompt bar shows the round's Gemini token counts and estimated cost, broken down by phase, updating live as each phase completes.
 3. **Realize** a candidate → voicings, bass, groove, and melody are generated and evaluated. Three finalists surface with role badges.
 4. **Play** an arrangement with genre-matched synth. Mute/unmute voicing, bass, groove, melody independently.
 5. **Compare** two or three finalists in DAW-style lane view with synchronized transport.
@@ -291,6 +292,7 @@ Each arrangement is scored across **12 dimensions**, aggregated into a single `w
 - **Single operator, no auth** — designed to run locally for one user. Adding auth is deferred until there's a real reason (sharing, multi-tenancy).
 - **M5c E2E flakiness** — 4 tests in `e2e/tests/genre-research.spec.ts` fail because `FakeGeminiClient.generate_text` returns non-JSON. Documented; needs dedicated test-infrastructure work.
 - **Warm-start retrieval doesn't favor curated patterns yet** — the library is populated and curation works, but retrieval still uses score-ordered top-K. Natural follow-up once there's curated data to tune against.
+- **Token usage is per-session only** — the panel's running total lives in the browser and resets on page reload; per-round usage is not persisted, so there's no cross-session or all-time spend view yet. Cost is a configurable estimate (flat per-tier rates), not provider-reconciled billing. Deliberate first-cut scope — see [ADR 011](docs/decisions/011-token-usage-instrumentation.md).
 - **GitHub issues:** [#2](https://github.com/Blevene/Explorator/issues/2) (cadence/loopability granularity), [#3](https://github.com/Blevene/Explorator/issues/3) (tension_curve dimension).
 
 ## Further reading

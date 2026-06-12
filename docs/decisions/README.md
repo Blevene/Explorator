@@ -23,6 +23,7 @@ These exist for two reasons:
 | [008](./008-css-custom-properties-design-tokens.md) | CSS custom properties + `designTokens.ts` for the palette | Accepted |
 | [009](./009-isolated-test-neo4j.md) | Isolated test Neo4j container with autouse cleanup | Accepted |
 | [010](./010-no-authentication.md) | No authentication — single-operator local tool | Accepted |
+| [011](./011-token-usage-instrumentation.md) | Token usage instrumented via a context-scoped accumulator | Accepted |
 
 ## Adding a new ADR
 
