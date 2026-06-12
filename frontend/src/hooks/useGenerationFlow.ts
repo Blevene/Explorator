@@ -124,7 +124,6 @@ export function useGenerationFlow(sessionId: string | undefined) {
         try {
           const res = await listCandidates(sessionId);
           if (mountedRef.current) setCandidates(res.items);
-          commitLiveUsage();
         } catch {
           if (mountedRef.current) setError('Failed to reload candidates after round.');
         }
@@ -140,6 +139,9 @@ export function useGenerationFlow(sessionId: string | undefined) {
         setError(err instanceof Error ? err.message : 'Failed to trigger round.');
       }
     } finally {
+      // Commit spend on every round end — tokens are billed even when a round
+      // fails or is aborted. No-op when there's no live usage.
+      commitLiveUsage();
       // Ref reset is unconditional (not state). The state resets are gated on
       // mount: a caller abort fired from unmount cleanup still runs `finally`,
       // and updating state on a dead fiber is a no-op bug. Normal completion

@@ -26,6 +26,7 @@ export interface TokenUsage {
   by_phase: Record<string, TokenUsageBreakdown & { model: string }>;
   estimated_cost_usd: number;
   is_estimate: boolean;
+  is_synthetic: boolean;
 }
 
 export interface SSEEvent {

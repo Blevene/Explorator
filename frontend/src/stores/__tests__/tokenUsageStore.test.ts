@@ -13,6 +13,7 @@ function usage(round: number, total: number): TokenUsage {
     by_phase: { generate: { input: total, output: 0, calls: 1, model: 'pro' } },
     estimated_cost_usd: total / 1000,
     is_estimate: true,
+    is_synthetic: false,
   };
 }
 

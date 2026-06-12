@@ -22,8 +22,17 @@ export default function TokenUsagePanel() {
       style={{ background: 'var(--surface-2)', border: '1px solid var(--border-subtle)' }}
     >
       <div className="flex items-center justify-between">
-        <span className="uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+        <span className="uppercase tracking-wider flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
           Token usage
+          {current.is_synthetic && (
+            <span
+              className="normal-case tracking-normal rounded px-1.5 py-0.5"
+              style={{ background: 'var(--surface-3, var(--surface-1))', color: 'var(--text-muted)', border: '1px solid var(--border-subtle)' }}
+              title="Mock mode — these token counts are synthetic, not real API usage."
+            >
+              synthetic
+            </span>
+          )}
         </span>
         <span className="font-mono" style={{ color: 'var(--text-primary)' }}>
           {fmt(current.total_tokens)} tokens
@@ -31,6 +40,9 @@ export default function TokenUsagePanel() {
             {' '}({fmt(current.total_input)} in / {fmt(current.total_output)} out)
           </span>
           <span className="ml-2" style={{ color: 'var(--accent-primary)' }}>{usd(current.estimated_cost_usd)}</span>
+          {live && (
+            <span className="ml-2 normal-case" style={{ color: 'var(--text-muted)' }}>· updating…</span>
+          )}
         </span>
       </div>
 
@@ -53,7 +65,9 @@ export default function TokenUsagePanel() {
       </details>
 
       <div className="mt-2 pt-2 flex items-center justify-between" style={{ borderTop: '1px solid var(--border-subtle)' }}>
-        <span style={{ color: 'var(--text-muted)' }}>This session</span>
+        <span style={{ color: 'var(--text-muted)' }} title="Running total for this browser session; resets on page reload (not persisted).">
+          This session (since load)
+        </span>
         <span className="font-mono" style={{ color: 'var(--text-secondary)' }}>
           {fmt(session.tokens)} tokens · {usd(session.cost)}
         </span>

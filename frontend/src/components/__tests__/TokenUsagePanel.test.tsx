@@ -14,6 +14,7 @@ const sample: TokenUsage = {
   by_phase: { generate: { input: 1000, output: 400, calls: 1, model: 'pro' } },
   estimated_cost_usd: 0.005,
   is_estimate: true,
+  is_synthetic: false,
 };
 
 describe('TokenUsagePanel', () => {
