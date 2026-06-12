@@ -9,6 +9,8 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel
 
+from explorator.adapters import usage
+
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
@@ -64,6 +66,7 @@ class GeminiClient:
             contents=contents,
             config=config,
         )
+        usage.record(model_name, response.usage_metadata)
 
         raw_text = response.text
         if raw_text is None:
@@ -146,6 +149,7 @@ class GeminiClient:
             contents=prompt,
             config=config,
         )
+        usage.record(model_name, response.usage_metadata)
 
         if response.text is None:
             msg = f"Gemini returned empty response for model={model_name}"

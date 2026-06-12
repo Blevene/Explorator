@@ -69,3 +69,32 @@ def test_to_event_shape() -> None:
     assert event["by_phase"]["generate"]["model"] == "pro"
     assert event["is_estimate"] is True
     assert isinstance(event["estimated_cost_usd"], float)
+
+
+async def test_adapter_records_usage_within_scope() -> None:
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+
+    from pydantic import BaseModel
+
+    from explorator.adapters.gemini import GeminiClient, ModelTier
+
+    class _Sample(BaseModel):
+        name: str
+        value: int
+
+    client = GeminiClient(api_key="test-key")
+    fake_response = SimpleNamespace(
+        text='{"name": "x", "value": 1}',
+        usage_metadata=SimpleNamespace(
+            prompt_token_count=120, candidates_token_count=30, cached_content_token_count=0
+        ),
+    )
+    client._client.aio.models.generate_content = AsyncMock(return_value=fake_response)
+
+    with usage.track_usage() as u:
+        with usage.set_phase("generate"):
+            await client.generate_structured("p", _Sample, tier=ModelTier.PRO)
+
+    assert u.totals() == {"input": 120, "output": 30, "cached": 0, "total": 150}
+    assert u.by_phase["generate"].model == "pro"
