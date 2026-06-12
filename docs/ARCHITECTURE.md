@@ -2,7 +2,7 @@
 
 **Status:** current as of 2026-04-24 (post-M5d-3, pre-M6).
 
-This document is the developer-onboarding reference for how Explorator is wired together today. For "what does the product do," see the [root README](../README.md). For per-milestone design history, see [`docs/superpowers/specs/`](./superpowers/specs/).
+This document is the developer-onboarding reference for how Explorator is wired together today. For "what does the product do," see the [root README](../README.md). For per-milestone design history, see [`docs/design/specs/`](./design/specs/).
 
 ---
 
@@ -89,7 +89,7 @@ backend/src/explorator/
 │   ├── intent/         #   Prompt parser, feedback interpreter
 │   ├── memory/         #   Pattern harvesting extractors (one per pattern type)
 │   ├── realization/    #   Voicing, bass, groove, melody generators + arrangement assembler
-│   └── style/          #   40+ genre YAMLs, validation schemas, loader
+│   └── style/          #   39 genre YAMLs, validation schemas, loader
 ├── engine/             # LangGraph: state TypedDicts, nodes, graph definitions
 ├── graph/              # Neo4j repositories — one per node label (PatternLibraryRepo, FeedbackEventRepo, etc.)
 ├── models/             # Pydantic v2 — base entities, domain models, API request/response shapes
@@ -158,7 +158,7 @@ validate      — deterministic Pydantic validation against the genre schema
 [approve] writes the YAMLs to backend/src/explorator/domain/style/genres/
 ```
 
-This produced 37+ of the 40 shipped genres.
+This produced 36 of the 39 shipped genres.
 
 ---
 
@@ -353,5 +353,5 @@ The mock `FakeGeminiClient` returns deterministic structured responses for the m
 
 - **Concrete user flow:** root [`README.md`](../README.md) → "A typical session"
 - **Frontend UI grammar:** [`docs/DESIGN.md`](./DESIGN.md)
-- **Per-milestone history:** [`docs/superpowers/specs/`](./superpowers/specs/) and [`docs/superpowers/plans/`](./superpowers/plans/)
+- **Per-milestone history:** [`docs/design/specs/`](./design/specs/) and [`docs/design/plans/`](./design/plans/)
 - **Open issues:** GitHub issues #2 (cadence/loopability granularity), #3 (tension_curve dimension)

@@ -19,9 +19,12 @@ concurrency:
 #    - Backend ruff (lint)
 #    - Backend mypy (type-check, strict mode)
 #    - Backend pytest (against a Neo4j service container)
+#    - E2E Playwright (parallel / memory-mode lane only — no secrets, no Neo4j)
 #
-#  Deliberately not running yet (pre-existing debt; opt in when cleaned up):
-#    - E2E (Playwright)   (needs Neo4j + a built frontend; doable later)
+#  Deliberately not running here (run locally via the Makefile):
+#    - E2E Neo4j lane (`make e2e-neo4j`)   needs durable Neo4j-backed learning
+#      features + serial execution; intentionally excluded from CI so the suite
+#      stays fork-safe (no service container, no secrets required).
 #
 # The local Makefile + frontend/package.json scripts cover those for devs.
 
@@ -123,3 +126,65 @@ jobs:
 
       - name: Pytest
         run: uv run pytest -q
+
+  e2e:
+    name: E2E (Playwright, memory-mode lane)
+    runs-on: ubuntu-latest
+    # The parallel lane only. Each Playwright worker spawns its OWN backend in
+    # in-memory mode (GEMINI_MOCK=true, NEO4J_URI pointed at a dead port) plus a
+    # vite preview frontend, so this lane needs NO secrets and NO Neo4j service
+    # container — it's fork-safe. The Neo4j e2e lane (`make e2e-neo4j`) is
+    # intentionally excluded from CI; run it locally via the Makefile.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            frontend/package-lock.json
+            e2e/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # Backend deps: the per-worker backends are launched from backend/.venv.
+      - name: Sync backend deps
+        working-directory: backend
+        run: uv sync --all-extras
+
+      # Frontend: install + build, since `vite preview` (spawned per worker)
+      # serves the built dist/.
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Install e2e deps
+        working-directory: e2e
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright (parallel lane)
+        working-directory: e2e
+        run: npx playwright test
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7

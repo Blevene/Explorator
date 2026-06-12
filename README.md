@@ -8,7 +8,7 @@ A creative copilot for music producers. Generate chord progressions, realize the
 
 **Create**
 - Choose genre, key, and mode up front, then steer with an optional mood prompt (*"wistful and haunted, 8 bars"*) — translated into structured musical constraints
-- Generate candidate chord progressions across 40+ genre profiles via Gemini Pro
+- Generate candidate chord progressions across 39 genre profiles via Gemini Pro
 - Realize progressions into arrangements: voicings (open, close, drop-2, drop-3), genre-specific bass modes, groove patterns, optional melodic complement
 - Score arrangements across 12 dimensions (deterministic music theory + Gemini)
 - Mutate promising candidates: substitute, extend, transform — guided by user feedback
@@ -37,7 +37,7 @@ A creative copilot for music producers. Generate chord progressions, realize the
 
 ## The genre catalog
 
-40+ genres ship with the system. Browse them in `/genres`; click any tile to open a side drawer with the genre's harmonic vocabulary, tendencies, anti-patterns, and voicing/bass/groove preferences.
+39 genres ship with the system. Browse them in `/genres`; click any tile to open a side drawer with the genre's harmonic vocabulary, tendencies, anti-patterns, and voicing/bass/groove preferences.
 
 ![Genre library — installed genres at a glance](docs/images/04-genre-library.png)
 
@@ -53,7 +53,7 @@ Each genre is a triplet of YAML files that together drive every musical decision
 
 **See a concrete example — Ambient:** [`ambient.yaml`](./backend/src/explorator/domain/style/genres/ambient.yaml) (profile) · [`ambient_rules.yaml`](./backend/src/explorator/domain/style/rules/ambient_rules.yaml) (rules + anti-patterns) · [`ambient_grammar.yaml`](./backend/src/explorator/domain/style/grammars/ambient_grammar.yaml) (grammar). Schemas: [`schema.py`](./backend/src/explorator/domain/style/schema.py).
 
-The seed three (Dream Pop, Synthwave, Cinematic) are hand-curated. The other 37+ were produced by the **genre research agent** (M5c) — a five-step pipeline you can run yourself from the `/genres` UI:
+The seed three (Dream Pop, Synthwave, Cinematic) are hand-curated. The other 36 were produced by the **genre research agent** (M5c) — a five-step pipeline you can run yourself from the `/genres` UI:
 
 ```
 research  →  draft  →  critique  →  refine  →  validate
@@ -76,25 +76,27 @@ Approved genres land in the same three directories as the seed genres and become
 
 ## Status
 
-**M0 → M5d shipped**, plus cross-cutting token-usage instrumentation ([ADR 011](docs/decisions/011-token-usage-instrumentation.md)). M6 (multi-layer mutation) is specced and pending. See [`docs/superpowers/plans/`](./docs/superpowers/plans/) for the milestone history, or [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md#pipelines) for the current pipeline shape.
+**M0 → M5d shipped**, plus cross-cutting token-usage instrumentation ([ADR 011](docs/decisions/011-token-usage-instrumentation.md)). M6 (multi-layer mutation) is specced and pending. See [`docs/design/plans/`](./docs/design/plans/) for the milestone history, or [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md#pipelines) for the current pipeline shape.
 
 | | |
 |---|---|
 | Backend | 773 tests (unit + integration + API), all green |
 | Frontend | 135 vitest, tsc strict, `npm run build` clean |
-| E2E | 41 Playwright, all green under `GEMINI_MOCK=true` (one occasional flake on `ux-coherence:11 navigation-flow` that passes in isolation) |
+| E2E | 40 Playwright under `GEMINI_MOCK=true`; the memory-mode lane runs in CI (occasional flake on `ux-coherence:11 navigation-flow`, passes in isolation) |
 
 ## Quick start
 
 **Prerequisites:** Python 3.13+, Node.js 20+, Docker, a Gemini API key.
 
 ```bash
-git clone git@github.com:Blevene/Explorator.git
+git clone https://github.com/Blevene/Explorator.git
 cd Explorator
 
 # Configure
 cp .env.example backend/.env
-# Edit backend/.env and set GEMINI_API_KEY
+# Edit backend/.env and set GEMINI_API_KEY.
+# The default Neo4j password ('explorator_dev') is for local dev only — change
+# it (and the docker-compose value) if you ever expose Neo4j beyond localhost.
 
 # Install deps
 cd backend  && uv sync --all-extras && cd ..
@@ -221,7 +223,7 @@ explorator/
 │   ├── DESIGN.md              # Frontend design language ("studio monitor")
 │   ├── decisions/             # ADRs — load-bearing decisions
 │   ├── manual-test/           # Per-milestone manual QA checklists
-│   └── superpowers/           # Historical design specs + implementation plans
+│   └── design/                # Historical design specs + implementation plans
 ├── product_documents/archive/ # Pre-implementation product docs (time capsule)
 ├── docker-compose.yml         # Neo4j dev (7688) + test (7689) containers
 └── Makefile
@@ -250,7 +252,7 @@ explorator/
 
 ## Genre catalog reference
 
-See [§ The genre catalog](#the-genre-catalog) above for an overview. Each of the 40+ genres lives as three YAML files:
+See [§ The genre catalog](#the-genre-catalog) above for an overview. Each of the 39 genres lives as three YAML files:
 
 | Layer | Directory | Example |
 |---|---|---|
@@ -300,7 +302,7 @@ Each arrangement is scored across **12 dimensions**, aggregated into a single `w
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — current system architecture, data model, pipelines, invariants
 - [`docs/DESIGN.md`](./docs/DESIGN.md) — frontend design language (studio monitor aesthetic), CSS tokens, component patterns
 - [`docs/decisions/`](./docs/decisions/) — ADRs for the load-bearing architectural decisions
-- [`docs/superpowers/specs/`](./docs/superpowers/specs/) and [`docs/superpowers/plans/`](./docs/superpowers/plans/) — point-in-time milestone records (preserved, not maintained)
+- [`docs/design/specs/`](./docs/design/specs/) and [`docs/design/plans/`](./docs/design/plans/) — point-in-time milestone records (preserved, not maintained)
 - [`product_documents/archive/`](./product_documents/archive/) — pre-implementation product docs (time capsule)
 
 ## License

@@ -2,7 +2,9 @@
 name = "explorator"
 version = "0.1.0"
 description = "Genre-aware musical exploration engine"
-requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "Lightforge Ventures" }]
+requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.34.0",
