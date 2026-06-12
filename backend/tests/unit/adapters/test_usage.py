@@ -98,3 +98,16 @@ async def test_adapter_records_usage_within_scope() -> None:
 
     assert u.totals() == {"input": 120, "output": 30, "cached": 0, "total": 150}
     assert u.by_phase["generate"].model == "pro"
+
+
+async def test_mock_client_records_synthetic_usage() -> None:
+    from explorator.adapters.gemini import ModelTier
+    from explorator.adapters.gemini_mock import FakeGeminiClient
+    from explorator.domain.intent.parser import SoftPreferences  # noqa: F401  (registered builder)
+
+    client = FakeGeminiClient()
+    with usage.track_usage() as u:
+        with usage.set_phase("parse_intent"):
+            await client.generate_structured("p", SoftPreferences, tier=ModelTier.FLASH)
+    assert u.totals()["total"] > 0
+    assert u.by_phase["parse_intent"].calls == 1
