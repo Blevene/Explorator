@@ -1,6 +1,5 @@
 # M4a — MIDI & JSON Export Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Export arrangement candidates as MIDI files (for Ableton) and human-readable JSON sidecars, with Neo4j persistence and a frontend export modal.
 
@@ -8,7 +7,7 @@
 
 **Tech Stack:** Python (pretty_midi, FastAPI), Neo4j, React/Zustand, JSZip
 
-**Spec:** `docs/superpowers/specs/2026-04-11-m4-export-explanation-design.md` (v1.2, Sections 2.1–2.7)
+**Spec:** `docs/design/specs/2026-04-11-m4-export-explanation-design.md` (v1.2, Sections 2.1–2.7)
 
 ---
 

@@ -1,6 +1,5 @@
 # Neo4j-Optional / Graceful Degradation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Each task is test-first: write the failing test, watch it fail, implement, watch it pass, commit.
 
 **Goal:** Make Neo4j **optional**. When it is reachable, behaviour is identical to today. When it is unreachable:
 

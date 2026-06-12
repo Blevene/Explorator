@@ -1,6 +1,5 @@
 # M3a: Mutation Loop — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Enable candidates to be mutated and re-evaluated across multiple rounds with automatic stop conditions, conditional routing (harmonic vs arrangement mutations), and basic Pareto preservation.
 
@@ -8,7 +7,7 @@
 
 **Tech Stack:** Python 3.12, LangGraph, FastAPI, Neo4j, Gemini Pro, pytest, React 19, TypeScript, Zustand
 
-**Spec:** `docs/superpowers/specs/2026-04-10-m3-guided-search-design.md` — Section 3
+**Spec:** `docs/design/specs/2026-04-10-m3-guided-search-design.md` — Section 3
 
 ---
 

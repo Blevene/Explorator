@@ -98,5 +98,5 @@ first cut, whose goal is "let the operator see what a round costs."
 
 - [`docs/ARCHITECTURE.md#token-usage-instrumentation`](../ARCHITECTURE.md#token-usage-instrumentation)
 - `backend/src/explorator/adapters/usage.py` — the accumulator + scope
-- [`docs/superpowers/specs/2026-06-11-token-usage-instrumentation-design.md`](../superpowers/specs/2026-06-11-token-usage-instrumentation-design.md) — design spec
+- [`docs/design/specs/2026-06-11-token-usage-instrumentation-design.md`](../design/specs/2026-06-11-token-usage-instrumentation-design.md) — design spec
 - ADR 002 (LangGraph orchestration; pure domain) — why instrumentation lives in the glue layer, not the domain

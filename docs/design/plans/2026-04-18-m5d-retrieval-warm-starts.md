@@ -7,7 +7,6 @@
 >
 > Tasks are numbered against the original monolithic plan; each sub-milestone carves its own slice. Dependencies are linear (M5d-1 → M5d-2 → M5d-3); each can pause indefinitely without leaving the tree in a half-shipped state.
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Harvest reusable patterns (progression, voicing, bass, groove, melody) from finalist arrangements into a Neo4j-backed library, then offer those patterns as optional warm starts when the user creates a new session for the same genre.
 

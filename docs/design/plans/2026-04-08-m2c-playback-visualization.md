@@ -1,6 +1,5 @@
 # M2c Playback & Visualization Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a split-panel arrangement view with canvas piano roll, Tone.js playback with genre presets, and full transport controls so users can see and hear their realized arrangements.
 
@@ -8,7 +7,7 @@
 
 **Tech Stack:** React 19, TypeScript, Tailwind CSS v4, Zustand, Tone.js, HTML Canvas API
 
-**Spec:** `docs/superpowers/specs/2026-04-08-m2c-playback-visualization-design.md`
+**Spec:** `docs/design/specs/2026-04-08-m2c-playback-visualization-design.md`
 **Design Language:** `docs/DESIGN.md`
 
 ---

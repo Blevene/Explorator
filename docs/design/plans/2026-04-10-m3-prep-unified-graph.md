@@ -1,6 +1,5 @@
 # M3-prep: Unified Graph & State — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Merge the separate M1 and M2 LangGraph pipelines into a single unified graph with one state type, enabling M3's mutation loop to route conditionally to any point in the pipeline.
 
@@ -8,7 +7,7 @@
 
 **Tech Stack:** Python 3.12, LangGraph, FastAPI, Neo4j, pytest, mypy
 
-**Spec:** `docs/superpowers/specs/2026-04-10-m3-guided-search-design.md` — Section 2
+**Spec:** `docs/design/specs/2026-04-10-m3-guided-search-design.md` — Section 2
 
 ---
 

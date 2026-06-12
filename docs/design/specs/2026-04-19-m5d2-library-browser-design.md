@@ -21,7 +21,7 @@ M5d-1 made every completed session silently harvest ~15 `PatternLibraryEntry` ro
 - SSE toast reads `"Saved N patterns to library"` — count sourced from `HarvestReport`
 - Extract `harvest_session_finalists(session_id, repos)` module-level helper; graph node + API endpoint both call it
 
-**Deviations from the monolithic plan at `docs/superpowers/plans/2026-04-18-m5d-retrieval-warm-starts.md`:**
+**Deviations from the monolithic plan at `docs/design/plans/2026-04-18-m5d-retrieval-warm-starts.md`:**
 
 - **Tag filtering deferred.** The original M5d-2 scope listed `tags` as a filter. Tag vocabulary stability has not been observed against real data, so tags ship as display-only badges. Revisit in M5d-3 or a follow-up.
 - **WarmStartPanel moved to M5d-3** (task 31).
@@ -485,4 +485,4 @@ Splitting the commits keeps the M5d-1 refactor reviewable in isolation and reduc
 
 ## 10. Task Numbering
 
-The monolithic plan at `docs/superpowers/plans/2026-04-18-m5d-retrieval-warm-starts.md` numbered tasks 20, 21, 22, 27, 28, 29, 30, 31, 32, 34 plus one E2E for M5d-2. Task 31 (WarmStartPanel) is deferred to M5d-3. The writing-plans skill will produce the concrete implementation plan from this spec; exact task numbering is up to that plan and does not need to match the monolithic plan.
+The monolithic plan at `docs/design/plans/2026-04-18-m5d-retrieval-warm-starts.md` numbered tasks 20, 21, 22, 27, 28, 29, 30, 31, 32, 34 plus one E2E for M5d-2. Task 31 (WarmStartPanel) is deferred to M5d-3. The writing-plans skill will produce the concrete implementation plan from this spec; exact task numbering is up to that plan and does not need to match the monolithic plan.

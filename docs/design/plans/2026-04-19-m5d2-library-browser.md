@@ -1,6 +1,5 @@
 # M5d-2 Pattern Library Browser Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a pattern library browser (read/delete UI + HTTP API), harvest feedback toasts, and a manual re-save endpoint — making M5d-1's silently-harvested patterns visible and curatable.
 
@@ -8,7 +7,7 @@
 
 **Tech Stack:** Backend: Python 3.12 / FastAPI / Neo4j via `neo4j` async driver / Pydantic / pytest (run with `uv run pytest`). Frontend: React + TypeScript + Vite / Zustand / React Router v7 / Sonner / Vitest (run with `npm run test:unit`). E2E: Playwright.
 
-**Spec:** `docs/superpowers/specs/2026-04-19-m5d2-library-browser-design.md` (commits 825e4c2 + c52fdb8).
+**Spec:** `docs/design/specs/2026-04-19-m5d2-library-browser-design.md` (commits 825e4c2 + c52fdb8).
 
 ---
 
@@ -3037,7 +3036,7 @@ Frontend:
 E2E:
 - e2e/tests/pattern-library.spec.ts exercises the full round-trip.
 
-Spec: docs/superpowers/specs/2026-04-19-m5d2-library-browser-design.md
+Spec: docs/design/specs/2026-04-19-m5d2-library-browser-design.md
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 EOF

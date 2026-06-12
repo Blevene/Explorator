@@ -1,6 +1,5 @@
 # M2b Arrangement Evaluation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add deterministic arrangement evaluation, within-family ranking, multi-bass exploration, and voice-leading optimization to the realization pipeline.
 
@@ -8,7 +7,7 @@
 
 **Tech Stack:** Python 3.12, LangGraph, Pydantic v2, music21, Neo4j, FastAPI
 
-**Spec:** `docs/superpowers/specs/2026-04-07-m2b-arrangement-evaluation-design.md`
+**Spec:** `docs/design/specs/2026-04-07-m2b-arrangement-evaluation-design.md`
 
 ---
 

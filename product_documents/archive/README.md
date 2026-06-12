@@ -7,8 +7,8 @@ These are the original product documents written before any code was implemented
 - Repo root [`README.md`](../../README.md) — what the system is today, milestone status, quick start
 - [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) — current system architecture
 - [`docs/DESIGN.md`](../../docs/DESIGN.md) — frontend design language
-- [`docs/superpowers/specs/`](../../docs/superpowers/specs/) — design specs for each milestone (point-in-time, preserved)
-- [`docs/superpowers/plans/`](../../docs/superpowers/plans/) — implementation plans for each milestone
+- [`docs/design/specs/`](../../docs/design/specs/) — design specs for each milestone (point-in-time, preserved)
+- [`docs/design/plans/`](../../docs/design/plans/) — implementation plans for each milestone
 
 ## Files in this archive
 

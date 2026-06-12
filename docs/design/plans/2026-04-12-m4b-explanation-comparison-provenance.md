@@ -1,6 +1,5 @@
 # M4b — Explanation, Comparison & Provenance Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** On-demand AI explanation of arrangement candidates, side-by-side comparison view with stacked piano rolls and score overlays, live provenance capture during graph execution, and a session history timeline panel.
 
@@ -8,7 +7,7 @@
 
 **Tech Stack:** Python (FastAPI, Pydantic, LangGraph), Neo4j, React/Zustand, TypeScript
 
-**Spec:** `docs/superpowers/specs/2026-04-11-m4-export-explanation-design.md` (v1.2, Sections 3.1-3.5, 4.2-4.3)
+**Spec:** `docs/design/specs/2026-04-11-m4-export-explanation-design.md` (v1.2, Sections 3.1-3.5, 4.2-4.3)
 
 ---
 

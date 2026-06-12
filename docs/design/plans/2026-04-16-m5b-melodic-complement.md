@@ -1,6 +1,5 @@
 # M5b Melodic Complement Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add single-line melody generation to the realization pipeline — Gemini strategy + deterministic realization, two evaluation dimensions, frontend piano roll lane and playback toggle.
 
@@ -8,7 +7,7 @@
 
 **Tech Stack:** Python/Pydantic models, LangGraph nodes, Gemini Flash structured output, music21 pitch utilities, React/Tone.js frontend, Playwright E2E.
 
-**Spec:** `docs/superpowers/specs/2026-04-16-m5b-melodic-complement-design.md`
+**Spec:** `docs/design/specs/2026-04-16-m5b-melodic-complement-design.md`
 
 ---
 

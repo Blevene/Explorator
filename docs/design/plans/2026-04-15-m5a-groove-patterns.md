@@ -1,6 +1,5 @@
 # M5a — Groove Patterns + GrooveEvaluation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add genre-aware rhythmic groove patterns to the realization pipeline, driving bass note timing and enabling GrooveEvaluation scoring.
 

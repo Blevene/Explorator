@@ -1,6 +1,5 @@
 # M5c Genre Research Agent — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add an in-app agentic workflow for researching and creating new genre profiles via a LangGraph pipeline with SSE progress streaming and a React genre management UI.
 
@@ -8,7 +7,7 @@
 
 **Tech Stack:** Python 3.12, FastAPI, LangGraph, Neo4j, Pydantic, sse-starlette, Gemini Pro/Flash, React 19, Zustand, Tailwind CSS, Playwright (E2E)
 
-**Spec:** `docs/superpowers/specs/2026-04-17-m5c-genre-research-agent-design.md`
+**Spec:** `docs/design/specs/2026-04-17-m5c-genre-research-agent-design.md`
 
 ---
 

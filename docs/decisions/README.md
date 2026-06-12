@@ -45,6 +45,6 @@ If you're superseding a previous decision, set the previous one's status to `Sup
 A decision is ADR-worthy if reversing it would touch multiple subsystems, force a data migration, or invalidate a non-trivial chunk of the codebase. If it's local to one file or class, it's a code comment, not an ADR.
 
 What does NOT belong here:
-- Per-milestone designs — those live in [`docs/superpowers/specs/`](../superpowers/specs/)
+- Per-milestone designs — those live in [`docs/design/specs/`](../design/specs/)
 - Code-level patterns enforced by lint/types — those should be enforced, not documented
 - Personal preferences — those go in `~/.claude/projects/.../memory/feedback_*.md`

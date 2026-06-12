@@ -1,6 +1,5 @@
 # E2E Playwright Testing Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add 18 Playwright E2E tests covering happy path, M3 features, error handling, UX coherence, pipeline/SSE, and audio — with a FakeGeminiClient mock for speed and determinism.
 

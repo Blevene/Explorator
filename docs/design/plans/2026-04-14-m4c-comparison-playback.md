@@ -1,6 +1,5 @@
 # M4c: Comparison Playback Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add DAW-lane mute/solo audio playback to ComparisonView, enabling instant A/B/C switching between up to 3 arrangements on a shared Tone.js transport.
 
@@ -8,7 +7,7 @@
 
 **Tech Stack:** React 18, TypeScript, Zustand, Tone.js, Vitest (new), Playwright
 
-**Spec:** `docs/superpowers/specs/2026-04-14-m4c-comparison-playback-design.md`
+**Spec:** `docs/design/specs/2026-04-14-m4c-comparison-playback-design.md`
 
 ---
 
@@ -1565,7 +1564,7 @@ Expected: All tests pass.
 Check for and remove any CLAUDE.md files added by subagents in working directories:
 
 ```bash
-find <repo-root> -name "CLAUDE.md" -path "*/src/*" -newer docs/superpowers/specs/2026-04-14-m4c-comparison-playback-design.md
+find <repo-root> -name "CLAUDE.md" -path "*/src/*" -newer docs/design/specs/2026-04-14-m4c-comparison-playback-design.md
 ```
 
 Remove any that were auto-generated during this implementation.

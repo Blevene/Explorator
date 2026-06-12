@@ -1,6 +1,5 @@
 # M2a Realization Engine Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Implement voicing generation, bass line generation, and arrangement assembly so users can select M1 progressions and realize them into playable arrangements.
 
@@ -8,7 +7,7 @@
 
 **Tech Stack:** Python 3.12, LangGraph, Pydantic v2, music21, Gemini Flash, Neo4j, FastAPI, SSE
 
-**Spec:** `docs/superpowers/specs/2026-04-05-m2a-realization-engine-design.md`
+**Spec:** `docs/design/specs/2026-04-05-m2a-realization-engine-design.md`
 
 ---
 

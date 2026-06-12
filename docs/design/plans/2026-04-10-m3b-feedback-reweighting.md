@@ -1,6 +1,5 @@
 # M3b — Feedback & Reweighting Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Enable users to submit natural-language feedback on candidates, have Gemini Flash interpret it into objective weight adjustments, and re-rank candidates with the adjusted weights.
 

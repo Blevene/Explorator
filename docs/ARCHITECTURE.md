@@ -2,7 +2,7 @@
 
 **Status:** current as of 2026-04-24 (post-M5d-3, pre-M6).
 
-This document is the developer-onboarding reference for how Explorator is wired together today. For "what does the product do," see the [root README](../README.md). For per-milestone design history, see [`docs/superpowers/specs/`](./superpowers/specs/).
+This document is the developer-onboarding reference for how Explorator is wired together today. For "what does the product do," see the [root README](../README.md). For per-milestone design history, see [`docs/design/specs/`](./design/specs/).
 
 ---
 
@@ -353,5 +353,5 @@ The mock `FakeGeminiClient` returns deterministic structured responses for the m
 
 - **Concrete user flow:** root [`README.md`](../README.md) → "A typical session"
 - **Frontend UI grammar:** [`docs/DESIGN.md`](./DESIGN.md)
-- **Per-milestone history:** [`docs/superpowers/specs/`](./superpowers/specs/) and [`docs/superpowers/plans/`](./superpowers/plans/)
+- **Per-milestone history:** [`docs/design/specs/`](./design/specs/) and [`docs/design/plans/`](./design/plans/)
 - **Open issues:** GitHub issues #2 (cadence/loopability granularity), #3 (tension_curve dimension)

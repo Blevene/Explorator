@@ -1,6 +1,5 @@
 # M5d-3 Pattern Curation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add explicit, arrangement-level user curation (star/unstar) to the pattern library, surfaced on `FinalistPanel` during a session and on `PatternCard` in the library browser, with a `Curated only` filter. Every toggle writes an append-only `UserFeedbackEvent` and updates a denormalized `is_curated` flag across all facet rows for the arrangement.
 
@@ -11,7 +10,7 @@
 
 **Tech Stack:** FastAPI, Pydantic, Neo4j, React, Zustand, Vitest, Playwright, sonner.
 
-**Spec:** `docs/superpowers/specs/2026-04-20-m5d3-pattern-curation-design.md`
+**Spec:** `docs/design/specs/2026-04-20-m5d3-pattern-curation-design.md`
 
 **Branch:** `feature/m5d3-pattern-curation` (already exists; spec committed at `0bdd3fb`)
 
@@ -3231,7 +3230,7 @@ Smoke steps (manual, in browser):
 ```bash
 git status
 # If subagent CLAUDE.md files appear modified/untracked, restore them before PR.
-git checkout docs/superpowers/plans/CLAUDE.md docs/superpowers/specs/CLAUDE.md
+git checkout docs/design/plans/CLAUDE.md docs/design/specs/CLAUDE.md
 rm -f backend/src/explorator/domain/memory/CLAUDE.md
 ```
 
@@ -3251,7 +3250,7 @@ gh pr create --title "feat(m5d-3): pattern curation" --body "$(cat <<'EOF'
 - [ ] `make e2e` — both pattern-library spec tests green
 - [ ] Manual smoke: curate → filter → reload → uncurate
 
-Closes M5d-3 (spec: `docs/superpowers/specs/2026-04-20-m5d3-pattern-curation-design.md`).
+Closes M5d-3 (spec: `docs/design/specs/2026-04-20-m5d3-pattern-curation-design.md`).
 EOF
 )"
 ```

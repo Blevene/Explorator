@@ -1,6 +1,5 @@
 # M3c — Pareto Ranking & Finalists Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Upgrade rank_and_select with full Pareto front, diversity penalties, and selection roles (Safest/Best Loop/Most Experimental), then surface finalists in the frontend with role badges and a comparison view.
 

@@ -1,6 +1,5 @@
 # Token Usage Instrumentation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Capture Gemini token usage at the adapter choke point and surface per-round, per-phase, and session-cumulative token counts + estimated cost to users in the session workspace.
 

@@ -1,6 +1,5 @@
 # M0 — Foundations Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Scaffold the MusicExplorator monorepo with all foundational infrastructure: Python backend, React frontend, Neo4j persistence, Pydantic domain models, genre YAML system, and a working session CRUD flow from frontend to database.
 

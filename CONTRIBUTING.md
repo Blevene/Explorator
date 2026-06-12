@@ -28,7 +28,7 @@ Tests need a separate Neo4j on :7689 — `make test*` brings it up automatically
 
 ## Workflow conventions
 
-The project follows a deliberate **brainstorm → spec → plan → execute → review** loop, particularly for feature-sized work. Historical artifacts live in [`docs/superpowers/specs/`](./docs/superpowers/specs/) and [`docs/superpowers/plans/`](./docs/superpowers/plans/) — read a few to get a feel for the shape before writing your own.
+The project follows a deliberate **brainstorm → spec → plan → execute → review** loop, particularly for feature-sized work. Historical artifacts live in [`docs/design/specs/`](./docs/design/specs/) and [`docs/design/plans/`](./docs/design/plans/) — read a few to get a feel for the shape before writing your own.
 
 **For small fixes** (≤ a few hundred lines, no architectural change): a focused PR or direct commit to `main` with tests is fine. See e.g. commit `aa2f9ad` (test fixes) for the shape.
 
@@ -87,7 +87,7 @@ The project follows a deliberate **brainstorm → spec → plan → execute → 
 
 - Skipping tests because "this is too simple to break" — the load-bearing tests in this codebase exist because of specific incidents.
 - Bypassing pre-commit hooks (`--no-verify`) without a real reason.
-- Adding optional fields with `?:` when the field is mandatory but nullable (use `T | null` instead). See [PR #8 review](./docs/superpowers/plans/2026-04-24-m5d3-pattern-curation.md) for an example.
+- Adding optional fields with `?:` when the field is mandatory but nullable (use `T | null` instead). See [PR #8 review](./docs/design/plans/2026-04-24-m5d3-pattern-curation.md) for an example.
 - Using Tailwind color classes for the app palette ([ADR-008](./docs/decisions/008-css-custom-properties-design-tokens.md)).
 - Inline Cypher duplicated across two call-sites — extract to a module constant. See `CURATION_FANOUT_CYPHER` in `pattern_library_repo.py` for the pattern.
 - Long-running transactions with slow operations inside. Probes that take more than a few ms should run outside the tx.

@@ -76,7 +76,7 @@ Approved genres land in the same three directories as the seed genres and become
 
 ## Status
 
-**M0 → M5d shipped**, plus cross-cutting token-usage instrumentation ([ADR 011](docs/decisions/011-token-usage-instrumentation.md)). M6 (multi-layer mutation) is specced and pending. See [`docs/superpowers/plans/`](./docs/superpowers/plans/) for the milestone history, or [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md#pipelines) for the current pipeline shape.
+**M0 → M5d shipped**, plus cross-cutting token-usage instrumentation ([ADR 011](docs/decisions/011-token-usage-instrumentation.md)). M6 (multi-layer mutation) is specced and pending. See [`docs/design/plans/`](./docs/design/plans/) for the milestone history, or [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md#pipelines) for the current pipeline shape.
 
 | | |
 |---|---|
@@ -221,7 +221,7 @@ explorator/
 │   ├── DESIGN.md              # Frontend design language ("studio monitor")
 │   ├── decisions/             # ADRs — load-bearing decisions
 │   ├── manual-test/           # Per-milestone manual QA checklists
-│   └── superpowers/           # Historical design specs + implementation plans
+│   └── design/                # Historical design specs + implementation plans
 ├── product_documents/archive/ # Pre-implementation product docs (time capsule)
 ├── docker-compose.yml         # Neo4j dev (7688) + test (7689) containers
 └── Makefile
@@ -300,7 +300,7 @@ Each arrangement is scored across **12 dimensions**, aggregated into a single `w
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — current system architecture, data model, pipelines, invariants
 - [`docs/DESIGN.md`](./docs/DESIGN.md) — frontend design language (studio monitor aesthetic), CSS tokens, component patterns
 - [`docs/decisions/`](./docs/decisions/) — ADRs for the load-bearing architectural decisions
-- [`docs/superpowers/specs/`](./docs/superpowers/specs/) and [`docs/superpowers/plans/`](./docs/superpowers/plans/) — point-in-time milestone records (preserved, not maintained)
+- [`docs/design/specs/`](./docs/design/specs/) and [`docs/design/plans/`](./docs/design/plans/) — point-in-time milestone records (preserved, not maintained)
 - [`product_documents/archive/`](./product_documents/archive/) — pre-implementation product docs (time capsule)
 
 ## License

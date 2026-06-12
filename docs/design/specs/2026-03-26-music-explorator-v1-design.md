@@ -216,7 +216,7 @@ explorator/
 │   └── vite.config.ts
 ├── product_documents/                # Existing product docs
 ├── docs/
-│   └── superpowers/
+│   └── design/
 │       └── specs/
 ├── docker-compose.yml                # Neo4j + backend + frontend dev
 ├── Makefile                          # dev commands: start, test, lint, sync-genres
