@@ -9,6 +9,7 @@ import { useRealizationFlow } from '../hooks/useRealizationFlow';
 import { useMutationFlow } from '../hooks/useMutationFlow';
 import CandidateCard from '../components/CandidateCard';
 import PromptBar from '../components/PromptBar';
+import TokenUsagePanel from '../components/TokenUsagePanel';
 import ArrangementList from '../components/ArrangementList';
 import ArrangementDetailView from '../components/ArrangementDetail';
 import LineageTree from '../components/LineageTree';
@@ -236,6 +237,9 @@ export default function SessionWorkspace() {
           onMusicalModeChange={setMusicalMode}
         />
       </div>
+
+      {/* Token usage */}
+      <TokenUsagePanel />
 
       {/* Error */}
       {generation.error && (
