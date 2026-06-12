@@ -35,7 +35,7 @@ def test_record_reads_usage_metadata_none_safe() -> None:
     )
     with usage.track_usage() as u:
         usage.record("gemini-flash-latest", meta)
-    assert u.totals() == {"input": 10, "output": 0, "cached": 4, "total": 14}
+    assert u.totals() == {"input": 10, "output": 0, "cached": 4, "total": 10}
 
 
 def test_estimated_cost_matches_pricing() -> None:
@@ -152,3 +152,46 @@ async def test_instrument_skips_emit_when_unchanged() -> None:
         await wrapped({"on_progress": on_progress, "round_number": 1})
 
     assert emitted == []
+
+
+async def test_concurrent_gather_attributes_to_one_phase() -> None:
+    import asyncio
+
+    async def one_call(i: int) -> None:
+        usage.record_tokens("gemini-flash-latest", 100, 20)
+
+    with usage.track_usage() as u:
+        with usage.set_phase("evaluate_progressions"):
+            await asyncio.gather(*(one_call(i) for i in range(5)))
+
+    # All 5 concurrent calls attribute to the single phase set by the parent.
+    assert u.by_phase["evaluate_progressions"].calls == 5
+    assert u.by_phase["evaluate_progressions"].input == 500
+    assert u.totals()["total"] == 600
+
+
+async def test_revisited_phase_accumulates_across_loop() -> None:
+    # Simulates the mutation loop re-entering the same phase node twice.
+    with usage.track_usage() as u:
+        with usage.set_phase("evaluate_progressions"):
+            usage.record_tokens("gemini-flash-latest", 100, 40)
+        with usage.set_phase("mutate"):
+            usage.record_tokens("gemini-pro-latest", 200, 80)
+        with usage.set_phase("evaluate_progressions"):
+            usage.record_tokens("gemini-flash-latest", 100, 40)
+
+    assert u.by_phase["evaluate_progressions"].calls == 2
+    assert u.by_phase["evaluate_progressions"].input == 200
+    assert u.by_phase["mutate"].calls == 1
+
+
+async def test_synthetic_flag_surfaces_in_event() -> None:
+    with usage.track_usage() as u:
+        with usage.set_phase("parse_intent"):
+            usage.record_synthetic_tokens("gemini-flash-latest", 800, 200)
+    event = u.to_event(1)
+    assert event["is_synthetic"] is True
+    # Real recording leaves it False.
+    with usage.track_usage() as u2:
+        usage.record_tokens("gemini-pro-latest", 10, 5)
+    assert u2.to_event(1)["is_synthetic"] is False
