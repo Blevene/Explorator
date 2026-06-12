@@ -70,4 +70,42 @@ Rather than thread token counts through 8 node call sites + domain services
 - Org-wide / cross-session dashboards.
 
 ## Review
-(to be filled in after implementation)
+
+Implemented on branch `feat/token-usage-instrumentation` via subagent-driven TDD
+(11 tasks, each implemented + spec-reviewed + quality-reviewed). Commits
+`ce847c0`..`e11a9b2`.
+
+**What shipped**
+- `adapters/usage.py`: `contextvars`-scoped `RoundUsage` accumulator (by-model +
+  by-phase), `track_usage()`/`set_phase()`/`record()`/`record_tokens()`,
+  estimated-cost from configurable pricing. No-op outside a scope.
+- `adapters/gemini.py`: records `usage_metadata` after each `generate_content`
+  (2 lines). `gemini_mock.py`: synthetic usage so mock/e2e exercise the UI.
+- `engine/graph.py`: `_instrument(name, fn)` wraps every node → per-phase
+  attribution + live `token_usage` SSE emit (gated on cumulative growth).
+- `api/routes/rounds.py` + `genre_research.py`: open the scope around
+  `graph.ainvoke`, emit a terminal `token_usage`.
+- Frontend: `token_usage` SSE type + `TokenUsage` interface; candidate store
+  `live`/`usages` + `sessionTokenTotals`; `useGenerationFlow` consumes events;
+  `TokenUsagePanel` (round headline + per-phase breakdown + session footer)
+  rendered in `SessionWorkspace`.
+
+**Verification**
+- Backend: 697 passed / 5 skipped; ruff clean on all changed files.
+- Frontend: `tsc --noEmit` exit 0; 133 tests passed.
+- End-to-end (mock mode, memory): a real-graph round emitted 5 live
+  `token_usage` events ticking 1,000 → 10,000 tokens; final split flash 9 calls
+  / pro 1 call; by-phase parse_intent/generate(pro)/evaluate_progressions/
+  plan_voicings; cost ~$0.0097, `is_estimate: true`.
+- Browser smoke: panel renders the headline, the expandable per-phase breakdown,
+  and the session footer (screenshot `frontend/token-usage-panel.png`).
+
+**Deviations from plan (all minor, reviewed)**
+- `_last_emitted_total` marked `field(init=False)` (hygiene, from quality review).
+- Task 9 test used `getAllByText` for two assertions because, with a single
+  round, the round headline total equals the session footer total (expected).
+- `ruff format` reformatted two `add_conditional_edges` blocks in `graph.py`
+  cosmetically (leaves the file formatter-clean).
+
+**Follow-ons (out of scope, as designed):** persist per-round usage to Neo4j for
+long-term trends; per-phase UI for the genre-research flow (it emits a total).
