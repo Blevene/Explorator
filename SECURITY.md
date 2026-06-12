@@ -1,5 +1,11 @@
 # Security Policy
 
+## Supported versions
+
+There are no tagged releases yet. Security fixes land on the `main` branch, which
+is the only supported line — please report against, and update to, the latest
+`main` (a commit SHA is the most precise way to reference a version).
+
 ## Reporting a vulnerability
 
 If you discover a security issue, please email **blevene@lightforgeventures.com** instead of opening a public GitHub issue or pull request. Include a description of the issue, the affected version (commit SHA is fine), and a minimal reproduction if you have one.
