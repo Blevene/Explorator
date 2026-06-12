@@ -109,3 +109,40 @@ Implemented on branch `feat/token-usage-instrumentation` via subagent-driven TDD
 
 **Follow-ons (out of scope, as designed):** persist per-round usage to Neo4j for
 long-term trends; per-phase UI for the genre-research flow (it emits a total).
+
+## Review pass 2 — critique findings addressed
+
+A self-critique surfaced further findings; all addressed (commits
+`9fb329a`..`3ea5132`):
+
+- **Cross-session leak** — store usage now cleared on session switch
+  (`clearUsage` wired into `SessionWorkspace`'s id-keyed loader).
+- **Failed-round spend was dropped** — tokens are billed even on failure, so the
+  round route now emits the terminal `token_usage` in an inner `finally`
+  (best-effort, doesn't mask the error / swallow cancellation), and the frontend
+  commits live usage in its `finally`. Failed/partial rounds now count.
+- **Cached double-count** — `cached_content_token_count` ⊆ `prompt_token_count`,
+  so it's no longer added to `total` or priced separately (was inflating both).
+- **Silent-zero** — a real round that records zero usage now logs a warning
+  (instrumentation-broke signal), instead of failing silently to "0 tokens".
+- **Mock numbers looked real** — mock usage is flagged `is_synthetic`; the panel
+  shows a "synthetic" badge in mock mode.
+- **Genre-research dead event** — replaced the unconsumed `token_usage` channel
+  emit with a server-side spend log (measured, not dead-on-wire).
+- **Misnomer** — `RoundUsage` → `UsageAccumulator` (accumulates a whole generate
+  scope, not one round).
+- **UX** — live "· updating…" affordance while a round is in flight; session
+  footer relabeled "This session (since load)" with a "resets on reload / not
+  persisted" tooltip.
+- New regression tests: concurrent-gather attribution, mutation-loop revisit,
+  synthetic-in-event, failed-round-emits-token_usage (backend), failed-round
+  -commits-spend + clearUsage (frontend).
+
+**Deliberate, documented limitations (not bugs):**
+- **No cross-session/all-time aggregate.** "This session" is per-page-load and
+  not persisted — a deliberate scope choice. Truly answering "how much to run
+  Explorator over time" needs Neo4j persistence (offered as a follow-on).
+- **`by_phase.model` is last-writer-wins** — fine while every node is single-tier
+  (true today); would need a per-phase model set if a node ever mixes tiers.
+- **Flat per-tier pricing** — no modeling of Gemini's tiered long-context rates;
+  cost is surfaced as a labeled estimate.

@@ -123,7 +123,8 @@ _current_phase: contextvars.ContextVar[str] = contextvars.ContextVar(
 
 
 def _pricing() -> dict[str, dict[str, float]]:
-    """USD per 1M tokens, per tier. Cached priced at the input rate."""
+    """USD per 1M tokens, per tier. Cached tokens are a subset of input and are
+    not priced separately."""
     return {
         "pro": {
             "input": settings.gemini_price_pro_input,
