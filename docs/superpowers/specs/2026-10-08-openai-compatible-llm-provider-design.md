@@ -63,8 +63,10 @@ api/deps.py ── get_llm_client() ──┬── GEMINI_MOCK=true → FakeGem
 
 ### 2.2 `adapters/_structured.py` (new, shared)
 
-- `extract_json(text: str) -> str` — strips `<think>…</think>` blocks (and an
-  unterminated leading `<think>`), unwraps a markdown fence anywhere in the
+- `strip_reasoning(text: str) -> str` — removes `<think>…</think>` blocks and,
+  for chat templates that pre-fill `<think>`, everything up to a bare closing
+  `</think>`. Also applied to `OpenAICompatClient.generate_text` output.
+- `extract_json(text: str) -> str` — `strip_reasoning`, then unwraps a markdown fence anywhere in the
   text, then slices from the first `{`/`[` to the matching last `}`/`]`.
   Returns the input unchanged when no JSON delimiters are found (so
   `json.loads` raises a normal error).
@@ -106,7 +108,9 @@ max_retries, max_concurrency, http_client=None)`
   2. `json_object`: `response_format={"type":"json_object"}` + schema appended to the system prompt
   3. `prompt`: no `response_format`; schema + "respond with only JSON" in the system prompt
   - A `BadRequestError` or `UnprocessableEntityError` (400/422) on a mode
-    downgrades to the next mode and retries immediately.
+    downgrades to the next mode and retries immediately. The downgraded mode
+    becomes the instance default only after a request in it **succeeds**, so a
+    400 unrelated to `response_format` (e.g. over-long prompt) never sticks.
   - A **parse or validation failure** (server ignored the schema) triggers one
     retry at the same mode; a second failure raises.
 - Usage: `response.usage.prompt_tokens`, `completion_tokens`,
