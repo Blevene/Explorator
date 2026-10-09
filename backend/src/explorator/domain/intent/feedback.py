@@ -5,7 +5,7 @@ import logging
 
 from pydantic import BaseModel, Field
 
-from explorator.adapters.gemini import GeminiClient, ModelTier
+from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.prompts.feedback import feedback_interpretation_prompt
 
 logger = logging.getLogger(__name__)
@@ -66,7 +66,7 @@ def apply_weight_deltas(
 class FeedbackInterpreter:
     """Interprets user feedback text into weight adjustments using Gemini Flash."""
 
-    def __init__(self, gemini: GeminiClient) -> None:
+    def __init__(self, gemini: LLMClient) -> None:
         self.gemini = gemini
 
     async def interpret(

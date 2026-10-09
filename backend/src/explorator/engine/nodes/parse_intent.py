@@ -2,12 +2,12 @@
 
 from typing import Any
 
-from explorator.adapters.gemini import GeminiClient
+from explorator.adapters.llm import LLMClient
 from explorator.domain.intent.parser import IntentParser
 from explorator.engine.state import ExplorationState
 
 
-async def parse_intent(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, Any]:
+async def parse_intent(state: ExplorationState, *, gemini: LLMClient) -> dict[str, Any]:
     """Extract structured creative brief from user prompt."""
     callback = state.get("on_progress")
     if callback:

@@ -4,7 +4,7 @@ import asyncio
 import logging
 from typing import Any
 
-from explorator.adapters.gemini import GeminiClient
+from explorator.adapters.llm import LLMClient
 from explorator.domain.evaluation.theory import TheoryEvaluator
 from explorator.engine.state import ExplorationState
 from explorator.models.harmony import ProgressionCandidate
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 async def evaluate_progressions(
-    state: ExplorationState, *, gemini: GeminiClient
+    state: ExplorationState, *, gemini: LLMClient
 ) -> dict[str, Any]:
     """Score all progression candidates on theory dimensions.
 

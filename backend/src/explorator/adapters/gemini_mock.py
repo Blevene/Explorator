@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 from pydantic import BaseModel
 
 from explorator.adapters import usage
-from explorator.adapters.gemini import ModelTier
+from explorator.adapters.llm import ModelTier
 
 logger = logging.getLogger(__name__)
 

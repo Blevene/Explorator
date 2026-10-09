@@ -4,7 +4,7 @@ import asyncio
 import logging
 from typing import Any
 
-from explorator.adapters.gemini import GeminiClient, ModelTier
+from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.domain.realization.melody import MelodyGenerator
 from explorator.engine.state import ExplorationState
 from explorator.models.harmony import ProgressionCandidate
@@ -102,7 +102,7 @@ def _groove_summary(groove_patterns_raw: list[dict[str, Any]]) -> str:
     return "rhythmic groove pattern"
 
 
-async def generate_melody(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, Any]:
+async def generate_melody(state: ExplorationState, *, gemini: LLMClient) -> dict[str, Any]:
     """Generate melodic complements via Gemini strategy + deterministic realization."""
     callback = state.get("on_progress")
     if callback:

@@ -2,13 +2,13 @@
 
 from typing import Any
 
-from explorator.adapters.gemini import GeminiClient
+from explorator.adapters.llm import LLMClient
 from explorator.domain.harmony.generator import HarmonyGenerator
 from explorator.engine.state import ExplorationState
 from explorator.utils import parse_json_or_dict, utc_now
 
 
-async def generate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, Any]:
+async def generate(state: ExplorationState, *, gemini: LLMClient) -> dict[str, Any]:
     """Generate N progression candidates."""
     callback = state.get("on_progress")
     if callback:

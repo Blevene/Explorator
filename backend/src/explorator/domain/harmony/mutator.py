@@ -4,7 +4,7 @@ import logging
 
 from pydantic import BaseModel, Field
 
-from explorator.adapters.gemini import GeminiClient, ModelTier
+from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.prompts.mutation import mutation_prompt
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class MutationResponse(BaseModel):
 class HarmonyMutator:
     """Mutates chord progressions using Gemini Pro with constrained vocabulary."""
 
-    def __init__(self, gemini: GeminiClient) -> None:
+    def __init__(self, gemini: LLMClient) -> None:
         self.gemini = gemini
 
     async def mutate_harmonic(

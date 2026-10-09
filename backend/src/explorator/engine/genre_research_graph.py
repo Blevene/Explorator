@@ -9,7 +9,7 @@ from typing import Any, TypedDict
 from langgraph.graph import END, StateGraph
 from neo4j import AsyncDriver
 
-from explorator.adapters.gemini import GeminiClient
+from explorator.adapters.llm import LLMClient
 from explorator.engine.nodes.genre_research.critique import critique_draft
 from explorator.engine.nodes.genre_research.draft import draft_yamls
 from explorator.engine.nodes.genre_research.output import output_draft
@@ -51,7 +51,7 @@ def route_after_validate(state: dict[str, Any]) -> str:
     return "output"
 
 
-def build_genre_research_graph(gemini: GeminiClient, driver: AsyncDriver | None) -> Any:
+def build_genre_research_graph(gemini: LLMClient, driver: AsyncDriver | None) -> Any:
     """Build and compile the genre research LangGraph pipeline."""
     graph = StateGraph(GenreResearchState)
 

@@ -1,7 +1,6 @@
 """Gemini API client with Pro/Flash model routing."""
 
 import logging
-from enum import StrEnum
 from typing import TypeVar
 
 from google import genai
@@ -10,17 +9,13 @@ from pydantic import BaseModel
 
 from explorator.adapters import usage
 from explorator.adapters._structured import parse_structured
+from explorator.adapters.llm import ModelTier  # re-exported; existing imports keep working
+
+__all__ = ["GeminiClient", "ModelTier"]
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
-
-
-class ModelTier(StrEnum):
-    """Gemini model tier selection."""
-
-    PRO = "pro"
-    FLASH = "flash"
 
 
 class GeminiClient:

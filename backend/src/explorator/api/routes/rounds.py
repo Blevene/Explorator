@@ -10,7 +10,7 @@ from neo4j import AsyncDriver
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
-from explorator.adapters.gemini import GeminiClient
+from explorator.adapters.llm import LLMClient
 from explorator.adapters.usage import track_usage
 from explorator.api.deps import get_gemini_client, get_neo4j_driver
 from explorator.api.sse import SSEChannel, cancel_on_disconnect
@@ -51,7 +51,7 @@ class RoundResponse(BaseModel):
 async def trigger_round(
     session_id: str,
     request: TriggerRoundRequest,
-    gemini: GeminiClient = Depends(get_gemini_client),  # noqa: B008
+    gemini: LLMClient = Depends(get_gemini_client),  # noqa: B008
     driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> EventSourceResponse:
     """Trigger a generation round and stream progress via SSE."""

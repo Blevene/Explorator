@@ -3,7 +3,7 @@
 from pydantic import BaseModel, Field
 from ulid import ULID
 
-from explorator.adapters.gemini import GeminiClient, ModelTier
+from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.adapters.music21_adapter import analyze_roman_numerals
 from explorator.models.harmony import (
     ChordEvent,
@@ -31,7 +31,7 @@ class GeneratedProgressionSet(BaseModel):
 class HarmonyGenerator:
     """Generates chord progressions using Gemini Pro."""
 
-    def __init__(self, gemini: GeminiClient) -> None:
+    def __init__(self, gemini: LLMClient) -> None:
         self.gemini = gemini
 
     async def generate(

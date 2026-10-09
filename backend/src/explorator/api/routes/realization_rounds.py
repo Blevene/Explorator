@@ -9,7 +9,7 @@ from neo4j import AsyncDriver
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
-from explorator.adapters.gemini import GeminiClient
+from explorator.adapters.llm import LLMClient
 from explorator.api.deps import get_gemini_client, get_neo4j_driver
 from explorator.api.sse import SSEChannel, cancel_on_disconnect
 from explorator.engine.graph import build_realization_subgraph
@@ -39,7 +39,7 @@ class TriggerRealizationRequest(BaseModel):
 async def trigger_realization(
     session_id: str,
     request: TriggerRealizationRequest,
-    gemini: GeminiClient = Depends(get_gemini_client),  # noqa: B008
+    gemini: LLMClient = Depends(get_gemini_client),  # noqa: B008
     driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> EventSourceResponse:
     """Trigger a realization round and stream progress via SSE."""
