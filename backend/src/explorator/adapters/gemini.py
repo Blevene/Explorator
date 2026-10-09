@@ -37,7 +37,10 @@ class GeminiClient:
         self.pro_model = pro_model
         self.flash_model = flash_model
         self.timeout_seconds = timeout_seconds
-        self._client = genai.Client(api_key=api_key)
+        self._client = genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(timeout=timeout_seconds * 1000),
+        )
 
     def get_model_name(self, tier: ModelTier) -> str:
         """Get the model name for a given tier."""
