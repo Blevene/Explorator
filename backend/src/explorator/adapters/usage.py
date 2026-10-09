@@ -127,12 +127,12 @@ def _pricing() -> dict[str, dict[str, float]]:
     not priced separately."""
     return {
         "pro": {
-            "input": settings.gemini_price_pro_input,
-            "output": settings.gemini_price_pro_output,
+            "input": settings.llm_price_pro_input or 0.0,
+            "output": settings.llm_price_pro_output or 0.0,
         },
         "flash": {
-            "input": settings.gemini_price_flash_input,
-            "output": settings.gemini_price_flash_output,
+            "input": settings.llm_price_flash_input or 0.0,
+            "output": settings.llm_price_flash_output or 0.0,
         },
     }
 

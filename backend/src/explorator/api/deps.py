@@ -80,10 +80,10 @@ def get_gemini_client() -> GeminiClient:
         from explorator.adapters.gemini_mock import FakeGeminiClient
         return FakeGeminiClient()  # type: ignore[return-value]
     return GeminiClient(
-        api_key=settings.gemini_api_key,
-        pro_model=settings.gemini_pro_model,
-        flash_model=settings.gemini_flash_model,
-        timeout_seconds=settings.gemini_timeout_seconds,
+        api_key=settings.llm_api_key,
+        pro_model=settings.llm_pro_model,
+        flash_model=settings.llm_flash_model,
+        timeout_seconds=settings.llm_timeout_seconds,
     )
 
 
