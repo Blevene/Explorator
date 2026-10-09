@@ -4,6 +4,7 @@ import json
 import logging
 from typing import Any
 
+from explorator.adapters._structured import extract_json
 from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.graph.genre_research_repo import GenreResearchRepository
 from explorator.models.genre_research import CritiqueEntry, GenreCritiqueResponse
@@ -43,19 +44,13 @@ async def critique_draft(
         "Assess the genre data objectively without bias. Return valid JSON."
     )
 
-    # Use generate_text + manual parsing to avoid Gemini additionalProperties error
+    # generate_text + manual parsing: nested schemas trip Gemini's "additionalProperties" check.
     raw_text = await gemini.generate_text(
         prompt=user_prompt,
         tier=ModelTier.FLASH,
         system_prompt=system_prompt,
     )
-    text = raw_text.strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
-    if text.endswith("```"):
-        text = text[: text.rfind("```")]
-    text = text.strip()
-    parsed = json.loads(text)
+    parsed = json.loads(extract_json(raw_text))
     critique = GenreCritiqueResponse.model_validate(parsed)
 
     if callback:

@@ -6,6 +6,7 @@ from typing import Any
 
 from explorator.adapters import usage
 from explorator.adapters.llm import LLMClient, ModelTier
+from explorator.config import settings
 from explorator.domain.realization.melody import MelodyGenerator
 from explorator.engine.state import ExplorationState
 from explorator.models.harmony import ProgressionCandidate
@@ -220,7 +221,7 @@ async def generate_melody(state: ExplorationState, *, gemini: LLMClient) -> dict
             motion_preference=mel_prefs.motion_preference,
         )
         complement.arrangement_candidate_id = ""  # will be linked in assemble
-        complement.source_strategy = f"gemini_flash_{genre}"
+        complement.source_strategy = f"{settings.llm_provider}_flash_{genre}"
 
         return [complement.model_dump(mode="json")]
 
