@@ -78,6 +78,13 @@ class Settings(BaseSettings):
 
     _legacy_names_used: list[str] = PrivateAttr(default_factory=list)
 
+    _ignored_legacy_names: list[str] = PrivateAttr(default_factory=list)
+
+    @property
+    def ignored_legacy_names(self) -> list[str]:
+        """GEMINI_* names that were set but ignored because the provider isn't gemini."""
+        return list(self._ignored_legacy_names)
+
     @property
     def legacy_names_used(self) -> list[str]:
         """Deprecated GEMINI_* env names that supplied a value."""
@@ -103,6 +110,15 @@ class Settings(BaseSettings):
             setattr(self, new, old_value)
             legacy.append(old.upper())
         self._legacy_names_used = legacy
+        self._ignored_legacy_names = (
+            []
+            if self.llm_provider == "gemini"
+            else [
+                f"gemini_{s}".upper()
+                for s in _LEGACY_SUFFIXES
+                if getattr(self, f"gemini_{s}") is not None
+            ]
+        )
 
         if self.llm_provider == "gemini":
             for name, default in _GEMINI_DEFAULTS.items():

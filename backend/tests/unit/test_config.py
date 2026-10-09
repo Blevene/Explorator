@@ -106,3 +106,13 @@ def test_explicit_zero_price_beats_legacy(monkeypatch: pytest.MonkeyPatch) -> No
     s = _settings()
     assert s.llm_price_pro_input == 0.0
     assert "GEMINI_PRICE_PRO_INPUT" not in s.legacy_names_used
+
+
+def test_ignored_legacy_names_reported_for_non_gemini_provider(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GEMINI_API_KEY", "secret")
+    s = _settings(llm_provider="openai", llm_pro_model="a", llm_flash_model="b")
+    assert s.ignored_legacy_names == ["GEMINI_API_KEY"]
+    assert s.legacy_names_used == []
+    assert s.llm_api_key == ""

@@ -33,6 +33,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.warning(
             "%s is deprecated — rename it to LLM_%s", name, name.removeprefix("GEMINI_")
         )
+    for name in settings.ignored_legacy_names:
+        logger.warning(
+            "%s is ignored because LLM_PROVIDER=%s — set the LLM_* equivalent instead",
+            name, settings.llm_provider,
+        )
     driver = await probe_driver()
     if driver is not None:
         from explorator.domain.style.service import StyleService
