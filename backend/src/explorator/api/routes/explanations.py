@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from ulid import ULID
 
 from explorator.adapters.llm import LLMClient, ModelTier
-from explorator.api.deps import get_gemini_client, get_neo4j_driver
+from explorator.api.deps import get_llm_client, get_neo4j_driver
 from explorator.models.export import CandidateExplanation
 from explorator.persistence.factory import (
     make_arrangement_candidate_repo,
@@ -63,7 +63,7 @@ async def get_explanation(
 async def generate_or_get_explanation(
     candidate_id: str,
     driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
-    gemini: LLMClient = Depends(get_gemini_client),  # noqa: B008
+    gemini: LLMClient = Depends(get_llm_client),  # noqa: B008
 ) -> ExplanationResponse:
     """Generate or return cached explanation for a candidate.
 

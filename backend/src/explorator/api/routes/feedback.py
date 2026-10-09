@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from ulid import ULID
 
 from explorator.adapters.llm import LLMClient
-from explorator.api.deps import get_gemini_client, get_neo4j_driver
+from explorator.api.deps import get_llm_client, get_neo4j_driver
 from explorator.domain.evaluation.ranking import CANONICAL_DEFAULT_WEIGHTS
 from explorator.domain.intent.feedback import FeedbackInterpreter, apply_weight_deltas
 from explorator.models.evaluation import ObjectiveWeights
@@ -44,7 +44,7 @@ class FeedbackResponse(BaseModel):
 async def submit_feedback(
     session_id: str,
     request: SubmitFeedbackRequest,
-    gemini: LLMClient = Depends(get_gemini_client),  # noqa: B008
+    gemini: LLMClient = Depends(get_llm_client),  # noqa: B008
     driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> FeedbackResponse:
     """Submit user feedback on a candidate. Interprets via Gemini Flash and reweights.

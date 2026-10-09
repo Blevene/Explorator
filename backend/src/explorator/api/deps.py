@@ -13,6 +13,7 @@ from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from explorator.adapters.gemini import GeminiClient
+from explorator.adapters.llm import LLMClient  # noqa: TC001  # FastAPI resolves Depends annotations
 from explorator.config import settings
 from explorator.graph.connection import get_optional_driver
 from explorator.persistence.factory import (
@@ -74,17 +75,37 @@ async def get_genre_research_repo() -> GenreResearchRepository | NullGenreResear
 
 
 @lru_cache
-def get_gemini_client() -> GeminiClient:
-    """Get Gemini client singleton. Returns FakeGeminiClient when GEMINI_MOCK=true."""
+def get_llm_client() -> LLMClient:
+    """LLM client singleton for the configured provider.
+
+    Returns FakeGeminiClient when GEMINI_MOCK=true (e2e / memory-mode lanes).
+    """
     if os.environ.get("GEMINI_MOCK", "").lower() == "true":
         from explorator.adapters.gemini_mock import FakeGeminiClient
-        return FakeGeminiClient()  # type: ignore[return-value]
+        return FakeGeminiClient()
+    if settings.llm_provider == "openai":
+        from explorator.adapters.openai_compat import OpenAICompatClient
+        return OpenAICompatClient(
+            base_url=settings.llm_base_url,
+            api_key=settings.llm_api_key,
+            pro_model=settings.llm_pro_model,
+            flash_model=settings.llm_flash_model,
+            timeout_seconds=settings.llm_timeout_seconds,
+            max_retries=settings.llm_max_retries,
+            max_concurrency=settings.llm_max_concurrency,
+            context_tokens=settings.llm_context_tokens,
+        )
     return GeminiClient(
         api_key=settings.llm_api_key,
         pro_model=settings.llm_pro_model,
         flash_model=settings.llm_flash_model,
         timeout_seconds=settings.llm_timeout_seconds,
     )
+
+
+# Legacy name — the same function object, so `get_gemini_client.cache_clear()`
+# in tests and FastAPI `Depends` identity keep working.
+get_gemini_client = get_llm_client
 
 
 async def get_pattern_library_repo() -> PatternLibraryRepo | NullPatternLibraryRepo:

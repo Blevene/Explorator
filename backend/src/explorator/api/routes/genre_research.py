@@ -14,7 +14,7 @@ from ulid import ULID
 
 from explorator.adapters.llm import LLMClient
 from explorator.adapters.usage import track_usage
-from explorator.api.deps import get_gemini_client, get_genre_research_repo, get_neo4j_driver
+from explorator.api.deps import get_genre_research_repo, get_llm_client, get_neo4j_driver
 from explorator.api.sse import SSEChannel
 from explorator.domain.style.loader import discover_genres
 from explorator.domain.style.service import STYLE_DIR
@@ -63,7 +63,7 @@ class RejectRequest(BaseModel):
 @router.post("/genres/research")
 async def start_research(
     request: StartResearchRequest,
-    gemini: LLMClient = Depends(get_gemini_client),  # noqa: B008
+    gemini: LLMClient = Depends(get_llm_client),  # noqa: B008
     repo: GenreResearchRepository = Depends(get_genre_research_repo),  # noqa: B008
     driver: Any = Depends(get_neo4j_driver),  # noqa: B008
 ) -> StartResearchResponse:

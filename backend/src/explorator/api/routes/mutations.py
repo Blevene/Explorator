@@ -11,7 +11,7 @@ from sse_starlette.sse import EventSourceResponse
 from ulid import ULID
 
 from explorator.adapters.llm import LLMClient
-from explorator.api.deps import get_gemini_client, get_neo4j_driver
+from explorator.api.deps import get_llm_client, get_neo4j_driver
 from explorator.api.sse import SSEChannel, cancel_on_disconnect
 from explorator.domain.harmony.mutator import HarmonyMutator
 from explorator.engine.graph import build_realization_subgraph
@@ -45,7 +45,7 @@ class TriggerMutationRequest(BaseModel):
 async def trigger_mutation(
     session_id: str,
     request: TriggerMutationRequest,
-    gemini: LLMClient = Depends(get_gemini_client),  # noqa: B008
+    gemini: LLMClient = Depends(get_llm_client),  # noqa: B008
     driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> EventSourceResponse:
     """Trigger user-initiated mutations on specific candidates.
