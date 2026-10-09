@@ -4,6 +4,7 @@ import asyncio
 import logging
 from typing import Any
 
+from explorator.adapters import usage
 from explorator.adapters.llm import LLMClient
 from explorator.domain.evaluation.theory import TheoryEvaluator
 from explorator.engine.state import ExplorationState
@@ -52,6 +53,7 @@ async def evaluate_progressions(
                 result,
                 exc_info=result,
             )
+            usage.record_fallback("evaluate_progressions")
             failed += 1
             continue
         theory_eval, scorecard = result

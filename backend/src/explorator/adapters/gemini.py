@@ -64,7 +64,7 @@ class GeminiClient:
             contents=contents,
             config=config,
         )
-        usage.record(model_name, response.usage_metadata)
+        usage.record(model_name, response.usage_metadata, tier=tier.value)
 
         return parse_structured(
             response.text, response_model, provider="Gemini", model_name=model_name
@@ -87,7 +87,7 @@ class GeminiClient:
             contents=prompt,
             config=config,
         )
-        usage.record(model_name, response.usage_metadata)
+        usage.record(model_name, response.usage_metadata, tier=tier.value)
 
         if response.text is None:
             msg = f"Gemini returned empty response for model={model_name}"

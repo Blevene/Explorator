@@ -4,6 +4,7 @@ import asyncio
 import logging
 from typing import Any
 
+from explorator.adapters import usage
 from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.domain.realization.melody import MelodyGenerator
 from explorator.engine.state import ExplorationState
@@ -183,6 +184,7 @@ async def generate_melody(state: ExplorationState, *, gemini: LLMClient) -> dict
                 system_prompt=system,
             )
         except Exception:
+            usage.record_fallback("generate_melody")
             logger.warning(
                 "Melody strategy LLM call failed for candidate %s — using default",
                 candidate.id,

@@ -2,6 +2,8 @@
 
 from types import SimpleNamespace
 
+import pytest
+
 from explorator.adapters import usage
 
 
@@ -95,6 +97,7 @@ async def test_adapter_records_usage_within_scope() -> None:
 
     assert u.totals() == {"input": 120, "output": 30, "cached": 0, "total": 150}
     assert u.by_phase["generate"].model == "pro"
+    assert set(u.by_model) == {"pro"}
 
 
 async def test_mock_client_records_synthetic_usage() -> None:
@@ -189,3 +192,47 @@ async def test_synthetic_flag_surfaces_in_event() -> None:
     with usage.track_usage() as u2:
         usage.record_tokens("gemini-pro-latest", 10, 5)
     assert u2.to_event(1)["is_synthetic"] is False
+
+
+def test_explicit_tier_overrides_name_heuristic() -> None:
+    # "qwen3:8b" has no "flash" in it — the heuristic would call it pro.
+    with usage.track_usage() as u, usage.set_phase("plan_voicings"):
+        usage.record_tokens("qwen3:8b", 100, 10, tier="flash")
+    assert set(u.by_model) == {"flash"}
+    assert u.by_phase["plan_voicings"].model == "flash"
+
+
+def test_record_fallback_counts_and_is_noop_outside_scope() -> None:
+    usage.record_fallback("plan_voicings")  # no scope → no error
+    with usage.track_usage() as u:
+        usage.record_fallback("plan_voicings")
+        usage.record_fallback("plan_voicings")
+        usage.record_fallback("generate_melody")
+    assert u.fallbacks == {"plan_voicings": 2, "generate_melody": 1}
+    assert u.to_event(1)["fallbacks"] == {"plan_voicings": 2, "generate_melody": 1}
+
+
+def test_to_event_reports_priced_for_gemini_defaults() -> None:
+    with usage.track_usage() as u:
+        usage.record_tokens("gemini-pro-latest", 1, 1)
+    assert u.to_event(1)["is_priced"] is True
+    assert u.to_event(1)["fallbacks"] == {}
+
+
+def test_unpriced_provider_reports_zero_cost_and_not_priced(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from explorator.config import settings
+
+    for name in (
+        "llm_price_pro_input",
+        "llm_price_pro_output",
+        "llm_price_flash_input",
+        "llm_price_flash_output",
+    ):
+        monkeypatch.setattr(settings, name, None)
+    with usage.track_usage() as u:
+        usage.record_tokens("qwen3:32b", 1_000_000, 1_000_000, tier="pro")
+    event = u.to_event(1)
+    assert event["is_priced"] is False
+    assert event["estimated_cost_usd"] == 0

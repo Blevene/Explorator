@@ -6,6 +6,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from explorator.adapters import usage
 from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.domain.realization.voicing import VoicingGenerator
 from explorator.engine.state import ExplorationState
@@ -155,6 +156,7 @@ async def plan_voicings(state: ExplorationState, *, gemini: LLMClient) -> dict[s
                 system_prompt=system,
             )
         except Exception:
+            usage.record_fallback("plan_voicings")
             logger.warning(
                 "Voicing strategy LLM call failed for candidate %s — using default",
                 candidate.id,
