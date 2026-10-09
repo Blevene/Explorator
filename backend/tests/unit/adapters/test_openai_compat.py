@@ -257,3 +257,22 @@ async def test_no_context_warning_when_unset(caplog: pytest.LogCaptureFixture) -
     with caplog.at_level(logging.WARNING, logger="explorator.adapters.openai_compat"):
         await client.generate_text("p")
     assert not [r for r in caplog.records if "context" in r.getMessage()]
+
+
+async def test_real_openai_uses_env_key_when_none_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    seen: dict[str, str] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["auth"] = request.headers["authorization"]
+        return httpx.Response(200, json=_completion("hi"))
+
+    http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    client = OpenAICompatClient(
+        base_url="", api_key="", pro_model="p", flash_model="f",
+        max_retries=0, http_client=http,
+    )
+    await client.generate_text("x")
+    assert seen["auth"] == "Bearer sk-test"

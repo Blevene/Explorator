@@ -56,7 +56,9 @@ class OpenAICompatClient:
         self.context_tokens = context_tokens
         self._client = openai.AsyncOpenAI(
             base_url=base_url or None,
-            api_key=api_key or "not-needed",  # local servers ignore it; the SDK requires one
+            # Real OpenAI: None lets the SDK read OPENAI_API_KEY. Custom servers
+            # usually ignore the key, but the SDK requires one.
+            api_key=api_key or (None if not base_url else "not-needed"),
             timeout=timeout_seconds,
             max_retries=max_retries,
             # openai>=3 types this as httpx2 but still accepts legacy httpx clients at runtime
