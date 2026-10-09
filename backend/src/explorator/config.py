@@ -86,13 +86,19 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _resolve_llm(self) -> Self:
         legacy: list[str] = []
-        for suffix in _LEGACY_SUFFIXES:
+        # GEMINI_* aliases are Gemini-only: under any other provider they must
+        # not leak (e.g. a Gemini key sent as a bearer token to a third party).
+        for suffix in _LEGACY_SUFFIXES if self.llm_provider == "gemini" else ():
             new, old = f"llm_{suffix}", f"gemini_{suffix}"
             old_value = getattr(self, old)
-            if old_value is None or getattr(self, new) not in ("", 0, None):
-                continue
-            # GEMINI_* model names never apply to a non-Gemini provider.
-            if self.llm_provider != "gemini" and suffix.endswith("_model"):
+            current = getattr(self, new)
+            # Prices: an explicit 0 is a real value; only None means unset.
+            unset = (
+                current is None
+                if suffix.startswith("price_")
+                else current in ("", 0, None)
+            )
+            if old_value is None or not unset:
                 continue
             setattr(self, new, old_value)
             legacy.append(old.upper())

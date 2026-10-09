@@ -86,3 +86,23 @@ def test_openai_ignores_gemini_model_defaults(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setenv("LLM_FLASH_MODEL", "qwen3:8b")
     with pytest.raises(ValidationError, match="LLM_PRO_MODEL"):
         _settings()
+
+
+def test_openai_ignores_all_legacy_gemini_values(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "openai")
+    monkeypatch.setenv("LLM_PRO_MODEL", "qwen3:32b")
+    monkeypatch.setenv("LLM_FLASH_MODEL", "qwen3:8b")
+    monkeypatch.setenv("GEMINI_API_KEY", "gemini-secret")
+    monkeypatch.setenv("GEMINI_PRICE_PRO_INPUT", "1.25")
+    s = _settings()
+    assert s.llm_api_key == ""
+    assert s.llm_price_pro_input is None
+    assert s.legacy_names_used == []
+
+
+def test_explicit_zero_price_beats_legacy(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_PRICE_PRO_INPUT", "0")
+    monkeypatch.setenv("GEMINI_PRICE_PRO_INPUT", "1.25")
+    s = _settings()
+    assert s.llm_price_pro_input == 0.0
+    assert "GEMINI_PRICE_PRO_INPUT" not in s.legacy_names_used
