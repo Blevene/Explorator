@@ -8,7 +8,7 @@ from explorator.adapters.gemini import GeminiClient
 from explorator.adapters.gemini_mock import FakeGeminiClient
 from explorator.adapters.openai_compat import OpenAICompatClient
 from explorator.api.deps import get_gemini_client, get_llm_client
-from explorator.config import settings
+from explorator.config import Settings, settings
 
 
 @pytest.fixture(autouse=True)
@@ -46,3 +46,25 @@ def test_openai_provider(monkeypatch: pytest.MonkeyPatch) -> None:
     assert isinstance(client, OpenAICompatClient)
     assert (client.pro_model, client.flash_model) == ("qwen3:32b", "qwen3:8b")
     assert str(client._client.base_url).startswith("http://localhost:11434/v1")
+    assert client._semaphore._value == 3
+
+
+def test_default_gemini_timeout_reaches_genai_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    import os
+
+    for key in list(os.environ):
+        if key.startswith(("LLM_", "GEMINI_")) and key != "GEMINI_MOCK":
+            monkeypatch.delenv(key)
+    default = Settings(_env_file=None)  # type: ignore[call-arg]
+    for name in ("llm_provider", "llm_api_key", "llm_pro_model", "llm_flash_model",
+                 "llm_timeout_seconds"):
+        monkeypatch.setattr(settings, name, getattr(default, name))
+    captured: dict[str, object] = {}
+
+    class _FakeGenaiClient:
+        def __init__(self, **kwargs: object) -> None:
+            captured.update(kwargs)
+
+    monkeypatch.setattr("explorator.adapters.gemini.genai.Client", _FakeGenaiClient)
+    assert isinstance(get_llm_client(), GeminiClient)
+    assert captured["http_options"].timeout == 120_000  # type: ignore[attr-defined]
