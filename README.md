@@ -8,9 +8,9 @@ A creative copilot for music producers. Generate chord progressions, realize the
 
 **Create**
 - Choose genre, key, and mode up front, then steer with an optional mood prompt (*"wistful and haunted, 8 bars"*) — translated into structured musical constraints
-- Generate candidate chord progressions across 39 genre profiles via Gemini Pro
+- Generate candidate chord progressions across 39 genre profiles via an LLM (pro tier)
 - Realize progressions into arrangements: voicings (open, close, drop-2, drop-3), genre-specific bass modes, groove patterns, optional melodic complement
-- Score arrangements across 12 dimensions (deterministic music theory + Gemini)
+- Score arrangements across 12 dimensions (deterministic music theory + LLM)
 - Mutate promising candidates: substitute, extend, transform — guided by user feedback
 
 ![Start a session — pick genre, key, and mode, then add an optional mood prompt](docs/images/00-dashboard.png)
@@ -21,7 +21,7 @@ A creative copilot for music producers. Generate chord progressions, realize the
 - Multi-round exploration with per-round finalists (safest / best-loop / most-experimental)
 - Plain-text feedback reweights the scorer across rounds
 - Pareto ranking surfaces distinct trade-offs rather than a single "winner"
-- See the cost: a live token-usage panel shows per-round and per-phase Gemini token counts with an estimated dollar cost, ticking up as the pipeline runs
+- See the cost: a live token-usage panel shows per-round and per-phase LLM token counts with an estimated dollar cost (or "not priced" when no rates are configured), ticking up as the pipeline runs
 
 **Play & compare**
 - Piano roll with amber voicing, blue bass, emerald melody, groove-accent overlay
@@ -31,7 +31,7 @@ A creative copilot for music producers. Generate chord progressions, realize the
 ![DAW-style comparison view — two arrangements side by side with score breakdown](docs/images/03-comparison-view.png)
 
 **Export & curate**
-- MIDI + JSON export of any arrangement, with Gemini-generated explanation and full provenance trace
+- MIDI + JSON export of any arrangement, with LLM-generated explanation and full provenance trace
 - Pattern library: every finalist auto-harvests its progression, voicing, bass, groove, and melody patterns
 - Star your favourites; filter `/patterns` to *Curated only*
 
@@ -64,9 +64,9 @@ research  →  draft  →  critique  →  refine  →  validate
 
 Concretely, you type a genre name (e.g. *"Trip-Hop"*), optionally add reference artists, and click *Start research*. The agent:
 
-1. **Researches** the genre via Gemini Pro — produces a free-text musicology log.
+1. **Researches** the genre via the pro-tier LLM — produces a free-text musicology log.
 2. **Drafts** all three YAMLs from the research, deterministically validated against the Pydantic schema.
-3. **Critiques** the draft via Gemini Flash with fresh context (no research log) — independent review.
+3. **Critiques** the draft via the flash-tier LLM with fresh context (no research log) — independent review.
 4. **Refines** if the critique flagged issues (up to two iterations).
 5. **Validates** the final result against the schema and surfaces the result for you to **approve** (write to disk, immediately usable for new sessions) or **reject** (logged to the audit trail with the reason).
 
@@ -86,7 +86,7 @@ Approved genres land in the same three directories as the seed genres and become
 
 ## Quick start
 
-**Prerequisites:** Python 3.13+, Node.js 20+, Docker, a Gemini API key.
+**Prerequisites:** Python 3.13+, Node.js 20+, Docker, an LLM API key (Gemini by default) or a local OpenAI-compatible server (Ollama, vLLM, ...).
 
 ```bash
 git clone https://github.com/Blevene/Explorator.git
@@ -94,7 +94,7 @@ cd Explorator
 
 # Configure
 cp .env.example backend/.env
-# Edit backend/.env and set GEMINI_API_KEY.
+# Edit backend/.env and set LLM_API_KEY (or configure another provider — see "LLM providers").
 # The default Neo4j password ('explorator_dev') is for local dev only — change
 # it (and the docker-compose value) if you ever expose Neo4j beyond localhost.
 
@@ -155,15 +155,63 @@ make e2e                        # both lanes (also needs `make neo4j-up` first)
 running; bring it up with `make neo4j-up` first. Setup hard-fails with a clear
 message if the backend can't reach Neo4j (it would otherwise boot in memory mode
 and the learning specs would fail with confusing UI errors). `make e2e-parallel`
-needs no Neo4j. None of the lanes need a `GEMINI_API_KEY`: e2e always runs with
+needs no Neo4j. None of the lanes need an `LLM_API_KEY`: e2e always runs with
 `GEMINI_MOCK=true`.
 
 The pytest suite wipes the DB between tests, so it runs against a dedicated `neo4j-test` container on port 7689 — the dev DB on 7688 is never touched. `make test*` brings the test container up automatically; if you invoke pytest directly, run `make neo4j-test-up` first.
 
+## LLM providers
+
+Explorator talks to an LLM through one of two adapters, chosen by `LLM_PROVIDER`
+in `backend/.env` (see `.env.example` for full recipes):
+
+| Provider | `LLM_PROVIDER` | Required | Notes |
+|---|---|---|---|
+| Google Gemini (default) | `gemini` | `LLM_API_KEY` | Native SDK; models default to `gemini-pro-latest` / `gemini-flash-latest` |
+| OpenAI | `openai` | `LLM_API_KEY`, `LLM_PRO_MODEL`, `LLM_FLASH_MODEL` | Leave `LLM_BASE_URL` empty |
+| Ollama | `openai` | `LLM_BASE_URL=http://localhost:11434/v1`, both models | No key needed |
+| vLLM / LM Studio / OpenRouter | `openai` | `LLM_BASE_URL=…/v1`, both models | |
+
+`LLM_PROVIDER=openai` requires `LLM_PRO_MODEL` and `LLM_FLASH_MODEL`; the backend
+refuses to start without them, and also refuses an unknown `LLM_PROVIDER` value.
+
+The legacy `GEMINI_*` names (`GEMINI_API_KEY`, `GEMINI_PRO_MODEL`, ...) are
+deprecated; they are honoured **only** when `LLM_PROVIDER=gemini` (a warning is
+logged at startup). Under `openai` they are ignored entirely, so a Google API key
+is never sent to a third-party endpoint and Gemini prices never apply to other
+models. An explicit `LLM_PRICE_*=0` beats a legacy `GEMINI_PRICE_*` value.
+
+The **pro** model handles harmony generation, mutation and explanations; the
+**flash** model handles intent parsing, evaluation, voicing/melody planning and
+genre research. Using one model for both is fine.
+
+**Base URL must end in `/v1`.** A 404 at startup of a round usually means it doesn't.
+
+**Context length (Ollama).** Ollama's default context window (2–4k tokens) silently
+truncates Explorator's longer prompts, and the `/v1` API can't change it per request.
+Start the server with `OLLAMA_CONTEXT_LENGTH=16384` (or set `num_ctx` in a Modelfile),
+and set `LLM_CONTEXT_TOKENS` (unset by default) to the same value so Explorator warns
+when a prompt nears it.
+
+**Concurrency and timeouts.** Rounds fan out several LLM calls at once.
+`LLM_MAX_CONCURRENCY` (default 4 for `openai`) caps in-flight requests; for Ollama,
+keep it ≤ `OLLAMA_NUM_PARALLEL`. `LLM_TIMEOUT_SECONDS` defaults to 120 for `gemini`
+and 300 for `openai`; `LLM_MAX_RETRIES` defaults to 1.
+
+**Structured output.** The adapter asks for `json_schema` output, falls back to JSON
+mode and then to schema-in-prompt if the server rejects it (a fallback mode becomes
+sticky for the process only after a request in that mode succeeds), and strips
+`<think>` blocks from reasoning models. If a model still can't produce valid JSON,
+the round completes with default strategies and the token panel shows an
+"N fallback(s)" badge — try a larger model.
+
+**Cost.** Gemini shows estimated cost. Other providers show "not priced" unless you
+set `LLM_PRICE_*` (USD per 1M tokens).
+
 ## A first session
 
 1. **Create a session** — pick a genre, key, and mode, then optionally add a mood/feeling prompt (*"wistful and haunted, 8 bars"*).
-2. **Generate**. Watch the SSE pipeline progress (it surfaces the current round as the engine refines); candidate cards appear with chord symbols, Roman numerals, scores, and rationale. A **token-usage panel** under the prompt bar shows the round's Gemini token counts and estimated cost, broken down by phase, updating live as each phase completes.
+2. **Generate**. Watch the SSE pipeline progress (it surfaces the current round as the engine refines); candidate cards appear with chord symbols, Roman numerals, scores, and rationale. A **token-usage panel** under the prompt bar shows the round's LLM token counts and estimated cost, broken down by phase, updating live as each phase completes.
 3. **Realize** a candidate → voicings, bass, groove, and melody are generated and evaluated. Three finalists surface with role badges.
 4. **Play** an arrangement with genre-matched synth. Mute/unmute voicing, bass, groove, melody independently.
 5. **Compare** two or three finalists in DAW-style lane view with synchronized transport.
@@ -231,7 +279,7 @@ explorator/
 
 ## Tech stack
 
-**Backend:** Python 3.13 · FastAPI · Pydantic v2 · LangGraph · Neo4j 5 · music21 · Gemini API · sse-starlette · ULID
+**Backend:** Python 3.13 · FastAPI · Pydantic v2 · LangGraph · Neo4j 5 · music21 · Gemini or OpenAI-compatible LLM · sse-starlette · ULID
 
 **Frontend:** React 19 · TypeScript 5 (strict) · Vite 7 · Tailwind CSS v4 · Zustand 5 · Tone.js 15 · sonner
 
@@ -269,12 +317,12 @@ Pydantic schemas (loader-enforced): [`schema.py`](./backend/src/explorator/domai
 
 Each arrangement is scored across **12 dimensions**, aggregated into a single `weighted_total`. Weights are per-session and mutated by user feedback (M3b).
 
-**Progression quality** (hybrid deterministic + Gemini)
+**Progression quality** (hybrid deterministic + LLM)
 | Dimension | What it measures |
 |---|---|
-| Genre Fit | Authenticity to target genre (Gemini Flash) |
-| Emotional Fit | Alignment with target mood (Gemini Flash) |
-| Novelty | Creativity / unexpectedness (Gemini Flash) |
+| Genre Fit | Authenticity to target genre (flash-tier LLM) |
+| Emotional Fit | Alignment with target mood (flash-tier LLM) |
+| Novelty | Creativity / unexpectedness (flash-tier LLM) |
 | Theoretical Coherence | Diatonic fit via Roman numeral analysis (deterministic) |
 | Cadence Quality | Strength of ending cadence (deterministic) |
 | Loopability | How well the progression loops (deterministic) |

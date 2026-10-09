@@ -24,6 +24,7 @@ These exist for two reasons:
 | [009](./009-isolated-test-neo4j.md) | Isolated test Neo4j container with autouse cleanup | Accepted |
 | [010](./010-no-authentication.md) | No authentication — single-operator local tool | Accepted |
 | [011](./011-token-usage-instrumentation.md) | Token usage instrumented via a context-scoped accumulator | Accepted |
+| [012](./012-configurable-llm-provider.md) | Configurable LLM provider (Gemini native or OpenAI-compatible) | Accepted |
 
 ## Adding a new ADR
 

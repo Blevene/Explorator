@@ -100,3 +100,14 @@ first cut, whose goal is "let the operator see what a round costs."
 - `backend/src/explorator/adapters/usage.py` — the accumulator + scope
 - [`docs/design/specs/2026-06-11-token-usage-instrumentation-design.md`](../design/specs/2026-06-11-token-usage-instrumentation-design.md) — design spec
 - ADR 002 (LangGraph orchestration; pure domain) — why instrumentation lives in the glue layer, not the domain
+
+## Addendum (2026-10-08, ADR 012)
+
+- Adapters now pass the tier explicitly (`record_tokens(..., tier=)`); the
+  model-name heuristic remains only as a fallback for callers that don't.
+- Usage events carry `is_priced` (false when no `LLM_PRICE_*` is configured —
+  the UI shows "not priced") and `fallbacks` (per-node count of LLM calls that
+  failed and were replaced by defaults).
+- Pricing settings are now `LLM_PRICE_*`; `GEMINI_PRICE_*` remain as deprecated
+  aliases, honoured only when `LLM_PROVIDER=gemini`. An explicit `LLM_PRICE_*=0`
+  beats a legacy `GEMINI_PRICE_*` value.
