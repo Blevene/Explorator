@@ -11,6 +11,11 @@ export default function TokenUsagePanel() {
 
   if (!current) return null;
 
+  const priced = current.is_priced !== false;
+  const cost = (n: number) => (priced ? usd(n) : 'not priced');
+  const fallbackEntries = Object.entries(current.fallbacks ?? {});
+  const fallbackCount = fallbackEntries.reduce((sum, [, n]) => sum + n, 0);
+
   const phases = Object.entries(current.by_phase).sort(
     (a, b) => b[1].input + b[1].output - (a[1].input + a[1].output),
   );
@@ -33,13 +38,23 @@ export default function TokenUsagePanel() {
               synthetic
             </span>
           )}
+          {fallbackCount > 0 && (
+            <span
+              data-testid="token-usage-fallbacks"
+              className="normal-case tracking-normal rounded px-1.5 py-0.5"
+              style={{ background: 'var(--surface-3, var(--surface-1))', color: 'var(--score-mid)', border: '1px solid var(--border-subtle)' }}
+              title={`LLM calls that failed and were replaced by defaults: ${fallbackEntries.map(([node, n]) => `${node} ×${n}`).join(', ')}`}
+            >
+              {fallbackCount} fallback{fallbackCount === 1 ? '' : 's'}
+            </span>
+          )}
         </span>
         <span className="font-mono" style={{ color: 'var(--text-primary)' }}>
           {fmt(current.total_tokens)} tokens
           <span style={{ color: 'var(--text-muted)' }}>
             {' '}({fmt(current.total_input)} in / {fmt(current.total_output)} out)
           </span>
-          <span className="ml-2" style={{ color: 'var(--accent-primary)' }}>{usd(current.estimated_cost_usd)}</span>
+          <span className="ml-2" style={{ color: 'var(--accent-primary)' }}>{cost(current.estimated_cost_usd)}</span>
           {live && (
             <span className="ml-2 normal-case" style={{ color: 'var(--text-muted)' }}>· updating…</span>
           )}
@@ -69,7 +84,7 @@ export default function TokenUsagePanel() {
           This session (since load)
         </span>
         <span className="font-mono" style={{ color: 'var(--text-secondary)' }}>
-          {fmt(session.tokens)} tokens · {usd(session.cost)}
+          {fmt(session.tokens)} tokens · {cost(session.cost)}
         </span>
       </div>
     </div>

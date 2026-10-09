@@ -27,6 +27,10 @@ export interface TokenUsage {
   estimated_cost_usd: number;
   is_estimate: boolean;
   is_synthetic: boolean;
+  /** False when no LLM_PRICE_* is configured (e.g. local models). Absent on pre-012 events. */
+  is_priced?: boolean;
+  /** LLM calls per node that failed and were replaced by defaults. */
+  fallbacks?: Record<string, number>;
 }
 
 export interface SSEEvent {
