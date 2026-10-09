@@ -284,9 +284,9 @@ There is no authentication. The app runs locally for one operator. Adding auth i
 Environment variables in `backend/.env`:
 
 - `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` — driver connection
-- `GEMINI_API_KEY`, `GEMINI_PRO_MODEL`, `GEMINI_FLASH_MODEL` — Gemini integration
+- `LLM_PROVIDER` (`gemini` default or `openai`), `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_PRO_MODEL`, `LLM_FLASH_MODEL`, `LLM_TIMEOUT_SECONDS`, `LLM_MAX_CONCURRENCY` (openai only) — LLM integration; full reference in README "LLM providers" and ADR 012. The legacy `GEMINI_*` names are deprecated aliases honoured only under `gemini`.
 - `GEMINI_MOCK=true` — substitutes `FakeGeminiClient` for E2E. The Playwright global-setup sets this when spawning the backend.
-- `GEMINI_PRICE_PRO_INPUT`, `GEMINI_PRICE_PRO_OUTPUT`, `GEMINI_PRICE_FLASH_INPUT`, `GEMINI_PRICE_FLASH_OUTPUT` — USD per 1M tokens, used for the token-usage cost *estimate* (defaults: pro 1.25 / 10.0, flash 0.30 / 2.50). Tune to your billing tier.
+- `LLM_PRICE_PRO_INPUT`, `LLM_PRICE_PRO_OUTPUT`, `LLM_PRICE_FLASH_INPUT`, `LLM_PRICE_FLASH_OUTPUT` — USD per 1M tokens, used for the token-usage cost *estimate* (defaults: pro 1.25 / 10.0, flash 0.30 / 2.50). Tune to your billing tier; non-Gemini providers show "not priced" unless set.
 
 The pytest suite ignores `NEO4J_URI` and uses `NEO4J_TEST_URI` (defaults to `bolt://localhost:7689`) — a separate Docker container with `tmpfs` storage and an autouse `MATCH (n) DETACH DELETE n` between tests. The dev DB on 7688 is never touched by tests.
 

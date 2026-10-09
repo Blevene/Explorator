@@ -168,7 +168,7 @@ in `backend/.env` (see `.env.example` for full recipes):
 | Provider | `LLM_PROVIDER` | Required | Notes |
 |---|---|---|---|
 | Google Gemini (default) | `gemini` | `LLM_API_KEY` | Native SDK; models default to `gemini-pro-latest` / `gemini-flash-latest` |
-| OpenAI | `openai` | `LLM_API_KEY`, `LLM_PRO_MODEL`, `LLM_FLASH_MODEL` | Leave `LLM_BASE_URL` empty |
+| OpenAI | `openai` | `LLM_API_KEY`, `LLM_PRO_MODEL`, `LLM_FLASH_MODEL` | Leave `LLM_BASE_URL` empty; or set `OPENAI_API_KEY` instead of `LLM_API_KEY` |
 | Ollama | `openai` | `LLM_BASE_URL=http://localhost:11434/v1`, both models | No key needed |
 | vLLM / LM Studio / OpenRouter | `openai` | `LLM_BASE_URL=…/v1`, both models | |
 
@@ -185,7 +185,7 @@ The **pro** model handles harmony generation, mutation and explanations; the
 **flash** model handles intent parsing, evaluation, voicing/melody planning and
 genre research. Using one model for both is fine.
 
-**Base URL must end in `/v1`.** A 404 at startup of a round usually means it doesn't.
+**Base URL must end in `/v1`.** A 404 when a round starts usually means it doesn't.
 
 **Context length (Ollama).** Ollama's default context window (2–4k tokens) silently
 truncates Explorator's longer prompts, and the `/v1` API can't change it per request.
@@ -194,9 +194,15 @@ and set `LLM_CONTEXT_TOKENS` (unset by default) to the same value so Explorator 
 when a prompt nears it.
 
 **Concurrency and timeouts.** Rounds fan out several LLM calls at once.
-`LLM_MAX_CONCURRENCY` (default 4 for `openai`) caps in-flight requests; for Ollama,
+`LLM_MAX_CONCURRENCY` (default 4) applies to the `openai` provider only and caps in-flight requests; for Ollama,
 keep it ≤ `OLLAMA_NUM_PARALLEL`. `LLM_TIMEOUT_SECONDS` defaults to 120 for `gemini`
 and 300 for `openai`; `LLM_MAX_RETRIES` defaults to 1.
+
+The Gemini timeout (`LLM_TIMEOUT_SECONDS`, default 120 s, formerly
+`GEMINI_TIMEOUT_SECONDS`) is now actually enforced. Before this change it was
+silently ignored. google-genai applies it as both a client timeout and the server
+deadline (`X-Server-Timeout`), so slow requests fail with 504 DEADLINE_EXCEEDED after
+that time; raise `LLM_TIMEOUT_SECONDS` if needed.
 
 **Structured output.** The adapter asks for `json_schema` output, falls back to JSON
 mode and then to schema-in-prompt if the server rejects it (a fallback mode becomes

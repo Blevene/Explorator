@@ -47,17 +47,22 @@ completions protocol, and select between them with `LLM_PROVIDER`.**
   loses native `response_schema` behaviour and the usage fields differ.
 - **Per-tier provider mixing** (e.g. pro on Gemini, flash on Ollama) — YAGNI; one
   provider per process keeps config and pricing simple.
-- **LiteLLM / instructor** — dependency weight is not justified against roughly
-  150 lines of adapter plus the shared structured-output helper.
+- **LiteLLM / instructor** — dependency weight is not justified against a few
+  hundred lines of adapter plus the shared structured-output helper.
 
 ## Consequences
 
 **Positive:**
 - Local and alternative hosted models work with only env changes.
-- Gemini behaviour and defaults are unchanged for existing deployments.
+- Gemini models, prices and other defaults are unchanged for existing deployments.
 - Secrets and prices cannot leak across providers via the legacy aliases.
 
 **Negative:**
+- The Gemini timeout (`LLM_TIMEOUT_SECONDS`, default 120 s, formerly
+  `GEMINI_TIMEOUT_SECONDS`) is now actually enforced; before this change it was
+  silently ignored. google-genai applies it as both a client timeout and the server
+  deadline (`X-Server-Timeout`), so slow requests fail with 504 DEADLINE_EXCEEDED
+  after that time. Raise `LLM_TIMEOUT_SECONDS` if needed.
 - `gemini=` kwarg names, `FakeGeminiClient` and `GEMINI_MOCK` are intentionally
   unchanged pending a mechanical rename PR, so naming is temporarily misleading.
 - Ollama's context window is an operator concern: its default (2-4k tokens)
