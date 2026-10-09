@@ -238,7 +238,7 @@ def record(model_name: str, usage_metadata: Any, *, tier: str | None = None) -> 
 
 
 def record_fallback(node: str) -> None:
-    """Count an LLM call that failed and was replaced by a default. No-op outside a scope."""
+    """Count an LLM call that failed; its result was defaulted or dropped. No-op outside a scope."""
     accumulator = _current.get()
     if accumulator is None:
         return

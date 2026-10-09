@@ -43,7 +43,7 @@ export default function TokenUsagePanel() {
               data-testid="token-usage-fallbacks"
               className="normal-case tracking-normal rounded px-1.5 py-0.5"
               style={{ background: 'var(--surface-3, var(--surface-1))', color: 'var(--score-mid)', border: '1px solid var(--border-subtle)' }}
-              title={`LLM calls that failed and were replaced by defaults: ${fallbackEntries.map(([node, n]) => `${node} ×${n}`).join(', ')}`}
+              title={`LLM calls that failed (results defaulted or dropped): ${fallbackEntries.map(([node, n]) => `${node} ×${n}`).join(', ')}`}
             >
               {fallbackCount} fallback{fallbackCount === 1 ? '' : 's'}
             </span>
