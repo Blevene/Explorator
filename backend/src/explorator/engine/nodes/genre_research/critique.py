@@ -4,7 +4,7 @@ import json
 import logging
 from typing import Any
 
-from explorator.adapters._structured import extract_json
+from explorator.adapters._structured import loads_lenient
 from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.graph.genre_research_repo import GenreResearchRepository
 from explorator.models.genre_research import CritiqueEntry, GenreCritiqueResponse
@@ -50,7 +50,7 @@ async def critique_draft(
         tier=ModelTier.FLASH,
         system_prompt=system_prompt,
     )
-    parsed = json.loads(extract_json(raw_text))
+    parsed = loads_lenient(raw_text)
     critique = GenreCritiqueResponse.model_validate(parsed)
 
     if callback:

@@ -4,7 +4,7 @@ import json
 import logging
 from typing import Any
 
-from explorator.adapters._structured import extract_json
+from explorator.adapters._structured import loads_lenient
 from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.engine.nodes.genre_research.draft import _normalize_draft
 from explorator.graph.genre_research_repo import GenreResearchRepository
@@ -61,7 +61,7 @@ async def refine_draft(
         tier=ModelTier.FLASH,
         system_prompt=system_prompt,
     )
-    parsed = json.loads(extract_json(raw_text))
+    parsed = loads_lenient(raw_text)
 
     _normalize_draft(parsed, genre_name)
     refined = GenreDraftResponse.model_validate(parsed)

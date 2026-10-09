@@ -1,10 +1,9 @@
 """Draft node — synthesizes research into structured YAML data using Gemini Flash."""
 
-import json
 import logging
 from typing import Any
 
-from explorator.adapters._structured import extract_json
+from explorator.adapters._structured import loads_lenient
 from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.graph.genre_research_repo import GenreResearchRepository
 from explorator.models.genre_research import GenreDraftResponse
@@ -90,7 +89,7 @@ async def draft_yamls(
         system_prompt=system_prompt,
     )
 
-    parsed = json.loads(extract_json(raw_text))
+    parsed = loads_lenient(raw_text)
 
     _normalize_draft(parsed, genre_name)
     draft = GenreDraftResponse.model_validate(parsed)

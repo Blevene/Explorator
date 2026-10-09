@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from explorator.adapters._structured import (
     extract_json,
+    loads_lenient,
     parse_structured,
     strip_reasoning,
     truncate_to_max_length,
@@ -104,3 +105,27 @@ def test_parse_structured_malformed_raises_value_error() -> None:
 def test_parse_structured_schema_mismatch_raises_validation_error() -> None:
     with pytest.raises(ValidationError):
         parse_structured('{"name": "a"}', _Sample, provider="X", model_name="m")
+
+
+# ── loads_lenient ────────────────────────────────────────────────────────────
+
+def test_parse_structured_keeps_valid_json_containing_fence_and_think_tag() -> None:
+    payload = {"name": "ab", "value": 1, "note": "see ```x``` and </think> ok"}
+    text = json.dumps(payload)
+
+    class _Wide(BaseModel):
+        name: str
+        value: int
+        note: str
+
+    result = parse_structured(text, _Wide, provider="p", model_name="m")
+    assert result.note == payload["note"]
+
+
+def test_loads_lenient_falls_back_to_extraction() -> None:
+    assert loads_lenient('Sure! ```json\n{"a": 1}\n``` done') == {"a": 1}
+
+
+def test_loads_lenient_raises_on_malformed() -> None:
+    with pytest.raises(json.JSONDecodeError):
+        loads_lenient("no json here")

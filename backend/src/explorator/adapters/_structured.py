@@ -55,6 +55,18 @@ def extract_json(text: str) -> str:
     return cleaned[start : end + 1]
 
 
+def loads_lenient(text: str) -> Any:
+    """``json.loads`` the text as-is; only on failure fall back to ``extract_json``.
+
+    Trying raw JSON first keeps valid payloads intact when their string values
+    happen to contain fences or ``</think>``.
+    """
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return json.loads(extract_json(text))
+
+
 def truncate_to_max_length(
     data: dict[str, Any] | list[Any],
     model: type[BaseModel],
@@ -113,7 +125,7 @@ def parse_structured[T: BaseModel](
         raise ValueError(msg)
 
     try:
-        parsed = json.loads(extract_json(raw_text))
+        parsed = loads_lenient(raw_text)
     except json.JSONDecodeError as e:
         logger.error(
             "%s returned invalid JSON (model=%s): %s", provider, model_name, raw_text[:500]
