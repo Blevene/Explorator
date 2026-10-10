@@ -31,6 +31,8 @@ def test_mock_env_wins(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_gemini_provider(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "llm_provider", "gemini")
+    # genai.Client rejects an empty key; don't depend on a developer's .env.
+    monkeypatch.setattr(settings, "llm_api_key", "test-key")
     client = get_llm_client()
     assert isinstance(client, GeminiClient)
     assert client.pro_model == settings.llm_pro_model
