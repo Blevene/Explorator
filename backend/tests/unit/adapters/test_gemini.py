@@ -107,6 +107,14 @@ async def test_malformed_then_valid_retries_once() -> None:
     assert mock.await_count == 2
 
 
+async def test_schema_mismatch_then_valid_retries_once() -> None:
+    # Well-formed JSON that fails validation (ValidationError) is retried too.
+    client, mock = _client_with(_response('{"name": "a"}'), _response('{"name": "a", "value": 2}'))
+    result = await client.generate_structured("p", SampleResponse)
+    assert result == SampleResponse(name="a", value=2)
+    assert mock.await_count == 2
+
+
 async def test_malformed_twice_raises_value_error() -> None:
     client, mock = _client_with(_response("junk"), _response("more junk"))
     with pytest.raises(ValueError):
