@@ -2,7 +2,7 @@
 
 Uses hybrid approach:
 - Deterministic regex extraction for explicit constraints (key, bars, genre)
-- Gemini Flash for soft preferences (mood, complexity, aesthetic interpretation)
+- Flash-tier LLM for soft preferences (mood, complexity, aesthetic interpretation)
 """
 
 import logging
@@ -133,7 +133,7 @@ class IntentParser:
         )
 
     async def _extract_soft_preferences(self, prompt: str) -> SoftPreferences:
-        """Use Gemini Flash to extract mood, complexity, and aesthetic preferences."""
+        """Use the flash-tier LLM to extract mood, complexity, and aesthetic preferences."""
         user_prompt, system = soft_preference_prompt(prompt)
         try:
             return await self.llm.generate_structured(
@@ -145,7 +145,7 @@ class IntentParser:
         except Exception:
             usage.record_fallback("parse_intent")
             logger.warning(
-                "Gemini soft preference extraction failed for prompt: %s",
+                "LLM soft preference extraction failed for prompt: %s",
                 prompt[:100],
                 exc_info=True,
             )

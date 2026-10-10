@@ -1,4 +1,4 @@
-"""Generate node — produce progression candidates using Gemini Pro."""
+"""Generate node — produce progression candidates using the pro-tier LLM."""
 
 from typing import Any
 

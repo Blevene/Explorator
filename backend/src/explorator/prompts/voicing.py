@@ -1,4 +1,4 @@
-"""Prompts for voicing strategy generation (Gemini Flash)."""
+"""Prompts for voicing strategy generation (the flash-tier LLM)."""
 
 
 def voicing_strategy_prompt(

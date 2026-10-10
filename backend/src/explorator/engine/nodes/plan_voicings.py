@@ -1,4 +1,4 @@
-"""Plan voicings node — generate voicing strategies and plans using Gemini Flash."""
+"""Plan voicings node — generate voicing strategies and plans using the flash-tier LLM."""
 
 import asyncio
 import logging
@@ -84,7 +84,7 @@ def _default_strategy(
     prefs: VoicingPreferences,
     chord_symbols: list[str] | None = None,
 ) -> VoicingStrategyResponse:
-    """Build a default voicing strategy from genre preferences when Gemini fails.
+    """Build a default voicing strategy from genre preferences when LLM fails.
 
     When chord_symbols are provided, generates per-chord instructions with
     genre-appropriate extensions (7th for triads) to avoid wasting voices.
@@ -114,7 +114,7 @@ def _default_strategy(
 
 
 async def plan_voicings(state: ExplorationState, *, llm: LLMClient) -> dict[str, Any]:
-    """Generate voicing strategies via Gemini Flash, then realize them into voicing plans."""
+    """Generate voicing strategies via the flash-tier LLM, then realize them into voicing plans."""
     callback = state.get("on_progress")
     if callback:
         await callback("node_started", {"node": "plan_voicings"})

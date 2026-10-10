@@ -22,7 +22,7 @@ class MelodicNoteEvent(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Strategy response models (Gemini structured output)
+# Strategy response models (LLM structured output)
 # ---------------------------------------------------------------------------
 
 

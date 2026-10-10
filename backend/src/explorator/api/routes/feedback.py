@@ -47,7 +47,7 @@ async def submit_feedback(
     llm: LLMClient = Depends(get_llm_client),  # noqa: B008
     driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> FeedbackResponse:
-    """Submit user feedback on a candidate. Interprets via Gemini Flash and reweights.
+    """Submit user feedback on a candidate. Interprets via the flash-tier LLM and reweights.
 
     In memory mode (``driver is None``) feedback learning is unavailable, so this
     returns a neutral no-op (200) with the canonical default weights without
@@ -92,7 +92,7 @@ async def submit_feedback(
         existing_feedback = await fb_repo.list_by_session(session_id)
         round_n = len(existing_feedback)
 
-        # Interpret feedback via Gemini Flash
+        # Interpret feedback via the flash-tier LLM
         interpreter = FeedbackInterpreter(llm)
         interpretation = await interpreter.interpret(
             feedback_text=request.content,

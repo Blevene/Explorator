@@ -1,6 +1,6 @@
-"""Theory evaluation — deterministic checks + Gemini hybrid scoring.
+"""Theory evaluation — deterministic checks + LLM hybrid scoring.
 
-Deterministic checks run first. Gemini Flash scores softer dimensions.
+Deterministic checks run first. The flash-tier LLM scores softer dimensions.
 LLM is never the sole scoring authority.
 """
 
@@ -183,7 +183,7 @@ def check_theoretical_coherence(
 
 
 class LLMScores(BaseModel):
-    """Schema for Gemini's evaluation output."""
+    """Schema for LLM's evaluation output."""
 
     genre_fit: float = Field(ge=0, le=10)
     emotional_fit: float = Field(ge=0, le=10)
@@ -191,7 +191,7 @@ class LLMScores(BaseModel):
 
 
 class TheoryEvaluator:
-    """Hybrid theory evaluator: deterministic + Gemini Flash."""
+    """Hybrid theory evaluator: deterministic + the flash-tier LLM."""
 
     def __init__(self, llm: LLMClient) -> None:
         self.llm = llm
@@ -214,7 +214,7 @@ class TheoryEvaluator:
             chord_symbols, candidate.key_center, candidate.mode
         )
 
-        # Gemini-assisted scores
+        # LLM-assisted scores
         llm_scores, llm_failed = await self._llm_evaluate(
             chord_symbols, genre, mood_targets, candidate.key_center, candidate.mode
         )
@@ -225,7 +225,7 @@ class TheoryEvaluator:
         warnings: list[str] = []
         if llm_failed:
             warnings.append(
-                "Gemini scoring failed — using fallback defaults"
+                "LLM scoring failed — using fallback defaults"
                 " for genre_fit, emotional_fit, novelty"
             )
 
@@ -279,7 +279,7 @@ class TheoryEvaluator:
         key: str,
         mode: str,
     ) -> tuple[LLMScores, bool]:
-        """Get Gemini Flash scores for soft dimensions.
+        """Get the flash-tier LLM scores for soft dimensions.
 
         Returns (scores, failed) where failed=True means fallback defaults were used.
         """
@@ -307,7 +307,7 @@ class TheoryEvaluator:
         except Exception:
             usage.record_fallback("evaluate_progressions")
             logger.warning(
-                "Gemini evaluation failed for %s in %s %s — using fallback scores",
+                "LLM evaluation failed for %s in %s %s — using fallback scores",
                 " → ".join(chord_symbols), key, mode,
                 exc_info=True,
             )

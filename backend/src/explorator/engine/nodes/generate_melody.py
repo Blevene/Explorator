@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def _default_strategy(n_bars: int) -> MelodicStrategyResponse:
-    """Build a fallback melodic strategy when Gemini fails."""
+    """Build a fallback melodic strategy when LLM fails."""
     from explorator.models.melody import PhraseInstruction
 
     phrases = []
@@ -105,7 +105,7 @@ def _groove_summary(groove_patterns_raw: list[dict[str, Any]]) -> str:
 
 
 async def generate_melody(state: ExplorationState, *, llm: LLMClient) -> dict[str, Any]:
-    """Generate melodic complements via Gemini strategy + deterministic realization."""
+    """Generate melodic complements via LLM strategy + deterministic realization."""
     callback = state.get("on_progress")
     if callback:
         await callback("node_started", {"node": "generate_melody"})
@@ -164,7 +164,7 @@ async def generate_melody(state: ExplorationState, *, llm: LLMClient) -> dict[st
         voicing_ceiling = _extract_ceiling_notes(vp) if vp else []
         bass_floor = _extract_floor_notes(bl) if bl else []
 
-        # Build Gemini prompt
+        # Build LLM prompt
         user_prompt, system = melody_strategy_prompt(
             chord_symbols=chord_symbols,
             key_center=key_center,
@@ -198,7 +198,7 @@ async def generate_melody(state: ExplorationState, *, llm: LLMClient) -> dict[st
             strategy = _default_strategy(len(chord_symbols))
 
         # Safety: normalize phrase bars to 0-based. The prompt asks for 0-indexed
-        # but Gemini may return 1-indexed anyway. Detect by checking if first
+        # but LLM may return 1-indexed anyway. Detect by checking if first
         # phrase starts at 1 when we expect 0.
         if (
             strategy.phrase_instructions

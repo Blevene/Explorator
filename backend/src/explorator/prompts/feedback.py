@@ -1,4 +1,4 @@
-"""Feedback interpretation prompt for Gemini Flash."""
+"""Feedback interpretation prompt for the flash-tier LLM."""
 
 from __future__ import annotations
 

@@ -222,7 +222,7 @@ class MemoryCandidateExplanationRepo(_MemoryCrud):
     """In-memory cache for candidate explanations.
 
     Backed by the process-singleton store so a `POST /explain` result is cached
-    within the process and subsequent calls skip the (expensive) Gemini PRO
+    within the process and subsequent calls skip the (expensive) pro-tier LLM
     invocation — matching the Neo4j repo's caching behaviour. Lost on restart.
     """
 

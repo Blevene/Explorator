@@ -1,4 +1,4 @@
-"""Critique node — independent review using Gemini Flash with fresh context."""
+"""Critique node — independent review using the flash-tier LLM with fresh context."""
 
 import json
 import logging

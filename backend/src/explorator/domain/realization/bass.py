@@ -57,7 +57,7 @@ def _fifth_pitch(root_name: str, octave: int) -> str:
 class BassLineGenerator:
     """Generates bass lines from chord symbols using genre-specific templates.
 
-    Purely deterministic — no Gemini calls.
+    Purely deterministic — no LLM calls.
     """
 
     def generate(

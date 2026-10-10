@@ -118,7 +118,7 @@ async def mutate(state: ExplorationState, *, llm: LLMClient) -> dict[str, Any]:
             )
         except Exception:
             usage.record_fallback("mutate")
-            logger.exception("Gemini mutation failed for candidate %s — skipping", source_id)
+            logger.exception("LLM mutation failed for candidate %s — skipping", source_id)
             continue
 
         new_id = f"pc_{ULID()}"

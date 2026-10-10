@@ -1,4 +1,4 @@
-"""Draft node — synthesizes research into structured YAML data using Gemini Flash."""
+"""Draft node — synthesizes research into structured YAML data using the flash-tier LLM."""
 
 import logging
 from typing import Any

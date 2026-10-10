@@ -239,7 +239,7 @@ def _filter_by_motion(
 class MelodyGenerator:
     """Deterministic melody realization engine.
 
-    Takes a Gemini-generated MelodicStrategyResponse and produces
+    Takes an LLM-generated MelodicStrategyResponse and produces
     concrete MelodicNoteEvent objects through a 7-step algorithm.
     """
 

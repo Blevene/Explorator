@@ -1,4 +1,4 @@
-"""Feedback interpretation — Gemini Flash translates user text to weight deltas."""
+"""Feedback interpretation — the flash-tier LLM translates user text to weight deltas."""
 
 import asyncio
 import logging
@@ -17,7 +17,7 @@ _INTERPRET_TIMEOUT_SECONDS = 15
 
 
 class FeedbackInterpretation(BaseModel):
-    """Gemini Flash structured response for feedback interpretation."""
+    """Flash-tier LLM structured response for feedback interpretation."""
 
     interpreted_adjustments: dict[str, object] = Field(default_factory=dict)
     weight_deltas: dict[str, float] = Field(default_factory=dict)
@@ -64,7 +64,7 @@ def apply_weight_deltas(
 
 
 class FeedbackInterpreter:
-    """Interprets user feedback text into weight adjustments using Gemini Flash."""
+    """Interprets user feedback text into weight adjustments using the flash-tier LLM."""
 
     def __init__(self, llm: LLMClient) -> None:
         self.llm = llm
@@ -76,7 +76,7 @@ class FeedbackInterpreter:
         candidate_scores: dict[str, float],
         genre: str,
     ) -> FeedbackInterpretation:
-        """Interpret feedback text into weight deltas via Gemini Flash."""
+        """Interpret feedback text into weight deltas via the flash-tier LLM."""
         user_prompt, system_prompt = feedback_interpretation_prompt(
             feedback_text=feedback_text,
             current_weights=current_weights,

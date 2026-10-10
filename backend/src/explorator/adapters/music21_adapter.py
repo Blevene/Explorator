@@ -56,7 +56,7 @@ def _normalize_chord_symbol(symbol: str) -> str:
     #    is safe to use without a trailing guard.
     s = re.sub(r"^([A-G])b", r"\1-", s)
 
-    # 1b. Drop redundant minor marker before 'sus': Gemini emits 'Fmsus2'
+    # 1b. Drop redundant minor marker before 'sus': LLM emits 'Fmsus2'
     #     meaning "F sus2" (sus implies no 3rd, so the 'm' is incoherent).
     #     music21 has no 'msus' abbreviation; rewrite to plain 'sus'.
     s = re.sub(r"msus(\d)", r"sus\1", s)

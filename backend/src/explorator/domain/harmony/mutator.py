@@ -1,4 +1,4 @@
-"""Harmony mutation service — Gemini Pro with constrained vocabulary."""
+"""Harmony mutation service — the pro-tier LLM with constrained vocabulary."""
 
 import logging
 
@@ -32,14 +32,14 @@ class MutationResponseItem(BaseModel):
 
 
 class MutationResponse(BaseModel):
-    """Gemini Pro structured response for mutation."""
+    """Pro-tier LLM structured response for mutation."""
 
     mutated_chord_symbols: list[str]
     mutations: list[MutationResponseItem] = Field(default_factory=list)
 
 
 class HarmonyMutator:
-    """Mutates chord progressions using Gemini Pro with constrained vocabulary."""
+    """Mutates chord progressions using the pro-tier LLM with constrained vocabulary."""
 
     def __init__(self, llm: LLMClient) -> None:
         self.llm = llm
@@ -53,7 +53,7 @@ class HarmonyMutator:
     ) -> MutationResponse:
         """Apply harmonic mutations to a chord progression.
 
-        Uses Gemini Pro to select and apply mutations from the constrained
+        Uses the pro-tier LLM to select and apply mutations from the constrained
         vocabulary. At most 1 experimental mutation is kept per call.
         """
         user_prompt, system_prompt = mutation_prompt(
@@ -80,7 +80,7 @@ class HarmonyMutator:
         mutated = list(response.mutated_chord_symbols)
         if len(mutated) < len(original):
             logger.warning(
-                "Gemini returned %d chords, expected %d — padding with originals",
+                "LLM returned %d chords, expected %d — padding with originals",
                 len(mutated),
                 len(original),
             )

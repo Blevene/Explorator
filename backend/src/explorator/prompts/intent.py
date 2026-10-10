@@ -1,4 +1,4 @@
-"""Prompts for intent parsing (Gemini Flash)."""
+"""Prompts for intent parsing (the flash-tier LLM)."""
 
 
 SOFT_PREFERENCE_SYSTEM = (

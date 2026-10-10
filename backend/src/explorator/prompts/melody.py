@@ -1,5 +1,5 @@
 # backend/src/explorator/prompts/melody.py
-"""Prompts for melody strategy generation (Gemini Flash)."""
+"""Prompts for melody strategy generation (the flash-tier LLM)."""
 
 
 def melody_strategy_prompt(

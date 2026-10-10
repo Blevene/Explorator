@@ -1,4 +1,4 @@
-"""Prompts for theory evaluation scoring (Gemini Flash)."""
+"""Prompts for theory evaluation scoring (the flash-tier LLM)."""
 
 
 def theory_evaluation_prompt(

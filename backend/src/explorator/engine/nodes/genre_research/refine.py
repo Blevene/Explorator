@@ -1,4 +1,4 @@
-"""Refine node — applies critique to improve draft using Gemini Flash."""
+"""Refine node — applies critique to improve draft using the flash-tier LLM."""
 
 import json
 import logging

@@ -32,8 +32,8 @@ class ExplanationResponse(BaseModel):
     recommended_use_cases: list[str]
 
 
-class GeminiExplanationOutput(BaseModel):
-    """Schema for Gemini structured output."""
+class LLMExplanationOutput(BaseModel):
+    """Schema for LLM structured output."""
 
     summary: str
     why_it_works: list[str]
@@ -67,7 +67,7 @@ async def generate_or_get_explanation(
 ) -> ExplanationResponse:
     """Generate or return cached explanation for a candidate.
 
-    Checks the cache first. If not found, loads context, calls Gemini Pro,
+    Checks the cache first. If not found, loads context, calls the pro-tier LLM,
     persists (no-op in memory mode), and returns.
     """
     explanation_repo = make_candidate_explanation_repo(driver)
@@ -144,7 +144,7 @@ async def generate_or_get_explanation(
             for op in mutation_ops
         ]
 
-    # Build prompt and call Gemini Pro
+    # Build prompt and call the pro-tier LLM
     user_prompt, system_prompt = explanation_prompt(
         chord_symbols=chord_symbols,
         roman_numerals=roman_numerals,
@@ -159,12 +159,12 @@ async def generate_or_get_explanation(
     try:
         llm_result = await llm.generate_structured(
             user_prompt,
-            GeminiExplanationOutput,
+            LLMExplanationOutput,
             tier=ModelTier.PRO,
             system_prompt=system_prompt,
         )
     except Exception as exc:
-        logger.exception("Gemini explanation generation failed for %s", candidate_id)
+        logger.exception("LLM explanation generation failed for %s", candidate_id)
         raise HTTPException(
             status_code=504,
             detail="Explanation generation timed out. Try again.",

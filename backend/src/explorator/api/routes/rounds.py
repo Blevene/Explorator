@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["rounds"])
 
 # Single, non-configurable generation profile: conservative breadth (8 candidates,
-# top 3 selected) with a 2-round guided-search budget. Keeps real-Gemini rounds
+# top 3 selected) with a 2-round guided-search budget. Keeps real-LLM rounds
 # fast enough to finish within the client timeout.
 N_CANDIDATES = 8
 K_SELECTION = 3
@@ -145,7 +145,7 @@ async def trigger_round(
             await channel.close()
 
     # Start the round in the background, but cancel it if the client disconnects
-    # before it finishes (otherwise graph.ainvoke + its Gemini spend run to
+    # before it finishes (otherwise graph.ainvoke + its LLM spend run to
     # completion against a stream nobody is reading).
     task = asyncio.create_task(run_and_close())
 

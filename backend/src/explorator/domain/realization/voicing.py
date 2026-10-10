@@ -1,4 +1,4 @@
-"""Deterministic voicing realization from Gemini strategies."""
+"""Deterministic voicing realization from LLM strategies."""
 
 from ulid import ULID
 

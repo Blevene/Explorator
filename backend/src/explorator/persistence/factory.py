@@ -310,7 +310,7 @@ def make_candidate_explanation_repo(
 ) -> CandidateExplanationRepo | MemoryCandidateExplanationRepo:
     if driver is None:
         # Real within-process caching (not a null repo) so `POST /explain`
-        # doesn't re-invoke Gemini PRO on every call in memory mode.
+        # doesn't re-invoke pro-tier LLM on every call in memory mode.
         from explorator.persistence.memory_repos import MemoryCandidateExplanationRepo
 
         return MemoryCandidateExplanationRepo(get_memory_store())
