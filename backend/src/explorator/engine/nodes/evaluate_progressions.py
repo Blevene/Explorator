@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 async def evaluate_progressions(
-    state: ExplorationState, *, gemini: LLMClient
+    state: ExplorationState, *, llm: LLMClient
 ) -> dict[str, Any]:
     """Score all progression candidates on theory dimensions.
 
@@ -26,7 +26,7 @@ async def evaluate_progressions(
         n = len(state.get("progression_candidates", []))
         await callback("node_started", {"node": "evaluate_progressions", "count": n})
 
-    evaluator = TheoryEvaluator(gemini)
+    evaluator = TheoryEvaluator(llm)
     brief = parse_json_or_dict(state.get("creative_brief", {}))
     genre = state.get("genre", "dream_pop")
     mood_targets = brief.get("mood_targets", [])

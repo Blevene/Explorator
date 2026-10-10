@@ -52,13 +52,13 @@ def test_apply_weight_deltas_renormalizes() -> None:
 
 @pytest.mark.asyncio
 async def test_interpret_returns_feedback_interpretation() -> None:
-    mock_gemini = AsyncMock()
-    mock_gemini.generate_structured.return_value = FeedbackInterpretation(
+    mock_llm = AsyncMock()
+    mock_llm.generate_structured.return_value = FeedbackInterpretation(
         interpreted_adjustments={"prefer_open_voicings": True},
         weight_deltas={"playability": 0.03, "voice_leading": -0.03},
         satisfaction="neutral",
     )
-    interpreter = FeedbackInterpreter(mock_gemini)
+    interpreter = FeedbackInterpreter(mock_llm)
     result = await interpreter.interpret(
         feedback_text="prefer open voicings",
         current_weights=CANONICAL_DEFAULT_WEIGHTS.weights,
@@ -67,4 +67,4 @@ async def test_interpret_returns_feedback_interpretation() -> None:
     )
     assert result.interpreted_adjustments["prefer_open_voicings"] is True
     assert result.weight_deltas["playability"] == 0.03
-    mock_gemini.generate_structured.assert_called_once()
+    mock_llm.generate_structured.assert_called_once()

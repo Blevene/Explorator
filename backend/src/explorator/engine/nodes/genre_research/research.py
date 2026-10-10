@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 async def research_genre(
     state: dict[str, Any],
     *,
-    gemini: LLMClient,
+    llm: LLMClient,
     driver: Any,
 ) -> dict[str, Any]:
     """Research a genre using Gemini Pro. Returns research_log."""
@@ -54,7 +54,7 @@ async def research_genre(
             {"status": "researching", "detail": "Researching harmonic vocabulary..."},
         )
 
-    research_log = await gemini.generate_text(
+    research_log = await llm.generate_text(
         prompt=user_prompt,
         tier=ModelTier.PRO,
         system_prompt=system_prompt,

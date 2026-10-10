@@ -193,8 +193,8 @@ class GeminiScores(BaseModel):
 class TheoryEvaluator:
     """Hybrid theory evaluator: deterministic + Gemini Flash."""
 
-    def __init__(self, gemini: LLMClient) -> None:
-        self.gemini = gemini
+    def __init__(self, llm: LLMClient) -> None:
+        self.llm = llm
 
     async def evaluate(
         self,
@@ -215,7 +215,7 @@ class TheoryEvaluator:
         )
 
         # Gemini-assisted scores
-        gemini_scores, gemini_failed = await self._gemini_evaluate(
+        llm_scores, llm_failed = await self._llm_evaluate(
             chord_symbols, genre, mood_targets, candidate.key_center, candidate.mode
         )
 
@@ -223,7 +223,7 @@ class TheoryEvaluator:
         now = utc_now()
 
         warnings: list[str] = []
-        if gemini_failed:
+        if llm_failed:
             warnings.append(
                 "Gemini scoring failed — using fallback defaults"
                 " for genre_fit, emotional_fit, novelty"
@@ -237,22 +237,22 @@ class TheoryEvaluator:
             updated_at=now,
             candidate_id=candidate.id,
             evaluation_type="theory",
-            genre_fit=gemini_scores.genre_fit,
-            emotional_fit=gemini_scores.emotional_fit,
+            genre_fit=llm_scores.genre_fit,
+            emotional_fit=llm_scores.emotional_fit,
             theoretical_coherence=coherence,
             cadence_quality=cadence,
-            novelty=gemini_scores.novelty,
+            novelty=llm_scores.novelty,
             loopability=loopability,
             notes=warnings,
         )
 
         # Build aggregate scorecard
         scores = {
-            "genre_fit": gemini_scores.genre_fit,
-            "emotional_fit": gemini_scores.emotional_fit,
+            "genre_fit": llm_scores.genre_fit,
+            "emotional_fit": llm_scores.emotional_fit,
             "theoretical_coherence": coherence,
             "cadence_quality": cadence,
-            "novelty": gemini_scores.novelty,
+            "novelty": llm_scores.novelty,
             "loopability": loopability,
         }
         avg = sum(scores.values()) / len(scores) if scores else 0
@@ -271,7 +271,7 @@ class TheoryEvaluator:
 
         return theory_eval, scorecard
 
-    async def _gemini_evaluate(
+    async def _llm_evaluate(
         self,
         chord_symbols: list[str],
         genre: str,
@@ -296,7 +296,7 @@ class TheoryEvaluator:
         )
 
         try:
-            scores = await self.gemini.generate_structured(
+            scores = await self.llm.generate_structured(
                 prompt=prompt,
                 response_model=GeminiScores,
                 tier=ModelTier.FLASH,

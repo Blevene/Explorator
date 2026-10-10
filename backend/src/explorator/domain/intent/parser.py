@@ -95,8 +95,8 @@ def extract_deterministic_constraints(prompt: str) -> dict[str, Any]:
 class IntentParser:
     """Parses user prompts into CreativeBrief using hybrid extraction."""
 
-    def __init__(self, gemini: LLMClient) -> None:
-        self.gemini = gemini
+    def __init__(self, llm: LLMClient) -> None:
+        self.llm = llm
 
     async def parse(self, prompt: str, session_id: str) -> CreativeBrief:
         """Parse a prompt into a structured CreativeBrief."""
@@ -136,7 +136,7 @@ class IntentParser:
         """Use Gemini Flash to extract mood, complexity, and aesthetic preferences."""
         user_prompt, system = soft_preference_prompt(prompt)
         try:
-            return await self.gemini.generate_structured(
+            return await self.llm.generate_structured(
                 prompt=user_prompt,
                 response_model=SoftPreferences,
                 tier=ModelTier.FLASH,

@@ -52,21 +52,21 @@ def test_cap_constant_value() -> None:
 
 async def test_plan_voicings_passes_cap() -> None:
     client = _CapturingClient()
-    await plan_voicings(_state(), gemini=client)  # type: ignore[arg-type]
+    await plan_voicings(_state(), llm=client)  # type: ignore[arg-type]
     assert client.kwargs
     assert client.kwargs[0]["max_output_tokens"] == FANOUT_MAX_OUTPUT_TOKENS
 
 
 async def test_generate_melody_passes_cap() -> None:
     client = _CapturingClient()
-    await generate_melody(_state(), gemini=client)  # type: ignore[arg-type]
+    await generate_melody(_state(), llm=client)  # type: ignore[arg-type]
     assert client.kwargs
     assert client.kwargs[0]["max_output_tokens"] == FANOUT_MAX_OUTPUT_TOKENS
 
 
 async def test_theory_evaluator_passes_cap() -> None:
     client = _CapturingClient()
-    await TheoryEvaluator(client)._gemini_evaluate(  # type: ignore[arg-type]
+    await TheoryEvaluator(client)._llm_evaluate(  # type: ignore[arg-type]
         ["Cmaj7", "Am7"], "dream_pop", ["wistful"], "C", "major"
     )
     assert client.kwargs

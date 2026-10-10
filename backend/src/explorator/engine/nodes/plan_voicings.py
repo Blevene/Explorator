@@ -113,7 +113,7 @@ def _default_strategy(
     )
 
 
-async def plan_voicings(state: ExplorationState, *, gemini: LLMClient) -> dict[str, Any]:
+async def plan_voicings(state: ExplorationState, *, llm: LLMClient) -> dict[str, Any]:
     """Generate voicing strategies via Gemini Flash, then realize them into voicing plans."""
     callback = state.get("on_progress")
     if callback:
@@ -149,7 +149,7 @@ async def plan_voicings(state: ExplorationState, *, gemini: LLMClient) -> dict[s
 
         strategy: VoicingStrategyResponse
         try:
-            strategy = await gemini.generate_structured(
+            strategy = await llm.generate_structured(
                 user_prompt,
                 response_model=VoicingStrategyResponse,
                 tier=ModelTier.FLASH,

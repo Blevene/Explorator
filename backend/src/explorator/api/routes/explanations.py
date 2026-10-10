@@ -63,7 +63,7 @@ async def get_explanation(
 async def generate_or_get_explanation(
     candidate_id: str,
     driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
-    gemini: LLMClient = Depends(get_llm_client),  # noqa: B008
+    llm: LLMClient = Depends(get_llm_client),  # noqa: B008
 ) -> ExplanationResponse:
     """Generate or return cached explanation for a candidate.
 
@@ -157,7 +157,7 @@ async def generate_or_get_explanation(
     )
 
     try:
-        gemini_result = await gemini.generate_structured(
+        llm_result = await llm.generate_structured(
             user_prompt,
             GeminiExplanationOutput,
             tier=ModelTier.PRO,
@@ -177,10 +177,10 @@ async def generate_or_get_explanation(
         status="active",
         session_id=session_id,
         candidate_id=candidate_id,
-        summary=gemini_result.summary,
-        why_it_works=gemini_result.why_it_works,
-        what_is_experimental=gemini_result.what_is_experimental,
-        recommended_use_cases=gemini_result.recommended_use_cases,
+        summary=llm_result.summary,
+        why_it_works=llm_result.why_it_works,
+        what_is_experimental=llm_result.what_is_experimental,
+        recommended_use_cases=llm_result.recommended_use_cases,
     )
     try:
         await explanation_repo.create(explanation)
@@ -203,8 +203,8 @@ async def generate_or_get_explanation(
         # Still return the result even if persistence fails
 
     return ExplanationResponse(
-        summary=gemini_result.summary,
-        why_it_works=gemini_result.why_it_works,
-        what_is_experimental=gemini_result.what_is_experimental,
-        recommended_use_cases=gemini_result.recommended_use_cases,
+        summary=llm_result.summary,
+        why_it_works=llm_result.why_it_works,
+        what_is_experimental=llm_result.what_is_experimental,
+        recommended_use_cases=llm_result.recommended_use_cases,
     )

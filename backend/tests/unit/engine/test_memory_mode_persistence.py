@@ -151,7 +151,7 @@ async def test_persist_round_then_load_context_memory_mode_handoff():
 
 
 def test_build_exploration_graph_compiles_without_driver():
-    """build_exploration_graph(gemini, None) must compile (memory mode)."""
+    """build_exploration_graph(llm, None) must compile (memory mode)."""
     graph = build_exploration_graph(MagicMock(), None)
     nodes = set(graph.get_graph().nodes)
     assert "load_context" in nodes

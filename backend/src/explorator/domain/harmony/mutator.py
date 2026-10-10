@@ -41,8 +41,8 @@ class MutationResponse(BaseModel):
 class HarmonyMutator:
     """Mutates chord progressions using Gemini Pro with constrained vocabulary."""
 
-    def __init__(self, gemini: LLMClient) -> None:
-        self.gemini = gemini
+    def __init__(self, llm: LLMClient) -> None:
+        self.llm = llm
 
     async def mutate_harmonic(
         self,
@@ -64,7 +64,7 @@ class HarmonyMutator:
             allowed_operations=HARMONIC_OPS,
         )
 
-        response = await self.gemini.generate_structured(
+        response = await self.llm.generate_structured(
             prompt=user_prompt,
             response_model=MutationResponse,
             tier=ModelTier.PRO,

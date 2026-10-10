@@ -28,7 +28,7 @@ class TestGenerateProvenance:
     async def test_generate_appends_provenance_event(self):
         from explorator.engine.nodes.generate import generate
 
-        mock_gemini = MagicMock()
+        mock_llm = MagicMock()
         mock_candidate = MagicMock()
         mock_candidate.model_dump.return_value = {
             "id": "pc_1",
@@ -43,7 +43,7 @@ class TestGenerateProvenance:
                 creative_brief={"key_center": "C", "mode": "major", "phrase_length_bars": 4},
                 genre_profile={},
             )
-            result = await generate(state, gemini=mock_gemini)
+            result = await generate(state, llm=mock_llm)
 
         events = result.get("provenance_events", [])
         assert len(events) == 1
@@ -55,7 +55,7 @@ class TestGenerateProvenance:
     async def test_generate_preserves_existing_events(self):
         from explorator.engine.nodes.generate import generate
 
-        mock_gemini = MagicMock()
+        mock_llm = MagicMock()
         mock_candidate = MagicMock()
         mock_candidate.model_dump.return_value = {"id": "pc_1", "chord_symbols": ["C"]}
 
@@ -69,7 +69,7 @@ class TestGenerateProvenance:
                 genre_profile={},
                 provenance_events=[existing_event],
             )
-            result = await generate(state, gemini=mock_gemini)
+            result = await generate(state, llm=mock_llm)
 
         events = result.get("provenance_events", [])
         assert len(events) == 2
@@ -84,7 +84,7 @@ class TestMutateProvenance:
     async def test_mutate_appends_provenance_events(self):
         from explorator.engine.nodes.mutate import mutate
 
-        mock_gemini = MagicMock()
+        mock_llm = MagicMock()
         mock_response = MagicMock()
         mock_response.mutated_chord_symbols = ["Dm7", "G7", "Cmaj7", "Am7"]
         mock_mutation = MagicMock()
@@ -121,7 +121,7 @@ class TestMutateProvenance:
                 all_candidates_history=[],
                 genre_profile={"genre": "dream_pop"},
             )
-            result = await mutate(state, gemini=mock_gemini)
+            result = await mutate(state, llm=mock_llm)
 
         events = result.get("provenance_events", [])
         assert len(events) >= 1

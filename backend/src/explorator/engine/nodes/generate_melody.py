@@ -104,7 +104,7 @@ def _groove_summary(groove_patterns_raw: list[dict[str, Any]]) -> str:
     return "rhythmic groove pattern"
 
 
-async def generate_melody(state: ExplorationState, *, gemini: LLMClient) -> dict[str, Any]:
+async def generate_melody(state: ExplorationState, *, llm: LLMClient) -> dict[str, Any]:
     """Generate melodic complements via Gemini strategy + deterministic realization."""
     callback = state.get("on_progress")
     if callback:
@@ -178,7 +178,7 @@ async def generate_melody(state: ExplorationState, *, gemini: LLMClient) -> dict
 
         strategy: MelodicStrategyResponse
         try:
-            strategy = await gemini.generate_structured(
+            strategy = await llm.generate_structured(
                 user_prompt,
                 response_model=MelodicStrategyResponse,
                 tier=ModelTier.FLASH,

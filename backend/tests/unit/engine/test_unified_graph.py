@@ -86,9 +86,9 @@ def test_load_memory_node_exists_in_graph() -> None:
 
     from explorator.engine.graph import build_exploration_graph
 
-    gemini = AsyncMock()
+    llm = AsyncMock()
     driver = AsyncMock()
-    graph = build_exploration_graph(gemini, driver)
+    graph = build_exploration_graph(llm, driver)
 
     node_names = list(graph.nodes.keys())
     assert "load_memory" in node_names

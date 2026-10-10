@@ -51,7 +51,7 @@ class RoundResponse(BaseModel):
 async def trigger_round(
     session_id: str,
     request: TriggerRoundRequest,
-    gemini: LLMClient = Depends(get_llm_client),  # noqa: B008
+    llm: LLMClient = Depends(get_llm_client),  # noqa: B008
     driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> EventSourceResponse:
     """Trigger a generation round and stream progress via SSE."""
@@ -99,7 +99,7 @@ async def trigger_round(
         await repo.update_metadata(session_id, new_metadata)
 
     channel = SSEChannel()
-    graph = build_exploration_graph(gemini, driver)
+    graph = build_exploration_graph(llm, driver)
 
     initial_state: dict[str, Any] = {
         "session_id": session_id,

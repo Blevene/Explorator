@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 async def critique_draft(
     state: dict[str, Any],
     *,
-    gemini: LLMClient,
+    llm: LLMClient,
     driver: Any,
 ) -> dict[str, Any]:
     """Critique draft YAMLs. Fresh context — no research log provided."""
@@ -45,7 +45,7 @@ async def critique_draft(
     )
 
     # generate_text + manual parsing: nested schemas trip Gemini's "additionalProperties" check.
-    raw_text = await gemini.generate_text(
+    raw_text = await llm.generate_text(
         prompt=user_prompt,
         tier=ModelTier.FLASH,
         system_prompt=system_prompt,

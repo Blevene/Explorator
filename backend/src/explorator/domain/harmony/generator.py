@@ -31,8 +31,8 @@ class GeneratedProgressionSet(BaseModel):
 class HarmonyGenerator:
     """Generates chord progressions using Gemini Pro."""
 
-    def __init__(self, gemini: LLMClient) -> None:
-        self.gemini = gemini
+    def __init__(self, llm: LLMClient) -> None:
+        self.llm = llm
 
     async def generate(
         self,
@@ -62,7 +62,7 @@ class HarmonyGenerator:
             mood_targets=mood_targets,
         )
 
-        result = await self.gemini.generate_structured(
+        result = await self.llm.generate_structured(
             prompt=prompt,
             response_model=GeneratedProgressionSet,
             tier=ModelTier.PRO,

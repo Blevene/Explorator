@@ -39,7 +39,7 @@ class TriggerRealizationRequest(BaseModel):
 async def trigger_realization(
     session_id: str,
     request: TriggerRealizationRequest,
-    gemini: LLMClient = Depends(get_llm_client),  # noqa: B008
+    llm: LLMClient = Depends(get_llm_client),  # noqa: B008
     driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> EventSourceResponse:
     """Trigger a realization round and stream progress via SSE."""
@@ -53,7 +53,7 @@ async def trigger_realization(
         )
 
     channel = SSEChannel()
-    graph = build_realization_subgraph(gemini, driver)
+    graph = build_realization_subgraph(llm, driver)
 
     # Resolve the session's genre from its metadata so load_context loads the
     # correct genre profile. In memory mode persist_round never writes

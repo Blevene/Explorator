@@ -66,8 +66,8 @@ def apply_weight_deltas(
 class FeedbackInterpreter:
     """Interprets user feedback text into weight adjustments using Gemini Flash."""
 
-    def __init__(self, gemini: LLMClient) -> None:
-        self.gemini = gemini
+    def __init__(self, llm: LLMClient) -> None:
+        self.llm = llm
 
     async def interpret(
         self,
@@ -85,7 +85,7 @@ class FeedbackInterpreter:
         )
 
         result = await asyncio.wait_for(
-            self.gemini.generate_structured(
+            self.llm.generate_structured(
                 prompt=user_prompt,
                 response_model=FeedbackInterpretation,
                 tier=ModelTier.FLASH,

@@ -54,7 +54,7 @@ def _normalize_draft(parsed: dict[str, Any], genre_name: str) -> None:
 async def draft_yamls(
     state: dict[str, Any],
     *,
-    gemini: LLMClient,
+    llm: LLMClient,
     driver: Any,
 ) -> dict[str, Any]:
     """Draft three YAML structures from research log."""
@@ -83,7 +83,7 @@ async def draft_yamls(
     )
 
     # generate_text + manual parsing: nested schemas trip Gemini's "additionalProperties" check.
-    raw_text = await gemini.generate_text(
+    raw_text = await llm.generate_text(
         prompt=user_prompt,
         tier=ModelTier.FLASH,
         system_prompt=system_prompt,

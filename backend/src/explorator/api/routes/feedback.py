@@ -44,7 +44,7 @@ class FeedbackResponse(BaseModel):
 async def submit_feedback(
     session_id: str,
     request: SubmitFeedbackRequest,
-    gemini: LLMClient = Depends(get_llm_client),  # noqa: B008
+    llm: LLMClient = Depends(get_llm_client),  # noqa: B008
     driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> FeedbackResponse:
     """Submit user feedback on a candidate. Interprets via Gemini Flash and reweights.
@@ -93,7 +93,7 @@ async def submit_feedback(
         round_n = len(existing_feedback)
 
         # Interpret feedback via Gemini Flash
-        interpreter = FeedbackInterpreter(gemini)
+        interpreter = FeedbackInterpreter(llm)
         interpretation = await interpreter.interpret(
             feedback_text=request.content,
             current_weights=current_weights,
