@@ -7,7 +7,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from explorator.adapters import usage
-from explorator.adapters.llm import LLMClient, ModelTier
+from explorator.adapters.llm import FANOUT_MAX_OUTPUT_TOKENS, LLMClient, ModelTier
 from explorator.domain.realization.voicing import VoicingGenerator
 from explorator.engine.state import ExplorationState
 from explorator.models.harmony import ProgressionCandidate
@@ -154,6 +154,7 @@ async def plan_voicings(state: ExplorationState, *, gemini: LLMClient) -> dict[s
                 response_model=VoicingStrategyResponse,
                 tier=ModelTier.FLASH,
                 system_prompt=system,
+                max_output_tokens=FANOUT_MAX_OUTPUT_TOKENS,
             )
         except Exception:
             usage.record_fallback("plan_voicings")

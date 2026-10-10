@@ -5,7 +5,7 @@ import logging
 from typing import Any
 
 from explorator.adapters import usage
-from explorator.adapters.llm import LLMClient, ModelTier
+from explorator.adapters.llm import FANOUT_MAX_OUTPUT_TOKENS, LLMClient, ModelTier
 from explorator.config import settings
 from explorator.domain.realization.melody import MelodyGenerator
 from explorator.engine.state import ExplorationState
@@ -183,6 +183,7 @@ async def generate_melody(state: ExplorationState, *, gemini: LLMClient) -> dict
                 response_model=MelodicStrategyResponse,
                 tier=ModelTier.FLASH,
                 system_prompt=system,
+                max_output_tokens=FANOUT_MAX_OUTPUT_TOKENS,
             )
         except Exception:
             usage.record_fallback("generate_melody")
