@@ -1,6 +1,7 @@
 """Tests for provider-neutral structured-output helpers."""
 
 import json
+import logging
 
 import pytest
 from pydantic import BaseModel, Field, ValidationError
@@ -9,9 +10,11 @@ from explorator.adapters._structured import (
     extract_json,
     loads_lenient,
     parse_structured,
+    repair_truncated_json,
     strip_reasoning,
     truncate_to_max_length,
 )
+from explorator.models.realization import VoicingStrategyResponse
 
 
 class _Item(BaseModel):
@@ -129,3 +132,90 @@ def test_loads_lenient_falls_back_to_extraction() -> None:
 def test_loads_lenient_raises_on_malformed() -> None:
     with pytest.raises(json.JSONDecodeError):
         loads_lenient("no json here")
+
+
+# ── repair_truncated_json / truncated parse_structured ───────────────────────
+
+_TRUNCATED_VOICING = (
+    '{"global_strategy":"Maintain lush open pad voicings","density_level":"medium",'
+    '"voice_count":4,"register_profile":"mid","rationale":"Adding diatonic seventh '
+    + "float. " * 40
+)
+
+
+def _parse_voicing(text: str) -> VoicingStrategyResponse:
+    return parse_structured(text, VoicingStrategyResponse, provider="X", model_name="m")
+
+
+def test_parse_structured_repairs_compact_truncation(caplog: pytest.LogCaptureFixture) -> None:
+    with caplog.at_level(logging.WARNING):
+        result = _parse_voicing(_TRUNCATED_VOICING)
+    assert result.density_level == "medium"
+    assert result.voice_count == 4
+    assert result.register_profile == "mid"
+    assert result.global_strategy.startswith("Maintain lush")
+    assert result.rationale.startswith("Adding diatonic seventh")
+    assert len(result.rationale) <= 200
+    assert "output was truncated; repaired JSON (model=m)" in caplog.text
+
+
+def test_parse_structured_repairs_pretty_printed_truncation() -> None:
+    pretty = json.dumps(json.loads(
+        '{"global_strategy":"Maintain lush open pad voicings","density_level":"medium",'
+        '"voice_count":4,"register_profile":"mid","rationale":"x"}'
+    ), indent=2)
+    cut = pretty[: pretty.index('"x"')] + '"Adding diatonic seventh ' + "float.\n" * 60
+    result = _parse_voicing(cut)
+    assert result.voice_count == 4
+    assert len(result.rationale) <= 200
+
+
+def test_repair_cut_inside_nested_list() -> None:
+    out = repair_truncated_json('{"a": 1, "items": [{"x": "y"}, {"x": "z')
+    assert out == {"a": 1, "items": [{"x": "y"}, {"x": "z"}]}
+
+
+@pytest.mark.parametrize("text", ['{"a": 1, "b":', '{"a": 1, "b', '{"a": 1,', '{"a": 1, "b": 12e'])
+def test_repair_cut_after_key_colon_comma(text: str) -> None:
+    assert repair_truncated_json(text) == {"a": 1}
+
+
+def test_repair_handles_escaped_quote_in_truncated_string() -> None:
+    assert repair_truncated_json('{"a": "say \\"hi') == {"a": 'say "hi'}
+
+
+def test_repair_cut_mid_literal_in_list() -> None:
+    assert repair_truncated_json('{"a": [1, 2, tr') == {"a": [1, 2]}
+
+
+def test_repair_skips_fence_and_reasoning() -> None:
+    assert repair_truncated_json('<think>x {</think>```json\n{"a": "b') == {"a": "b"}
+
+
+def test_repair_garbage_raises() -> None:
+    with pytest.raises(json.JSONDecodeError):
+        repair_truncated_json("no json at all")
+
+
+def test_parse_structured_truncation_missing_required_field_raises_validation_error() -> None:
+    text = '{"global_strategy":"Maintain lush","density_l'
+    with pytest.raises(ValidationError):
+        _parse_voicing(text)
+
+
+def test_parse_structured_garbage_still_malformed() -> None:
+    with pytest.raises(ValueError, match="X returned malformed JSON for model=m"):
+        _parse_voicing("no json at all")
+
+
+def test_parse_structured_valid_json_does_not_invoke_repair(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    text = (
+        '{"global_strategy":"g","density_level":"medium","voice_count":4,'
+        '"register_profile":"mid","rationale":"r"}'
+    )
+    with caplog.at_level(logging.WARNING):
+        result = _parse_voicing(text)
+    assert result.rationale == "r"
+    assert "repaired" not in caplog.text

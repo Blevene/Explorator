@@ -33,6 +33,12 @@ def strip_reasoning(text: str) -> str:
     return stripped
 
 
+def _unfence(text: str) -> str:
+    """Return the body of the first complete markdown fence, else the text as-is."""
+    fence = _FENCE.search(text)
+    return fence.group(1) if fence else text
+
+
 def extract_json(text: str) -> str:
     """Best-effort isolation of a JSON value from raw model output.
 
@@ -41,10 +47,7 @@ def extract_json(text: str) -> str:
     cleaned text unchanged when no delimiters exist, so ``json.loads`` raises a
     normal ``JSONDecodeError``.
     """
-    cleaned = strip_reasoning(text)
-    fence = _FENCE.search(cleaned)
-    if fence:
-        cleaned = fence.group(1)
+    cleaned = _unfence(strip_reasoning(text))
     starts = [i for i in (cleaned.find("{"), cleaned.find("[")) if i != -1]
     if not starts:
         return cleaned.strip()
@@ -65,6 +68,86 @@ def loads_lenient(text: str) -> Any:
         return json.loads(text)
     except json.JSONDecodeError:
         return json.loads(extract_json(text))
+
+
+_CLOSERS = {"{": "}", "[": "]"}
+_PARTIAL_STR = r'"(?:[^"\\]|\\.)*(?:"|\\)?'
+# What may legitimately follow the last safe cut in truncated JSON: an optional
+# comma, an optional (partial) key and colon, and a (partial) string or scalar.
+# Rejects junk like ``{not json`` so only genuine truncation is "repaired".
+_TRUNCATED_TAIL = re.compile(
+    rf"\s*,?\s*(?:{_PARTIAL_STR}\s*:?\s*)?(?:{_PARTIAL_STR}|[-+\w.]*)\s*", re.DOTALL
+)
+
+
+def repair_truncated_json(text: str) -> Any:
+    """Parse JSON that was cut off mid-output (e.g. by a ``max_output_tokens`` cap).
+
+    Starts at the first ``{``/``[`` (after reasoning/fence handling) and scans
+    once, tracking string state (with backslash escapes) and a stack of open
+    brackets. Two completions are tried, in order:
+
+    (a) close an unterminated string with ``"``, then close every open bracket;
+    (b) otherwise cut back to the last point where a complete value ended at the
+        current depth (just before a ``,``, or just after a bracket opened or
+        closed), then close the brackets that were open at that point. This
+        handles cuts in a key, after ``:`` or ``,``, or mid-number/literal.
+
+    Raises ``json.JSONDecodeError`` when neither completion parses. Linear time
+    apart from a bracket-stack snapshot per structural character (depth is tiny).
+    """
+    cleaned = _unfence(strip_reasoning(text))
+    starts = [i for i in (cleaned.find("{"), cleaned.find("[")) if i != -1]
+    if not starts:
+        raise json.JSONDecodeError("no JSON object or array found", text, 0)
+    body = cleaned[min(starts) :]
+
+    stack: list[str] = []  # closers still owed, innermost last
+    in_string = escaped = False
+    # Latest safe cut: (end index of kept text, closers owed at that point).
+    cut: tuple[int, str] = (0, "")
+    end = len(body)
+    for i, ch in enumerate(body):
+        if in_string:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_string = False
+        elif ch == '"':
+            in_string = True
+        elif ch in _CLOSERS:
+            stack.append(_CLOSERS[ch])
+            cut = (i + 1, "".join(stack))  # keep the empty container
+        elif ch in "}]":
+            if stack:
+                stack.pop()
+            cut = (i + 1, "".join(stack))  # a whole nested value just ended
+            if not stack:
+                end = i + 1  # top-level value complete; ignore any trailing text
+                break
+        elif ch == ",":
+            cut = (i, "".join(stack))  # drop the comma and whatever follows
+
+    head = body[:end]
+    candidates = []
+    if in_string and end == len(body):
+        candidates.append(head + '"' + "".join(reversed(stack)))
+    elif not stack:
+        candidates.append(head)
+    else:
+        candidates.append(head + "".join(reversed(stack)))
+    if _TRUNCATED_TAIL.fullmatch(body, cut[0]):
+        candidates.append(body[: cut[0]] + "".join(reversed(cut[1])))
+
+    first_error: json.JSONDecodeError | None = None
+    for candidate in candidates:
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError as e:
+            first_error = first_error or e
+    raise first_error or json.JSONDecodeError("unrepairable JSON", text, 0)
 
 
 def truncate_to_max_length(
@@ -127,11 +210,15 @@ def parse_structured[T: BaseModel](
     try:
         parsed = loads_lenient(raw_text)
     except json.JSONDecodeError as e:
-        logger.error(
-            "%s returned invalid JSON (model=%s): %s", provider, model_name, raw_text[:500]
-        )
-        msg = f"{provider} returned malformed JSON for model={model_name}: {e}"
-        raise ValueError(msg) from e
+        try:
+            parsed = repair_truncated_json(raw_text)
+        except json.JSONDecodeError:
+            logger.error(
+                "%s returned invalid JSON (model=%s): %s", provider, model_name, raw_text[:500]
+            )
+            msg = f"{provider} returned malformed JSON for model={model_name}: {e}"
+            raise ValueError(msg) from e
+        logger.warning("%s output was truncated; repaired JSON (model=%s)", provider, model_name)
 
     parsed = truncate_to_max_length(parsed, response_model)
 
