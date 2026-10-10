@@ -276,3 +276,28 @@ async def test_real_openai_uses_env_key_when_none_configured(
     )
     await client.generate_text("x")
     assert seen["auth"] == "Bearer sk-test"
+
+
+async def test_extra_body_is_merged_into_every_request() -> None:
+    bodies: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        bodies.append(_body(request))
+        return httpx.Response(200, json=_completion('{"name": "a", "value": 1}'))
+
+    client = _client(handler, extra_body={"chat_template_kwargs": {"thinking": False}})
+    await client.generate_text("p")
+    await client.generate_structured("p", _Sample)
+    assert all(b["chat_template_kwargs"] == {"thinking": False} for b in bodies)
+    assert len(bodies) == 2
+
+
+async def test_no_extra_fields_by_default() -> None:
+    bodies: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        bodies.append(_body(request))
+        return httpx.Response(200, json=_completion("hi"))
+
+    await _client(handler).generate_text("p")
+    assert set(bodies[0]) == {"model", "messages"}

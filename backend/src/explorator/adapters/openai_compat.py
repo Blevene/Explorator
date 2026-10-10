@@ -49,11 +49,13 @@ class OpenAICompatClient:
         max_retries: int = 1,
         max_concurrency: int = 4,
         context_tokens: int | None = None,
+        extra_body: dict[str, Any] | None = None,
         http_client: httpx.AsyncClient | None = None,
     ) -> None:
         self.pro_model = pro_model
         self.flash_model = flash_model
         self.context_tokens = context_tokens
+        self.extra_body = extra_body or {}
         self._client = openai.AsyncOpenAI(
             base_url=base_url or None,
             # Real OpenAI: None lets the SDK read OPENAI_API_KEY. Custom servers
@@ -146,6 +148,8 @@ class OpenAICompatClient:
         kwargs: dict[str, Any] = {"model": model, "messages": messages}
         if response_format is not None:
             kwargs["response_format"] = response_format
+        if self.extra_body:
+            kwargs["extra_body"] = self.extra_body
         async with self._semaphore:
             response = await self._client.chat.completions.create(**kwargs)
         self._record_usage(model, tier, response.usage)

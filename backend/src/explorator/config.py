@@ -1,8 +1,8 @@
 """Application configuration via environment variables."""
 
-from typing import Literal, Self
+from typing import Any, Literal, Self
 
-from pydantic import PrivateAttr, model_validator
+from pydantic import Field, PrivateAttr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Gemini-provider defaults (USD per 1M tokens are estimates — the models are
@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     llm_max_retries: int = 1
     llm_max_concurrency: int = 0
     llm_context_tokens: int | None = None
+    # openai only: JSON object merged into every request body, for server-specific
+    # knobs, e.g. {"chat_template_kwargs": {"thinking": false}} on vLLM.
+    llm_extra_body: dict[str, Any] = Field(default_factory=dict)
     llm_price_pro_input: float | None = None
     llm_price_pro_output: float | None = None
     llm_price_flash_input: float | None = None

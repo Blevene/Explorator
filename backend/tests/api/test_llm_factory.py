@@ -42,11 +42,13 @@ def test_openai_provider(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "llm_pro_model", "qwen3:32b")
     monkeypatch.setattr(settings, "llm_flash_model", "qwen3:8b")
     monkeypatch.setattr(settings, "llm_max_concurrency", 3)
+    monkeypatch.setattr(settings, "llm_extra_body", {"chat_template_kwargs": {"thinking": False}})
     client = get_llm_client()
     assert isinstance(client, OpenAICompatClient)
     assert (client.pro_model, client.flash_model) == ("qwen3:32b", "qwen3:8b")
     assert str(client._client.base_url).startswith("http://localhost:11434/v1")
     assert client._semaphore._value == 3
+    assert client.extra_body == {"chat_template_kwargs": {"thinking": False}}
 
 
 def test_default_gemini_timeout_reaches_genai_client(monkeypatch: pytest.MonkeyPatch) -> None:

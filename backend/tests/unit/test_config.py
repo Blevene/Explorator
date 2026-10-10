@@ -116,3 +116,12 @@ def test_ignored_legacy_names_reported_for_non_gemini_provider(
     assert s.ignored_legacy_names == ["GEMINI_API_KEY"]
     assert s.legacy_names_used == []
     assert s.llm_api_key == ""
+
+
+def test_extra_body_defaults_to_empty() -> None:
+    assert _settings().llm_extra_body == {}
+
+
+def test_extra_body_parses_json_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_EXTRA_BODY", '{"chat_template_kwargs": {"thinking": false}}')
+    assert _settings().llm_extra_body == {"chat_template_kwargs": {"thinking": False}}

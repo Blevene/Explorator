@@ -94,6 +94,7 @@ def get_llm_client() -> LLMClient:
             max_retries=settings.llm_max_retries,
             max_concurrency=settings.llm_max_concurrency,
             context_tokens=settings.llm_context_tokens,
+            extra_body=settings.llm_extra_body,
         )
     return GeminiClient(
         api_key=settings.llm_api_key,

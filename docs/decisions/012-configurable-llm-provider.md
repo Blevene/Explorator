@@ -20,7 +20,7 @@ completions protocol, and select between them with `LLM_PROVIDER`.**
   or `openai`) picks one at startup; unknown values fail at startup.
 - One `LLM_*` settings namespace (`LLM_API_KEY`, `LLM_BASE_URL`, `LLM_PRO_MODEL`,
   `LLM_FLASH_MODEL`, `LLM_TIMEOUT_SECONDS`, `LLM_MAX_RETRIES`,
-  `LLM_MAX_CONCURRENCY`, `LLM_CONTEXT_TOKENS`, `LLM_PRICE_*`). Provider defaults
+  `LLM_MAX_CONCURRENCY`, `LLM_CONTEXT_TOKENS`, `LLM_EXTRA_BODY`, `LLM_PRICE_*`). Provider defaults
   resolve in `config.py`: Gemini gets `gemini-*-latest` models, Gemini prices and a
   120 s timeout; `openai` gets a 300 s timeout and concurrency 4, and **requires**
   `LLM_PRO_MODEL` and `LLM_FLASH_MODEL` (startup fails otherwise).

@@ -211,6 +211,14 @@ sticky for the process only after a request in that mode succeeds), and strips
 the round completes with default strategies and the token panel shows an
 "N fallback(s)" badge — try a larger model.
 
+**Reasoning models and server-specific options.** `LLM_EXTRA_BODY` takes a JSON object
+that is merged into every `openai`-provider request, for options the OpenAI API
+doesn't define. Reasoning models (DeepSeek, Qwen3) can spend thousands of tokens
+thinking before answering, which makes rounds slow and can hit `LLM_TIMEOUT_SECONDS`;
+on vLLM you can switch reasoning off with
+`LLM_EXTRA_BODY='{"chat_template_kwargs": {"thinking": false}}'` (the exact key
+depends on the model's chat template — Qwen3 uses `enable_thinking`).
+
 **Cost.** Gemini shows estimated cost. Other providers show "not priced" unless you
 set `LLM_PRICE_*` (USD per 1M tokens).
 
