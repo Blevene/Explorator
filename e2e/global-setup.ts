@@ -136,7 +136,7 @@ export default async function globalSetup() {
   await assertPortFree(BACKEND_PORT, 'backend');
   await assertPortFree(FRONTEND_PORT, 'frontend');
 
-  console.log(`[e2e] Starting backend on port ${BACKEND_PORT} (GEMINI_MOCK=true)`);
+  console.log(`[e2e] Starting backend on port ${BACKEND_PORT} (LLM_MOCK=true)`);
   const backend = spawn(
     'uv', ['run', 'uvicorn', 'explorator.api.app:create_app', '--factory',
            '--host', '0.0.0.0', '--port', String(BACKEND_PORT)],
@@ -144,7 +144,7 @@ export default async function globalSetup() {
       cwd: path.join(ROOT, 'backend'),
       env: {
         ...process.env,
-        GEMINI_MOCK: 'true',
+        LLM_MOCK: 'true',
         EXPLORATOR_STYLE_DIR: styleDir,
       },
       stdio: 'pipe',

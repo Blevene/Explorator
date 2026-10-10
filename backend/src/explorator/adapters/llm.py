@@ -1,6 +1,6 @@
 """Provider-neutral LLM client interface.
 
-Every LLM adapter (``GeminiClient``, ``OpenAICompatClient``, ``FakeGeminiClient``)
+Every LLM adapter (``GeminiClient``, ``OpenAICompatClient``, ``FakeLLMClient``)
 satisfies ``LLMClient`` structurally; engine, domain and route code depends only
 on this module. Provider selection lives in ``api/deps.get_llm_client``.
 """

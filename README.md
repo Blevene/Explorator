@@ -82,7 +82,7 @@ Approved genres land in the same three directories as the seed genres and become
 |---|---|
 | Backend | 773 tests (unit + integration + API), all green |
 | Frontend | 135 vitest, tsc strict, `npm run build` clean |
-| E2E | 40 Playwright under `GEMINI_MOCK=true`; the memory-mode lane runs in CI (occasional flake on `ux-coherence:11 navigation-flow`, passes in isolation) |
+| E2E | 40 Playwright under `LLM_MOCK=true`; the memory-mode lane runs in CI (occasional flake on `ux-coherence:11 navigation-flow`, passes in isolation) |
 
 ## Quick start
 
@@ -141,7 +141,7 @@ make test                       # Backend full suite (auto-starts isolated test 
 make lint                       # ruff + mypy strict
 cd frontend && npm run test:unit
 
-# End-to-end (Playwright spawns its own servers, all under GEMINI_MOCK=true — no
+# End-to-end (Playwright spawns its own servers, all under LLM_MOCK=true — no
 # API key needed for e2e):
 make e2e-parallel               # UI/generation specs — fully parallel, each worker on its
                                 #   own in-memory backend; no Neo4j needed (~30s)
@@ -156,7 +156,7 @@ running; bring it up with `make neo4j-up` first. Setup hard-fails with a clear
 message if the backend can't reach Neo4j (it would otherwise boot in memory mode
 and the learning specs would fail with confusing UI errors). `make e2e-parallel`
 needs no Neo4j. None of the lanes need an `LLM_API_KEY`: e2e always runs with
-`GEMINI_MOCK=true`.
+`LLM_MOCK=true`.
 
 The pytest suite wipes the DB between tests, so it runs against a dedicated `neo4j-test` container on port 7689 — the dev DB on 7688 is never touched. `make test*` brings the test container up automatically; if you invoke pytest directly, run `make neo4j-test-up` first.
 
@@ -309,7 +309,7 @@ explorator/
 | Neo4j Bolt (test) | 7689 | Pytest-only — tests wipe between runs |
 | Backend (dev) | 8000 | FastAPI via `make backend` |
 | Frontend (dev) | 5173 | Vite dev server (`npm run dev`) |
-| Backend (E2E) | 8100 | Spawned by Playwright with `GEMINI_MOCK=true` |
+| Backend (E2E) | 8100 | Spawned by Playwright with `LLM_MOCK=true` |
 | Frontend (E2E) | 5199 | `npm run preview` against the production build |
 
 ## Genre catalog reference
@@ -354,7 +354,7 @@ Each arrangement is scored across **12 dimensions**, aggregated into a single `w
 ## Known limitations
 
 - **Single operator, no auth** — designed to run locally for one user. Adding auth is deferred until there's a real reason (sharing, multi-tenancy).
-- **M5c E2E flakiness** — 4 tests in `e2e/tests/genre-research.spec.ts` fail because `FakeGeminiClient.generate_text` returns non-JSON. Documented; needs dedicated test-infrastructure work.
+- **M5c E2E flakiness** — 4 tests in `e2e/tests/genre-research.spec.ts` fail because `FakeLLMClient.generate_text` returns non-JSON. Documented; needs dedicated test-infrastructure work.
 - **Warm-start retrieval doesn't favor curated patterns yet** — the library is populated and curation works, but retrieval still uses score-ordered top-K. Natural follow-up once there's curated data to tune against.
 - **Token usage is per-session only** — the panel's running total lives in the browser and resets on page reload; per-round usage is not persisted, so there's no cross-session or all-time spend view yet. Cost is a configurable estimate (flat per-tier rates), not provider-reconciled billing. Deliberate first-cut scope — see [ADR 011](docs/decisions/011-token-usage-instrumentation.md).
 - **GitHub issues:** [#2](https://github.com/Blevene/Explorator/issues/2) (cadence/loopability granularity), [#3](https://github.com/Blevene/Explorator/issues/3) (tension_curve dimension).

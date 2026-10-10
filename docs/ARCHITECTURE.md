@@ -81,7 +81,7 @@ Neo4j is **optional and auto-detected**. When it is reachable, behaviour is as d
 ```
 backend/src/explorator/
 ├── api/                # FastAPI: routes, schemas, dependency-injection wiring, SSE
-├── adapters/           # External-system clients: Gemini, music21, gemini_mock (E2E)
+├── adapters/           # External-system clients: Gemini, music21, llm_mock (E2E)
 ├── domain/             # Pure domain logic — no DB, no HTTP
 │   ├── evaluation/     #   Voice leading, register, playability, groove, melody-harmony, theory scores
 │   ├── export/         #   MIDI, JSON sidecar
@@ -285,7 +285,7 @@ Environment variables in `backend/.env`:
 
 - `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` — driver connection
 - `LLM_PROVIDER` (`gemini` default or `openai`), `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_PRO_MODEL`, `LLM_FLASH_MODEL`, `LLM_TIMEOUT_SECONDS`, `LLM_MAX_CONCURRENCY` (openai only) — LLM integration; full reference in README "LLM providers" and ADR 012. The legacy `GEMINI_*` names are deprecated aliases honoured only under `gemini`.
-- `GEMINI_MOCK=true` — substitutes `FakeGeminiClient` for E2E. The Playwright global-setup sets this when spawning the backend.
+- `LLM_MOCK=true` — substitutes `FakeLLMClient` for E2E. The Playwright global-setup sets this when spawning the backend.
 - `LLM_PRICE_PRO_INPUT`, `LLM_PRICE_PRO_OUTPUT`, `LLM_PRICE_FLASH_INPUT`, `LLM_PRICE_FLASH_OUTPUT` — USD per 1M tokens, used for the token-usage cost *estimate* (defaults: pro 1.25 / 10.0, flash 0.30 / 2.50). Tune to your billing tier; non-Gemini providers show "not priced" unless set.
 
 The pytest suite ignores `NEO4J_URI` and uses `NEO4J_TEST_URI` (defaults to `bolt://localhost:7689`) — a separate Docker container with `tmpfs` storage and an autouse `MATCH (n) DETACH DELETE n` between tests. The dev DB on 7688 is never touched by tests.
@@ -330,13 +330,13 @@ Each store follows the same shape: state fields, setters, and async actions that
 `e2e/` is a separate npm package using Playwright. Three pieces:
 
 - `playwright.config.ts` — single chromium project, fullyParallel: false, workers: 1 (tests aren't isolated enough for parallel). 60s test timeout, 10s expect timeout.
-- `global-setup.ts` — spawns backend on :8100 with `GEMINI_MOCK=true` and frontend `npm run preview` on :5199. Cleans stale test sessions before tests run. PIDs go to `.server-pids.json`.
+- `global-setup.ts` — spawns backend on :8100 with `LLM_MOCK=true` and frontend `npm run preview` on :5199. Cleans stale test sessions before tests run. PIDs go to `.server-pids.json`.
 - `global-teardown.ts` — kills both processes.
 - `fixtures/test-fixtures.ts` — re-exports Playwright's `test` with a `testSession` fixture that creates a session via API and tears it down after the test.
 
 Tests live in `e2e/tests/<feature>.spec.ts`. The Playwright preview server reads `frontend/dist/` — so any frontend change requires `npm run build` before the next E2E run.
 
-The mock `FakeGeminiClient` returns deterministic structured responses for the main flow but currently returns `"Mock text response"` for `generate_text` calls (used by the genre-research nodes). Four genre-research E2E tests fail because of this; fixing requires either prompt-discriminated JSON fixtures or a research-job cleanup step. Documented in the codebase, deferred.
+The mock `FakeLLMClient` returns deterministic structured responses for the main flow but currently returns `"Mock text response"` for `generate_text` calls (used by the genre-research nodes). Four genre-research E2E tests fail because of this; fixing requires either prompt-discriminated JSON fixtures or a research-job cleanup step. Documented in the codebase, deferred.
 
 ---
 

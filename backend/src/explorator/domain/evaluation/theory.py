@@ -182,7 +182,7 @@ def check_theoretical_coherence(
     return max(3.0, min(10.0, round(base, 1)))
 
 
-class GeminiScores(BaseModel):
+class LLMScores(BaseModel):
     """Schema for Gemini's evaluation output."""
 
     genre_fit: float = Field(ge=0, le=10)
@@ -278,7 +278,7 @@ class TheoryEvaluator:
         mood_targets: list[str],
         key: str,
         mode: str,
-    ) -> tuple[GeminiScores, bool]:
+    ) -> tuple[LLMScores, bool]:
         """Get Gemini Flash scores for soft dimensions.
 
         Returns (scores, failed) where failed=True means fallback defaults were used.
@@ -298,7 +298,7 @@ class TheoryEvaluator:
         try:
             scores = await self.llm.generate_structured(
                 prompt=prompt,
-                response_model=GeminiScores,
+                response_model=LLMScores,
                 tier=ModelTier.FLASH,
                 system_prompt=system,
                 max_output_tokens=FANOUT_MAX_OUTPUT_TOKENS,
@@ -311,4 +311,4 @@ class TheoryEvaluator:
                 " → ".join(chord_symbols), key, mode,
                 exc_info=True,
             )
-            return GeminiScores(genre_fit=6.0, emotional_fit=6.0, novelty=5.0), True
+            return LLMScores(genre_fit=6.0, emotional_fit=6.0, novelty=5.0), True

@@ -6,21 +6,21 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
-def _force_gemini_mock(monkeypatch):
+def _force_llm_mock(monkeypatch):
     """Force mock mode for these tests.
 
     The round route constructs the Gemini client via DI. CI has no
     GEMINI_API_KEY, and ``genai.Client(api_key="")`` raises at construction, so a
-    real client can't be built. ``FakeGeminiClient`` needs no key; the graph is
-    stubbed anyway, so no real Gemini call happens. ``get_gemini_client`` is
+    real client can't be built. ``FakeLLMClient`` needs no key; the graph is
+    stubbed anyway, so no real Gemini call happens. ``get_llm_client`` is
     lru_cached, so clear it around the test to avoid leaking a real/fake client.
     """
-    from explorator.api.deps import get_gemini_client
+    from explorator.api.deps import get_llm_client
 
-    monkeypatch.setenv("GEMINI_MOCK", "true")
-    get_gemini_client.cache_clear()
+    monkeypatch.setenv("LLM_MOCK", "true")
+    get_llm_client.cache_clear()
     yield
-    get_gemini_client.cache_clear()
+    get_llm_client.cache_clear()
 
 
 def _sse_events(resp) -> list[tuple[str, dict]]:
