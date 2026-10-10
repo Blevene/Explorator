@@ -73,9 +73,12 @@ class GeminiClient:
             )
             usage.record(model_name, response.usage_metadata, tier=tier.value)
 
+            candidates = getattr(response, "candidates", None) or []
+            reason = getattr(candidates[0], "finish_reason", None) if candidates else None
             try:
                 return parse_structured(
-                    response.text, response_model, provider="Gemini", model_name=model_name
+                    response.text, response_model, provider="Gemini", model_name=model_name,
+                    truncated=reason == types.FinishReason.MAX_TOKENS,
                 )
             except ValueError:  # includes pydantic.ValidationError
                 parse_attempts -= 1

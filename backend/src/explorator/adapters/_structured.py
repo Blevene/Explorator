@@ -71,6 +71,7 @@ def loads_lenient(text: str) -> Any:
 
 
 _CLOSERS = {"{": "}", "[": "]"}
+_NUMBER_CHARS = tuple("0123456789.-+eE")
 _PARTIAL_STR = r'"(?:[^"\\]|\\.)*(?:"|\\)?'
 # What may legitimately follow the last safe cut in truncated JSON: an optional
 # comma, an optional (partial) key and colon, and a (partial) string or scalar.
@@ -83,18 +84,24 @@ _TRUNCATED_TAIL = re.compile(
 def repair_truncated_json(text: str) -> Any:
     """Parse JSON that was cut off mid-output (e.g. by a ``max_output_tokens`` cap).
 
-    Starts at the first ``{``/``[`` (after reasoning/fence handling) and scans
-    once, tracking string state (with backslash escapes) and a stack of open
-    brackets. Two completions are tried, in order:
+    Only call this when the provider reported truncation; it is not a general
+    malformed-JSON fixer. Starts at the first ``{``/``[`` (after reasoning/fence
+    handling) and scans once, tracking string state (with backslash escapes) and
+    a stack of open brackets. Two completions are tried, in order:
 
-    (a) close an unterminated string with ``"``, then close every open bracket;
+    (a) close an unterminated string with ``"`` (first dropping a dangling ``\\``
+        or partial ``\\uXXXX`` escape), then close every open bracket. Skipped when
+        the text ends in an in-progress number (``12``, ``1.``, ``-``, ``1e``),
+        since the digits seen may be only a prefix of the real value;
     (b) otherwise cut back to the last point where a complete value ended at the
         current depth (just before a ``,``, or just after a bracket opened or
         closed), then close the brackets that were open at that point. This
         handles cuts in a key, after ``:`` or ``,``, or mid-number/literal.
 
-    Raises ``json.JSONDecodeError`` when neither completion parses. Linear time
-    apart from a bracket-stack snapshot per structural character (depth is tiny).
+    Raises ``json.JSONDecodeError`` when neither completion parses, or when the
+    top-level value is already complete and followed by more non-whitespace text
+    (that is not truncation). Linear time apart from a bracket-stack snapshot
+    per structural character (depth is tiny).
     """
     cleaned = _unfence(strip_reasoning(text))
     starts = [i for i in (cleaned.find("{"), cleaned.find("[")) if i != -1]
@@ -104,15 +111,16 @@ def repair_truncated_json(text: str) -> Any:
 
     stack: list[str] = []  # closers still owed, innermost last
     in_string = escaped = False
+    esc_pos = -1  # index of the backslash that opened the latest escape
     # Latest safe cut: (end index of kept text, closers owed at that point).
     cut: tuple[int, str] = (0, "")
-    end = len(body)
     for i, ch in enumerate(body):
         if in_string:
             if escaped:
                 escaped = False
             elif ch == "\\":
                 escaped = True
+                esc_pos = i
             elif ch == '"':
                 in_string = False
         elif ch == '"':
@@ -125,19 +133,25 @@ def repair_truncated_json(text: str) -> Any:
                 stack.pop()
             cut = (i + 1, "".join(stack))  # a whole nested value just ended
             if not stack:
-                end = i + 1  # top-level value complete; ignore any trailing text
-                break
+                # Top-level value is complete. Anything but whitespace after it
+                # means this is not a truncation.
+                if body[i + 1 :].strip():
+                    raise json.JSONDecodeError("data after complete JSON value", text, i + 1)
+                return json.loads(body[: i + 1])
         elif ch == ",":
             cut = (i, "".join(stack))  # drop the comma and whatever follows
 
-    head = body[:end]
-    candidates = []
-    if in_string and end == len(body):
-        candidates.append(head + '"' + "".join(reversed(stack)))
-    elif not stack:
-        candidates.append(head)
-    else:
-        candidates.append(head + "".join(reversed(stack)))
+    closers = "".join(reversed(stack))
+    candidates: list[str] = []
+    if in_string:
+        kept = body
+        if escaped:  # lone trailing backslash
+            kept = body[:esc_pos]
+        elif esc_pos >= 0 and body[esc_pos + 1] == "u" and len(body) - esc_pos < 6:
+            kept = body[:esc_pos]  # incomplete \uXXXX
+        candidates.append(kept + '"' + closers)
+    elif not body.rstrip().endswith(_NUMBER_CHARS):
+        candidates.append(body + closers)
     if _TRUNCATED_TAIL.fullmatch(body, cut[0]):
         candidates.append(body[: cut[0]] + "".join(reversed(cut[1])))
 
@@ -197,8 +211,13 @@ def parse_structured[T: BaseModel](
     *,
     provider: str,
     model_name: str,
+    truncated: bool = False,
 ) -> T:
     """Parse raw model text into ``response_model``.
+
+    ``truncated`` is True only when the provider reported the output hit its
+    token cap (Gemini ``MAX_TOKENS`` / OpenAI ``finish_reason="length"``); only
+    then is a malformed payload run through ``repair_truncated_json``.
 
     Raises ``ValueError`` for empty or malformed output and
     ``pydantic.ValidationError`` (a ``ValueError`` subclass) for schema mismatch.
@@ -211,6 +230,8 @@ def parse_structured[T: BaseModel](
         parsed = loads_lenient(raw_text)
     except json.JSONDecodeError as e:
         try:
+            if not truncated:
+                raise
             parsed = repair_truncated_json(raw_text)
         except json.JSONDecodeError:
             logger.error(

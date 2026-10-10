@@ -25,11 +25,11 @@ class _Sample(BaseModel):
 
 def _completion(
     content: str | None, *, prompt_tokens: int = 10, completion_tokens: int = 5,
-    cached: int | None = None, include_usage: bool = True,
+    cached: int | None = None, include_usage: bool = True, finish_reason: str = "stop",
 ) -> dict[str, Any]:
     body: dict[str, Any] = {
         "id": "c1", "object": "chat.completion", "created": 0, "model": "m",
-        "choices": [{"index": 0, "finish_reason": "stop",
+        "choices": [{"index": 0, "finish_reason": finish_reason,
                      "message": {"role": "assistant", "content": content}}],
     }
     if include_usage:
@@ -339,3 +339,34 @@ async def test_max_tokens_absent_by_default() -> None:
 
     await _client(handler).generate_structured("p", _Sample)
     assert "max_tokens" not in bodies[0]
+
+
+# ── truncation-gated repair ──────────────────────────────────────────────────
+
+_CUT = '{"name": "a", "value": 1, "extra": "float. float. fl'
+
+
+async def test_length_finish_reason_is_repaired_without_retry() -> None:
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(200, json=_completion(_CUT, finish_reason="length"))
+
+    result = await _client(handler).generate_structured("p", _Sample)
+    assert result == _Sample(name="a", value=1)
+    assert calls == 1
+
+
+async def test_cut_body_with_stop_finish_reason_is_not_repaired_and_is_retried() -> None:
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(200, json=_completion(_CUT))
+
+    with pytest.raises(ValueError, match="malformed JSON"):
+        await _client(handler).generate_structured("p", _Sample)
+    assert calls == 2

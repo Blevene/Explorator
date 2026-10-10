@@ -136,3 +136,34 @@ async def test_retry_records_usage_for_each_attempt() -> None:
     with usage.track_usage() as u:
         await client.generate_structured("p", SampleResponse)
     assert u.totals()["input"] == 20
+
+
+# ── truncation-gated repair ──────────────────────────────────────────────────
+
+_CUT = '{"name": "a", "value": 1, "extra": "float. float. fl'
+
+
+def _cut_response(reason: object) -> object:
+    from types import SimpleNamespace
+
+    resp = _response(_CUT)
+    resp.candidates = [SimpleNamespace(finish_reason=reason)]  # type: ignore[attr-defined]
+    return resp
+
+
+async def test_max_tokens_truncation_is_repaired_without_retry() -> None:
+    from google.genai import types
+
+    client, mock = _client_with(_cut_response(types.FinishReason.MAX_TOKENS))
+    result = await client.generate_structured("p", SampleResponse)
+    assert result == SampleResponse(name="a", value=1)
+    assert mock.await_count == 1
+
+
+async def test_cut_body_without_max_tokens_is_not_repaired_and_is_retried() -> None:
+    from google.genai import types
+
+    client, mock = _client_with(_cut_response(types.FinishReason.STOP), _cut_response(None))
+    with pytest.raises(ValueError, match="malformed JSON"):
+        await client.generate_structured("p", SampleResponse)
+    assert mock.await_count == 2

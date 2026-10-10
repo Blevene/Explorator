@@ -143,8 +143,10 @@ _TRUNCATED_VOICING = (
 )
 
 
-def _parse_voicing(text: str) -> VoicingStrategyResponse:
-    return parse_structured(text, VoicingStrategyResponse, provider="X", model_name="m")
+def _parse_voicing(text: str, *, truncated: bool = True) -> VoicingStrategyResponse:
+    return parse_structured(
+        text, VoicingStrategyResponse, provider="X", model_name="m", truncated=truncated
+    )
 
 
 def test_parse_structured_repairs_compact_truncation(caplog: pytest.LogCaptureFixture) -> None:
@@ -219,3 +221,55 @@ def test_parse_structured_valid_json_does_not_invoke_repair(
         result = _parse_voicing(text)
     assert result.rationale == "r"
     assert "repaired" not in caplog.text
+
+
+def test_parse_structured_does_not_repair_without_truncated_flag(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with caplog.at_level(logging.WARNING), pytest.raises(ValueError, match="malformed JSON"):
+        _parse_voicing(_TRUNCATED_VOICING, truncated=False)
+    assert "repaired" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "text",
+    ['The JSON {} is: {"a": 1, "b": "c', '{"a": 1} more {"b": 2}', '{"a": 1}}'],
+)
+def test_repair_rejects_non_truncation_shapes(text: str) -> None:
+    with pytest.raises(json.JSONDecodeError):
+        repair_truncated_json(text)
+
+
+def test_repair_cuts_back_from_in_progress_number() -> None:
+    assert repair_truncated_json('{"a": 1, "b": 12') == {"a": 1}
+
+
+def test_repair_drops_dangling_backslash_and_partial_unicode() -> None:
+    assert repair_truncated_json('{"a": "x\\') == {"a": "x"}
+    assert repair_truncated_json('{"a": "x\\u00') == {"a": "x"}
+    assert repair_truncated_json('{"a": "x\\\\') == {"a": "x\\"}
+
+
+def test_repair_top_level_array() -> None:
+    assert repair_truncated_json('[1, 2, {"x": "y') == [1, 2, {"x": "y"}]
+
+
+def test_repair_brackets_inside_truncated_string() -> None:
+    assert repair_truncated_json('{"a": "br{ace[') == {"a": "br{ace["}
+
+
+def test_parse_structured_preserves_complete_per_chord_before_runaway_rationale() -> None:
+    chords = [
+        {"chord_index": i, "chord_symbol": "C", "voicing_type": "open",
+         "density": "medium", "pitches": ["C4", "E4"]}
+        for i in range(3)
+    ]
+    text = (
+        '{"global_strategy":"g","density_level":"full","voice_count":4,"per_chord":'
+        + json.dumps(chords)
+        + ',"register_profile":"mid","rationale":"Adding ' + "float. " * 50
+    )
+    result = _parse_voicing(text)
+    assert len(result.per_chord) == 3
+    assert result.density_level == "full"
+    assert len(result.rationale) <= 200

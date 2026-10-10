@@ -82,7 +82,7 @@ class OpenAICompatClient:
     ) -> str:
         """Generate a plain text response (reasoning blocks removed)."""
         model = self.get_model_name(tier)
-        content = await self._complete(model, tier, _messages(system_prompt, prompt))
+        content, _ = await self._complete(model, tier, _messages(system_prompt, prompt))
         text = strip_reasoning(content or "").strip()
         if not text:
             msg = f"{_PROVIDER} returned empty response for model={model}"
@@ -105,7 +105,7 @@ class OpenAICompatClient:
 
         while True:
             try:
-                raw = await self._complete(
+                raw, truncated = await self._complete(
                     model,
                     tier,
                     _messages(_system_for(mode, system_prompt, schema), prompt),
@@ -125,7 +125,8 @@ class OpenAICompatClient:
 
             try:
                 result = parse_structured(
-                    raw, response_model, provider=_PROVIDER, model_name=model
+                    raw, response_model, provider=_PROVIDER, model_name=model,
+                    truncated=truncated,
                 )
             except ValueError:  # includes pydantic.ValidationError
                 parse_attempts -= 1
@@ -147,7 +148,8 @@ class OpenAICompatClient:
         messages: list[dict[str, str]],
         response_format: dict[str, Any] | None = None,
         max_output_tokens: int | None = None,
-    ) -> str | None:
+    ) -> tuple[str | None, bool]:
+        """Return ``(content, truncated)``; truncated means ``finish_reason == "length"``."""
         kwargs: dict[str, Any] = {"model": model, "messages": messages}
         if max_output_tokens is not None:
             kwargs["max_tokens"] = max_output_tokens
@@ -159,9 +161,10 @@ class OpenAICompatClient:
             response = await self._client.chat.completions.create(**kwargs)
         self._record_usage(model, tier, response.usage)
         if not response.choices:
-            return None
-        content: str | None = response.choices[0].message.content
-        return content
+            return None, False
+        choice = response.choices[0]
+        content: str | None = choice.message.content
+        return content, choice.finish_reason == "length"
 
     def _record_usage(self, model: str, tier: ModelTier, counts: Any) -> None:
         if counts is None:
