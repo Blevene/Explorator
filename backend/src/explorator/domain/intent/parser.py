@@ -11,6 +11,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from explorator.adapters import usage
 from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.models.session import CreativeBrief
 from explorator.prompts.intent import soft_preference_prompt
@@ -142,6 +143,7 @@ class IntentParser:
                 system_prompt=system,
             )
         except Exception:
+            usage.record_fallback("parse_intent")
             logger.warning(
                 "Gemini soft preference extraction failed for prompt: %s",
                 prompt[:100],

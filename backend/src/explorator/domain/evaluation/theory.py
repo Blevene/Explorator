@@ -9,6 +9,7 @@ import logging
 from pydantic import BaseModel, Field
 from ulid import ULID
 
+from explorator.adapters import usage
 from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.adapters.music21_adapter import analyze_roman_numerals, parse_chord_symbol
 from explorator.models.evaluation import AggregateScorecard, TheoryEvaluation
@@ -303,6 +304,7 @@ class TheoryEvaluator:
             )
             return scores, False
         except Exception:
+            usage.record_fallback("evaluate_progressions")
             logger.warning(
                 "Gemini evaluation failed for %s in %s %s — using fallback scores",
                 " → ".join(chord_symbols), key, mode,

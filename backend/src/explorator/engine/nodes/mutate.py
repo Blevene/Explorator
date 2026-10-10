@@ -5,6 +5,7 @@ from typing import Any
 
 from ulid import ULID
 
+from explorator.adapters import usage
 from explorator.adapters.llm import LLMClient
 from explorator.domain.harmony.mutator import HarmonyMutator
 from explorator.engine.state import ExplorationState
@@ -116,6 +117,7 @@ async def mutate(state: ExplorationState, *, gemini: LLMClient) -> dict[str, Any
                 scores=source_scores,
             )
         except Exception:
+            usage.record_fallback("mutate")
             logger.exception("Gemini mutation failed for candidate %s — skipping", source_id)
             continue
 
