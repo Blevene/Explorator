@@ -49,26 +49,42 @@ class GeminiClient:
         response_model: type[T],
         tier: ModelTier = ModelTier.FLASH,
         system_prompt: str | None = None,
+        max_output_tokens: int | None = None,
     ) -> T:
-        """Generate a structured response validated against a Pydantic model."""
+        """Generate a structured response validated against a Pydantic model.
+
+        A malformed or schema-invalid response is retried once; API errors propagate.
+        """
         model_name = self.get_model_name(tier)
         contents = prompt
         config = types.GenerateContentConfig(
             response_mime_type="application/json",
             response_schema=response_model,
             system_instruction=system_prompt,
+            **({"max_output_tokens": max_output_tokens} if max_output_tokens is not None else {}),
         )
 
-        response = await self._client.aio.models.generate_content(
-            model=model_name,
-            contents=contents,
-            config=config,
-        )
-        usage.record(model_name, response.usage_metadata, tier=tier.value)
+        parse_attempts = 2  # one retry on malformed output, as OpenAICompatClient does
+        while True:
+            response = await self._client.aio.models.generate_content(
+                model=model_name,
+                contents=contents,
+                config=config,
+            )
+            usage.record(model_name, response.usage_metadata, tier=tier.value)
 
-        return parse_structured(
-            response.text, response_model, provider="Gemini", model_name=model_name
-        )
+            try:
+                return parse_structured(
+                    response.text, response_model, provider="Gemini", model_name=model_name
+                )
+            except ValueError:  # includes pydantic.ValidationError
+                parse_attempts -= 1
+                if parse_attempts == 0:
+                    raise
+                logger.warning(
+                    "Gemini output did not match %s (model=%s); retrying once",
+                    response_model.__name__, model_name,
+                )
 
     async def generate_text(
         self,

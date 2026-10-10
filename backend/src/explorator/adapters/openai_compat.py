@@ -95,6 +95,7 @@ class OpenAICompatClient:
         response_model: type[T],
         tier: ModelTier = ModelTier.FLASH,
         system_prompt: str | None = None,
+        max_output_tokens: int | None = None,
     ) -> T:
         """Generate a response validated against ``response_model``."""
         model = self.get_model_name(tier)
@@ -109,6 +110,7 @@ class OpenAICompatClient:
                     tier,
                     _messages(_system_for(mode, system_prompt, schema), prompt),
                     _response_format(mode, response_model.__name__, schema),
+                    max_output_tokens,
                 )
             except (openai.BadRequestError, openai.UnprocessableEntityError) as e:
                 next_mode = _NEXT_MODE.get(mode)
@@ -144,8 +146,11 @@ class OpenAICompatClient:
         tier: ModelTier,
         messages: list[dict[str, str]],
         response_format: dict[str, Any] | None = None,
+        max_output_tokens: int | None = None,
     ) -> str | None:
         kwargs: dict[str, Any] = {"model": model, "messages": messages}
+        if max_output_tokens is not None:
+            kwargs["max_tokens"] = max_output_tokens
         if response_format is not None:
             kwargs["response_format"] = response_format
         if self.extra_body:

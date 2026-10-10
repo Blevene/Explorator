@@ -301,3 +301,41 @@ async def test_no_extra_fields_by_default() -> None:
 
     await _client(handler).generate_text("p")
     assert set(bodies[0]) == {"model", "messages"}
+
+
+async def test_max_tokens_sent_when_given_alongside_extra_body() -> None:
+    bodies: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        bodies.append(_body(request))
+        return httpx.Response(200, json=_completion('{"name": "a", "value": 1}'))
+
+    client = _client(handler, extra_body={"chat_template_kwargs": {"thinking": False}})
+    await client.generate_structured("p", _Sample, max_output_tokens=4096)
+    assert bodies[0]["max_tokens"] == 4096
+    assert bodies[0]["chat_template_kwargs"] == {"thinking": False}
+    assert "response_format" in bodies[0]
+
+
+async def test_max_tokens_survives_mode_downgrade() -> None:
+    bodies: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        bodies.append(_body(request))
+        if len(bodies) == 1:
+            return httpx.Response(400, json={"error": {"message": "no schema"}})
+        return httpx.Response(200, json=_completion('{"name": "a", "value": 1}'))
+
+    await _client(handler).generate_structured("p", _Sample, max_output_tokens=512)
+    assert [b["max_tokens"] for b in bodies] == [512, 512]
+
+
+async def test_max_tokens_absent_by_default() -> None:
+    bodies: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        bodies.append(_body(request))
+        return httpx.Response(200, json=_completion('{"name": "a", "value": 1}'))
+
+    await _client(handler).generate_structured("p", _Sample)
+    assert "max_tokens" not in bodies[0]
