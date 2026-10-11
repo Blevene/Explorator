@@ -15,7 +15,7 @@ from typing import Any, cast
 from langgraph.graph import END, StateGraph
 from neo4j import AsyncDriver
 
-from explorator.adapters.gemini import GeminiClient
+from explorator.adapters.llm import LLMClient
 from explorator.adapters.usage import current_usage, set_phase
 from explorator.engine.nodes.assemble_arrangements import assemble_arrangements
 from explorator.engine.nodes.check_stop import check_stop
@@ -76,7 +76,7 @@ def _instrument[NodeFnT: Callable[[ExplorationState], Awaitable[dict[str, Any]]]
 
 def _add_m2_nodes(
     graph: StateGraph[Any],
-    gemini: GeminiClient,
+    gemini: LLMClient,
     driver: AsyncDriver | None,
 ) -> None:
     """Register M2 realization nodes on a graph. Shared by full and sub-graph builders."""
@@ -132,7 +132,7 @@ def _route_after_mutate(state: ExplorationState) -> str:
     return "evaluate_arrangements"
 
 
-def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver | None) -> Any:
+def build_exploration_graph(gemini: LLMClient, driver: AsyncDriver | None) -> Any:
     """Build and compile the unified M1+M2 LangGraph exploration flow."""
     graph = StateGraph(ExplorationState)
 
@@ -213,7 +213,7 @@ def build_exploration_graph(gemini: GeminiClient, driver: AsyncDriver | None) ->
     return graph.compile()
 
 
-def build_realization_subgraph(gemini: GeminiClient, driver: AsyncDriver | None) -> Any:
+def build_realization_subgraph(gemini: LLMClient, driver: AsyncDriver | None) -> Any:
     """Build M2-only subgraph for independent realization (used by realization endpoint)."""
     graph = StateGraph(ExplorationState)
 

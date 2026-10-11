@@ -4,7 +4,9 @@ import asyncio
 import logging
 from typing import Any
 
-from explorator.adapters.gemini import GeminiClient, ModelTier
+from explorator.adapters import usage
+from explorator.adapters.llm import LLMClient, ModelTier
+from explorator.config import settings
 from explorator.domain.realization.melody import MelodyGenerator
 from explorator.engine.state import ExplorationState
 from explorator.models.harmony import ProgressionCandidate
@@ -102,7 +104,7 @@ def _groove_summary(groove_patterns_raw: list[dict[str, Any]]) -> str:
     return "rhythmic groove pattern"
 
 
-async def generate_melody(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, Any]:
+async def generate_melody(state: ExplorationState, *, gemini: LLMClient) -> dict[str, Any]:
     """Generate melodic complements via Gemini strategy + deterministic realization."""
     callback = state.get("on_progress")
     if callback:
@@ -183,6 +185,7 @@ async def generate_melody(state: ExplorationState, *, gemini: GeminiClient) -> d
                 system_prompt=system,
             )
         except Exception:
+            usage.record_fallback("generate_melody")
             logger.warning(
                 "Melody strategy LLM call failed for candidate %s — using default",
                 candidate.id,
@@ -218,7 +221,7 @@ async def generate_melody(state: ExplorationState, *, gemini: GeminiClient) -> d
             motion_preference=mel_prefs.motion_preference,
         )
         complement.arrangement_candidate_id = ""  # will be linked in assemble
-        complement.source_strategy = f"gemini_flash_{genre}"
+        complement.source_strategy = f"{settings.llm_provider}_flash_{genre}"
 
         return [complement.model_dump(mode="json")]
 

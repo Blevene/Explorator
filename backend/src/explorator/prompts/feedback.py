@@ -36,7 +36,7 @@ def feedback_interpretation_prompt(
     """Build (user_prompt, system_prompt) for feedback interpretation.
 
     Returns a tuple of (user_prompt, system_prompt) strings suitable for
-    passing to GeminiClient.generate_structured.
+    passing to LLMClient.generate_structured.
     """
     weights_str = "\n".join(
         f"  - {dim}: {current_weights.get(dim, 0.0):.3f} — {DIMENSION_DESCRIPTIONS.get(dim, '')}"

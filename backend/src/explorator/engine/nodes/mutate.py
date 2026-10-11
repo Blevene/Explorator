@@ -5,7 +5,8 @@ from typing import Any
 
 from ulid import ULID
 
-from explorator.adapters.gemini import GeminiClient
+from explorator.adapters import usage
+from explorator.adapters.llm import LLMClient
 from explorator.domain.harmony.mutator import HarmonyMutator
 from explorator.engine.state import ExplorationState
 from explorator.utils import parse_json_or_dict, utc_now
@@ -46,7 +47,7 @@ def _select_candidates_to_mutate(
     return selected
 
 
-async def mutate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, Any]:
+async def mutate(state: ExplorationState, *, gemini: LLMClient) -> dict[str, Any]:
     """Mutate selected candidates and return merged state update."""
     callback = state.get("on_progress")
     if callback:
@@ -116,6 +117,7 @@ async def mutate(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, 
                 scores=source_scores,
             )
         except Exception:
+            usage.record_fallback("mutate")
             logger.exception("Gemini mutation failed for candidate %s — skipping", source_id)
             continue
 

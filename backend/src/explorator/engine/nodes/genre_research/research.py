@@ -3,7 +3,7 @@
 import logging
 from typing import Any
 
-from explorator.adapters.gemini import GeminiClient, ModelTier
+from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.graph.genre_research_repo import GenreResearchRepository
 from explorator.prompts.genre_research import load_prompt
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 async def research_genre(
     state: dict[str, Any],
     *,
-    gemini: GeminiClient,
+    gemini: LLMClient,
     driver: Any,
 ) -> dict[str, Any]:
     """Research a genre using Gemini Pro. Returns research_log."""

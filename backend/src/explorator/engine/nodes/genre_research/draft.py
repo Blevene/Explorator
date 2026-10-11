@@ -1,10 +1,10 @@
 """Draft node — synthesizes research into structured YAML data using Gemini Flash."""
 
-import json
 import logging
 from typing import Any
 
-from explorator.adapters.gemini import GeminiClient, ModelTier
+from explorator.adapters._structured import loads_lenient
+from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.graph.genre_research_repo import GenreResearchRepository
 from explorator.models.genre_research import GenreDraftResponse
 from explorator.prompts.genre_research import load_prompt
@@ -54,7 +54,7 @@ def _normalize_draft(parsed: dict[str, Any], genre_name: str) -> None:
 async def draft_yamls(
     state: dict[str, Any],
     *,
-    gemini: GeminiClient,
+    gemini: LLMClient,
     driver: Any,
 ) -> dict[str, Any]:
     """Draft three YAML structures from research log."""
@@ -82,24 +82,14 @@ async def draft_yamls(
         "Return valid JSON matching the schema exactly."
     )
 
-    # Use generate_text + manual parsing because GenreDraftResponse's nested
-    # Pydantic schemas trigger Gemini's "additionalProperties not supported" error
-    # when passed as a structured output schema.
+    # generate_text + manual parsing: nested schemas trip Gemini's "additionalProperties" check.
     raw_text = await gemini.generate_text(
         prompt=user_prompt,
         tier=ModelTier.FLASH,
         system_prompt=system_prompt,
     )
 
-    # Strip markdown code fences if present
-    text = raw_text.strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
-    if text.endswith("```"):
-        text = text[: text.rfind("```")]
-    text = text.strip()
-
-    parsed = json.loads(text)
+    parsed = loads_lenient(raw_text)
 
     _normalize_draft(parsed, genre_name)
     draft = GenreDraftResponse.model_validate(parsed)

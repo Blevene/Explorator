@@ -47,3 +47,17 @@ async def test_generate_structured_returns_typed_response() -> None:
     assert isinstance(result, SampleResponse)
     assert result.name == "test"
     assert result.value == 42
+
+
+def test_timeout_is_passed_to_genai_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    class _FakeGenaiClient:
+        def __init__(self, **kwargs: object) -> None:
+            captured.update(kwargs)
+
+    monkeypatch.setattr("explorator.adapters.gemini.genai.Client", _FakeGenaiClient)
+    GeminiClient(api_key="k", timeout_seconds=45)
+
+    http_options = captured["http_options"]
+    assert http_options.timeout == 45_000  # type: ignore[attr-defined]  # google-genai uses ms

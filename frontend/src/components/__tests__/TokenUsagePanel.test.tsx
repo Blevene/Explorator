@@ -39,4 +39,28 @@ describe('TokenUsagePanel', () => {
     render(<TokenUsagePanel />);
     expect(screen.getByText(/generate/)).toBeInTheDocument();
   });
+
+  it('shows "not priced" instead of a dollar estimate for unpriced providers', () => {
+    useCandidateStore.getState().setLiveUsage({ ...sample, is_priced: false, estimated_cost_usd: 0 });
+    render(<TokenUsagePanel />);
+    expect(screen.getAllByText(/not priced/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/est\./)).toBeNull();
+  });
+
+  it('flags LLM fallbacks with a per-node tooltip', () => {
+    useCandidateStore.getState().setLiveUsage({
+      ...sample,
+      fallbacks: { plan_voicings: 2, generate_melody: 1 },
+    });
+    render(<TokenUsagePanel />);
+    const badge = screen.getByTestId('token-usage-fallbacks');
+    expect(badge).toHaveTextContent('3 fallbacks');
+    expect(badge.getAttribute('title')).toContain('plan_voicings ×2');
+  });
+
+  it('shows no fallback badge when there were none', () => {
+    useCandidateStore.getState().setLiveUsage({ ...sample, fallbacks: {} });
+    render(<TokenUsagePanel />);
+    expect(screen.queryByTestId('token-usage-fallbacks')).toBeNull();
+  });
 });

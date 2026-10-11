@@ -4,7 +4,8 @@ import json
 import logging
 from typing import Any
 
-from explorator.adapters.gemini import GeminiClient, ModelTier
+from explorator.adapters._structured import loads_lenient
+from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.engine.nodes.genre_research.draft import _normalize_draft
 from explorator.graph.genre_research_repo import GenreResearchRepository
 from explorator.models.genre_research import GenreDraftResponse
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 async def refine_draft(
     state: dict[str, Any],
     *,
-    gemini: GeminiClient,
+    gemini: LLMClient,
     driver: Any,
 ) -> dict[str, Any]:
     """Refine draft based on critique. Has full context: research + draft + critique."""
@@ -54,19 +55,13 @@ async def refine_draft(
         "Return valid JSON with improved profile, rules, and grammar."
     )
 
-    # Use generate_text + manual parsing to avoid Gemini additionalProperties error
+    # generate_text + manual parsing: nested schemas trip Gemini's "additionalProperties" check.
     raw_text = await gemini.generate_text(
         prompt=user_prompt,
         tier=ModelTier.FLASH,
         system_prompt=system_prompt,
     )
-    text = raw_text.strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
-    if text.endswith("```"):
-        text = text[: text.rfind("```")]
-    text = text.strip()
-    parsed = json.loads(text)
+    parsed = loads_lenient(raw_text)
 
     _normalize_draft(parsed, genre_name)
     refined = GenreDraftResponse.model_validate(parsed)

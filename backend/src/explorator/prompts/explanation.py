@@ -16,7 +16,7 @@ def explanation_prompt(
     """Build (user_prompt, system_prompt) for candidate explanation.
 
     Returns a tuple of (user_prompt, system_prompt) strings suitable for
-    passing to GeminiClient.generate_structured.
+    passing to LLMClient.generate_structured.
     """
     scores_str = ", ".join(f"{k}={v:.1f}" for k, v in scores.items()) if scores else "none"
     rules_str = "; ".join(genre_rules) if genre_rules else "none specified"

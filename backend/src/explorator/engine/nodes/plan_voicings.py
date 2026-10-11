@@ -6,7 +6,8 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from explorator.adapters.gemini import GeminiClient, ModelTier
+from explorator.adapters import usage
+from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.domain.realization.voicing import VoicingGenerator
 from explorator.engine.state import ExplorationState
 from explorator.models.harmony import ProgressionCandidate
@@ -112,7 +113,7 @@ def _default_strategy(
     )
 
 
-async def plan_voicings(state: ExplorationState, *, gemini: GeminiClient) -> dict[str, Any]:
+async def plan_voicings(state: ExplorationState, *, gemini: LLMClient) -> dict[str, Any]:
     """Generate voicing strategies via Gemini Flash, then realize them into voicing plans."""
     callback = state.get("on_progress")
     if callback:
@@ -155,6 +156,7 @@ async def plan_voicings(state: ExplorationState, *, gemini: GeminiClient) -> dic
                 system_prompt=system,
             )
         except Exception:
+            usage.record_fallback("plan_voicings")
             logger.warning(
                 "Voicing strategy LLM call failed for candidate %s — using default",
                 candidate.id,

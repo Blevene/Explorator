@@ -9,7 +9,8 @@ import logging
 from pydantic import BaseModel, Field
 from ulid import ULID
 
-from explorator.adapters.gemini import GeminiClient, ModelTier
+from explorator.adapters import usage
+from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.adapters.music21_adapter import analyze_roman_numerals, parse_chord_symbol
 from explorator.models.evaluation import AggregateScorecard, TheoryEvaluation
 from explorator.models.harmony import ProgressionCandidate
@@ -192,7 +193,7 @@ class GeminiScores(BaseModel):
 class TheoryEvaluator:
     """Hybrid theory evaluator: deterministic + Gemini Flash."""
 
-    def __init__(self, gemini: GeminiClient) -> None:
+    def __init__(self, gemini: LLMClient) -> None:
         self.gemini = gemini
 
     async def evaluate(
@@ -303,6 +304,7 @@ class TheoryEvaluator:
             )
             return scores, False
         except Exception:
+            usage.record_fallback("evaluate_progressions")
             logger.warning(
                 "Gemini evaluation failed for %s in %s %s — using fallback scores",
                 " → ".join(chord_symbols), key, mode,

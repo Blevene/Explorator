@@ -24,7 +24,7 @@ def mutation_prompt(
     """Build (user_prompt, system_prompt) for harmonic mutation.
 
     Returns a tuple of (user_prompt, system_prompt) strings suitable for
-    passing to GeminiClient.generate_structured.
+    passing to LLMClient.generate_structured.
     """
     ops = allowed_operations or MUTATION_OPERATIONS
     ops_list = ", ".join(ops)

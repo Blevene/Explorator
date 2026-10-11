@@ -1,7 +1,8 @@
-"""Context-scoped Gemini token-usage accumulator.
+"""Context-scoped LLM token-usage accumulator.
 
-Every Gemini call funnels through ``adapters/gemini.py``; that adapter records
-usage here. A round handler opens a scope with ``track_usage()`` around
+Every LLM call funnels through an adapter (``adapters/gemini.py``,
+``adapters/openai_compat.py``); that adapter records usage here.
+A round handler opens a scope with ``track_usage()`` around
 ``graph.ainvoke``; the graph node wrapper tags the active phase via
 ``set_phase()``. contextvars copy by reference into asyncio child tasks, so a
 parallel ``asyncio.gather`` fan-out aggregates into the one accumulator.
@@ -51,11 +52,21 @@ class UsageAccumulator:
 
     by_model: dict[str, _ModelUsage] = field(default_factory=dict)
     by_phase: dict[str, _PhaseUsage] = field(default_factory=dict)
+    fallbacks: dict[str, int] = field(default_factory=dict)
     _last_emitted_total: int = field(default=0, init=False)
     synthetic: bool = field(default=False, init=False)
 
-    def add(self, model_name: str, input_: int, output: int, cached: int, phase: str) -> None:
-        tier = _tier_of(model_name)
+    def add(
+        self,
+        model_name: str,
+        input_: int,
+        output: int,
+        cached: int,
+        phase: str,
+        *,
+        tier: str | None = None,
+    ) -> None:
+        tier = tier or _tier_of(model_name)
         m = self.by_model.setdefault(tier, _ModelUsage())
         m.input += input_
         m.output += output
@@ -110,6 +121,8 @@ class UsageAccumulator:
             },
             "estimated_cost_usd": round(self.estimated_cost_usd(), 6),
             "is_estimate": True,
+            "is_priced": is_priced(),
+            "fallbacks": dict(self.fallbacks),
             "is_synthetic": self.synthetic,
         }
 
@@ -127,14 +140,27 @@ def _pricing() -> dict[str, dict[str, float]]:
     not priced separately."""
     return {
         "pro": {
-            "input": settings.gemini_price_pro_input,
-            "output": settings.gemini_price_pro_output,
+            "input": settings.llm_price_pro_input or 0.0,
+            "output": settings.llm_price_pro_output or 0.0,
         },
         "flash": {
-            "input": settings.gemini_price_flash_input,
-            "output": settings.gemini_price_flash_output,
+            "input": settings.llm_price_flash_input or 0.0,
+            "output": settings.llm_price_flash_output or 0.0,
         },
     }
+
+
+def is_priced() -> bool:
+    """True when any LLM_PRICE_* is configured (Gemini always has defaults)."""
+    return any(
+        price is not None
+        for price in (
+            settings.llm_price_pro_input,
+            settings.llm_price_pro_output,
+            settings.llm_price_flash_input,
+            settings.llm_price_flash_output,
+        )
+    )
 
 
 def current_usage() -> UsageAccumulator | None:
@@ -164,27 +190,41 @@ def set_phase(name: str) -> Iterator[None]:
 
 
 def record_tokens(
-    model_name: str, input_tokens: int, output_tokens: int, cached_tokens: int = 0
+    model_name: str,
+    input_tokens: int,
+    output_tokens: int,
+    cached_tokens: int = 0,
+    *,
+    tier: str | None = None,
 ) -> None:
     """Add raw token counts to the active accumulator. No-op outside a scope."""
     accumulator = _current.get()
     if accumulator is None:
         return
-    accumulator.add(model_name, input_tokens, output_tokens, cached_tokens, _current_phase.get())
+    accumulator.add(
+        model_name, input_tokens, output_tokens, cached_tokens, _current_phase.get(), tier=tier
+    )
 
 
 def record_synthetic_tokens(
-    model_name: str, input_tokens: int, output_tokens: int, cached_tokens: int = 0
+    model_name: str,
+    input_tokens: int,
+    output_tokens: int,
+    cached_tokens: int = 0,
+    *,
+    tier: str | None = None,
 ) -> None:
     """Record token counts that come from a mock client, flagging the scope synthetic."""
     accumulator = _current.get()
     if accumulator is None:
         return
     accumulator.synthetic = True
-    accumulator.add(model_name, input_tokens, output_tokens, cached_tokens, _current_phase.get())
+    accumulator.add(
+        model_name, input_tokens, output_tokens, cached_tokens, _current_phase.get(), tier=tier
+    )
 
 
-def record(model_name: str, usage_metadata: Any) -> None:
+def record(model_name: str, usage_metadata: Any, *, tier: str | None = None) -> None:
     """Extract counts from a google-genai ``usage_metadata`` object (None-safe)."""
     if usage_metadata is None:
         return
@@ -193,4 +233,13 @@ def record(model_name: str, usage_metadata: Any) -> None:
         getattr(usage_metadata, "prompt_token_count", 0) or 0,
         getattr(usage_metadata, "candidates_token_count", 0) or 0,
         getattr(usage_metadata, "cached_content_token_count", 0) or 0,
+        tier=tier,
     )
+
+
+def record_fallback(node: str) -> None:
+    """Count an LLM call that failed; its result was defaulted or dropped. No-op outside a scope."""
+    accumulator = _current.get()
+    if accumulator is None:
+        return
+    accumulator.fallbacks[node] = accumulator.fallbacks.get(node, 0) + 1

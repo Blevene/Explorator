@@ -11,7 +11,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from explorator.adapters.gemini import GeminiClient, ModelTier
+from explorator.adapters import usage
+from explorator.adapters.llm import LLMClient, ModelTier
 from explorator.models.session import CreativeBrief
 from explorator.prompts.intent import soft_preference_prompt
 from explorator.utils import utc_now
@@ -94,7 +95,7 @@ def extract_deterministic_constraints(prompt: str) -> dict[str, Any]:
 class IntentParser:
     """Parses user prompts into CreativeBrief using hybrid extraction."""
 
-    def __init__(self, gemini: GeminiClient) -> None:
+    def __init__(self, gemini: LLMClient) -> None:
         self.gemini = gemini
 
     async def parse(self, prompt: str, session_id: str) -> CreativeBrief:
@@ -142,6 +143,7 @@ class IntentParser:
                 system_prompt=system,
             )
         except Exception:
+            usage.record_fallback("parse_intent")
             logger.warning(
                 "Gemini soft preference extraction failed for prompt: %s",
                 prompt[:100],
