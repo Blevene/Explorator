@@ -1,8 +1,10 @@
 .PHONY: dev test lint neo4j-up neo4j-down neo4j-test-up neo4j-test-down sync-genres backend frontend e2e e2e-parallel e2e-neo4j e2e-headed screenshots
 
 # Infrastructure
+# Blocks until healthy so a backend started right after doesn't fall back to
+# limited (in-memory) mode during the Neo4j start-up.
 neo4j-up:
-	docker compose up -d neo4j
+	docker compose up -d --wait neo4j
 
 neo4j-down:
 	docker compose down
@@ -38,9 +40,10 @@ lint:
 sync-genres:
 	@echo "Genre sync will be implemented as a CLI command. For now, genres load on app startup."
 
-# Frontend (placeholder for Task 10)
+# Frontend dev server on :5173. Vite's proxy defaults to the e2e backend
+# (:8100), so point it at `make backend` (:8000) unless overridden.
 frontend:
-	cd frontend && npm run dev
+	cd frontend && VITE_API_TARGET=$${VITE_API_TARGET:-http://localhost:8000} npm run dev
 
 # E2E Tests.
 #   e2e-parallel: generation/realization/UI specs, fully parallel, each worker
@@ -61,8 +64,8 @@ e2e-headed:
 	cd e2e && npx playwright test --headed
 
 # Regenerate the README screenshots in docs/images/ by driving the live
-# dev stack through a real session. Requires `make neo4j-up`, `make backend`,
-# and a running frontend on :5173 (with VITE_API_TARGET=http://localhost:8000).
-# Hits the real Gemini API — takes ~3 minutes for four screenshots.
+# dev stack through a real session. Requires `make neo4j-up`, `make backend`
+# and `make frontend`. Calls the configured LLM — takes ~3 minutes for four
+# screenshots with Gemini.
 screenshots:
 	cd e2e && npx playwright test capture-screenshots.spec.ts --config capture.config.ts

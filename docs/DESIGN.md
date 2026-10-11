@@ -48,7 +48,7 @@ When designing a new component:
 |---|---|---|
 | `--text-primary` | `#e2e6ef` | Body, chord symbols, emphasized labels |
 | `--text-secondary` | `#8891a5` | Labels, secondary metadata |
-| `--text-muted` | `#555e74` | Tertiary metadata, placeholders, disabled |
+| `--text-muted` | `#7d8699` | Tertiary metadata, placeholders, disabled |
 
 ### Accents (the music is the hero)
 
@@ -87,7 +87,7 @@ The seed three genres have signature colors:
 - `--genre-synthwave` `#f472b6` (pink)
 - `--genre-cinematic` `#eab308` (gold)
 
-The system also ships 37+ additional genres (M5c). For these, the accent falls through to `--accent-primary` (amber) by default. A small palette of `--genre-accent-{1..5}` exists for ad-hoc assignments. Do not add per-genre tokens for every genre — that would balloon the palette and force a decision per addition.
+The system also ships 36 additional genres (M5c). For these, the accent falls through to `--accent-primary` (amber) by default. A small palette of `--genre-accent-{1..5}` exists for ad-hoc assignments. Do not add per-genre tokens for every genre — that would balloon the palette and force a decision per addition.
 
 ### Overlay
 
@@ -125,13 +125,13 @@ Tabular numerals (`font-variant-numeric: tabular-nums`) for fixed-width digits s
 
 ### Comparison view (M4c)
 
-- Modal-overlay surface with a DAW-style lane stack: one `LaneSidebar` per arrangement, each with mute / solo controls and per-track sub-mutes (voicing, bass, groove, melody).
+- Modal-overlay surface with a DAW-style lane stack: one `LaneSidebar` per arrangement, each with lane-level mute / solo controls.
 - Single `ComparisonTransportBar` at top drives all lanes via a synchronized Tone.js transport.
 - Cursor sweep on the (shared) piano roll renders all lanes' active notes.
 
 ### Genre management — `/genres`
 
-- Library list (left) of all 40+ genres.
+- Library list (left) of all installed genres (39 today).
 - Right pane shows genre detail OR research-agent progress when a job is active.
 - Step indicator: 5-step pipeline (Research → Draft → Critique → Refine → Validate).
 
@@ -160,22 +160,22 @@ For finalist cards (in `FinalistPanel`):
 - Bass notes: `--accent-secondary` rectangles in the lower register.
 - Melody notes: `--accent-tertiary` rectangles in the upper register.
 - Groove accents (M5a): subtle overlay glyphs/marks at accent beat positions.
-- Cursor: thin vertical line in `--accent-primary` sweeping with audio.
+- Cursor: thin vertical line in the genre accent (`--genre-*`), falling back to `--accent-primary`, sweeping with audio.
 
 ### Transport bar
 
 - Fixed at top of detail panel, ~48px.
-- Horizontal layout: play/pause, stop, tempo slider (60–200 BPM), loop toggle, per-track mutes (voicing, bass, groove, melody), volume.
+- Horizontal layout: play/pause, stop, tempo slider (60–200 BPM), loop toggle, per-track mutes (voicing, bass, melody), volume.
 - Minimal chrome — controls are icon buttons with tooltips, no borders by default.
 - Playing state: subtle pulsing indicator in `--accent-primary`.
 
 ### Score panel
 
 - Below the piano roll, collapsible.
-- 12-dimension horizontal bar chart, grouped:
-  - **Arrangement quality:** voice_leading, register_density, playability, groove_quality, melody_harmony.
-  - **Progression quality:** genre_fit, emotional_fit, novelty, theoretical_coherence, cadence_quality, loopability.
-  - (`tension_curve` reserved — currently always 0; tracked as GitHub #3.)
+- Horizontal bar chart of the displayed dimensions, grouped:
+  - **Arrangement:** voice_leading, register_density, playability.
+  - **Progression:** genre_fit, emotional_fit, theoretical_coherence, cadence_quality, novelty, loopability.
+  - groove, melody_support and collision_risk feed `weighted_total` but are not drawn yet. (A `tension_curve` dimension is planned — GitHub #3.)
 - Weighted total displayed prominently. Each bar uses `scoreColorVar()`.
 
 ## Motion & interaction

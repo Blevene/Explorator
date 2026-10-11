@@ -11,7 +11,7 @@ A creative copilot for music producers. Generate chord progressions, realize the
 - Generate candidate chord progressions across 39 genre profiles via an LLM (pro tier)
 - Realize progressions into arrangements: voicings (open, close, drop-2, drop-3), genre-specific bass modes, groove patterns, optional melodic complement
 - Score arrangements across 12 dimensions (deterministic music theory + LLM)
-- Mutate promising candidates: substitute, extend, transform — guided by user feedback
+- Mutate promising candidates: substitute, extend, transform — optionally steered by plain-text guidance
 
 ![Start a session — pick genre, key, and mode, then add an optional mood prompt](docs/images/00-dashboard.png)
 
@@ -19,14 +19,14 @@ A creative copilot for music producers. Generate chord progressions, realize the
 
 **Refine**
 - Multi-round exploration with per-round finalists (safest / best-loop / most-experimental)
-- Plain-text feedback reweights the scorer across rounds
+- Plain-text feedback reweights the scorer across rounds (backend API `POST /v1/sessions/{id}/feedback`, Neo4j mode only; no UI yet)
 - Pareto ranking surfaces distinct trade-offs rather than a single "winner"
 - See the cost: a live token-usage panel shows per-round and per-phase LLM token counts with an estimated dollar cost (or "not priced" when no rates are configured), ticking up as the pipeline runs
 
 **Play & compare**
 - Piano roll with amber voicing, blue bass, emerald melody, groove-accent overlay
 - Tone.js playback with genre-matched synth presets
-- DAW-style comparison view: load multiple finalists into mute/solo lanes with synchronized transport
+- DAW-style comparison view: load two or more candidates' arrangements into mute/solo lanes with synchronized transport
 
 ![DAW-style comparison view — two arrangements side by side with score breakdown](docs/images/03-comparison-view.png)
 
@@ -70,7 +70,7 @@ Concretely, you type a genre name (e.g. *"Trip-Hop"*), optionally add reference 
 4. **Refines** if the critique flagged issues (up to two iterations).
 5. **Validates** the final result against the schema and surfaces the result for you to **approve** (write to disk, immediately usable for new sessions) or **reject** (logged to the audit trail with the reason).
 
-Approved genres land in the same three directories as the seed genres and become available for new sessions on the next backend reload — no special handling, no separate code path. The UI's step indicator + research-log view lets you watch the pipeline run live; the audit trail of critique iterations is preserved on the job record so you can see *why* a genre took the shape it did.
+Approved genres land in the same three directories as the seed genres and are synced to Neo4j right away, so they are available for new sessions immediately — no special handling, no separate code path. The UI's step indicator + research-log view lets you watch the pipeline run live; the audit trail of critique iterations is preserved on the job record so you can see *why* a genre took the shape it did.
 
 ![Genre research — five-step pipeline live](docs/images/06-genre-research.png)
 
@@ -80,13 +80,13 @@ Approved genres land in the same three directories as the seed genres and become
 
 | | |
 |---|---|
-| Backend | 773 tests (unit + integration + API), all green |
-| Frontend | 135 vitest, tsc strict, `npm run build` clean |
-| E2E | 40 Playwright under `LLM_MOCK=true`; the memory-mode lane runs in CI (occasional flake on `ux-coherence:11 navigation-flow`, passes in isolation) |
+| Backend | pytest (unit + integration + API), all green in CI |
+| Frontend | vitest, tsc strict, `npm run build` clean |
+| E2E | Playwright under `LLM_MOCK=true`; the memory-mode lane runs in CI (occasional flake on `ux-coherence:11 navigation-flow`, passes in isolation) |
 
 ## Quick start
 
-**Prerequisites:** Python 3.13+, Node.js 20+, Docker, an LLM API key (Gemini by default) or a local OpenAI-compatible server (Ollama, vLLM, ...).
+**Prerequisites:** [uv](https://docs.astral.sh/uv/) (installs Python 3.13+ for you), Node.js 20.19+ or 22.12+, GNU make, Docker (for Neo4j and the backend test suite), and an LLM: a Gemini or OpenAI API key, or a local OpenAI-compatible server (Ollama, vLLM, ...) — or none, using `LLM_MOCK=true` for deterministic fake output.
 
 ```bash
 git clone https://github.com/Blevene/Explorator.git
@@ -95,6 +95,7 @@ cd Explorator
 # Configure
 cp .env.example backend/.env
 # Edit backend/.env and set LLM_API_KEY (or configure another provider — see "LLM providers").
+# Only Explorator's own settings are allowed in backend/.env (see "LLM providers").
 # The default Neo4j password ('explorator_dev') is for local dev only — change
 # it (and the docker-compose value) if you ever expose Neo4j beyond localhost.
 
@@ -116,18 +117,30 @@ Neo4j once on startup and picks the mode automatically.
 *Full mode — with Neo4j* (all features, durable across restarts):
 
 ```bash
-make neo4j-up                                  # dev Neo4j on :7688
-make backend                                   # FastAPI on :8000 — connects to Neo4j
-cd frontend && npm run dev -- --host 0.0.0.0   # Vite on :5173
+make neo4j-up        # dev Neo4j on :7688 — returns once the container is healthy
+make backend         # FastAPI on :8000 — connects to Neo4j (terminal 1)
+make frontend        # Vite on :5173, proxying /v1 to :8000 (terminal 2)
 ```
+
+The backend probes Neo4j only once, at startup (3 s timeout). If it logged
+"In-memory mode — long-term memory features disabled", Neo4j wasn't ready —
+restart the backend.
 
 *Limited mode — no Neo4j* (in-memory; generation only). Just don't start Neo4j —
 the backend finds it absent and runs against a process-lifetime in-memory store:
 
 ```bash
-make backend                                   # logs "in-memory mode — long-term memory features disabled"
-cd frontend && npm run dev -- --host 0.0.0.0   # the UI shows a "limited mode" banner
+make backend         # logs "In-memory mode — long-term memory features disabled"
+make frontend        # the UI shows a "limited mode" banner
 ```
+
+`make frontend` points Vite's `/v1` proxy at `make backend` (:8000). Running
+`npm run dev` directly instead proxies to `VITE_API_TARGET`, which defaults to
+`http://localhost:8100` (the E2E backend).
+
+**No LLM key?** `LLM_MOCK=true make backend` runs the full UI against deterministic
+fake LLM output. `LLM_MOCK` is read from the process environment only — export it or
+prefix the command; don't put it in `backend/.env`. The backend test suite needs no key.
 
 Open http://localhost:5173. Generation (M1 → M2 → M3) works in **both** modes;
 limited mode turns off the long-term-memory features and loses data on restart —
@@ -139,10 +152,11 @@ live mode any time with `curl localhost:8000/v1/capabilities`.
 ```bash
 make test                       # Backend full suite (auto-starts isolated test Neo4j on :7689)
 make lint                       # ruff + mypy strict
-cd frontend && npm run test:unit
+cd frontend && npm run test:unit && cd ..
 
 # End-to-end (Playwright spawns its own servers, all under LLM_MOCK=true — no
-# API key needed for e2e):
+# API key needed for e2e). One-time setup:
+cd e2e && npm install && npx playwright install --with-deps chromium && cd ..
 make e2e-parallel               # UI/generation specs — fully parallel, each worker on its
                                 #   own in-memory backend; no Neo4j needed (~30s)
 make neo4j-up                   # REQUIRED before e2e-neo4j / e2e: dev Neo4j on :7688
@@ -156,34 +170,51 @@ running; bring it up with `make neo4j-up` first. Setup hard-fails with a clear
 message if the backend can't reach Neo4j (it would otherwise boot in memory mode
 and the learning specs would fail with confusing UI errors). `make e2e-parallel`
 needs no Neo4j. None of the lanes need an `LLM_API_KEY`: e2e always runs with
-`LLM_MOCK=true`.
+`LLM_MOCK=true`. `E2E_WORKERS` (default 4) sets parallelism for `make e2e-parallel`.
+
+The Neo4j lane cleans up via `docker exec` on the dev Neo4j container, by default
+`explorator-neo4j-1`. If your container has another name (e.g. the clone directory
+isn't `Explorator`), set `NEO4J_CONTAINER=<name>` (see `docker compose ps`).
 
 The pytest suite wipes the DB between tests, so it runs against a dedicated `neo4j-test` container on port 7689 — the dev DB on 7688 is never touched. `make test*` brings the test container up automatically; if you invoke pytest directly, run `make neo4j-test-up` first.
 
 ## LLM providers
 
 Explorator talks to an LLM through one of two adapters, chosen by `LLM_PROVIDER`
-in `backend/.env` (see `.env.example` for full recipes):
+in `backend/.env` (see `.env.example` for full recipes). `backend/.env` accepts only
+Explorator's settings (`LLM_*`, legacy `GEMINI_*`, `NEO4J_*`, ...) — an unknown key
+stops the backend with "Extra inputs are not permitted". `LLM_MOCK`, `OPENAI_API_KEY`
+and server-side variables such as `OLLAMA_CONTEXT_LENGTH` are read from the process
+environment only: export them or prefix the command (e.g. `LLM_MOCK=true make backend`).
 
 | Provider | `LLM_PROVIDER` | Required | Notes |
 |---|---|---|---|
 | Google Gemini (default) | `gemini` | `LLM_API_KEY` | Native SDK; models default to `gemini-pro-latest` / `gemini-flash-latest` |
-| OpenAI | `openai` | `LLM_API_KEY`, `LLM_PRO_MODEL`, `LLM_FLASH_MODEL` | Leave `LLM_BASE_URL` empty; or set `OPENAI_API_KEY` instead of `LLM_API_KEY` |
+| OpenAI | `openai` | `LLM_API_KEY`, `LLM_PRO_MODEL`, `LLM_FLASH_MODEL` | Leave `LLM_BASE_URL` empty. Instead of `LLM_API_KEY` you can leave it empty and export `OPENAI_API_KEY` in the shell (not in `backend/.env`) |
 | Ollama | `openai` | `LLM_BASE_URL=http://localhost:11434/v1`, both models | No key needed |
-| vLLM / LM Studio / OpenRouter | `openai` | `LLM_BASE_URL=…/v1`, both models | |
+| vLLM / LM Studio / OpenRouter | `openai` | `LLM_BASE_URL=…/v1`, both models; `LLM_API_KEY` if the server checks one (always for OpenRouter; vLLM started with `--api-key`) | Without `LLM_API_KEY`, the placeholder key `not-needed` is sent |
 
 `LLM_PROVIDER=openai` requires `LLM_PRO_MODEL` and `LLM_FLASH_MODEL`; the backend
 refuses to start without them, and also refuses an unknown `LLM_PROVIDER` value.
 
-The legacy `GEMINI_*` names (`GEMINI_API_KEY`, `GEMINI_PRO_MODEL`, ...) are
-deprecated; they are honoured **only** when `LLM_PROVIDER=gemini` (a warning is
-logged at startup). Under `openai` they are ignored entirely, so a Google API key
-is never sent to a third-party endpoint and Gemini prices never apply to other
-models. An explicit `LLM_PRICE_*=0` beats a legacy `GEMINI_PRICE_*` value.
+The legacy `GEMINI_*` settings (`GEMINI_API_KEY`, `GEMINI_PRO_MODEL`,
+`GEMINI_FLASH_MODEL`, `GEMINI_TIMEOUT_SECONDS`, `GEMINI_PRICE_*`) are deprecated.
+Under `gemini` they fill any unset `LLM_*` value, with a deprecation warning at
+startup. Under `openai` they are not used — a startup warning names each one that is
+set — so a Google API key is never sent to a third-party endpoint and Gemini prices
+never apply to other models. An explicit `LLM_PRICE_*=0` beats a legacy
+`GEMINI_PRICE_*` value. `GEMINI_MOCK=true` is the deprecated spelling of
+`LLM_MOCK=true` and still works (with a warning) under either provider.
 
-The **pro** model handles harmony generation, mutation and explanations; the
-**flash** model handles intent parsing, evaluation, voicing/melody planning and
-genre research. Using one model for both is fine.
+The **pro** model handles harmony generation, mutation, explanations and the
+genre-research step; the **flash** model handles intent parsing, feedback
+interpretation, evaluation, voicing/melody planning, and genre drafting, critique and
+refinement. Using one model for both is fine.
+
+**Gemini-only vs `openai`-only settings.** Under `gemini`, only `LLM_API_KEY`, the
+two model names, `LLM_TIMEOUT_SECONDS` and `LLM_PRICE_*` apply. `LLM_BASE_URL`,
+`LLM_MAX_RETRIES`, `LLM_MAX_CONCURRENCY`, `LLM_CONTEXT_TOKENS` and `LLM_EXTRA_BODY`
+affect the `openai` provider only.
 
 **Base URL must end in `/v1`.** A 404 when a round starts usually means it doesn't.
 
@@ -196,47 +227,54 @@ when a prompt nears it.
 **Concurrency and timeouts.** Rounds fan out several LLM calls at once.
 `LLM_MAX_CONCURRENCY` (default 4) applies to the `openai` provider only and caps in-flight requests; for Ollama,
 keep it ≤ `OLLAMA_NUM_PARALLEL`. `LLM_TIMEOUT_SECONDS` defaults to 120 for `gemini`
-and 300 for `openai`; `LLM_MAX_RETRIES` defaults to 1.
+and 300 for `openai`. `LLM_MAX_RETRIES` (default 1, `openai` only) is the HTTP retry
+count for connection errors, 429s and 5xx; both adapters also retry once on
+malformed JSON.
 
-The Gemini timeout (`LLM_TIMEOUT_SECONDS`, default 120 s, formerly
-`GEMINI_TIMEOUT_SECONDS`) is now actually enforced. Before this change it was
-silently ignored. google-genai applies it as both a client timeout and the server
-deadline (`X-Server-Timeout`), so slow requests fail with 504 DEADLINE_EXCEEDED after
-that time; raise `LLM_TIMEOUT_SECONDS` if needed.
+On `gemini`, `LLM_TIMEOUT_SECONDS` is passed to google-genai as both the client
+timeout and the server deadline (`X-Server-Timeout`), so slow requests fail with 504
+DEADLINE_EXCEEDED; raise it if rounds time out.
 
 **Structured output.** The adapter asks for `json_schema` output, falls back to JSON
 mode and then to schema-in-prompt if the server rejects it (a fallback mode becomes
 sticky for the process only after a request in that mode succeeds), and strips
 `<think>` blocks from reasoning models. If a model still can't produce valid JSON,
 the round completes with default strategies and the token panel shows an
-"N fallback(s)" badge — try a larger model.
+"N fallback(s)" badge — try a larger model. Per-candidate fan-out calls
+(voicing/melody planning, progression evaluation) are capped at 4096 output tokens
+(thinking included on Gemini); if the provider reports truncation, the adapter
+repairs the cut-off JSON before validating it.
 
-**Reasoning models and server-specific options.** `LLM_EXTRA_BODY` takes a JSON object
-that is merged into every `openai`-provider request, for options the OpenAI API
-doesn't define. Reasoning models (DeepSeek, Qwen3) can spend thousands of tokens
-thinking before answering, which makes rounds slow and can hit `LLM_TIMEOUT_SECONDS`;
-on vLLM you can switch reasoning off with
-`LLM_EXTRA_BODY='{"chat_template_kwargs": {"thinking": false}}'` (the exact key
-depends on the model's chat template — Qwen3 uses `enable_thinking`).
+**Reasoning models: disable thinking.** `LLM_EXTRA_BODY` takes a JSON object that is
+merged into every `openai`-provider request, for options the OpenAI API doesn't
+define. Local reasoning models (DeepSeek, Qwen3) can spend thousands of tokens
+thinking before answering, so calls can run for minutes and hit
+`LLM_TIMEOUT_SECONDS` (300 s on `openai`). Turn thinking off, e.g. on vLLM:
+`LLM_EXTRA_BODY={"chat_template_kwargs":{"thinking":false}}` — the exact key depends
+on the model's chat template (Qwen3 uses `enable_thinking`).
+
+**Sampling.** Explorator sends no `temperature`; it uses the server's default. A
+server that defaults to greedy decoding returns identical results for the same
+prompt. Raise the server's default temperature, or pass one through
+`LLM_EXTRA_BODY` (e.g. `{"temperature":0.8}`) if your server accepts it there.
 
 **Cost.** Gemini shows estimated cost. Other providers show "not priced" unless you
 set `LLM_PRICE_*` (USD per 1M tokens).
 
 ## A first session
 
-1. **Create a session** — pick a genre, key, and mode, then optionally add a mood/feeling prompt (*"wistful and haunted, 8 bars"*).
-2. **Generate**. Watch the SSE pipeline progress (it surfaces the current round as the engine refines); candidate cards appear with chord symbols, Roman numerals, scores, and rationale. A **token-usage panel** under the prompt bar shows the round's LLM token counts and estimated cost, broken down by phase, updating live as each phase completes.
-3. **Realize** a candidate → voicings, bass, groove, and melody are generated and evaluated. Three finalists surface with role badges.
-4. **Play** an arrangement with genre-matched synth. Mute/unmute voicing, bass, groove, melody independently.
-5. **Compare** two or three finalists in DAW-style lane view with synchronized transport.
-6. **Submit feedback** in plain text — the scorer reweights and you can launch the next round.
-7. **Mutate** a promising candidate to explore substitutions / extensions / transformations.
-8. **Export** as MIDI + JSON with explanation and provenance trace.
-9. **Star** finalists to add them to your curated library. Browse all patterns at `/patterns`; filter to *Curated only* for just your keepers.
+1. **Create a session** — on the dashboard, pick a genre, key, and mode, optionally add a mood/feeling prompt (*"wistful and haunted, 8 bars"*), and click **Explore**.
+2. **Generate**. With a prompt, the first round starts automatically; otherwise click **Generate** in the prompt bar. Watch the SSE pipeline progress; candidate cards appear with chord symbols, Roman numerals, scores, and rationale. The top three candidates are already realized during the round. A **token-usage panel** under the prompt bar shows the round's LLM token counts and estimated cost, broken down by phase, updating live as each phase completes.
+3. **View arrangements** — click **View Arrangements** on a candidate (or click the card). Candidates that weren't realized during the round are realized on demand: voicings, bass, groove, and melody are generated and evaluated. Three finalists surface with role badges.
+4. **Play** an arrangement with genre-matched synth. Mute/unmute the chords (voicing), bass, and melody independently; groove accents show as an overlay on the piano roll.
+5. **Compare** — click **Compare** on two or more candidates, then the **Compare N candidates** button, to open the DAW-style lane view: each lane plays that candidate's arrangement, with per-lane mute/solo and a synchronized transport.
+6. **Mutate** a promising candidate to explore substitutions / extensions / transformations, optionally steering it with plain-text guidance in the Mutate dialog (*"make it darker, more tension…"*).
+7. **Export** as MIDI + JSON with explanation and provenance trace (**Export** in the session header).
+8. **Star** finalists to add them to your curated library. Browse all patterns at `/patterns`; filter to *Curated only* for just your keepers.
 
 ## Architecture (overview)
 
-Single-process FastAPI app driving a LangGraph orchestration engine, persisted to Neo4j when present, served to a React SPA. Three LangGraph graphs compose at startup: an exploration pipeline (intent → generate → evaluate → rank → persist), a realization sub-graph (voicing → bass → groove → melody → assemble → evaluate → rank → persist → harvest), and a genre-research sub-graph (research → draft → critique → refine → validate).
+Single-process FastAPI app driving a LangGraph orchestration engine, persisted to Neo4j when present, served to a React SPA. Three LangGraph graphs, each built per request: the exploration graph (intent → genre → memory → generate → evaluate → select top 3 → realize [voicing → bass → groove → melody → assemble → evaluate → rank] → stop-check / mutate loop → persist → harvest patterns → persist round); a realization sub-graph that on-demand realization and `/mutate` run on their own (load context → … → rank → persist, no harvest); and the genre-research graph (research → draft → critique ⇄ refine → validate → output).
 
 **Key design choices**
 - **Neo4j is the durable backend when present** — sessions, candidates, arrangements, scorecards, feedback events, pattern library, lineage. No relational adjunct. When Neo4j is absent, an ephemeral in-memory store backs the generation path only (see [Neo4j is optional (limited mode)](#neo4j-is-optional-limited-mode)).
@@ -295,7 +333,7 @@ explorator/
 
 **Backend:** Python 3.13 · FastAPI · Pydantic v2 · LangGraph · Neo4j 5 · music21 · Gemini or OpenAI-compatible LLM · sse-starlette · ULID
 
-**Frontend:** React 19 · TypeScript 5 (strict) · Vite 7 · Tailwind CSS v4 · Zustand 5 · Tone.js 15 · sonner
+**Frontend:** React 19 · TypeScript 5 (strict) · Vite 8 · Tailwind CSS v4 · Zustand 5 · Tone.js 15 · sonner
 
 **Tooling:** uv · ruff · mypy strict · pytest + pytest-asyncio · vitest · Playwright · Docker Compose
 
@@ -308,9 +346,10 @@ explorator/
 | Neo4j Browser (test) | 7476 | Isolated test DB browser |
 | Neo4j Bolt (test) | 7689 | Pytest-only — tests wipe between runs |
 | Backend (dev) | 8000 | FastAPI via `make backend` |
-| Frontend (dev) | 5173 | Vite dev server (`npm run dev`) |
-| Backend (E2E) | 8100 | Spawned by Playwright with `LLM_MOCK=true` |
-| Frontend (E2E) | 5199 | `npm run preview` against the production build |
+| Frontend (dev) | 5173 | Vite dev server (`make frontend`) |
+| Backend (E2E, Neo4j lane) | 8100 | Spawned by Playwright with `LLM_MOCK=true`; also the Vite proxy's default `VITE_API_TARGET` |
+| Frontend (E2E, Neo4j lane) | 5199 | `npm run preview` against the production build |
+| Backend / frontend (E2E, parallel lane) | 8200+n / 5300+n | One in-memory pair per Playwright worker |
 
 ## Genre catalog reference
 
@@ -324,7 +363,7 @@ See [§ The genre catalog](#the-genre-catalog) above for an overview. Each of th
 
 Pydantic schemas (loader-enforced): [`schema.py`](./backend/src/explorator/domain/style/schema.py) — `GenreProfileYAML`, `GenreRulesYAML`, `HarmonicGrammarYAML`.
 
-**To add a genre by hand:** drop all three files in their respective directories using the schemas; the loader picks them up at next backend reload.
+**To add a genre by hand:** drop all three files in their respective directories using the schemas, then restart the backend (in Neo4j mode, genres are synced from YAML at startup).
 **To add via the research agent:** use the `/genres` UI ([§ The genre catalog](#the-genre-catalog) above).
 
 ## Evaluation dimensions
@@ -348,13 +387,14 @@ Each arrangement is scored across **12 dimensions**, aggregated into a single `w
 | Register Density | Mud-zone avoidance, spacing balance, bass–voicing separation |
 | Playability | Hand-span feasibility, voice count limits |
 | Groove Quality | Archetype consistency, per-genre groove tendency fit |
-| Melody–Harmony | Melody–chord-tone alignment, contour cohesion |
-| Tension Curve | (Deferred — tracked as GitHub #3) |
+| Melody Support | Melody–chord-tone alignment, contour cohesion |
+| Collision Risk | Melody/voicing pitch collisions |
+
+A `tension_curve` dimension is planned (GitHub #3).
 
 ## Known limitations
 
 - **Single operator, no auth** — designed to run locally for one user. Adding auth is deferred until there's a real reason (sharing, multi-tenancy).
-- **M5c E2E flakiness** — 4 tests in `e2e/tests/genre-research.spec.ts` fail because `FakeLLMClient.generate_text` returns non-JSON. Documented; needs dedicated test-infrastructure work.
 - **Warm-start retrieval doesn't favor curated patterns yet** — the library is populated and curation works, but retrieval still uses score-ordered top-K. Natural follow-up once there's curated data to tune against.
 - **Token usage is per-session only** — the panel's running total lives in the browser and resets on page reload; per-round usage is not persisted, so there's no cross-session or all-time spend view yet. Cost is a configurable estimate (flat per-tier rates), not provider-reconciled billing. Deliberate first-cut scope — see [ADR 011](docs/decisions/011-token-usage-instrumentation.md).
 - **GitHub issues:** [#2](https://github.com/Blevene/Explorator/issues/2) (cadence/loopability granularity), [#3](https://github.com/Blevene/Explorator/issues/3) (tension_curve dimension).

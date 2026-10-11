@@ -17,14 +17,21 @@ See [README § Quick start](./README.md#quick-start) for the bootstrap. The shor
 
 ```bash
 cp .env.example backend/.env  # set LLM_API_KEY (see README "LLM providers")
-make neo4j-up                  # dev Neo4j on :7688
+make neo4j-up                  # dev Neo4j on :7688 — returns once healthy
 cd backend  && uv sync --all-extras && cd ..
 cd frontend && npm install && cd ..
 make backend                   # FastAPI on :8000 (terminal 1)
-cd frontend && npm run dev     # Vite on :5173 (terminal 2)
+make frontend                  # Vite on :5173, /v1 proxied to :8000 (terminal 2)
 ```
 
-Tests need a separate Neo4j on :7689 — `make test*` brings it up automatically.
+- `make frontend` points the Vite proxy at `make backend` (:8000). Plain `npm run dev` proxies `/v1` to `VITE_API_TARGET`, which defaults to `http://localhost:8100` (the E2E backend).
+- `backend/.env` accepts only backend settings (`LLM_*`, legacy `GEMINI_*`, `NEO4J_*`, …); any other key stops the backend with "Extra inputs are not permitted". `LLM_MOCK`, `OPENAI_API_KEY` and LLM-server variables such as `OLLAMA_CONTEXT_LENGTH` are read from the process environment only — export them or prefix the command.
+- No LLM key? `LLM_MOCK=true make backend` swaps in a fake LLM client with deterministic output.
+- The backend probes Neo4j once at startup; if it logs "In-memory mode", Neo4j wasn't ready — restart the backend.
+
+Tests need a separate Neo4j on :7689 — `make test*` brings it up automatically. Before the first `make e2e*` run, install the E2E package and browser once: `cd e2e && npm install && npx playwright install --with-deps chromium`.
+
+Optional: `uvx pre-commit install` mirrors CI's ruff / whitespace gates as local git hooks (see `.pre-commit-config.yaml`).
 
 ## Workflow conventions
 
@@ -54,11 +61,11 @@ The project follows a deliberate **brainstorm → spec → plan → execute → 
   - Unit tests: pure logic, no external systems. `backend/tests/unit/`.
   - Integration tests: hit the test Neo4j ([ADR-009](./docs/decisions/009-isolated-test-neo4j.md)). `backend/tests/integration/`.
   - API tests: hit the running FastAPI app with `httpx.AsyncClient` (not the sync `TestClient` — see `test_post_comparison_returns_201` history for why). `backend/tests/api/`.
-- **No mocking the database in integration tests.** ([User feedback memory.](./README.md) The cost of mock/prod divergence outweighs the cost of running tests against a real Neo4j.)
+- **No mocking the database in integration tests.** (The cost of mock/prod divergence outweighs the cost of running tests against a real Neo4j.)
 
 ### TypeScript (frontend)
 
-- **TypeScript 5 strict.** Run `npx tsc --noEmit` to verify; CI-style discipline.
+- **TypeScript 5 strict.** Run `npx tsc -b` in `frontend/` to verify (the root `tsconfig.json` only holds project references, so `tsc --noEmit` checks nothing); `npm run build` runs the same check, as CI does.
 - **No central API client class** — each `frontend/src/api/<feature>.ts` exports plain async functions.
 - **Stores are flat Zustand** — actions sit alongside state on a single `create<State>(set, get => ({...}))` call. No middleware unless we have a real reason.
 - **Type mirrors** — when a backend Pydantic schema changes, update the matching TS interface in `api/types.ts` or `services/api.ts` in the same commit. The header docstring on `api/types.ts` notes the convention.
@@ -79,8 +86,8 @@ The project follows a deliberate **brainstorm → spec → plan → execute → 
 - **New API endpoint with composite writes?** Use a service in `services/` that opens one Neo4j transaction. See [ADR-006](./docs/decisions/006-atomic-event-fan-out-one-transaction.md).
 - **New event-log-able user action?** Reuse `UserFeedbackEvent` with a new `feedback_type` discriminator unless you have a strong reason for a new label. See [ADR-003](./docs/decisions/003-event-log-plus-denormalized-cache.md).
 - **New frontend store?** Mirror the existing pattern (state + setters + async actions). See `patternLibraryStore.ts` for the canonical example.
-- **New Gemini prompt?** Markdown template in `backend/src/explorator/prompts/<area>/`. Centralized — never inline in node code.
-- **New genre?** Drop a YAML in `backend/src/explorator/domain/style/genres/`. The loader picks it up at next reload. Or use the M5c research agent to generate one.
+- **New LLM prompt?** Markdown template in `backend/src/explorator/prompts/<area>/`. Centralized — never inline in node code. Prompts are provider-neutral (they run on Gemini and on OpenAI-compatible models).
+- **New genre?** Add the profile, rules and grammar YAMLs under `backend/src/explorator/domain/style/{genres,rules,grammars}/` and restart the backend — genres are synced into Neo4j at startup. Or use the M5c research agent to generate one (approved drafts are written and synced immediately).
 - **New ADR?** See [`docs/decisions/README.md`](./docs/decisions/README.md) for the one-line "what belongs here" rule.
 
 ## Things to avoid
