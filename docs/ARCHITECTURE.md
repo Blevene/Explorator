@@ -299,7 +299,7 @@ There is no authentication. The app runs locally for one operator. Adding auth i
 
 ### Configuration
 
-`backend/.env` is read by the `Settings` class (`config.py`) and accepts **only** `Settings` fields — an unknown key stops the backend at startup with "Extra inputs are not permitted". Settings (from `backend/.env` or the process environment):
+`backend/.env` is read by the `Settings` class (`config.py`), which uses only its own fields; unknown keys, and unrecognized `LLM_*` / `GEMINI_*` shell variables, are ignored and logged at startup (`unknown_setting_warnings`). Settings (from `backend/.env` or the process environment):
 
 - `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` — driver connection
 - `LLM_PROVIDER` (`gemini` default or `openai`), `LLM_API_KEY`, `LLM_PRO_MODEL`, `LLM_FLASH_MODEL`, `LLM_TIMEOUT_SECONDS`; openai only: `LLM_BASE_URL`, `LLM_MAX_RETRIES`, `LLM_MAX_CONCURRENCY`, `LLM_CONTEXT_TOKENS`, `LLM_EXTRA_BODY` — LLM integration; full reference in README "LLM providers" and ADR 012. The legacy `GEMINI_*` names are deprecated aliases honoured only under `gemini`.

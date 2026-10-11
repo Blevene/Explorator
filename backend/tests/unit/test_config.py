@@ -125,3 +125,58 @@ def test_extra_body_defaults_to_empty() -> None:
 def test_extra_body_parses_json_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM_EXTRA_BODY", '{"chat_template_kwargs": {"thinking": false}}')
     assert _settings().llm_extra_body == {"chat_template_kwargs": {"thinking": False}}
+
+
+# ── unknown names: ignored with a warning, never fatal ───────────────────────
+
+
+def _env_file(tmp_path: object, text: str) -> str:
+    from pathlib import Path
+
+    path = Path(str(tmp_path)) / ".env"
+    path.write_text(text)
+    return str(path)
+
+
+def test_unknown_env_file_key_does_not_stop_startup(tmp_path: object) -> None:
+    s = Settings(_env_file=_env_file(tmp_path, "LLM_PROVDER=openai\n"))  # type: ignore[call-arg]
+    assert s.llm_provider == "gemini"
+
+
+def test_unknown_env_file_key_is_reported(tmp_path: object) -> None:
+    from explorator.config import unknown_setting_warnings
+
+    warnings = unknown_setting_warnings(_env_file(tmp_path, "LLM_PROVDER=openai\n"), environ={})
+    assert len(warnings) == 1
+    assert "LLM_PROVDER" in warnings[0] and "backend/.env" in warnings[0]
+
+
+def test_process_env_only_names_in_env_file_get_a_hint(tmp_path: object) -> None:
+    from explorator.config import unknown_setting_warnings
+
+    text = "LLM_MOCK=true\nOPENAI_API_KEY=x\n"
+    warnings = unknown_setting_warnings(_env_file(tmp_path, text), environ={})
+    assert len(warnings) == 2
+    assert all("process environment" in w for w in warnings)
+
+
+def test_known_env_file_keys_are_not_reported(tmp_path: object) -> None:
+    from explorator.config import unknown_setting_warnings
+
+    text = "llm_provider=gemini\nLLM_API_KEY=k\nGEMINI_API_KEY=k\nNEO4J_URI=bolt://x\n"
+    assert unknown_setting_warnings(_env_file(tmp_path, text), environ={}) == []
+
+
+def test_unknown_llm_shell_var_is_reported() -> None:
+    from explorator.config import unknown_setting_warnings
+
+    environ = {"LLM_PROVDER": "openai", "LLM_MOCK": "true", "OPENAI_API_KEY": "x", "HOME": "/h"}
+    warnings = unknown_setting_warnings(None, environ=environ)
+    assert len(warnings) == 1
+    assert "LLM_PROVDER" in warnings[0]
+
+
+def test_missing_env_file_is_fine(tmp_path: object) -> None:
+    from explorator.config import unknown_setting_warnings
+
+    assert unknown_setting_warnings(f"{tmp_path}/absent.env", environ={}) == []

@@ -1,7 +1,11 @@
 """Application configuration via environment variables."""
 
+import os
+from collections.abc import Mapping
+from pathlib import Path
 from typing import Any, Literal, Self
 
+from dotenv import dotenv_values
 from pydantic import Field, PrivateAttr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -28,11 +32,18 @@ _LEGACY_SUFFIXES = (
     "price_flash_output",
 )
 
+# Read from the process environment by other code (api/deps.py, the openai SDK),
+# never from backend/.env.
+_PROCESS_ENV_ONLY = frozenset({"LLM_MOCK", "GEMINI_MOCK", "OPENAI_API_KEY"})
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    # Unknown names are ignored here and reported by unknown_setting_warnings().
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     # Neo4j
     neo4j_uri: str = "bolt://localhost:7688"
@@ -68,16 +79,8 @@ class Settings(BaseSettings):
     gemini_price_flash_input: float | None = None
     gemini_price_flash_output: float | None = None
 
-    # Generation defaults
-    default_max_rounds: int = 4
-    default_target_score: float = 8.5
-    default_generation_mode: str = "balanced"
-
     # Export
     export_dir: str = "exports"
-
-    # Timeouts
-    neo4j_query_timeout_seconds: int = 5
 
     _legacy_names_used: list[str] = PrivateAttr(default_factory=list)
 
@@ -143,6 +146,38 @@ class Settings(BaseSettings):
             self.llm_timeout_seconds = self.llm_timeout_seconds or 300
             self.llm_max_concurrency = self.llm_max_concurrency or 4
         return self
+
+
+def unknown_setting_warnings(
+    env_file: str | Path | None = ".env", environ: Mapping[str, str] | None = None
+) -> list[str]:
+    """Warnings for names that look like settings but are not read.
+
+    Every key in ``env_file`` is checked; in the process environment only
+    ``LLM_*`` / ``GEMINI_*`` names are, since the rest belong to other tools.
+    """
+    known = {name.upper() for name in Settings.model_fields}
+    environ = os.environ if environ is None else environ
+    warnings: list[str] = []
+    if env_file is not None and Path(env_file).is_file():
+        for key in dotenv_values(env_file):
+            name = key.upper()
+            if name in _PROCESS_ENV_ONLY:
+                warnings.append(
+                    f"{name} in backend/.env is ignored — it is read from the process "
+                    f"environment only; export it or prefix the command instead"
+                )
+            elif name not in known:
+                warnings.append(f"{name} in backend/.env is not a setting and is ignored")
+    for key in environ:
+        name = key.upper()
+        if (
+            name.startswith(("LLM_", "GEMINI_"))
+            and name not in known
+            and name not in _PROCESS_ENV_ONLY
+        ):
+            warnings.append(f"Environment variable {name} is not a setting and is ignored")
+    return warnings
 
 
 settings = Settings()

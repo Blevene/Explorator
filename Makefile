@@ -1,4 +1,4 @@
-.PHONY: dev test lint neo4j-up neo4j-down neo4j-test-up neo4j-test-down sync-genres backend frontend e2e e2e-parallel e2e-neo4j e2e-headed screenshots
+.PHONY: dev test lint neo4j-up neo4j-down neo4j-test-up neo4j-test-down backend frontend e2e e2e-parallel e2e-neo4j e2e-headed screenshots
 
 # Infrastructure
 # Blocks until healthy so a backend started right after doesn't fall back to
@@ -35,10 +35,6 @@ test-integration: neo4j-test-up
 lint:
 	cd backend && uv run ruff check src/ tests/
 	cd backend && uv run mypy src/
-
-# Genre sync (placeholder — will be a CLI command)
-sync-genres:
-	@echo "Genre sync will be implemented as a CLI command. For now, genres load on app startup."
 
 # Frontend dev server on :5173. Vite's proxy defaults to the e2e backend
 # (:8100), so point it at `make backend` (:8000) unless overridden.

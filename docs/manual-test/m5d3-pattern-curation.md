@@ -7,7 +7,7 @@ Merged to `main` as PR #8 on 2026-04-24 (merge commit `f940694`). The E2E (`e2e/
 - [ ] Neo4j container up (`make neo4j-up`) — default name `explorator-neo4j-1` on 7475/7688
 - [ ] Backend running on `:8000` (`make backend`) **without** `LLM_MOCK` (real LLM)
 - [ ] Frontend dev server on `:5173`, pointed at that backend: `make frontend`
-- [ ] LLM configured in `backend/.env` — `LLM_API_KEY` for the default Gemini provider, or your provider's `LLM_*` settings (see README → LLM providers). `backend/.env` accepts only `Settings` fields; unknown keys stop the backend at startup
+- [ ] LLM configured in `backend/.env` — `LLM_API_KEY` for the default Gemini provider, or your provider's `LLM_*` settings (see README → LLM providers). check the backend log for "is not a setting and is ignored" warnings
 - [ ] Migration `m5d3_curation_fields.py --yes` has been applied at least once against the dev Neo4j (idempotent — safe to re-run)
 - [ ] You have at least one session with completed finalists in the dev DB. If not, run a fresh round before starting.
 

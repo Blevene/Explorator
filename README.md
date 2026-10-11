@@ -95,7 +95,7 @@ cd Explorator
 # Configure
 cp .env.example backend/.env
 # Edit backend/.env and set LLM_API_KEY (or configure another provider — see "LLM providers").
-# Only Explorator's own settings are allowed in backend/.env (see "LLM providers").
+# Only Explorator's own settings are read from backend/.env (see "LLM providers").
 # The default Neo4j password ('explorator_dev') is for local dev only — change
 # it (and the docker-compose value) if you ever expose Neo4j beyond localhost.
 
@@ -181,11 +181,12 @@ The pytest suite wipes the DB between tests, so it runs against a dedicated `neo
 ## LLM providers
 
 Explorator talks to an LLM through one of two adapters, chosen by `LLM_PROVIDER`
-in `backend/.env` (see `.env.example` for full recipes). `backend/.env` accepts only
-Explorator's settings (`LLM_*`, legacy `GEMINI_*`, `NEO4J_*`, ...) — an unknown key
-stops the backend with "Extra inputs are not permitted". `LLM_MOCK`, `OPENAI_API_KEY`
-and server-side variables such as `OLLAMA_CONTEXT_LENGTH` are read from the process
-environment only: export them or prefix the command (e.g. `LLM_MOCK=true make backend`).
+in `backend/.env` (see `.env.example` for full recipes). `backend/.env` holds only
+Explorator's settings (`LLM_*`, legacy `GEMINI_*`, `NEO4J_*`, ...); any other key, and
+any unrecognized `LLM_*` / `GEMINI_*` shell variable (a typo such as `LLM_PROVDER`), is
+ignored with a warning at startup. `LLM_MOCK`, `OPENAI_API_KEY` and server-side
+variables such as `OLLAMA_CONTEXT_LENGTH` are read from the process environment only:
+export them or prefix the command (e.g. `LLM_MOCK=true make backend`).
 
 | Provider | `LLM_PROVIDER` | Required | Notes |
 |---|---|---|---|

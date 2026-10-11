@@ -48,6 +48,17 @@ tracks the state of the `main` branch.
 - Documentation refresh for public release: renamed the design-history directory
   to `docs/design/`, corrected the genre count (39) and e2e count, and declared
   the license in both package manifests.
+- Unknown keys in `backend/.env` (and unrecognized `LLM_*` / `GEMINI_*`
+  environment variables) are ignored with a startup warning instead of
+  aborting startup; `LLM_MOCK` / `OPENAI_API_KEY` placed in `backend/.env` get a
+  hint that they belong in the process environment.
+
+### Removed
+- Unused settings `DEFAULT_MAX_ROUNDS`, `DEFAULT_TARGET_SCORE`,
+  `DEFAULT_GENERATION_MODE` and `NEO4J_QUERY_TIMEOUT_SECONDS` (never read;
+  their values contradicted the ones actually used).
+- The placeholder `make sync-genres` target (genres sync at startup and on
+  approval) and the unused `readSSEStream` helper in `frontend/src/services/sse.ts`.
 
 ### Deprecated
 - `GEMINI_*` settings (`GEMINI_API_KEY`, `GEMINI_PRO_MODEL`, …) are aliases for
