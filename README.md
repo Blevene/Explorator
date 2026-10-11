@@ -182,9 +182,10 @@ The pytest suite wipes the DB between tests, so it runs against a dedicated `neo
 
 Explorator talks to an LLM through one of two adapters, chosen by `LLM_PROVIDER`
 in `backend/.env` (see `.env.example` for full recipes). `backend/.env` holds only
-Explorator's settings (`LLM_*`, legacy `GEMINI_*`, `NEO4J_*`, ...); any other key, and
-any unrecognized `LLM_*` / `GEMINI_*` shell variable (a typo such as `LLM_PROVDER`), is
-ignored with a warning at startup. `LLM_MOCK`, `OPENAI_API_KEY` and server-side
+Explorator's settings (`LLM_*`, legacy `GEMINI_*`, `NEO4J_*`, ...); an unknown `LLM_*` /
+`GEMINI_*` key there stops startup with a "did you mean …?" message, because a typo such as
+`LLM_PROVDER` would otherwise leave Gemini selected and send your key to Google. Other
+unknown keys, and shell variables that look like misspelled settings, only log a warning. `LLM_MOCK`, `OPENAI_API_KEY` and server-side
 variables such as `OLLAMA_CONTEXT_LENGTH` are read from the process environment only:
 export them or prefix the command (e.g. `LLM_MOCK=true make backend`).
 

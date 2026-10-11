@@ -9,7 +9,7 @@ checklist covers what mocks can't catch and what the E2E doesn't exercise.
 - [ ] Neo4j container up (`make neo4j-up`) — default name `explorator-neo4j-1` on 7475/7688
 - [ ] Backend running on `:8000` (`make backend`) **without** `LLM_MOCK` (real LLM), and in neo4j mode (`GET /v1/capabilities` → `persistence_mode: "neo4j"`)
 - [ ] Frontend dev server on `:5173`, pointed at that backend: `make frontend`
-- [ ] LLM configured in `backend/.env` — `LLM_API_KEY` for the default Gemini provider, or your provider's `LLM_*` settings (see README → LLM providers). check the backend log for "is not a setting and is ignored" warnings
+- [ ] LLM configured in `backend/.env` — `LLM_API_KEY` for the default Gemini provider, or your provider's `LLM_*` settings (see README → LLM providers). Check the backend log for "is not a setting" warnings
 - [ ] `GET /v1/genres` returns non-empty `items`
 
 A fresh Neo4j is fine: the 39 genre YAMLs (profiles + rules + grammars in

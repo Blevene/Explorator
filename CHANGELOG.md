@@ -48,10 +48,12 @@ tracks the state of the `main` branch.
 - Documentation refresh for public release: renamed the design-history directory
   to `docs/design/`, corrected the genre count (39) and e2e count, and declared
   the license in both package manifests.
-- Unknown keys in `backend/.env` (and unrecognized `LLM_*` / `GEMINI_*`
-  environment variables) are ignored with a startup warning instead of
-  aborting startup; `LLM_MOCK` / `OPENAI_API_KEY` placed in `backend/.env` get a
-  hint that they belong in the process environment.
+- Unknown keys in `backend/.env` no longer abort startup with "Extra inputs
+  are not permitted": they are ignored with a warning, except unknown `LLM_*` /
+  `GEMINI_*` keys, which still stop startup but now with a "did you mean …?"
+  message. Shell variables that closely match a setting name are warned about
+  (previously silently ignored), and `LLM_MOCK` / `OPENAI_API_KEY` placed in
+  `backend/.env` get a hint that they belong in the process environment.
 
 ### Removed
 - Unused settings `DEFAULT_MAX_ROUNDS`, `DEFAULT_TARGET_SCORE`,

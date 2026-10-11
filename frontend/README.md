@@ -39,7 +39,7 @@ src/
 ├── components/           # React components — leaves are presentational, parents wire to stores
 ├── hooks/                # Reusable hooks — useGenerationFlow, useRealizationFlow, useMutationFlow, streamSSE
 ├── lib/                  # toast wrapper, miscellaneous utilities
-├── services/             # Cross-cutting services — audio engines, MIDI utils, SSE event types (sse.ts), services/api.ts
+├── services/             # Cross-cutting services — audio engines, MIDI utils, token-usage event types (sse.ts), services/api.ts
 ├── stores/               # Zustand stores; one per concern
 ├── utils/                # designTokens.ts (CSS-var helpers, CANVAS_COLORS); the tokens themselves live in index.css
 ├── views/                # Page-level views (Dashboard, SessionWorkspace, PatternLibraryBrowser); GenreManagement lives in components/

@@ -1,9 +1,11 @@
 """Tests for LLM provider settings resolution."""
 
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
-from explorator.config import Settings
+from explorator.config import Settings, check_setting_names, load_settings
 
 
 @pytest.fixture(autouse=True)
@@ -127,56 +129,74 @@ def test_extra_body_parses_json_env(monkeypatch: pytest.MonkeyPatch) -> None:
     assert _settings().llm_extra_body == {"chat_template_kwargs": {"thinking": False}}
 
 
-# ── unknown names: ignored with a warning, never fatal ───────────────────────
+# ── unknown names ────────────────────────────────────────────────────────────
 
 
-def _env_file(tmp_path: object, text: str) -> str:
-    from pathlib import Path
-
-    path = Path(str(tmp_path)) / ".env"
+def _env_file(tmp_path: Path, text: str) -> Path:
+    path = tmp_path / ".env"
     path.write_text(text)
-    return str(path)
+    return path
 
 
-def test_unknown_env_file_key_does_not_stop_startup(tmp_path: object) -> None:
-    s = Settings(_env_file=_env_file(tmp_path, "LLM_PROVDER=openai\n"))  # type: ignore[call-arg]
+def test_unknown_llm_key_in_env_file_is_fatal(tmp_path: Path) -> None:
+    # A misspelt LLM_PROVIDER would otherwise leave gemini selected and send an
+    # OpenRouter/OpenAI LLM_API_KEY to Google.
+    env_file = _env_file(tmp_path, "LLM_PROVDER=openai\nLLM_API_KEY=sk-or-x\n")
+    with pytest.raises(ValueError, match="LLM_PROVDER.*did you mean LLM_PROVIDER"):
+        check_setting_names(env_file, environ={})
+
+
+def test_unknown_gemini_key_in_env_file_is_fatal(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="GEMINI_APIKEY"):
+        check_setting_names(_env_file(tmp_path, "GEMINI_APIKEY=k\n"), environ={})
+
+
+def test_other_unknown_env_file_key_only_warns(tmp_path: Path) -> None:
+    warnings = check_setting_names(_env_file(tmp_path, "export FOO=1\n"), environ={})
+    assert warnings == ["FOO in backend/.env is not a setting and is ignored"]
+
+
+def test_unknown_env_file_key_does_not_break_settings(tmp_path: Path) -> None:
+    s = Settings(_env_file=_env_file(tmp_path, "FOO=1\n"))  # type: ignore[call-arg]
     assert s.llm_provider == "gemini"
 
 
-def test_unknown_env_file_key_is_reported(tmp_path: object) -> None:
-    from explorator.config import unknown_setting_warnings
-
-    warnings = unknown_setting_warnings(_env_file(tmp_path, "LLM_PROVDER=openai\n"), environ={})
-    assert len(warnings) == 1
-    assert "LLM_PROVDER" in warnings[0] and "backend/.env" in warnings[0]
-
-
-def test_process_env_only_names_in_env_file_get_a_hint(tmp_path: object) -> None:
-    from explorator.config import unknown_setting_warnings
-
-    text = "LLM_MOCK=true\nOPENAI_API_KEY=x\n"
-    warnings = unknown_setting_warnings(_env_file(tmp_path, text), environ={})
+def test_process_env_only_names_in_env_file_get_a_hint(tmp_path: Path) -> None:
+    env_file = _env_file(tmp_path, "LLM_MOCK=true\nOPENAI_API_KEY=x\n")
+    warnings = check_setting_names(env_file, environ={})
     assert len(warnings) == 2
     assert all("process environment" in w for w in warnings)
 
 
-def test_known_env_file_keys_are_not_reported(tmp_path: object) -> None:
-    from explorator.config import unknown_setting_warnings
-
+def test_known_env_file_keys_are_not_reported(tmp_path: Path) -> None:
     text = "llm_provider=gemini\nLLM_API_KEY=k\nGEMINI_API_KEY=k\nNEO4J_URI=bolt://x\n"
-    assert unknown_setting_warnings(_env_file(tmp_path, text), environ={}) == []
+    assert check_setting_names(_env_file(tmp_path, text), environ={}) == []
 
 
-def test_unknown_llm_shell_var_is_reported() -> None:
-    from explorator.config import unknown_setting_warnings
+def test_misspelt_shell_var_warns_with_suggestion() -> None:
+    warnings = check_setting_names(None, environ={"llm_provder": "openai"})
+    assert warnings == [
+        "Environment variable LLM_PROVDER is not a setting and is ignored"
+        " — did you mean LLM_PROVIDER?"
+    ]
 
-    environ = {"LLM_PROVDER": "openai", "LLM_MOCK": "true", "OPENAI_API_KEY": "x", "HOME": "/h"}
-    warnings = unknown_setting_warnings(None, environ=environ)
-    assert len(warnings) == 1
-    assert "LLM_PROVDER" in warnings[0]
+
+def test_other_tools_shell_vars_are_not_reported() -> None:
+    environ = {
+        "LLM_USER_PATH": "/x",  # simonw/llm
+        "LLM_MOCK": "true",
+        "OPENAI_API_KEY": "x",
+        "HOME": "/h",
+    }
+    assert check_setting_names(None, environ=environ) == []
 
 
-def test_missing_env_file_is_fine(tmp_path: object) -> None:
-    from explorator.config import unknown_setting_warnings
+def test_missing_env_file_is_fine(tmp_path: Path) -> None:
+    assert check_setting_names(tmp_path / "absent.env", environ={}) == []
 
-    assert unknown_setting_warnings(f"{tmp_path}/absent.env", environ={}) == []
+
+def test_settings_error_mentions_likely_typo(tmp_path: Path) -> None:
+    # The openai provider fails on the missing model; the hint names the typo.
+    env_file = _env_file(tmp_path, "LLM_PROVIDER=openai\nLLM_FLASH_MODEL=b\n")
+    with pytest.raises(ValueError, match="(?s)requires LLM_PRO_MODEL.*LLM_PRO_MODLE"):
+        load_settings(env_file, environ={"LLM_PRO_MODLE": "a"})

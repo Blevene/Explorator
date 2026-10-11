@@ -299,7 +299,7 @@ There is no authentication. The app runs locally for one operator. Adding auth i
 
 ### Configuration
 
-`backend/.env` is read by the `Settings` class (`config.py`), which uses only its own fields; unknown keys, and unrecognized `LLM_*` / `GEMINI_*` shell variables, are ignored and logged at startup (`unknown_setting_warnings`). Settings (from `backend/.env` or the process environment):
+`backend/.env` is read by the `Settings` class (`config.py`), which uses only its own fields. `check_setting_names()` runs first: an unknown `LLM_*` / `GEMINI_*` key in `backend/.env` is fatal (a misspelt `LLM_PROVIDER` would otherwise leave Gemini selected and send the key to Google); other unknown keys, and shell variables that closely match a setting name, are logged as warnings at startup. Settings (from `backend/.env` or the process environment):
 
 - `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` — driver connection
 - `LLM_PROVIDER` (`gemini` default or `openai`), `LLM_API_KEY`, `LLM_PRO_MODEL`, `LLM_FLASH_MODEL`, `LLM_TIMEOUT_SECONDS`; openai only: `LLM_BASE_URL`, `LLM_MAX_RETRIES`, `LLM_MAX_CONCURRENCY`, `LLM_CONTEXT_TOKENS`, `LLM_EXTRA_BODY` — LLM integration; full reference in README "LLM providers" and ADR 012. The legacy `GEMINI_*` names are deprecated aliases honoured only under `gemini`.
@@ -346,7 +346,7 @@ src/services/
 ├── audioUtils.ts           — shared synth presets, scheduling helpers
 ├── audioPresets.ts         — genre synth presets shared by both audio engines
 ├── midiUtils.ts            — MIDI download / blob handling
-└── sse.ts                  — SSE event / TokenUsage types
+└── sse.ts                  — TokenUsage types for the token_usage SSE event
 
 src/hooks/
 ├── streamSSE.ts            — shared SSE POST-stream reader (CRLF-safe parsing, timeout/abort)

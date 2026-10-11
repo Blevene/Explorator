@@ -25,7 +25,7 @@ make frontend                  # Vite on :5173, /v1 proxied to :8000 (terminal 2
 ```
 
 - `make frontend` points the Vite proxy at `make backend` (:8000). Plain `npm run dev` proxies `/v1` to `VITE_API_TARGET`, which defaults to `http://localhost:8100` (the E2E backend).
-- `backend/.env` holds only backend settings (`LLM_*`, legacy `GEMINI_*`, `NEO4J_*`, …); any other key — and any unrecognized `LLM_*` / `GEMINI_*` shell variable — is ignored with a startup warning. `LLM_MOCK`, `OPENAI_API_KEY` and LLM-server variables such as `OLLAMA_CONTEXT_LENGTH` are read from the process environment only — export them or prefix the command.
+- `backend/.env` holds only backend settings (`LLM_*`, legacy `GEMINI_*`, `NEO4J_*`, …); an unknown `LLM_*` / `GEMINI_*` key there stops startup (a typo could route your key to the wrong provider); other unknown keys, and misspelled-looking shell variables, only warn. `LLM_MOCK`, `OPENAI_API_KEY` and LLM-server variables such as `OLLAMA_CONTEXT_LENGTH` are read from the process environment only — export them or prefix the command.
 - No LLM key? `LLM_MOCK=true make backend` swaps in a fake LLM client with deterministic output.
 - The backend probes Neo4j once at startup; if it logs "In-memory mode", Neo4j wasn't ready — restart the backend.
 

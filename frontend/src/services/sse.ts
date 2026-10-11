@@ -1,15 +1,3 @@
-export type SSEEventType =
-  | 'node_started'
-  | 'node_completed'
-  | 'candidates_preview'
-  | 'round_completed'
-  | 'round_error'
-  | 'mutation_completed'
-  | 'mutation_error'
-  | 'realization_completed'
-  | 'realization_error'
-  | 'token_usage';
-
 export interface TokenUsageBreakdown {
   input: number;
   output: number;

@@ -27,9 +27,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from explorator.graph.connection import close_driver, probe_driver
 
     logger = logging.getLogger(__name__)
-    from explorator.config import settings, unknown_setting_warnings
+    from explorator.config import setting_name_warnings, settings
 
-    for warning in unknown_setting_warnings():
+    for warning in setting_name_warnings:
         logger.warning("%s", warning)
     for name in settings.legacy_names_used:
         logger.warning(

@@ -1,4 +1,4 @@
-.PHONY: dev test lint neo4j-up neo4j-down neo4j-test-up neo4j-test-down backend frontend e2e e2e-parallel e2e-neo4j e2e-headed screenshots
+.PHONY: test test-unit test-integration lint neo4j-up neo4j-down neo4j-test-up neo4j-test-down backend frontend e2e e2e-parallel e2e-neo4j e2e-headed screenshots
 
 # Infrastructure
 # Blocks until healthy so a backend started right after doesn't fall back to
