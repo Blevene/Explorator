@@ -63,8 +63,10 @@ completions protocol, and select between them with `LLM_PROVIDER`.**
   silently ignored. google-genai applies it as both a client timeout and the server
   deadline (`X-Server-Timeout`), so slow requests fail with 504 DEADLINE_EXCEEDED
   after that time. Raise `LLM_TIMEOUT_SECONDS` if needed.
-- `gemini=` kwarg names, `FakeGeminiClient` and `GEMINI_MOCK` are intentionally
-  unchanged pending a mechanical rename PR, so naming is temporarily misleading.
+- The remaining Gemini-flavoured names were renamed in a follow-up mechanical
+  PR: `gemini=` kwargs/attributes are now `llm`, `FakeGeminiClient` is
+  `FakeLLMClient` (`adapters/llm_mock.py`), and the mock switch is `LLM_MOCK`
+  (the legacy `GEMINI_MOCK=true` is still accepted and logs a deprecation warning).
 - Ollama's context window is an operator concern: its default (2-4k tokens)
   silently truncates long prompts and the `/v1` API cannot change it per request.
   Documented in the README; `LLM_CONTEXT_TOKENS` enables a near-limit warning.

@@ -47,7 +47,7 @@ def _select_candidates_to_mutate(
     return selected
 
 
-async def mutate(state: ExplorationState, *, gemini: LLMClient) -> dict[str, Any]:
+async def mutate(state: ExplorationState, *, llm: LLMClient) -> dict[str, Any]:
     """Mutate selected candidates and return merged state update."""
     callback = state.get("on_progress")
     if callback:
@@ -95,7 +95,7 @@ async def mutate(state: ExplorationState, *, gemini: LLMClient) -> dict[str, Any
         if len(to_mutate) >= budget:
             break
 
-    mutator = HarmonyMutator(gemini)
+    mutator = HarmonyMutator(llm)
     new_progs: list[dict[str, Any]] = []
     new_records: list[dict[str, Any]] = []
     now = utc_now()
@@ -118,7 +118,7 @@ async def mutate(state: ExplorationState, *, gemini: LLMClient) -> dict[str, Any
             )
         except Exception:
             usage.record_fallback("mutate")
-            logger.exception("Gemini mutation failed for candidate %s — skipping", source_id)
+            logger.exception("LLM mutation failed for candidate %s — skipping", source_id)
             continue
 
         new_id = f"pc_{ULID()}"

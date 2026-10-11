@@ -1,4 +1,4 @@
-"""Fake Gemini client for E2E testing — returns deterministic structured responses."""
+"""Fake LLM client for E2E testing — returns deterministic structured responses."""
 
 from __future__ import annotations
 
@@ -122,7 +122,7 @@ def _get_builders() -> dict[str, Any]:
     if _BUILDERS:
         return _BUILDERS
 
-    from explorator.domain.evaluation.theory import GeminiScores
+    from explorator.domain.evaluation.theory import LLMScores
     from explorator.domain.harmony.generator import GeneratedProgression, GeneratedProgressionSet
     from explorator.domain.harmony.mutator import MutationResponse, MutationResponseItem
     from explorator.domain.intent.feedback import FeedbackInterpretation
@@ -160,7 +160,7 @@ def _get_builders() -> dict[str, Any]:
             novelty_target="moderate",
         ),
         "GeneratedProgressionSet": lambda: GeneratedProgressionSet(progressions=_progs),
-        "GeminiScores": lambda: GeminiScores(genre_fit=7.5, emotional_fit=7.0, novelty=6.5),
+        "LLMScores": lambda: LLMScores(genre_fit=7.5, emotional_fit=7.0, novelty=6.5),
         "VoicingStrategyResponse": lambda: VoicingStrategyResponse(
             global_strategy="Open voicings with 7th extensions",
             density_level="medium",
@@ -193,7 +193,7 @@ def _get_builders() -> dict[str, Any]:
     return _BUILDERS
 
 
-class FakeGeminiClient:
+class FakeLLMClient:
     """Drop-in replacement for GeminiClient returning deterministic fixtures."""
 
     def __init__(self) -> None:
@@ -214,11 +214,11 @@ class FakeGeminiClient:
         name = response_model.__name__
         builders = _get_builders()
         if name not in builders:
-            msg = f"Unsupported response_model for FakeGeminiClient: {name}"
+            msg = f"Unsupported response_model for FakeLLMClient: {name}"
             raise ValueError(msg)
         self.call_counts[name] += 1
         usage.record_synthetic_tokens(self.get_model_name(tier), 800, 200, tier=tier.value)
-        logger.info("FakeGemini: %s (call #%d)", name, self.call_counts[name])
+        logger.info("FakeLLM: %s (call #%d)", name, self.call_counts[name])
         return cast("T", builders[name]())
 
     async def generate_text(
@@ -236,6 +236,6 @@ class FakeGeminiClient:
             # the pipeline finishes in single-digit milliseconds and the
             # in-progress view flashes by before E2E tests can observe it.
             await asyncio.sleep(0.15)
-            logger.info("FakeGemini.generate_text: genre-research stage matched")
+            logger.info("FakeLLM.generate_text: genre-research stage matched")
             return fixture
         return "Mock text response"

@@ -102,10 +102,10 @@ async def test_adapter_records_usage_within_scope() -> None:
 
 async def test_mock_client_records_synthetic_usage() -> None:
     from explorator.adapters.gemini import ModelTier
-    from explorator.adapters.gemini_mock import FakeGeminiClient
+    from explorator.adapters.llm_mock import FakeLLMClient
     from explorator.domain.intent.parser import SoftPreferences  # noqa: F401  (registered builder)
 
-    client = FakeGeminiClient()
+    client = FakeLLMClient()
     with usage.track_usage() as u, usage.set_phase("parse_intent"):
         await client.generate_structured("p", SoftPreferences, tier=ModelTier.FLASH)
     assert u.totals()["total"] > 0

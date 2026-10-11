@@ -17,7 +17,7 @@ def _failing_client() -> MagicMock:
 async def test_theory_evaluation_fallback_is_counted() -> None:
     evaluator = TheoryEvaluator(_failing_client())
     with usage.track_usage() as u:
-        _, failed = await evaluator._gemini_evaluate(
+        _, failed = await evaluator._llm_evaluate(
             ["Cmaj7", "Am7"], "dream_pop", ["wistful"], "C", "major"
         )
     assert failed is True
@@ -48,5 +48,5 @@ async def test_mutation_failure_is_counted() -> None:
         "arrangement_candidates": [{"id": "arr_01", "progression_candidate_id": "pc_01"}],
     }
     with usage.track_usage() as u:
-        await mutate(state, gemini=_failing_client())  # type: ignore[arg-type]
+        await mutate(state, llm=_failing_client())  # type: ignore[arg-type]
     assert u.fallbacks == {"mutate": 1}

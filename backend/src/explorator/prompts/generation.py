@@ -1,4 +1,4 @@
-"""Prompts for chord progression generation (Gemini Pro)."""
+"""Prompts for chord progression generation (the pro-tier LLM)."""
 
 
 def progression_generation_prompt(

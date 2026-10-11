@@ -1,4 +1,4 @@
-"""Research node — uses Gemini Pro to research a genre."""
+"""Research node — uses the pro-tier LLM to research a genre."""
 
 import logging
 from typing import Any
@@ -13,10 +13,10 @@ logger = logging.getLogger(__name__)
 async def research_genre(
     state: dict[str, Any],
     *,
-    gemini: LLMClient,
+    llm: LLMClient,
     driver: Any,
 ) -> dict[str, Any]:
-    """Research a genre using Gemini Pro. Returns research_log."""
+    """Research a genre using the pro-tier LLM. Returns research_log."""
     job_id = state["job_id"]
     genre_name = state["genre_name"]
     reference_artists = state.get("reference_artists", [])
@@ -54,7 +54,7 @@ async def research_genre(
             {"status": "researching", "detail": "Researching harmonic vocabulary..."},
         )
 
-    research_log = await gemini.generate_text(
+    research_log = await llm.generate_text(
         prompt=user_prompt,
         tier=ModelTier.PRO,
         system_prompt=system_prompt,

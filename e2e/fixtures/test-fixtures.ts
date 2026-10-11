@@ -114,7 +114,7 @@ function spawnBackend(port: number): ChildProcess {
     {
       cwd: path.join(ROOT, 'backend'),
       // NEO4J_URI points at a dead port → probe fails → in-memory mode.
-      env: { ...process.env, GEMINI_MOCK: 'true', NEO4J_URI: 'bolt://localhost:9999' },
+      env: { ...process.env, LLM_MOCK: 'true', NEO4J_URI: 'bolt://localhost:9999' },
       stdio: 'ignore',
       detached: true,
     },

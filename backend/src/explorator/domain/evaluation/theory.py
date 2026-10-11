@@ -1,6 +1,6 @@
-"""Theory evaluation — deterministic checks + Gemini hybrid scoring.
+"""Theory evaluation — deterministic checks + LLM hybrid scoring.
 
-Deterministic checks run first. Gemini Flash scores softer dimensions.
+Deterministic checks run first. The flash-tier LLM scores softer dimensions.
 LLM is never the sole scoring authority.
 """
 
@@ -182,8 +182,8 @@ def check_theoretical_coherence(
     return max(3.0, min(10.0, round(base, 1)))
 
 
-class GeminiScores(BaseModel):
-    """Schema for Gemini's evaluation output."""
+class LLMScores(BaseModel):
+    """Schema for LLM's evaluation output."""
 
     genre_fit: float = Field(ge=0, le=10)
     emotional_fit: float = Field(ge=0, le=10)
@@ -191,10 +191,10 @@ class GeminiScores(BaseModel):
 
 
 class TheoryEvaluator:
-    """Hybrid theory evaluator: deterministic + Gemini Flash."""
+    """Hybrid theory evaluator: deterministic + the flash-tier LLM."""
 
-    def __init__(self, gemini: LLMClient) -> None:
-        self.gemini = gemini
+    def __init__(self, llm: LLMClient) -> None:
+        self.llm = llm
 
     async def evaluate(
         self,
@@ -214,8 +214,8 @@ class TheoryEvaluator:
             chord_symbols, candidate.key_center, candidate.mode
         )
 
-        # Gemini-assisted scores
-        gemini_scores, gemini_failed = await self._gemini_evaluate(
+        # LLM-assisted scores
+        llm_scores, llm_failed = await self._llm_evaluate(
             chord_symbols, genre, mood_targets, candidate.key_center, candidate.mode
         )
 
@@ -223,9 +223,9 @@ class TheoryEvaluator:
         now = utc_now()
 
         warnings: list[str] = []
-        if gemini_failed:
+        if llm_failed:
             warnings.append(
-                "Gemini scoring failed — using fallback defaults"
+                "LLM scoring failed — using fallback defaults"
                 " for genre_fit, emotional_fit, novelty"
             )
 
@@ -237,22 +237,22 @@ class TheoryEvaluator:
             updated_at=now,
             candidate_id=candidate.id,
             evaluation_type="theory",
-            genre_fit=gemini_scores.genre_fit,
-            emotional_fit=gemini_scores.emotional_fit,
+            genre_fit=llm_scores.genre_fit,
+            emotional_fit=llm_scores.emotional_fit,
             theoretical_coherence=coherence,
             cadence_quality=cadence,
-            novelty=gemini_scores.novelty,
+            novelty=llm_scores.novelty,
             loopability=loopability,
             notes=warnings,
         )
 
         # Build aggregate scorecard
         scores = {
-            "genre_fit": gemini_scores.genre_fit,
-            "emotional_fit": gemini_scores.emotional_fit,
+            "genre_fit": llm_scores.genre_fit,
+            "emotional_fit": llm_scores.emotional_fit,
             "theoretical_coherence": coherence,
             "cadence_quality": cadence,
-            "novelty": gemini_scores.novelty,
+            "novelty": llm_scores.novelty,
             "loopability": loopability,
         }
         avg = sum(scores.values()) / len(scores) if scores else 0
@@ -271,15 +271,15 @@ class TheoryEvaluator:
 
         return theory_eval, scorecard
 
-    async def _gemini_evaluate(
+    async def _llm_evaluate(
         self,
         chord_symbols: list[str],
         genre: str,
         mood_targets: list[str],
         key: str,
         mode: str,
-    ) -> tuple[GeminiScores, bool]:
-        """Get Gemini Flash scores for soft dimensions.
+    ) -> tuple[LLMScores, bool]:
+        """Get the flash-tier LLM scores for soft dimensions.
 
         Returns (scores, failed) where failed=True means fallback defaults were used.
         """
@@ -296,9 +296,9 @@ class TheoryEvaluator:
         )
 
         try:
-            scores = await self.gemini.generate_structured(
+            scores = await self.llm.generate_structured(
                 prompt=prompt,
-                response_model=GeminiScores,
+                response_model=LLMScores,
                 tier=ModelTier.FLASH,
                 system_prompt=system,
                 max_output_tokens=FANOUT_MAX_OUTPUT_TOKENS,
@@ -307,8 +307,8 @@ class TheoryEvaluator:
         except Exception:
             usage.record_fallback("evaluate_progressions")
             logger.warning(
-                "Gemini evaluation failed for %s in %s %s — using fallback scores",
+                "LLM evaluation failed for %s in %s %s — using fallback scores",
                 " → ".join(chord_symbols), key, mode,
                 exc_info=True,
             )
-            return GeminiScores(genre_fit=6.0, emotional_fit=6.0, novelty=5.0), True
+            return LLMScores(genre_fit=6.0, emotional_fit=6.0, novelty=5.0), True

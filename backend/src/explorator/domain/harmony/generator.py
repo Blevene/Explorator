@@ -1,4 +1,4 @@
-"""Generate chord progressions using Gemini Pro + genre constraints."""
+"""Generate chord progressions using the pro-tier LLM + genre constraints."""
 
 from pydantic import BaseModel, Field
 from ulid import ULID
@@ -15,7 +15,7 @@ from explorator.utils import utc_now
 
 
 class GeneratedProgression(BaseModel):
-    """Schema for Gemini's structured output."""
+    """Schema for LLM's structured output."""
 
     chord_symbols: list[str]
     rationale: str
@@ -29,10 +29,10 @@ class GeneratedProgressionSet(BaseModel):
 
 
 class HarmonyGenerator:
-    """Generates chord progressions using Gemini Pro."""
+    """Generates chord progressions using the pro-tier LLM."""
 
-    def __init__(self, gemini: LLMClient) -> None:
-        self.gemini = gemini
+    def __init__(self, llm: LLMClient) -> None:
+        self.llm = llm
 
     async def generate(
         self,
@@ -48,7 +48,7 @@ class HarmonyGenerator:
         cadence_archetypes: list[str],
         mood_targets: list[str],
     ) -> list[ProgressionCandidate]:
-        """Generate N progression candidates using Gemini Pro."""
+        """Generate N progression candidates using the pro-tier LLM."""
         prompt, system_prompt = progression_generation_prompt(
             genre=genre,
             key_center=key_center or "C",
@@ -62,7 +62,7 @@ class HarmonyGenerator:
             mood_targets=mood_targets,
         )
 
-        result = await self.gemini.generate_structured(
+        result = await self.llm.generate_structured(
             prompt=prompt,
             response_model=GeneratedProgressionSet,
             tier=ModelTier.PRO,

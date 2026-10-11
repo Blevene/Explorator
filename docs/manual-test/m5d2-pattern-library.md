@@ -7,7 +7,7 @@ checklist covers what mocks can't catch and what the E2E doesn't exercise.
 **Stack prereqs**
 
 - [ ] Neo4j container up (`docker compose up -d neo4j`) — default name `explorator-neo4j-1` on 7475/7688
-- [ ] Backend running on `:8100` **without** `GEMINI_MOCK` (real Gemini)
+- [ ] Backend running on `:8100` **without** `LLM_MOCK` (real Gemini)
 - [ ] Frontend dev server on `:5173`
 - [ ] `GEMINI_API_KEY` is set in the backend env
 - [ ] `GET /v1/genres` returns non-empty `items` (genres live as YAML in `backend/src/explorator/domain/style/genres/`, not in Neo4j)

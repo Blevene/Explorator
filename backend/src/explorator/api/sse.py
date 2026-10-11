@@ -60,7 +60,7 @@ async def cancel_on_disconnect(
     client disconnects (navigation / the frontend's AbortController), sse-starlette
     cancels only this generator — not the detached task. Wrapping the stream lets
     us propagate that cancellation: on disconnect OR normal end we cancel the task
-    so ``graph.ainvoke`` (and its real Gemini spend) stops instead of running to
+    so ``graph.ainvoke`` (and its real LLM spend) stops instead of running to
     completion.
 
     Cancelling mid-round is safe here: in-memory mode is ephemeral, and Neo4j

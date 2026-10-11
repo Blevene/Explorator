@@ -49,8 +49,8 @@ async def test_mutate_returns_merged_candidates() -> None:
         ],
     )
 
-    mock_gemini = MagicMock()
-    mock_gemini.generate_structured = AsyncMock(return_value=mock_mutator_response)
+    mock_llm = MagicMock()
+    mock_llm.generate_structured = AsyncMock(return_value=mock_mutator_response)
 
     existing_prog = {
         "id": "pc_01",
@@ -79,7 +79,7 @@ async def test_mutate_returns_merged_candidates() -> None:
         "arrangement_candidates": [{"id": "arr_01", "progression_candidate_id": "pc_01"}],
     }
 
-    result = await mutate(state, gemini=mock_gemini)
+    result = await mutate(state, llm=mock_llm)
 
     # Must include existing + new
     prog_ids = [p["id"] for p in result["progression_candidates"]]

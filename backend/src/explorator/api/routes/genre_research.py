@@ -63,7 +63,7 @@ class RejectRequest(BaseModel):
 @router.post("/genres/research")
 async def start_research(
     request: StartResearchRequest,
-    gemini: LLMClient = Depends(get_llm_client),  # noqa: B008
+    llm: LLMClient = Depends(get_llm_client),  # noqa: B008
     repo: GenreResearchRepository = Depends(get_genre_research_repo),  # noqa: B008
     driver: Any = Depends(get_neo4j_driver),  # noqa: B008
 ) -> StartResearchResponse:
@@ -113,7 +113,7 @@ async def start_research(
     channel = SSEChannel()
     _channels[job_id] = channel
 
-    graph = build_genre_research_graph(gemini, driver)
+    graph = build_genre_research_graph(llm, driver)
     initial_state = {
         "job_id": job_id,
         "genre_name": genre_name,

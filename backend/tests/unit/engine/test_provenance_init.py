@@ -35,7 +35,7 @@ class TestGraphProvenanceInit:
         """Smoke test: the graph compiles with mock dependencies."""
         from explorator.engine.graph import build_exploration_graph
 
-        gemini = MagicMock()
+        llm = MagicMock()
         driver = MagicMock()
-        graph = build_exploration_graph(gemini, driver)
+        graph = build_exploration_graph(llm, driver)
         assert graph is not None

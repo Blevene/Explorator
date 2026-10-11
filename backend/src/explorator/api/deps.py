@@ -8,6 +8,7 @@ repos, so the app degrades gracefully instead of failing.
 
 from __future__ import annotations
 
+import logging
 import os
 from functools import lru_cache
 from typing import TYPE_CHECKING
@@ -27,6 +28,8 @@ from explorator.persistence.factory import (
     make_style_repo,
     make_voicing_plan_repo,
 )
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from neo4j import AsyncDriver
@@ -74,15 +77,26 @@ async def get_genre_research_repo() -> GenreResearchRepository | NullGenreResear
     return make_genre_research_repo(driver)
 
 
+def _mock_requested() -> bool:
+    """True when LLM_MOCK=true, or the deprecated GEMINI_MOCK=true (which warns)."""
+    if os.environ.get("LLM_MOCK", "").lower() == "true":
+        return True
+    if os.environ.get("GEMINI_MOCK", "").lower() == "true":
+        logger.warning("GEMINI_MOCK is deprecated — use LLM_MOCK")
+        return True
+    return False
+
+
 @lru_cache
 def get_llm_client() -> LLMClient:
     """LLM client singleton for the configured provider.
 
-    Returns FakeGeminiClient when GEMINI_MOCK=true (e2e / memory-mode lanes).
+    Returns FakeLLMClient when LLM_MOCK=true (e2e / memory-mode lanes). The legacy
+    GEMINI_MOCK=true is still accepted, with a deprecation warning.
     """
-    if os.environ.get("GEMINI_MOCK", "").lower() == "true":
-        from explorator.adapters.gemini_mock import FakeGeminiClient
-        return FakeGeminiClient()
+    if _mock_requested():
+        from explorator.adapters.llm_mock import FakeLLMClient
+        return FakeLLMClient()
     if settings.llm_provider == "openai":
         from explorator.adapters.openai_compat import OpenAICompatClient
         return OpenAICompatClient(
@@ -102,11 +116,6 @@ def get_llm_client() -> LLMClient:
         flash_model=settings.llm_flash_model,
         timeout_seconds=settings.llm_timeout_seconds,
     )
-
-
-# Legacy name — the same function object, so `get_gemini_client.cache_clear()`
-# in tests and FastAPI `Depends` identity keep working.
-get_gemini_client = get_llm_client
 
 
 async def get_pattern_library_repo() -> PatternLibraryRepo | NullPatternLibraryRepo:

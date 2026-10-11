@@ -8,7 +8,7 @@ import pytest
 
 
 @pytest.fixture
-def gemini():
+def llm():
     from explorator.adapters.gemini import GeminiClient
     api_key = os.getenv("GEMINI_API_KEY", "")
     if not api_key:
@@ -17,7 +17,7 @@ def gemini():
 
 
 @pytest.fixture
-def mock_gemini():
+def mock_llm():
     """Stub GeminiClient — sufficient for graph compilation (no API calls made)."""
     return MagicMock()
 
@@ -40,11 +40,11 @@ async def driver():
 
 
 @pytest.mark.integration
-def test_realization_subgraph_compiles(mock_gemini, mock_driver):
+def test_realization_subgraph_compiles(mock_llm, mock_driver):
     """Test the realization subgraph compiles with all expected nodes."""
     from explorator.engine.graph import build_realization_subgraph
 
-    graph = build_realization_subgraph(mock_gemini, mock_driver)
+    graph = build_realization_subgraph(mock_llm, mock_driver)
     assert graph is not None
 
     # Verify graph has all expected nodes
@@ -54,10 +54,10 @@ def test_realization_subgraph_compiles(mock_gemini, mock_driver):
 
 
 @pytest.mark.integration
-def test_realization_subgraph_has_evaluation_nodes(mock_gemini, mock_driver):
+def test_realization_subgraph_has_evaluation_nodes(mock_llm, mock_driver):
     """Subgraph should include evaluate_arrangements and rank_and_select."""
     from explorator.engine.graph import build_realization_subgraph
-    graph = build_realization_subgraph(mock_gemini, mock_driver)
+    graph = build_realization_subgraph(mock_llm, mock_driver)
     node_names = set(graph.nodes.keys())
     expected = {
         "load_context", "plan_voicings", "generate_bass", "assemble",

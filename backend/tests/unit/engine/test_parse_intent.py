@@ -32,7 +32,7 @@ def patched_parser(monkeypatch):
         instance = MagicMock()
         instance.parse = AsyncMock(return_value=brief)
         monkeypatch.setattr(
-            parse_intent_module, "IntentParser", lambda gemini: instance
+            parse_intent_module, "IntentParser", lambda llm: instance
         )
         return brief
 
@@ -47,7 +47,7 @@ async def test_explicit_genre_wins(patched_parser) -> None:
         "session_id": "S",
         "genre": "cinematic",
     }
-    result = await parse_intent(state, gemini=MagicMock())
+    result = await parse_intent(state, llm=MagicMock())
     assert result["genre"] == "cinematic"
     # The stored brief is kept consistent with the resolved genre.
     assert result["creative_brief"]["genre"] == "cinematic"
@@ -57,7 +57,7 @@ async def test_explicit_genre_wins(patched_parser) -> None:
 async def test_falls_back_to_brief_genre_when_absent(patched_parser) -> None:
     patched_parser("synthwave")
     state = {"prompt": "something moody", "session_id": "S"}
-    result = await parse_intent(state, gemini=MagicMock())
+    result = await parse_intent(state, llm=MagicMock())
     assert result["genre"] == "synthwave"
     assert result["creative_brief"]["genre"] == "synthwave"
 
@@ -66,5 +66,5 @@ async def test_empty_state_genre_falls_back(patched_parser) -> None:
     # An empty-string genre is falsy → fall back to the parser's genre.
     patched_parser("dream_pop")
     state = {"prompt": "x", "session_id": "S", "genre": ""}
-    result = await parse_intent(state, gemini=MagicMock())
+    result = await parse_intent(state, llm=MagicMock())
     assert result["genre"] == "dream_pop"

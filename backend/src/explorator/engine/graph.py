@@ -76,7 +76,7 @@ def _instrument[NodeFnT: Callable[[ExplorationState], Awaitable[dict[str, Any]]]
 
 def _add_m2_nodes(
     graph: StateGraph[Any],
-    gemini: LLMClient,
+    llm: LLMClient,
     driver: AsyncDriver | None,
 ) -> None:
     """Register M2 realization nodes on a graph. Shared by full and sub-graph builders."""
@@ -84,12 +84,12 @@ def _add_m2_nodes(
         "load_context", _instrument("load_context", partial(load_context, driver=driver))
     )
     graph.add_node(
-        "plan_voicings", _instrument("plan_voicings", partial(plan_voicings, gemini=gemini))
+        "plan_voicings", _instrument("plan_voicings", partial(plan_voicings, llm=llm))
     )
     graph.add_node("generate_bass", _instrument("generate_bass", generate_bass))
     graph.add_node("generate_groove", _instrument("generate_groove", generate_groove))
     graph.add_node(
-        "generate_melody", _instrument("generate_melody", partial(generate_melody, gemini=gemini))
+        "generate_melody", _instrument("generate_melody", partial(generate_melody, llm=llm))
     )
     graph.add_node("assemble", _instrument("assemble", assemble_arrangements))
     graph.add_node(
@@ -132,19 +132,19 @@ def _route_after_mutate(state: ExplorationState) -> str:
     return "evaluate_arrangements"
 
 
-def build_exploration_graph(gemini: LLMClient, driver: AsyncDriver | None) -> Any:
+def build_exploration_graph(llm: LLMClient, driver: AsyncDriver | None) -> Any:
     """Build and compile the unified M1+M2 LangGraph exploration flow."""
     graph = StateGraph(ExplorationState)
 
     # M1 nodes
     graph.add_node(
-        "parse_intent", _instrument("parse_intent", partial(parse_intent, gemini=gemini))
+        "parse_intent", _instrument("parse_intent", partial(parse_intent, llm=llm))
     )
     graph.add_node("load_genre", _instrument("load_genre", partial(load_genre, driver=driver)))
-    graph.add_node("generate", _instrument("generate", partial(generate, gemini=gemini)))
+    graph.add_node("generate", _instrument("generate", partial(generate, llm=llm)))
     graph.add_node(
         "evaluate_progressions",
-        _instrument("evaluate_progressions", partial(evaluate_progressions, gemini=gemini)),
+        _instrument("evaluate_progressions", partial(evaluate_progressions, llm=llm)),
     )
     graph.add_node(
         "select_top_progressions", _instrument("select_top_progressions", select_top_progressions)
@@ -154,7 +154,7 @@ def build_exploration_graph(gemini: LLMClient, driver: AsyncDriver | None) -> An
     graph.add_node("load_memory", _instrument("load_memory", partial(load_memory, driver=driver)))
 
     # M2 nodes (shared registration)
-    _add_m2_nodes(graph, gemini, driver)
+    _add_m2_nodes(graph, llm, driver)
 
     # M5d-1: auto-harvest finalist patterns between persist_realization and persist_round.
     # In memory mode this is a NullPatternLibraryRepo (no-op upsert → 0 harvested);
@@ -182,7 +182,7 @@ def build_exploration_graph(gemini: LLMClient, driver: AsyncDriver | None) -> An
 
     # M3a: mutation loop
     graph.add_node("check_stop", _instrument("check_stop", check_stop))
-    graph.add_node("mutate", _instrument("mutate", partial(mutate, gemini=gemini)))
+    graph.add_node("mutate", _instrument("mutate", partial(mutate, llm=llm)))
 
     graph.add_edge("rank_and_select", "check_stop")
 
@@ -213,11 +213,11 @@ def build_exploration_graph(gemini: LLMClient, driver: AsyncDriver | None) -> An
     return graph.compile()
 
 
-def build_realization_subgraph(gemini: LLMClient, driver: AsyncDriver | None) -> Any:
+def build_realization_subgraph(llm: LLMClient, driver: AsyncDriver | None) -> Any:
     """Build M2-only subgraph for independent realization (used by realization endpoint)."""
     graph = StateGraph(ExplorationState)
 
-    _add_m2_nodes(graph, gemini, driver)
+    _add_m2_nodes(graph, llm, driver)
 
     graph.set_entry_point("load_context")
     _add_m2_edges(graph)

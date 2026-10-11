@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["rounds"])
 
 # Single, non-configurable generation profile: conservative breadth (8 candidates,
-# top 3 selected) with a 2-round guided-search budget. Keeps real-Gemini rounds
+# top 3 selected) with a 2-round guided-search budget. Keeps real-LLM rounds
 # fast enough to finish within the client timeout.
 N_CANDIDATES = 8
 K_SELECTION = 3
@@ -51,7 +51,7 @@ class RoundResponse(BaseModel):
 async def trigger_round(
     session_id: str,
     request: TriggerRoundRequest,
-    gemini: LLMClient = Depends(get_llm_client),  # noqa: B008
+    llm: LLMClient = Depends(get_llm_client),  # noqa: B008
     driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> EventSourceResponse:
     """Trigger a generation round and stream progress via SSE."""
@@ -99,7 +99,7 @@ async def trigger_round(
         await repo.update_metadata(session_id, new_metadata)
 
     channel = SSEChannel()
-    graph = build_exploration_graph(gemini, driver)
+    graph = build_exploration_graph(llm, driver)
 
     initial_state: dict[str, Any] = {
         "session_id": session_id,
@@ -145,7 +145,7 @@ async def trigger_round(
             await channel.close()
 
     # Start the round in the background, but cancel it if the client disconnects
-    # before it finishes (otherwise graph.ainvoke + its Gemini spend run to
+    # before it finishes (otherwise graph.ainvoke + its LLM spend run to
     # completion against a stream nobody is reading).
     task = asyncio.create_task(run_and_close())
 

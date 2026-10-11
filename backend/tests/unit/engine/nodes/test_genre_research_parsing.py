@@ -31,5 +31,5 @@ async def test_critique_parses_think_prefixed_fenced_json(neo4j_driver: AsyncDri
         '```json\n{"issues": [], "passed": true}\n```'
     )
     state = {"job_id": "job-x", "genre_name": "dream_pop", "draft_yamls": {"profile": {}}}
-    result = await critique_draft(state, gemini=_ScriptedClient(raw), driver=neo4j_driver)
+    result = await critique_draft(state, llm=_ScriptedClient(raw), driver=neo4j_driver)
     assert result["critique_trail"][-1]["passed"] is True

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 async def check_stop(state: ExplorationState) -> dict[str, Any]:
-    """Check stop conditions. Deterministic — no Gemini call.
+    """Check stop conditions. Deterministic — no LLM call.
 
     Conditions (stop on ANY):
     1. Quality: top candidate weighted_total >= target_score

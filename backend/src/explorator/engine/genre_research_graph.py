@@ -51,14 +51,14 @@ def route_after_validate(state: dict[str, Any]) -> str:
     return "output"
 
 
-def build_genre_research_graph(gemini: LLMClient, driver: AsyncDriver | None) -> Any:
+def build_genre_research_graph(llm: LLMClient, driver: AsyncDriver | None) -> Any:
     """Build and compile the genre research LangGraph pipeline."""
     graph = StateGraph(GenreResearchState)
 
-    graph.add_node("research", partial(research_genre, gemini=gemini, driver=driver))
-    graph.add_node("draft", partial(draft_yamls, gemini=gemini, driver=driver))
-    graph.add_node("critique", partial(critique_draft, gemini=gemini, driver=driver))
-    graph.add_node("refine", partial(refine_draft, gemini=gemini, driver=driver))
+    graph.add_node("research", partial(research_genre, llm=llm, driver=driver))
+    graph.add_node("draft", partial(draft_yamls, llm=llm, driver=driver))
+    graph.add_node("critique", partial(critique_draft, llm=llm, driver=driver))
+    graph.add_node("refine", partial(refine_draft, llm=llm, driver=driver))
     graph.add_node("validate", partial(validate_draft, driver=driver))
     graph.add_node("output", partial(output_draft, driver=driver))
 

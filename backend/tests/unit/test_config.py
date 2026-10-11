@@ -11,7 +11,7 @@ def _clean_llm_env(monkeypatch: pytest.MonkeyPatch) -> None:
     import os
 
     for key in list(os.environ):
-        if key.startswith(("LLM_", "GEMINI_")) and key != "GEMINI_MOCK":
+        if key.startswith(("LLM_", "GEMINI_")) and key not in ("GEMINI_MOCK", "LLM_MOCK"):
             monkeypatch.delenv(key)
 
 

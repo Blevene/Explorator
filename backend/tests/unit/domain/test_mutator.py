@@ -13,7 +13,7 @@ from explorator.domain.harmony.mutator import (
 )
 
 
-def _make_gemini(response: MutationResponse) -> MagicMock:
+def _make_llm(response: MutationResponse) -> MagicMock:
     mock = MagicMock()
     mock.generate_structured = AsyncMock(return_value=response)
     return mock
@@ -37,8 +37,8 @@ def sample_response() -> MutationResponse:
 
 
 async def test_mutate_harmonic_returns_progression(sample_response: MutationResponse) -> None:
-    gemini = _make_gemini(sample_response)
-    mutator = HarmonyMutator(gemini)
+    llm = _make_llm(sample_response)
+    mutator = HarmonyMutator(llm)
 
     result = await mutator.mutate_harmonic(
         chord_symbols=["Cmaj7", "Am7", "Fmaj7", "G7"],
@@ -50,12 +50,12 @@ async def test_mutate_harmonic_returns_progression(sample_response: MutationResp
     assert result.mutated_chord_symbols == ["Cmaj7", "Em7", "Fmaj7", "G7"]
     assert len(result.mutations) == 1
     assert result.mutations[0].operation == "substitute_chord"
-    gemini.generate_structured.assert_called_once()
+    llm.generate_structured.assert_called_once()
 
 
 async def test_mutate_harmonic_with_guidance(sample_response: MutationResponse) -> None:
-    gemini = _make_gemini(sample_response)
-    mutator = HarmonyMutator(gemini)
+    llm = _make_llm(sample_response)
+    mutator = HarmonyMutator(llm)
 
     await mutator.mutate_harmonic(
         chord_symbols=["Cmaj7", "Am7"],
@@ -64,7 +64,7 @@ async def test_mutate_harmonic_with_guidance(sample_response: MutationResponse) 
         guidance="make it darker",
     )
 
-    call_args = gemini.generate_structured.call_args
+    call_args = llm.generate_structured.call_args
     prompt = call_args.kwargs.get("prompt") or call_args.args[0]
     assert "make it darker" in prompt
 
@@ -86,8 +86,8 @@ async def test_mutate_harmonic_limits_experimental() -> None:
             ),
         ],
     )
-    gemini = _make_gemini(response)
-    mutator = HarmonyMutator(gemini)
+    llm = _make_llm(response)
+    mutator = HarmonyMutator(llm)
 
     result = await mutator.mutate_harmonic(
         chord_symbols=["Cmaj7", "Am7", "Fmaj7", "G7"],

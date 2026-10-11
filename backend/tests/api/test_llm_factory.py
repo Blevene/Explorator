@@ -5,28 +5,43 @@ from collections.abc import Iterator
 import pytest
 
 from explorator.adapters.gemini import GeminiClient
-from explorator.adapters.gemini_mock import FakeGeminiClient
+from explorator.adapters.llm_mock import FakeLLMClient
 from explorator.adapters.openai_compat import OpenAICompatClient
-from explorator.api.deps import get_gemini_client, get_llm_client
+from explorator.api.deps import get_llm_client
 from explorator.config import Settings, settings
 
 
 @pytest.fixture(autouse=True)
 def _fresh_factory(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     monkeypatch.delenv("GEMINI_MOCK", raising=False)
+    monkeypatch.delenv("LLM_MOCK", raising=False)
     get_llm_client.cache_clear()
     yield
     get_llm_client.cache_clear()
 
 
-def test_legacy_name_is_same_function() -> None:
-    assert get_gemini_client is get_llm_client
-
-
 def test_mock_env_wins(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("GEMINI_MOCK", "true")
+    monkeypatch.setenv("LLM_MOCK", "true")
     monkeypatch.setattr(settings, "llm_provider", "openai")
-    assert isinstance(get_llm_client(), FakeGeminiClient)
+    assert isinstance(get_llm_client(), FakeLLMClient)
+
+
+def test_legacy_gemini_mock_env_still_works(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setenv("GEMINI_MOCK", "true")
+    with caplog.at_level("WARNING", logger="explorator.api.deps"):
+        assert isinstance(get_llm_client(), FakeLLMClient)
+    assert "GEMINI_MOCK is deprecated — use LLM_MOCK" in caplog.text
+
+
+def test_llm_mock_env_does_not_warn(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setenv("LLM_MOCK", "true")
+    with caplog.at_level("WARNING", logger="explorator.api.deps"):
+        assert isinstance(get_llm_client(), FakeLLMClient)
+    assert "deprecated" not in caplog.text
 
 
 def test_gemini_provider(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -57,7 +72,7 @@ def test_default_gemini_timeout_reaches_genai_client(monkeypatch: pytest.MonkeyP
     import os
 
     for key in list(os.environ):
-        if key.startswith(("LLM_", "GEMINI_")) and key != "GEMINI_MOCK":
+        if key.startswith(("LLM_", "GEMINI_")) and key not in ("GEMINI_MOCK", "LLM_MOCK"):
             monkeypatch.delenv(key)
     default = Settings(_env_file=None)  # type: ignore[call-arg]
     for name in ("llm_provider", "llm_api_key", "llm_pro_model", "llm_flash_model",

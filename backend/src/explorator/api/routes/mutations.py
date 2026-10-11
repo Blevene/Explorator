@@ -45,7 +45,7 @@ class TriggerMutationRequest(BaseModel):
 async def trigger_mutation(
     session_id: str,
     request: TriggerMutationRequest,
-    gemini: LLMClient = Depends(get_llm_client),  # noqa: B008
+    llm: LLMClient = Depends(get_llm_client),  # noqa: B008
     driver: AsyncDriver | None = Depends(get_neo4j_driver),  # noqa: B008
 ) -> EventSourceResponse:
     """Trigger user-initiated mutations on specific candidates.
@@ -84,7 +84,7 @@ async def trigger_mutation(
 
     async def run_mutation() -> None:
         try:
-            mutator = HarmonyMutator(gemini)
+            mutator = HarmonyMutator(llm)
             prog_repo = make_candidate_repo(driver)
             results: list[dict[str, Any]] = []
 
@@ -200,7 +200,7 @@ async def trigger_mutation(
             new_ids = [r["new_candidate_id"] for r in results]
             if new_ids:
                 try:
-                    realization_graph = build_realization_subgraph(gemini, driver)
+                    realization_graph = build_realization_subgraph(llm, driver)
                     await realization_graph.ainvoke(
                         {
                             "session_id": session_id,

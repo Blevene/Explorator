@@ -7,13 +7,13 @@ from explorator.domain.intent.parser import IntentParser
 from explorator.engine.state import ExplorationState
 
 
-async def parse_intent(state: ExplorationState, *, gemini: LLMClient) -> dict[str, Any]:
+async def parse_intent(state: ExplorationState, *, llm: LLMClient) -> dict[str, Any]:
     """Extract structured creative brief from user prompt."""
     callback = state.get("on_progress")
     if callback:
         await callback("node_started", {"node": "parse_intent"})
 
-    parser = IntentParser(gemini)
+    parser = IntentParser(llm)
     brief = await parser.parse(state["prompt"], state["session_id"])
 
     # An explicit genre (chosen by the user, threaded via state) wins over the

@@ -5,7 +5,7 @@ Merged to `main` as PR #8 on 2026-04-24 (merge commit `f940694`). The E2E (`e2e/
 **Stack prereqs**
 
 - [ ] Neo4j container up (`docker compose up -d neo4j`) — default name `explorator-neo4j-1` on 7475/7688
-- [ ] Backend running on `:8000` **without** `GEMINI_MOCK` (real Gemini)
+- [ ] Backend running on `:8000` **without** `LLM_MOCK` (real Gemini)
 - [ ] Frontend dev server on `:5173`
 - [ ] `GEMINI_API_KEY` is set in the backend env
 - [ ] Migration `m5d3_curation_fields.py --yes` has been applied at least once against the dev Neo4j (idempotent — safe to re-run)

@@ -2,8 +2,8 @@
 
 from explorator.adapters import gemini, llm
 from explorator.adapters.gemini import GeminiClient
-from explorator.adapters.gemini_mock import FakeGeminiClient
 from explorator.adapters.llm import LLMClient, ModelTier
+from explorator.adapters.llm_mock import FakeLLMClient
 
 
 def test_model_tier_is_reexported_from_gemini() -> None:
@@ -15,5 +15,5 @@ def test_model_tier_is_reexported_from_gemini() -> None:
 def test_clients_satisfy_protocol_statically() -> None:
     # Checked by mypy (`uv run mypy src tests/unit/adapters/test_llm.py`);
     # at runtime this just proves both construct.
-    clients: list[LLMClient] = [GeminiClient(api_key="k"), FakeGeminiClient()]
+    clients: list[LLMClient] = [GeminiClient(api_key="k"), FakeLLMClient()]
     assert len(clients) == 2

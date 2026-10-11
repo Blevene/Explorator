@@ -131,7 +131,7 @@ jobs:
     name: E2E (Playwright, memory-mode lane)
     runs-on: ubuntu-latest
     # The parallel lane only. Each Playwright worker spawns its OWN backend in
-    # in-memory mode (GEMINI_MOCK=true, NEO4J_URI pointed at a dead port) plus a
+    # in-memory mode (LLM_MOCK=true, NEO4J_URI pointed at a dead port) plus a
     # vite preview frontend, so this lane needs NO secrets and NO Neo4j service
     # container — it's fork-safe. The Neo4j e2e lane (`make e2e-neo4j`) is
     # intentionally excluded from CI; run it locally via the Makefile.

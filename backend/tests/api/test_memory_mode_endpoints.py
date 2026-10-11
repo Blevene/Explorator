@@ -13,17 +13,17 @@ from explorator.persistence.memory_store import get_memory_store
 
 
 @pytest.fixture(autouse=True)
-def _mock_gemini(monkeypatch):
+def _mock_llm(monkeypatch):
     """Use the fake Gemini client so routes with a `gemini` dep can resolve it.
 
-    `get_gemini_client` is lru_cached, so clear it after setting the env var.
+    `get_llm_client` is lru_cached, so clear it after setting the env var.
     """
-    from explorator.api.deps import get_gemini_client
+    from explorator.api.deps import get_llm_client
 
-    monkeypatch.setenv("GEMINI_MOCK", "true")
-    get_gemini_client.cache_clear()
+    monkeypatch.setenv("LLM_MOCK", "true")
+    get_llm_client.cache_clear()
     yield
-    get_gemini_client.cache_clear()
+    get_llm_client.cache_clear()
 
 
 @pytest.fixture(autouse=True)
@@ -306,7 +306,7 @@ def test_mutation_threads_session_genre(client_memory, monkeypatch):
     # Stub the mutator to capture the genre it is called with and return a
     # deterministic mutated progression.
     class _FakeMutator:
-        def __init__(self, _gemini):
+        def __init__(self, _llm):
             pass
 
         async def mutate_harmonic(self, *, chord_symbols, genre, scores, guidance):

@@ -27,7 +27,7 @@ async def load_memory(
 ) -> dict[str, Any]:
     """Load feedback history and objective weights from Neo4j.
 
-    Deterministic — no Gemini call. Falls back to canonical defaults on timeout.
+    Deterministic — no LLM call. Falls back to canonical defaults on timeout.
     """
     callback = state.get("on_progress")
     if callback:
