@@ -208,6 +208,7 @@ class FakeGeminiClient:
         response_model: type[T],
         tier: ModelTier = ModelTier.FLASH,
         system_prompt: str | None = None,
+        max_output_tokens: int | None = None,
     ) -> T:
         """Return a deterministic fixture based on response_model type."""
         name = response_model.__name__

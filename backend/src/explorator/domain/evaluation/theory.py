@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from ulid import ULID
 
 from explorator.adapters import usage
-from explorator.adapters.llm import LLMClient, ModelTier
+from explorator.adapters.llm import FANOUT_MAX_OUTPUT_TOKENS, LLMClient, ModelTier
 from explorator.adapters.music21_adapter import analyze_roman_numerals, parse_chord_symbol
 from explorator.models.evaluation import AggregateScorecard, TheoryEvaluation
 from explorator.models.harmony import ProgressionCandidate
@@ -301,6 +301,7 @@ class TheoryEvaluator:
                 response_model=GeminiScores,
                 tier=ModelTier.FLASH,
                 system_prompt=system,
+                max_output_tokens=FANOUT_MAX_OUTPUT_TOKENS,
             )
             return scores, False
         except Exception:
