@@ -13,9 +13,11 @@ a commitment.
 | **M1** | Harmonic MVP — genre-aware chord-progression generation, theory + LLM evaluation, ranking. |
 | **M2** | Realization — turn a progression into a voiced arrangement: voicings, bass, groove, melody, assembly, evaluation; piano-roll playback. |
 | **M3** | Mutation loop — substitute/extend/transform candidates, plain-text feedback that reweights the scorer, and Pareto ranking of finalists. |
-| **M4** | Export & explain — MIDI + JSON export, Gemini-generated explanations, DAW-style comparison, and first-class provenance. |
+| **M4** | Export & explain — MIDI + JSON export, LLM-generated explanations, DAW-style comparison, and first-class provenance. |
 | **M5** | Long-term memory — groove (M5a) and melody (M5b) layers, the genre-research agent (M5c), and the pattern library with curation (M5d). |
-| **Token usage** | Cross-cutting instrumentation: per-round / per-phase / per-session Gemini token counts with an estimated cost, shown live ([ADR 011](docs/decisions/011-token-usage-instrumentation.md)). |
+| **Limited mode** | Neo4j is optional and auto-detected: without it the backend runs generation on an in-memory store and hides the long-term-memory features (`GET /v1/capabilities`). |
+| **Token usage** | Cross-cutting instrumentation: per-round / per-phase / per-session LLM token counts with an estimated cost, shown live ([ADR 011](docs/decisions/011-token-usage-instrumentation.md)). |
+| **LLM providers** | Native Gemini or any OpenAI-compatible endpoint (OpenAI, vLLM, Ollama, LM Studio, OpenRouter) via `LLM_*` settings; the token panel shows "not priced" and LLM fallback counts ([ADR 012](docs/decisions/012-configurable-llm-provider.md)). |
 
 For the point-in-time design specs and implementation plans behind each, see
 [`docs/design/`](docs/design/); for the current architecture, see

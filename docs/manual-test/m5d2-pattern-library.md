@@ -6,19 +6,17 @@ checklist covers what mocks can't catch and what the E2E doesn't exercise.
 
 **Stack prereqs**
 
-- [ ] Neo4j container up (`docker compose up -d neo4j`) — default name `explorator-neo4j-1` on 7475/7688
-- [ ] Backend running on `:8100` **without** `LLM_MOCK` (real Gemini)
-- [ ] Frontend dev server on `:5173`
-- [ ] `GEMINI_API_KEY` is set in the backend env
-- [ ] `GET /v1/genres` returns non-empty `items` (genres live as YAML in `backend/src/explorator/domain/style/genres/`, not in Neo4j)
+- [ ] Neo4j container up (`make neo4j-up`) — default name `explorator-neo4j-1` on 7475/7688
+- [ ] Backend running on `:8000` (`make backend`) **without** `LLM_MOCK` (real LLM), and in neo4j mode (`GET /v1/capabilities` → `persistence_mode: "neo4j"`)
+- [ ] Frontend dev server on `:5173`, pointed at that backend: `make frontend`
+- [ ] LLM configured in `backend/.env` — `LLM_API_KEY` for the default Gemini provider, or your provider's `LLM_*` settings (see README → LLM providers). Check the backend log for "is not a setting" warnings
+- [ ] `GET /v1/genres` returns non-empty `items`
 
-Neo4j only stores runtime state (sessions, patterns, arrangements, etc.). A
-fresh Neo4j is fine; the 40 pre-built genre YAMLs + matching grammars + rules
-are the source of truth and are served by the backend directly from disk.
-`GenreProfile` nodes exist **only** for genres newly created via the genre
-research flow (M5c), which is out of scope for this checklist.
+A fresh Neo4j is fine: the 39 genre YAMLs (profiles + rules + grammars in
+`backend/src/explorator/domain/style/`) are the source of truth and are synced
+into Neo4j as `GenreProfile` (plus rules and grammars) at backend startup.
 
-## 1 · Critical — real-Gemini round trip
+## 1 · Critical — real-LLM round trip
 
 For each approved genre:
 
@@ -29,7 +27,7 @@ For each approved genre:
 
 **Fail-stop:** if the toast never fires or `N === 0`, halt. Check backend logs
 for the `harvest_patterns` node — density coercion (PR #5 `eaef3b3`) should
-have fixed the `float("low")` crash but real Gemini may return novel edge cases.
+have fixed the `float("low")` crash but a real LLM may return novel edge cases.
 
 ## 2 · Critical — soft-delete resurrection
 
@@ -47,24 +45,21 @@ Filters live at the top of `/patterns`.
 - [ ] Filter by pattern_type alone (try each of `progression`, `voicing`, `bass`, `groove`, `melody`)
 - [ ] Both filters combined
 - [ ] Clear filters → full list returns
-- [ ] Filter → Load More → change filter → confirm no stale rows from previous page leak
+- [ ] Filter → Load more → change filter → confirm no stale rows from previous page leak
 
 ## 4 · Worth checking — pagination past first page
 
 Requires >50 patterns total. Build up via repeated rounds or harvest multiple sessions.
 
-- [ ] Click "Load More" at least once
+- [ ] Click "Load more" at least once
 - [ ] DevTools Network: cursor params (`after_score`, `after_id`) on page 2 look plausible
 - [ ] No duplicate pattern IDs across pages
-- [ ] At end of data, Load More disappears or becomes inactive
+- [ ] At end of data, Load more disappears or becomes inactive
 
-## 5 · Worth checking — FinalistPanel manual save button
+## 5 · Obsolete — FinalistPanel manual save button
 
-The auto-harvest via SSE is the primary path; the manual button is a redundant UX.
-
-- [ ] After a round, click "Save to library" in the FinalistPanel
-- [ ] Confirm toast fires with same `Saved N patterns to library` format
-- [ ] Click twice quickly — idempotent (upsert semantics should dedupe, no double rows)
+The "Save to library" button was removed in M5d-3; auto-harvest is the only UI
+path. The endpoint `POST /v1/sessions/{id}/finalists/harvest` still exists.
 
 ## 6 · Worth checking — empty states
 
@@ -85,8 +80,8 @@ The auto-harvest via SSE is the primary path; the manual button is a redundant U
 
 ## 9 · Polish — navigation
 
-- [ ] Dashboard → "Pattern Library" link lands on `/patterns`
-- [ ] `← Dashboard` link returns home
+- [ ] Dashboard → "Pattern Library →" link lands on `/patterns`
+- [ ] The *Explorator* logo in the header returns to the dashboard
 - [ ] Direct-load `/patterns` (browser URL, no dashboard detour) renders correctly on cold load
 - [ ] Browser back/forward preserves filter state (nit if broken)
 

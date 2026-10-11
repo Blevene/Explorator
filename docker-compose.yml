@@ -9,11 +9,14 @@ services:
       NEO4J_PLUGINS: '[]'
     volumes:
       - neo4j_data:/data
+    # Probe the HTTP listener (up alongside Bolt, as in CI): `neo4j status`
+    # reports running before the database accepts connections.
     healthcheck:
-      test: ["CMD", "neo4j", "status"]
-      interval: 10s
+      test: ["CMD-SHELL", "wget --quiet --spider http://localhost:7474 || exit 1"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 24
+      start_period: 30s
 
   # Isolated Neo4j for the pytest suite. conftest fixtures wipe the DB
   # after every test (MATCH (n) DETACH DELETE n), so this must not share
@@ -30,11 +33,14 @@ services:
       NEO4J_PLUGINS: '[]'
     tmpfs:
       - /data
+    # Probe the HTTP listener (up alongside Bolt, as in CI): `neo4j status`
+    # reports running before the database accepts connections.
     healthcheck:
-      test: ["CMD", "neo4j", "status"]
-      interval: 10s
+      test: ["CMD-SHELL", "wget --quiet --spider http://localhost:7474 || exit 1"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 24
+      start_period: 30s
 
 volumes:
   neo4j_data:

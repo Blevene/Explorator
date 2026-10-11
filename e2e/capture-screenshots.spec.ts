@@ -2,17 +2,16 @@
  * Capture README screenshots from the running dev stack.
  *
  * Drives the live dev frontend (default http://localhost:5173) through a real
- * session and saves PNGs into `docs/images/`. Uses real Gemini calls — the
- * dev backend's GEMINI_API_KEY supplies content.
+ * session and saves PNGs into `docs/images/`. Uses real LLM calls — the dev
+ * backend's configured provider (`LLM_*` in backend/.env) supplies content.
  *
  * Pre-reqs (verified at start; script aborts if missing):
  *   - Neo4j dev container running on bolt://localhost:7688 (`make neo4j-up`)
  *   - Backend on http://localhost:8000 (`make backend`)
- *   - Frontend on http://localhost:5173 (`cd frontend && npm run dev`)
+ *   - Frontend on http://localhost:5173 (`make frontend`, which proxies /v1 to :8000)
  *
  * Run from repo root:
- *   (cd e2e && npx playwright test ../scripts/capture-screenshots.spec.ts \
- *        --config capture.config.ts)
+ *   make screenshots
  */
 import { test, expect, type Page } from '@playwright/test';
 import { mkdirSync } from 'fs';

@@ -1,8 +1,13 @@
 """Application configuration via environment variables."""
 
+import difflib
+import os
+from collections.abc import Mapping
+from pathlib import Path
 from typing import Any, Literal, Self
 
-from pydantic import Field, PrivateAttr, model_validator
+from dotenv import dotenv_values
+from pydantic import Field, PrivateAttr, ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Gemini-provider defaults (USD per 1M tokens are estimates — the models are
@@ -28,11 +33,21 @@ _LEGACY_SUFFIXES = (
     "price_flash_output",
 )
 
+# Read from the process environment by other code (api/deps.py, the openai SDK),
+# never from backend/.env.
+_PROCESS_ENV_ONLY = frozenset({"LLM_MOCK", "GEMINI_MOCK", "OPENAI_API_KEY"})
+
+# Resolved against the working directory (backend/ for `make backend` and e2e).
+_ENV_FILE = ".env"
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    # Unknown names are ignored here; check_setting_names() reports them.
+    model_config = SettingsConfigDict(
+        env_file=_ENV_FILE, env_file_encoding="utf-8", extra="ignore"
+    )
 
     # Neo4j
     neo4j_uri: str = "bolt://localhost:7688"
@@ -68,16 +83,8 @@ class Settings(BaseSettings):
     gemini_price_flash_input: float | None = None
     gemini_price_flash_output: float | None = None
 
-    # Generation defaults
-    default_max_rounds: int = 4
-    default_target_score: float = 8.5
-    default_generation_mode: str = "balanced"
-
     # Export
     export_dir: str = "exports"
-
-    # Timeouts
-    neo4j_query_timeout_seconds: int = 5
 
     _legacy_names_used: list[str] = PrivateAttr(default_factory=list)
 
@@ -145,4 +152,62 @@ class Settings(BaseSettings):
         return self
 
 
-settings = Settings()
+def _suggestion(name: str, known: set[str]) -> str:
+    match = difflib.get_close_matches(name, known, n=1, cutoff=0.8)
+    return f" — did you mean {match[0]}?" if match else ""
+
+
+def check_setting_names(
+    env_file: str | Path | None = _ENV_FILE, environ: Mapping[str, str] | None = None
+) -> list[str]:
+    """Return warnings for names that look like settings but are not read.
+
+    Raises ValueError for an unknown ``LLM_*`` / ``GEMINI_*`` key in ``env_file``:
+    it can only be a typo, and ignoring it could send a key to the wrong
+    provider (a misspelt LLM_PROVIDER leaves gemini selected). Other unknown
+    ``env_file`` keys only warn. In the process environment, which other tools
+    share, only close misspellings of a setting are reported.
+    """
+    known = {name.upper() for name in Settings.model_fields}
+    environ = os.environ if environ is None else environ
+    warnings: list[str] = []
+    errors: list[str] = []
+    if env_file is not None and Path(env_file).is_file():
+        for key in dotenv_values(env_file):
+            name = key.upper()
+            if name in known:
+                continue
+            if name in _PROCESS_ENV_ONLY:
+                warnings.append(
+                    f"{name} in backend/.env is ignored — it is read from the process "
+                    f"environment only; export it or prefix the command instead"
+                )
+            elif name.startswith(("LLM_", "GEMINI_")):
+                errors.append(f"{name} in backend/.env is not a setting{_suggestion(name, known)}")
+            else:
+                warnings.append(f"{name} in backend/.env is not a setting and is ignored")
+    if errors:
+        raise ValueError("; ".join(errors))
+    for key in environ:
+        name = key.upper()
+        if name in known or name in _PROCESS_ENV_ONLY or not name.startswith(("LLM_", "GEMINI_")):
+            continue
+        if hint := _suggestion(name, known):
+            warnings.append(f"Environment variable {name} is not a setting and is ignored{hint}")
+    return warnings
+
+
+def load_settings(
+    env_file: str | Path | None = _ENV_FILE, environ: Mapping[str, str] | None = None
+) -> tuple[Settings, list[str]]:
+    """Build Settings plus name warnings; a settings error also names likely typos."""
+    warnings = check_setting_names(env_file, environ)
+    try:
+        return Settings(_env_file=env_file), warnings
+    except ValidationError as exc:
+        if not warnings:
+            raise
+        raise ValueError(f"{exc}\nPossibly related: {'; '.join(warnings)}") from exc
+
+
+settings, setting_name_warnings = load_settings()

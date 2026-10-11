@@ -4,10 +4,10 @@ Merged to `main` as PR #8 on 2026-04-24 (merge commit `f940694`). The E2E (`e2e/
 
 **Stack prereqs**
 
-- [ ] Neo4j container up (`docker compose up -d neo4j`) — default name `explorator-neo4j-1` on 7475/7688
-- [ ] Backend running on `:8000` **without** `LLM_MOCK` (real Gemini)
-- [ ] Frontend dev server on `:5173`
-- [ ] `GEMINI_API_KEY` is set in the backend env
+- [ ] Neo4j container up (`make neo4j-up`) — default name `explorator-neo4j-1` on 7475/7688
+- [ ] Backend running on `:8000` (`make backend`) **without** `LLM_MOCK` (real LLM)
+- [ ] Frontend dev server on `:5173`, pointed at that backend: `make frontend`
+- [ ] LLM configured in `backend/.env` — `LLM_API_KEY` for the default Gemini provider, or your provider's `LLM_*` settings (see README → LLM providers). Check the backend log for "is not a setting" warnings
 - [ ] Migration `m5d3_curation_fields.py --yes` has been applied at least once against the dev Neo4j (idempotent — safe to re-run)
 - [ ] You have at least one session with completed finalists in the dev DB. If not, run a fresh round before starting.
 
@@ -126,7 +126,7 @@ Force a backend failure by stopping the backend mid-session and clicking a star.
 The `DELETE /v1/sessions/{id}` endpoint cascades to `PatternLibraryEntry` rows whose source arrangement belongs to the session (added in commit `397503f`, hardened to use a transaction in commit `d654712`).
 
 - [ ] Note the `source_candidate_id` of one of a session's pattern entries
-- [ ] Delete the session (Dashboard → session card → delete)
+- [ ] Delete the session via the API (there is no delete button in the UI): `curl -X DELETE localhost:8000/v1/sessions/<id>` (expect 204)
 - [ ] Cypher backdoor: no `PatternLibraryEntry` rows survive with that `source_candidate_id`
 - [ ] Cypher backdoor: no `ArrangementCandidate`, `Session`, etc. for that session id
 - [ ] No orphans of any kind
@@ -156,7 +156,7 @@ The `DELETE /v1/sessions/{id}` endpoint cascades to `PatternLibraryEntry` rows w
 
 ## 14 · Regression sanity — non-curation flows untouched
 
-- [ ] New session → generate → realize → finalists panel: classic flow works without involving any star
+- [ ] New session → generate → View Arrangements → finalists panel: classic flow works without involving any star
 - [ ] Mutation flow (M3a) still produces children; their stars start outlined (uncurated by default)
 - [ ] Comparison view (M4c) still loads and plays — adding curation didn't accidentally affect arrangement audio loading
 - [ ] Export flow (M4a/b) still works — exported MIDI/JSON sidecars are unaffected by curation state
