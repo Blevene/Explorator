@@ -1,4 +1,4 @@
-.PHONY: test test-unit test-integration lint neo4j-up neo4j-down neo4j-test-up neo4j-test-down backend frontend e2e e2e-parallel e2e-neo4j e2e-headed screenshots
+.PHONY: test test-unit test-integration lint neo4j-up neo4j-down neo4j-test-up neo4j-test-down up down logs backend frontend e2e e2e-parallel e2e-neo4j e2e-headed screenshots
 
 # Infrastructure
 # Blocks until healthy so a backend started right after doesn't fall back to
@@ -18,6 +18,21 @@ neo4j-test-up:
 
 neo4j-test-down:
 	docker compose rm -sf neo4j-test
+
+# Optional all-in-Docker stack: Neo4j + backend + frontend (UI on :8080).
+# Rebuilds images from the working tree. Configure the LLM in backend/.env.
+# The backend runs as the host user and bind-mounts backend/.env, exports and
+# the genre catalog, so the host paths must exist before compose starts.
+up:
+	mkdir -p backend/exports && touch backend/.env
+	APP_UID=$$(id -u) APP_GID=$$(id -g) docker compose --profile app up -d --build --wait backend frontend
+
+# Leaves neo4j-test alone (unlike neo4j-down); data stays in the volume.
+down:
+	docker compose --profile app down backend frontend neo4j
+
+logs:
+	docker compose --profile app logs -f backend frontend
 
 # Backend
 backend:
