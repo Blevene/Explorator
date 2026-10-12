@@ -156,17 +156,26 @@ make up                        # = docker compose --profile app up -d --build --
                                # (without make, run that docker compose command directly)
 LLM_MOCK=true make up          # …or with the fake LLM, no key needed
 make logs                      # follow backend + frontend logs
-make down                      # stop everything (Neo4j data and exports are kept in volumes)
+make down                      # stop the stack (Neo4j data stays in its volume)
 ```
 
 Open http://localhost:8080. This builds production-style images from your
 working tree: Neo4j (full mode), the backend on :8000, and the built UI served by
 nginx on :8080, which proxies `/v1` to the backend. Re-run `make up` after code
 changes; for hot reload, use the native `make backend` / `make frontend` above.
-Ports are set by `APP_PORT` (UI) and `API_PORT` (API). Inside the container,
-`NEO4J_*` comes from compose, not `backend/.env`, and `localhost` is the
-container itself. Point `LLM_BASE_URL` at a LAN address, or at
-`http://host.docker.internal:<port>/v1` for an LLM server on the Docker host.
+Ports are set by `APP_PORT` (UI) and `API_PORT` (API).
+
+The backend container runs as your user and uses the same files as `make backend`:
+- it reads `backend/.env` (with the same validation)
+- it writes exports to `backend/exports/`
+- approved researched genres go into the source-tree genre catalog
+
+Together with the shared Neo4j volume, you can switch between Docker and native
+freely. Inside the container, `NEO4J_*` comes from compose, not `backend/.env`,
+and `localhost` is the container itself. Point `LLM_BASE_URL` at a LAN address,
+or at `http://host.docker.internal:<port>/v1` for an LLM server on the Docker
+host. Without make, first run `mkdir -p backend/exports && touch backend/.env`,
+and set `APP_UID`/`APP_GID` to `$(id -u)`/`$(id -g)` if your uid isn't 1000.
 
 **Test**
 

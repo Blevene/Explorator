@@ -13,8 +13,10 @@ tracks the state of the `main` branch.
 - Optional all-in-Docker setup: `make up` builds and starts Neo4j, the backend
   and the frontend (nginx on :8080, proxying `/v1` to the backend), and
   `make down` / `make logs` manage the stack. The services sit behind a
-  compose `app` profile, so the native workflow is unchanged. CI builds the
-  images and smoke-tests the stack.
+  compose `app` profile, so the native workflow is unchanged. The backend
+  container runs as the host user and shares `backend/.env`, `backend/exports/`
+  and the genre catalog with the native setup. CI builds the images and
+  smoke-tests the stack.
 - Configurable LLM provider: native Gemini (default) or any OpenAI-compatible
   endpoint (OpenAI, vLLM, Ollama, LM Studio, OpenRouter, …) through one set of
   `LLM_*` settings (`LLM_PROVIDER`, `LLM_BASE_URL`, `LLM_API_KEY`,

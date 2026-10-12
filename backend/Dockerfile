@@ -29,11 +29,11 @@ WORKDIR /app
 
 COPY --from=build --chown=app:app /app/.venv /app/.venv
 
-# Exports land in ./exports (EXPORT_DIR default); compose mounts a volume here.
-RUN mkdir -p /app/exports && chown app:app /app/exports
-
+# Compose bind-mounts backend/.env, exports/ and the genre catalog here and runs
+# as the host user, which may have no passwd entry, so HOME must be writable.
 ENV PATH="/app/.venv/bin:$PATH" \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    HOME=/tmp
 
 USER app
 EXPOSE 8000

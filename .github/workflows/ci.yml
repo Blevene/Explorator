@@ -202,7 +202,7 @@ jobs:
       - name: Build and start
         env:
           LLM_MOCK: 'true'
-        run: docker compose --profile app up -d --build --wait backend frontend
+        run: make up
 
       - name: Smoke test
         run: |
@@ -216,4 +216,4 @@ jobs:
 
       - name: Tear down
         if: always()
-        run: docker compose --profile app down -v
+        run: make down
