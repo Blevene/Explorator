@@ -86,7 +86,7 @@ Approved genres land in the same three directories as the seed genres and are sy
 
 ## Quick start
 
-**Prerequisites:** [uv](https://docs.astral.sh/uv/) (installs Python 3.13+ for you), Node.js 20.19+ or 22.12+, GNU make, Docker (for Neo4j and the backend test suite), and an LLM: a Gemini or OpenAI API key, or a local OpenAI-compatible server (Ollama, vLLM, ...) — or none, using `LLM_MOCK=true` for deterministic fake output.
+**Prerequisites:** [uv](https://docs.astral.sh/uv/) (installs Python 3.13+ for you), Node.js 20.19+ or 22.12+, GNU make, Docker (for Neo4j and the backend test suite; or Docker alone for the [all-in-Docker setup](#quick-start)), and an LLM: a Gemini or OpenAI API key, or a local OpenAI-compatible server (Ollama, vLLM, ...) — or none, using `LLM_MOCK=true` for deterministic fake output.
 
 ```bash
 git clone https://github.com/Blevene/Explorator.git
@@ -146,6 +146,27 @@ Open http://localhost:5173. Generation (M1 → M2 → M3) works in **both** mode
 limited mode turns off the long-term-memory features and loses data on restart —
 see [Neo4j is optional (limited mode)](#neo4j-is-optional-limited-mode). Check the
 live mode any time with `curl localhost:8000/v1/capabilities`.
+
+**Or run everything in Docker** (optional — needs only Docker and git; no uv,
+Node or make on the host):
+
+```bash
+cp .env.example backend/.env   # configure the LLM as above (or skip it and use LLM_MOCK)
+make up                        # = docker compose --profile app up -d --build --wait backend frontend
+                               # (without make, run that docker compose command directly)
+LLM_MOCK=true make up          # …or with the fake LLM, no key needed
+make logs                      # follow backend + frontend logs
+make down                      # stop everything (Neo4j data and exports are kept in volumes)
+```
+
+Open http://localhost:8080. This builds production-style images from your
+working tree: Neo4j (full mode), the backend on :8000, and the built UI served by
+nginx on :8080, which proxies `/v1` to the backend. Re-run `make up` after code
+changes; for hot reload, use the native `make backend` / `make frontend` above.
+Ports are set by `APP_PORT` (UI) and `API_PORT` (API). Inside the container,
+`NEO4J_*` comes from compose, not `backend/.env`, and `localhost` is the
+container itself. Point `LLM_BASE_URL` at a LAN address, or at
+`http://host.docker.internal:<port>/v1` for an LLM server on the Docker host.
 
 **Test**
 

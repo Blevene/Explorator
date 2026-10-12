@@ -20,6 +20,7 @@ concurrency:
 #    - Backend mypy (type-check, strict mode)
 #    - Backend pytest (against a Neo4j service container)
 #    - E2E Playwright (parallel / memory-mode lane only — no secrets, no Neo4j)
+#    - Docker stack smoke test (`make up` images build; UI + /v1 via nginx)
 #
 #  Deliberately not running here (run locally via the Makefile):
 #    - E2E Neo4j lane (`make e2e-neo4j`)   needs durable Neo4j-backed learning
@@ -188,3 +189,31 @@ jobs:
           name: playwright-report
           path: e2e/playwright-report/
           retention-days: 7
+
+  docker:
+    name: Docker stack (build + smoke test)
+    runs-on: ubuntu-latest
+    # Builds the optional `make up` images and checks the stack end to end:
+    # nginx serves the UI and proxies /v1 to a backend that reached Neo4j.
+    # LLM_MOCK=true, so no secrets are needed.
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build and start
+        env:
+          LLM_MOCK: 'true'
+        run: docker compose --profile app up -d --build --wait backend frontend
+
+      - name: Smoke test
+        run: |
+          curl -fsS http://localhost:8080/ | grep -q '<div id="root">'
+          curl -fsS http://localhost:8080/v1/capabilities | tee /dev/stderr \
+            | grep -q '"persistence_mode":"neo4j"'
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose --profile app logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose --profile app down -v

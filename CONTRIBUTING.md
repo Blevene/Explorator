@@ -28,6 +28,7 @@ make frontend                  # Vite on :5173, /v1 proxied to :8000 (terminal 2
 - `backend/.env` holds only backend settings (`LLM_*`, legacy `GEMINI_*`, `NEO4J_*`, …); an unknown `LLM_*` / `GEMINI_*` key there stops startup (a typo could route your key to the wrong provider); other unknown keys, and misspelled-looking shell variables, only warn. `LLM_MOCK`, `OPENAI_API_KEY` and LLM-server variables such as `OLLAMA_CONTEXT_LENGTH` are read from the process environment only — export them or prefix the command.
 - No LLM key? `LLM_MOCK=true make backend` swaps in a fake LLM client with deterministic output.
 - The backend probes Neo4j once at startup; if it logs "In-memory mode", Neo4j wasn't ready — restart the backend.
+- `make up` / `make down` run the whole stack in Docker instead (UI on :8080; see the README quick start). These are production-style images with no hot reload, so use them to check a clean build, not for day-to-day work. Compose passes `backend/.env` in as environment variables, so in the container an unknown `LLM_*` key only warns instead of stopping startup.
 
 Tests need a separate Neo4j on :7689 — `make test*` brings it up automatically. Before the first `make e2e*` run, install the E2E package and browser once: `cd e2e && npm install && npx playwright install --with-deps chromium`.
 

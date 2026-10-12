@@ -1,0 +1,15 @@
+.venv/
+.env
+.env.*
+!.env.example
+**/__pycache__/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+exports/
+explorator/
+tests/
+docs/
+scripts/
+.claude/
+**/CLAUDE.md
