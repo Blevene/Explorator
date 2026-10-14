@@ -27,8 +27,22 @@ _SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
 
 def _hostname(netloc: str) -> str:
-    """Hostname part of a ``host[:port]`` value, lower-cased, IPv6 brackets removed."""
-    return (urlsplit(f"//{netloc}").hostname or "").lower()
+    """Hostname part of a ``host[:port]`` value, lower-cased, IPv6 brackets removed.
+
+    Malformed values yield "" (never allowed).
+    """
+    try:
+        return (urlsplit(f"//{netloc}").hostname or "").lower()
+    except ValueError:
+        return ""
+
+
+def _netloc(url: str) -> str:
+    """``host[:port]`` of a URL such as an Origin header; "" when malformed."""
+    try:
+        return urlsplit(url).netloc.lower()
+    except ValueError:
+        return ""
 
 
 def _host_allowed(hostname: str, extra: set[str]) -> bool:
@@ -53,9 +67,10 @@ class LocalAccessGuard:
       literals and ``ALLOWED_HOSTS`` in the Host header.
     - Cross-site requests: a hostile page POSTs to localhost. Blocked by
       rejecting state-changing requests whose Origin is neither the request's
-      own host (directly, or ``X-Forwarded-Host`` from the Vite/nginx proxy)
-      nor an allowed host. There is no CORS middleware, so cross-origin
-      responses stay unreadable and preflighted requests fail.
+      own host (directly, or ``X-Forwarded-Host`` from the Vite/nginx proxy,
+      which must itself be an allowed host) nor an allowed host. There is no
+      CORS middleware, so cross-origin responses stay unreadable and
+      preflighted requests fail.
     """
 
     def __init__(self, app: ASGIApp) -> None:
@@ -79,9 +94,13 @@ class LocalAccessGuard:
 
         origin = headers.get("origin")
         if scope["method"] not in _SAFE_METHODS and origin is not None:
-            origin_netloc = urlsplit(origin).netloc.lower()
-            own = {host.lower(), headers.get("x-forwarded-host", "").lower()} - {""}
-            if origin_netloc not in own and not (
+            origin_netloc = _netloc(origin)
+            forwarded = headers.get("x-forwarded-host", "").lower()
+            own = {host.lower()}
+            if forwarded and _host_allowed(_hostname(forwarded), extra):
+                own.add(forwarded)
+            own.discard("")
+            if not origin_netloc or origin_netloc not in own and not (
                 "*" in extra or _hostname(origin_netloc) in extra
             ):
                 response = PlainTextResponse("Cross-site request blocked.", status_code=403)

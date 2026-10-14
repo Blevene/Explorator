@@ -14,6 +14,7 @@ NEO4J_PW = NEO4J_PASSWORD="$$(scripts/neo4j-password.sh)"
 # Blocks until healthy so a backend started right after doesn't fall back to
 # limited (in-memory) mode during the Neo4j start-up.
 neo4j-up:
+	@scripts/neo4j-password.sh >/dev/null
 	$(NEO4J_PW) docker compose up -d --wait neo4j
 	@scripts/neo4j-password.sh rotate
 
@@ -36,6 +37,7 @@ neo4j-test-down:
 # the genre catalog, so the host paths must exist before compose starts.
 up:
 	mkdir -p backend/exports && touch backend/.env
+	@scripts/neo4j-password.sh >/dev/null
 	$(NEO4J_PW) docker compose up -d --wait neo4j
 	@scripts/neo4j-password.sh rotate
 	$(NEO4J_PW) APP_UID=$$(id -u) APP_GID=$$(id -g) docker compose --profile app up -d --build --wait backend frontend
@@ -67,7 +69,7 @@ lint:
 # Frontend dev server on :5173. Vite's proxy defaults to the e2e backend
 # (:8100), so point it at `make backend` (:8000) unless overridden.
 frontend:
-	cd frontend && VITE_API_TARGET=$${VITE_API_TARGET:-http://localhost:8000} npm run dev
+	cd frontend && ALLOWED_HOSTS=$${ALLOWED_HOSTS:-$$(sed -n 's/^ALLOWED_HOSTS=//p' ../backend/.env 2>/dev/null | tail -n 1)} VITE_API_TARGET=$${VITE_API_TARGET:-http://localhost:8000} npm run dev
 
 # E2E Tests.
 #   e2e-parallel: generation/realization/UI specs, fully parallel, each worker

@@ -110,7 +110,7 @@ function spawnBackend(port: number): ChildProcess {
   const python = path.join(ROOT, 'backend', '.venv', 'bin', 'python');
   return spawn(
     python, ['-m', 'uvicorn', 'explorator.api.app:create_app', '--factory',
-             '--host', '0.0.0.0', '--port', String(port)],
+             '--host', '127.0.0.1', '--port', String(port)],
     {
       cwd: path.join(ROOT, 'backend'),
       // NEO4J_URI points at a dead port → probe fails → in-memory mode.

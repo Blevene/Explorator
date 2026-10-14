@@ -10,6 +10,7 @@ from ulid import ULID
 
 from explorator.adapters.llm import LLMClient
 from explorator.api.deps import get_llm_client, get_neo4j_driver
+from explorator.api.schemas.limits import PromptText
 from explorator.domain.evaluation.ranking import CANONICAL_DEFAULT_WEIGHTS
 from explorator.domain.intent.feedback import FeedbackInterpreter, apply_weight_deltas
 from explorator.models.evaluation import ObjectiveWeights
@@ -29,7 +30,7 @@ _busy_sessions: set[str] = set()
 
 class SubmitFeedbackRequest(BaseModel):
     candidate_id: str
-    content: str
+    content: PromptText
     feedback_type: str = "text_reaction"
 
 

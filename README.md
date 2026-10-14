@@ -93,7 +93,7 @@ git clone https://github.com/Blevene/Explorator.git
 cd Explorator
 
 # Configure
-cp .env.example backend/.env
+cp -n .env.example backend/.env   # -n: never overwrite an existing backend/.env
 # Edit backend/.env and set LLM_API_KEY (or configure another provider — see "LLM providers").
 # Only Explorator's own settings are read from backend/.env (see "LLM providers").
 # No Neo4j password to set: `make neo4j-up` / `make up` generate a random one
@@ -139,7 +139,7 @@ authentication. To reach the app from another machine, opt in per command
 with `BIND_ADDR=0.0.0.0` (for example `BIND_ADDR=0.0.0.0 make frontend`; the
 backend can stay on loopback behind Vite's proxy). Opening it by IP address
 works as is; if you use a hostname such as `mybox.lan`, add it to
-`ALLOWED_HOSTS` in `backend/.env`. See [Security model](#security-model).
+`ALLOWED_HOSTS` in `backend/.env` (`make frontend` passes it to Vite as well). See [Security model](#security-model).
 
 `make frontend` points Vite's `/v1` proxy at `make backend` (:8000). Running
 `npm run dev` directly instead proxies to `VITE_API_TARGET`, which defaults to
@@ -158,7 +158,7 @@ live mode any time with `curl localhost:8000/v1/capabilities`.
 Node or make on the host):
 
 ```bash
-cp .env.example backend/.env   # configure the LLM as above (or skip it and use LLM_MOCK)
+cp -n .env.example backend/.env   # configure the LLM as above (or skip it and use LLM_MOCK)
 make up                        # = docker compose --profile app up -d --build --wait backend frontend
                                # (without make, run that docker compose command directly)
 LLM_MOCK=true make up          # …or with the fake LLM, no key needed
@@ -270,7 +270,7 @@ and set `LLM_CONTEXT_TOKENS` (unset by default) to the same value so Explorator 
 when a prompt nears it.
 
 **Concurrency and timeouts.** Rounds fan out several LLM calls at once.
-`LLM_MAX_CONCURRENCY` (default 4) applies to the `openai` provider only and caps in-flight requests; for Ollama,
+`LLM_MAX_CONCURRENCY` caps in-flight requests (default 8 for `gemini`, 4 for `openai`); for Ollama,
 keep it ≤ `OLLAMA_NUM_PARALLEL`. `LLM_TIMEOUT_SECONDS` defaults to 120 for `gemini`
 and 300 for `openai`. `LLM_MAX_RETRIES` (default 1, `openai` only) is the HTTP retry
 count for connection errors, 429s and 5xx; both adapters also retry once on
@@ -410,8 +410,9 @@ Explorator is a single-user, local tool with **no authentication**
   `localhost`, an IP address or an `ALLOWED_HOSTS` entry (DNS rebinding), and refuses
   state-changing requests from another site's `Origin` (cross-site requests).
 - **Per-install Neo4j password**, generated into `backend/.env`.
-- **Bounded requests:** candidate-id lists and free-text fields are capped, so one
-  request can't fan out into thousands of paid LLM calls.
+- **Bounded requests:** candidate-id lists and free-text fields (prompts, guidance,
+  feedback, reference artists) are capped, so one request can't fan out into
+  thousands of paid LLM calls.
 - Exports are only ever read from or deleted inside `EXPORT_DIR`.
 
 Report vulnerabilities as described in [SECURITY.md](./SECURITY.md).

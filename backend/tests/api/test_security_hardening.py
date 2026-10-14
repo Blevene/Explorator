@@ -159,3 +159,80 @@ def test_export_dir_not_created_outside_root(tmp_path):
     assert os.path.dirname(resolve_under(str(tmp_path), "sess_1", "pkg")) == os.path.join(
         os.path.realpath(tmp_path), "sess_1"
     )
+
+
+# ── export paths portable across runtimes ────────────────────────────────────
+
+
+def _seed_export(store) -> None:
+    store.create("Session", {"id": "sess_port", "type": "session", "metadata": {}})
+    store.create("VoicingPlan", {
+        "id": "vp_p", "type": "voicing_plan", "status": "active",
+        "voicing_events": [{"bar": 1, "beat": 1.0, "duration_beats": 4.0,
+                            "pitches": ["C4", "E4", "G4"], "chord_symbol": "C"}],
+    })
+    store.create("BassLine", {
+        "id": "bl_p", "type": "bass_line", "status": "active",
+        "note_events": [{"bar": 1, "beat": 1.0, "duration_beats": 4.0, "pitch": "C2"}],
+    })
+    store.create("ArrangementCandidate", {
+        "id": "arr_p", "type": "arrangement_candidate", "status": "active",
+        "session_id": "sess_port", "progression_candidate_id": "prog_x",
+        "voicing_plan_id": "vp_p", "bass_line_id": "bl_p", "rationale": "seeded",
+        "metadata": {"label": "arr"},
+    })
+
+
+def test_export_paths_are_stored_relative_to_export_dir(client_memory, tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "export_dir", str(tmp_path / "a"))
+    store = get_memory_store()
+    _seed_export(store)
+    body = client_memory.post(
+        "/v1/sessions/sess_port/export",
+        json={"arrangement_candidate_ids": ["arr_p"], "formats": ["midi_combined"]},
+    ).json()
+    art_id = body["artifacts"][0]["id"]
+    stored = store.get("RenderArtifact", art_id)["path"]
+    assert not os.path.isabs(stored)
+    assert stored.startswith("sess_port" + os.sep)
+
+    # The same export dir mounted elsewhere (Docker /app/exports vs native) still serves it.
+    os.rename(tmp_path / "a", tmp_path / "b")
+    monkeypatch.setattr(settings, "export_dir", str(tmp_path / "b"))
+    resp = client_memory.get(f"/v1/exports/{body['id']}/artifacts/{art_id}/download")
+    assert resp.status_code == 200 and resp.content
+
+
+def test_download_accepts_legacy_cwd_relative_paths(client_memory, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(settings, "export_dir", "exports")
+    (tmp_path / "exports" / "sess_old" / "pkg").mkdir(parents=True)
+    (tmp_path / "exports" / "sess_old" / "pkg" / "a.mid").write_bytes(b"MThd")
+    get_memory_store().create("RenderArtifact", {
+        "id": "art_old", "type": "render_artifact", "artifact_type": "midi_combined",
+        "path": os.path.join("exports", "sess_old", "pkg", "a.mid"),
+    })
+    resp = client_memory.get("/v1/exports/pkg/artifacts/art_old/download")
+    assert resp.status_code == 200 and resp.content == b"MThd"
+
+
+def test_forwarded_host_must_itself_be_allowed(client_memory):
+    resp = client_memory.post(
+        "/v1/sessions", json={"genre": "dream_pop"},
+        headers={"origin": "http://evil.example", "x-forwarded-host": "evil.example"},
+    )
+    assert resp.status_code == 403
+
+
+@pytest.mark.parametrize("headers", [{"host": "[::1"}, {"origin": "http://["}])
+def test_malformed_host_or_origin_is_rejected_not_500(client_memory, headers):
+    resp = client_memory.post("/v1/sessions", json={"genre": "dream_pop"}, headers=headers)
+    assert resp.status_code in (400, 403)
+
+
+def test_feedback_text_is_bounded(client_memory):
+    session_id = _new_session(client_memory)
+    resp = client_memory.post(
+        f"/v1/sessions/{session_id}/feedback", json={"candidate_id": "c1", "content": "x" * 5000}
+    )
+    assert resp.status_code == 422

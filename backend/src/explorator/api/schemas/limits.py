@@ -10,6 +10,8 @@ from typing import Annotated, Any
 from pydantic import BeforeValidator, Field
 
 MAX_IDS_PER_REQUEST = 12
+# Export/comparison lists render MIDI or query the graph but call no LLM.
+MAX_RENDER_IDS_PER_REQUEST = 50
 MAX_PROMPT_CHARS = 2000
 
 
@@ -22,5 +24,8 @@ def _dedupe(value: Any) -> Any:
 
 CandidateIds = Annotated[
     list[str], BeforeValidator(_dedupe), Field(max_length=MAX_IDS_PER_REQUEST)
+]
+RenderIds = Annotated[
+    list[str], BeforeValidator(_dedupe), Field(max_length=MAX_RENDER_IDS_PER_REQUEST)
 ]
 PromptText = Annotated[str, Field(max_length=MAX_PROMPT_CHARS)]

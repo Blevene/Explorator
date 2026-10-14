@@ -16,7 +16,7 @@ Read these once:
 See [README § Quick start](./README.md#quick-start) for the bootstrap. The short form:
 
 ```bash
-cp .env.example backend/.env  # set LLM_API_KEY (see README "LLM providers")
+cp -n .env.example backend/.env  # set LLM_API_KEY (see README "LLM providers")
 make neo4j-up                  # dev Neo4j on :7688 — returns once healthy
 cd backend  && uv sync --all-extras && cd ..
 cd frontend && npm install && cd ..

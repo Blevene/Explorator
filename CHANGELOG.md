@@ -48,9 +48,11 @@ tracks the state of the `main` branch.
 - The API no longer sends a wildcard CORS policy. A new `LocalAccessGuard`
   rejects unknown `Host` names (DNS rebinding; `ALLOWED_HOSTS` adds names)
   and cross-site state-changing requests.
-- Export downloads and session deletion stay inside `EXPORT_DIR`.
-- Candidate-id lists are de-duplicated and capped at 12; prompts, guidance
-  and reference artists are bounded; Gemini calls share a concurrency limit
+- Export downloads and session deletion stay inside `EXPORT_DIR`. Export
+  paths are now stored relative to it, so Docker and native share exports.
+- Candidate-id lists are de-duplicated and capped (12 for LLM-backed
+  routes, 50 for export/comparison); prompts, guidance, feedback and
+  reference artists are bounded; Gemini calls share a concurrency limit
   (`LLM_MAX_CONCURRENCY`, default 8).
 - A researched genre's identity always comes from its validated name, so a
   draft can't shadow an existing genre.
