@@ -1,10 +1,21 @@
 .PHONY: test test-unit test-integration lint neo4j-up neo4j-down neo4j-test-up neo4j-test-down up down logs backend frontend e2e e2e-parallel e2e-neo4j e2e-headed screenshots
 
+# Host interface for published ports and dev servers. Loopback by default;
+# `BIND_ADDR=0.0.0.0 make ...` opens them to the LAN (the API has no auth).
+BIND_ADDR ?= 127.0.0.1
+export BIND_ADDR
+
+# The dev Neo4j password lives in backend/.env; scripts/neo4j-password.sh
+# generates it on first use and `rotate` moves an old volume off the former
+# public default.
+NEO4J_PW = NEO4J_PASSWORD="$$(scripts/neo4j-password.sh)"
+
 # Infrastructure
 # Blocks until healthy so a backend started right after doesn't fall back to
 # limited (in-memory) mode during the Neo4j start-up.
 neo4j-up:
-	docker compose up -d --wait neo4j
+	$(NEO4J_PW) docker compose up -d --wait neo4j
+	@scripts/neo4j-password.sh rotate
 
 neo4j-down:
 	docker compose down
@@ -25,7 +36,9 @@ neo4j-test-down:
 # the genre catalog, so the host paths must exist before compose starts.
 up:
 	mkdir -p backend/exports && touch backend/.env
-	APP_UID=$$(id -u) APP_GID=$$(id -g) docker compose --profile app up -d --build --wait backend frontend
+	$(NEO4J_PW) docker compose up -d --wait neo4j
+	@scripts/neo4j-password.sh rotate
+	$(NEO4J_PW) APP_UID=$$(id -u) APP_GID=$$(id -g) docker compose --profile app up -d --build --wait backend frontend
 
 # Leaves neo4j-test alone (unlike neo4j-down); data stays in the volume.
 down:
@@ -36,7 +49,7 @@ logs:
 
 # Backend
 backend:
-	cd backend && uv run uvicorn explorator.api.app:create_app --factory --host 0.0.0.0 --port 8000 --reload
+	cd backend && uv run uvicorn explorator.api.app:create_app --factory --host $(BIND_ADDR) --port 8000 --reload
 
 test: neo4j-test-up
 	cd backend && uv run pytest tests/ -v
@@ -68,7 +81,7 @@ e2e: e2e-parallel e2e-neo4j
 e2e-parallel:
 	cd e2e && npx playwright test
 
-e2e-neo4j:
+e2e-neo4j: neo4j-test-up
 	cd e2e && npx playwright test --config playwright.neo4j.config.ts
 
 e2e-headed:

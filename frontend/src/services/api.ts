@@ -96,7 +96,7 @@ export interface GenreDetail {
 }
 
 export async function getGenreDetail(genreName: string): Promise<GenreDetail> {
-  const res = await fetch(`${API_BASE}/genres/${genreName}`);
+  const res = await fetch(`${API_BASE}/genres/${encodeURIComponent(genreName)}`);
   if (!res.ok) throw new Error(`Failed to get genre: ${res.status}`);
   return res.json();
 }

@@ -86,6 +86,11 @@ class Settings(BaseSettings):
     # Export
     export_dir: str = "exports"
 
+    # Extra hostnames the API answers to, comma-separated (e.g. "mybox.lan").
+    # localhost and IP literals are always allowed; "*" turns the check off.
+    # See api/middleware.py.
+    allowed_hosts: str = ""
+
     _legacy_names_used: list[str] = PrivateAttr(default_factory=list)
 
     _ignored_legacy_names: list[str] = PrivateAttr(default_factory=list)
@@ -135,6 +140,7 @@ class Settings(BaseSettings):
                 if getattr(self, name) in ("", None):
                     setattr(self, name, default)
             self.llm_timeout_seconds = self.llm_timeout_seconds or 120
+            self.llm_max_concurrency = self.llm_max_concurrency or 8
         else:
             missing = [
                 env

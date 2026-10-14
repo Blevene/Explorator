@@ -11,6 +11,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from explorator.adapters.llm import LLMClient
 from explorator.api.deps import get_llm_client, get_neo4j_driver
+from explorator.api.schemas.limits import CandidateIds
 from explorator.api.sse import SSEChannel, cancel_on_disconnect
 from explorator.engine.graph import build_realization_subgraph
 from explorator.persistence.factory import (
@@ -30,7 +31,7 @@ router = APIRouter(tags=["realization"])
 
 
 class TriggerRealizationRequest(BaseModel):
-    progression_candidate_ids: list[str]
+    progression_candidate_ids: CandidateIds
     key: str | None = None
     musical_mode: str | None = None
 

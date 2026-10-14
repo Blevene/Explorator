@@ -2,9 +2,9 @@
 # Production-style: locked deps, no dev extras, no --reload. For development,
 # run `make backend` natively instead.
 
-FROM python:3.13-slim-bookworm AS build
+FROM python:3.13-slim-bookworm@sha256:a1165e272e578941b84abc79e4ab38a0305cd12803a5c4247979ac7655f4d641 AS build
 
-COPY --from=ghcr.io/astral-sh/uv:0.11.16 /uv /bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.11.16@sha256:440fd6477af86a2f1b38080c539f1672cd22acb1b1a47e321dba5158ab08864d /uv /bin/uv
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
@@ -22,7 +22,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-editable
 
 
-FROM python:3.13-slim-bookworm
+FROM python:3.13-slim-bookworm@sha256:a1165e272e578941b84abc79e4ab38a0305cd12803a5c4247979ac7655f4d641
 
 RUN useradd --create-home --uid 1000 app
 WORKDIR /app

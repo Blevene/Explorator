@@ -11,6 +11,12 @@ const ROOT = path.resolve(__dirname, '..');
 const PID_FILE = path.join(__dirname, '.server-pids.json');
 const STYLE_DIR_FILE = path.join(__dirname, '.style-dir.txt');
 
+// The lane deletes every session and research job it finds, so it runs against
+// the disposable test Neo4j (`make neo4j-test-up`), never the dev database.
+// Override with E2E_NEO4J_URI / E2E_NEO4J_PASSWORD / NEO4J_CONTAINER.
+const E2E_NEO4J_URI = process.env.E2E_NEO4J_URI ?? 'bolt://localhost:7689';
+const E2E_NEO4J_PASSWORD = process.env.E2E_NEO4J_PASSWORD ?? 'explorator_test';
+
 async function waitForHealth(url: string, timeoutMs = 30_000): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -44,8 +50,8 @@ async function cleanTestSessions(): Promise<void> {
 
 /**
  * The Neo4j lane's learning specs (pattern-library / genre-research / m3) need a
- * real Neo4j behind the backend. The backend auto-detects: if the dev Neo4j
- * (:7688) is down it silently boots in MEMORY mode, and those specs then fail
+ * real Neo4j behind the backend. The backend auto-detects: if the test Neo4j
+ * (:7689) is down it silently boots in MEMORY mode, and those specs then fail
  * with confusing UI errors instead of a clear cause. Assert we're actually in
  * neo4j mode here, at setup, so the failure is obvious and actionable.
  */
@@ -59,7 +65,7 @@ async function assertNeo4jMode(): Promise<void> {
   if (mode !== 'neo4j') {
     throw new Error(
       `[e2e] Neo4j lane requires Neo4j, but the backend is in '${mode}' mode. ` +
-      'The dev Neo4j is likely down — run `make neo4j-up` and retry.',
+      'The test Neo4j is likely down — run `make neo4j-test-up` and retry.',
     );
   }
   console.log('[e2e] Backend persistence mode: neo4j');
@@ -71,18 +77,20 @@ async function assertNeo4jMode(): Promise<void> {
  * Test genres are written to a temp catalog directory (via
  * EXPLORATOR_STYLE_DIR set on the spawned backend), so disk leaks
  * disappear at teardown when we rm the temp dir. Neo4j leaks need
- * explicit cleanup since the dev-shared DB persists.
+ * explicit cleanup since the test DB outlives the run.
  */
 export async function cleanGenreResearchState(): Promise<void> {
-  const container = process.env.NEO4J_CONTAINER ?? 'explorator-neo4j-1';
+  const container = process.env.NEO4J_CONTAINER ?? 'explorator-neo4j-test-1';
   const queries = [
     'MATCH (n:GenreResearchJob) DETACH DELETE n',
     'MATCH (n) WHERE n.genre IS NOT NULL AND (n.genre =~ "test_.*" OR n.genre = "ambient_jazz") DETACH DELETE n',
   ];
   for (const cypher of queries) {
+    // The password is per-install (backend/.env); read it from the
+    // container's own NEO4J_AUTH ("neo4j/<password>") rather than the host.
     const proc = spawn('docker', [
-      'exec', '-i', container,
-      'cypher-shell', '-u', 'neo4j', '-p', 'explorator_dev', '-d', 'neo4j',
+      'exec', '-i', container, 'sh', '-c',
+      'cypher-shell -u neo4j -p "${NEO4J_AUTH#neo4j/}" -d neo4j "$1"', 'cleanup',
       cypher,
     ], { stdio: ['ignore', 'ignore', 'pipe'] });
     let stderr = '';
@@ -139,13 +147,18 @@ export default async function globalSetup() {
   console.log(`[e2e] Starting backend on port ${BACKEND_PORT} (LLM_MOCK=true)`);
   const backend = spawn(
     'uv', ['run', 'uvicorn', 'explorator.api.app:create_app', '--factory',
-           '--host', '0.0.0.0', '--port', String(BACKEND_PORT)],
+           '--host', '127.0.0.1', '--port', String(BACKEND_PORT)],
     {
       cwd: path.join(ROOT, 'backend'),
+      // Process env outranks backend/.env, so the dev NEO4J_* there is ignored.
       env: {
         ...process.env,
         LLM_MOCK: 'true',
         EXPLORATOR_STYLE_DIR: styleDir,
+        EXPORT_DIR: path.join(styleDir, 'exports'),
+        NEO4J_URI: E2E_NEO4J_URI,
+        NEO4J_USER: 'neo4j',
+        NEO4J_PASSWORD: E2E_NEO4J_PASSWORD,
       },
       stdio: 'pipe',
       detached: true,
@@ -180,7 +193,7 @@ export default async function globalSetup() {
 
   // Clean stale sessions from prior test runs to avoid strict mode violations
   await cleanTestSessions();
-  // Wipe stale Neo4j research-job/genre nodes from the dev-shared DB.
+  // Wipe stale Neo4j research-job/genre nodes from the test DB.
   // (Disk catalog leaks are handled by the temp dir + teardown rm.)
   await cleanGenreResearchState();
 

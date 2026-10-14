@@ -20,8 +20,11 @@ def _normalize_draft(parsed: dict[str, Any], genre_name: str) -> None:
     # Ensure anti_patterns exists
     if isinstance(parsed.get("rules"), dict) and "anti_patterns" not in parsed["rules"]:
         parsed["rules"]["anti_patterns"] = []
-    # grammar: ensure genre_profile_id present
-    if isinstance(parsed.get("grammar"), dict) and "genre_profile_id" not in parsed["grammar"]:
+    # Identity comes from the validated genre_name, never from the model: a
+    # draft claiming another genre would shadow it once approved.
+    if isinstance(parsed.get("profile"), dict):
+        parsed["profile"]["genre"] = genre_name
+    if isinstance(parsed.get("grammar"), dict):
         parsed["grammar"]["genre_profile_id"] = f"genre_{genre_name}_01"
     # Rule applicability: must be dict[str, list[str]]
     rules_data = parsed.get("rules", {})

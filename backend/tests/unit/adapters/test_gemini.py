@@ -167,3 +167,22 @@ async def test_cut_body_without_max_tokens_is_not_repaired_and_is_retried() -> N
     with pytest.raises(ValueError, match="malformed JSON"):
         await client.generate_structured("p", SampleResponse)
     assert mock.await_count == 2
+
+
+async def test_concurrent_calls_are_capped_by_max_concurrency() -> None:
+    import asyncio
+
+    client = GeminiClient(api_key="test-key", max_concurrency=2)
+    in_flight = peak = 0
+
+    async def _slow(**_: object) -> object:
+        nonlocal in_flight, peak
+        in_flight += 1
+        peak = max(peak, in_flight)
+        await asyncio.sleep(0.01)
+        in_flight -= 1
+        return _response('{"name": "a", "value": 1}')
+
+    client._client.aio.models.generate_content = _slow  # type: ignore[method-assign]
+    await asyncio.gather(*(client.generate_structured("p", SampleResponse) for _ in range(6)))
+    assert peak == 2

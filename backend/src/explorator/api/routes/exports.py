@@ -11,6 +11,7 @@ from neo4j import AsyncDriver
 from pydantic import BaseModel
 
 from explorator.api.deps import get_neo4j_driver
+from explorator.api.safe_paths import is_under, resolve_under
 from explorator.config import settings
 from explorator.domain.export.json_renderer import JsonRenderContext
 from explorator.domain.export.orchestrator import ExportRequest, render_and_write_artifacts
@@ -108,7 +109,10 @@ async def create_export(
 
     # Generate a package ID up-front (needed for output directory)
     package_id = f"pkg_{uuid4().hex[:12]}"
-    output_dir = os.path.join(settings.export_dir, session_id, package_id)
+    try:
+        output_dir = resolve_under(settings.export_dir, session_id, package_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid session id") from None
 
     all_artifact_ids: list[str] = []
     all_artifact_meta: list[dict[str, Any]] = []
@@ -381,7 +385,12 @@ async def download_artifact(
         raise HTTPException(status_code=404, detail="Artifact not found")
 
     file_path = artifact.get("path", "")
-    if not file_path or not os.path.isfile(file_path):
+    # The path comes from the database; only serve files inside the export dir.
+    if (
+        not file_path
+        or not is_under(settings.export_dir, file_path)
+        or not os.path.isfile(file_path)
+    ):
         raise HTTPException(status_code=404, detail="Artifact file not found on disk")
 
     render_meta = artifact.get("render_metadata") or {}

@@ -5,7 +5,7 @@ import contextlib
 import logging
 import re
 from datetime import UTC, datetime
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -36,7 +36,9 @@ _GENRE_NAME_RE = re.compile(r"^[a-z][a-z0-9_]{1,48}$")
 
 class StartResearchRequest(BaseModel):
     genre_name: str
-    reference_artists: list[str] = Field(default_factory=list)
+    reference_artists: list[Annotated[str, Field(max_length=100)]] = Field(
+        default_factory=list, max_length=10
+    )
 
 
 class StartResearchResponse(BaseModel):

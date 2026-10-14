@@ -46,6 +46,7 @@ def load_genre_profiles_from_yaml() -> list[dict[str, Any]]:
     for genre_name in discover_genres(STYLE_DIR):
         profile = load_genre_from_yaml(STYLE_DIR / "genres" / f"{genre_name}.yaml")
         profile_data = profile.model_dump(mode="json")
+        profile_data["genre"] = genre_name  # the filename is the identity
         profile_data["id"] = f"genre_{genre_name}_01"
         profile_data["type"] = "genre_profile"
         profile_data["status"] = "active"
@@ -91,6 +92,7 @@ class StyleService:
             # Load and sync profile
             profile = load_genre_from_yaml(STYLE_DIR / "genres" / f"{genre_name}.yaml")
             profile_data = profile.model_dump(mode="json")
+            profile_data["genre"] = genre_name  # the filename is the identity
             profile_data["id"] = genre_id
             profile_data["type"] = "genre_profile"
             profile_data["status"] = "active"

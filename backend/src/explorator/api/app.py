@@ -4,9 +4,8 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
-from explorator.api.middleware import AuthStubMiddleware
+from explorator.api.middleware import AuthStubMiddleware, LocalAccessGuard
 from explorator.api.routes import candidates, genres, rounds, sessions
 from explorator.api.routes.capabilities import router as capabilities_router
 from explorator.api.routes.comparisons import router as comparisons_router
@@ -66,14 +65,10 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    # No CORS middleware: the UI reaches the API same-origin through the Vite
+    # or nginx proxy, so browsers keep other sites' cross-origin reads blocked.
     app.add_middleware(AuthStubMiddleware)
+    app.add_middleware(LocalAccessGuard)  # outermost: runs first
 
     app.include_router(capabilities_router, prefix="/v1")
     app.include_router(sessions.router, prefix="/v1")

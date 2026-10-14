@@ -115,6 +115,7 @@ def get_llm_client() -> LLMClient:
         pro_model=settings.llm_pro_model,
         flash_model=settings.llm_flash_model,
         timeout_seconds=settings.llm_timeout_seconds,
+        max_concurrency=settings.llm_max_concurrency,
     )
 
 

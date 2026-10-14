@@ -21,6 +21,9 @@ os.environ.setdefault("NEO4J_TEST_URI", "bolt://localhost:7689")
 os.environ.setdefault("NEO4J_TEST_PASSWORD", "explorator_test")
 os.environ["NEO4J_URI"] = os.environ["NEO4J_TEST_URI"]
 os.environ["NEO4J_PASSWORD"] = os.environ["NEO4J_TEST_PASSWORD"]
+# Test clients send `Host: test` / `Host: testserver`; the host guard
+# (api/middleware.py) only admits localhost, IP literals and ALLOWED_HOSTS.
+os.environ["ALLOWED_HOSTS"] = "test,testserver"
 
 from collections.abc import AsyncGenerator  # noqa: E402
 
