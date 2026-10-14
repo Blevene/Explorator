@@ -13,9 +13,9 @@ repos:
         args: ['--maxkb=1024']
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.0
+    rev: v0.17.0
     hooks:
       - id: ruff
         name: ruff (lint, backend)
         args: [--fix]
-        files: ^backend/
+        files: ^backend/(src|tests)/

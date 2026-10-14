@@ -48,4 +48,4 @@ A decision is ADR-worthy if reversing it would touch multiple subsystems, force 
 What does NOT belong here:
 - Per-milestone designs — those live in [`docs/design/specs/`](../design/specs/)
 - Code-level patterns enforced by lint/types — those should be enforced, not documented
-- Personal preferences — those go in `~/.claude/projects/.../memory/feedback_*.md`
+- Personal workflow preferences — those stay out of the repo

@@ -8,7 +8,7 @@ is the only supported line — please report against, and update to, the latest
 
 ## Reporting a vulnerability
 
-If you discover a security issue, please email **blevene@lightforgeventures.com** instead of opening a public GitHub issue or pull request. Include a description of the issue, the affected version (commit SHA is fine), and a minimal reproduction if you have one.
+If you discover a security issue, please report it privately through [GitHub private vulnerability reporting](https://github.com/Blevene/Explorator/security/advisories/new) (the **Report a vulnerability** button on the repository's Security tab) instead of opening a public GitHub issue or pull request. Include a description of the issue, the affected version (commit SHA is fine), and a minimal reproduction if you have one.
 
 You should expect a response within a few business days. We don't operate a bug bounty program, but we appreciate responsible disclosure and will credit reporters in the fix's commit message and any release notes if you'd like.
 

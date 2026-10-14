@@ -40,6 +40,13 @@ tracks the state of the `main` branch.
   Dependabot, and a CodeQL workflow.
 
 ### Changed
+- Open-source readiness cleanup: security reports go through GitHub private
+  vulnerability reporting instead of email; CI runs with a read-only
+  `permissions` default and installs backend deps with `uv sync --locked`
+  (`backend/uv.lock` refreshed); `make test-unit` no longer starts Docker;
+  the pre-commit ruff hook matches the project's ruff and CI's paths; frontend
+  npm advisories fixed and `engines` aligned with the documented Node 20.19+;
+  the LLM-provider design records moved into `docs/design/`.
 - Per-candidate fan-out calls (voicing planning, melody generation, theory
   evaluation) cap output at 4096 tokens. Gemini now retries once on malformed
   output, matching the OpenAI-compatible client. (#67)

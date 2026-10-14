@@ -30,7 +30,7 @@ make frontend                  # Vite on :5173, /v1 proxied to :8000 (terminal 2
 - The backend probes Neo4j once at startup; if it logs "In-memory mode", Neo4j wasn't ready — restart the backend.
 - `make up` / `make down` run the whole stack in Docker instead (UI on :8080; see the README quick start). These are production-style images with no hot reload, so use them to check a clean build, not for day-to-day work. The backend container runs as your user and bind-mounts `backend/.env`, `backend/exports/` and the genre catalog. Docker and native therefore share settings, exports and approved genres, as well as the Neo4j volume.
 
-Tests need a separate Neo4j on :7689 — `make test*` brings it up automatically. Before the first `make e2e*` run, install the E2E package and browser once: `cd e2e && npm install && npx playwright install --with-deps chromium`.
+Most backend tests need a separate Neo4j on :7689, and `make test` / `make test-integration` bring it up automatically. `make test-unit` and the frontend checks (`npm run lint`, `npm run test:unit`, `npm run build`) need no Docker. Before the first `make e2e*` run, install the E2E package and browser once: `cd e2e && npm install && npx playwright install --with-deps chromium`.
 
 Optional: `uvx pre-commit install` mirrors CI's ruff / whitespace gates as local git hooks (see `.pre-commit-config.yaml`).
 
@@ -62,6 +62,8 @@ The project follows a deliberate **brainstorm → spec → plan → execute → 
   - Unit tests: pure logic, no external systems. `backend/tests/unit/`.
   - Integration tests: hit the test Neo4j ([ADR-009](./docs/decisions/009-isolated-test-neo4j.md)). `backend/tests/integration/`.
   - API tests: hit the running FastAPI app with `httpx.AsyncClient` (not the sync `TestClient` — see `test_post_comparison_returns_201` history for why). `backend/tests/api/`.
+  - Service tests: service-layer behaviour against the test Neo4j. `backend/tests/services/`.
+- **Dependencies:** after changing `backend/pyproject.toml`, run `uv lock` and commit `backend/uv.lock`; CI installs with `uv sync --locked` and fails on a stale lock.
 - **No mocking the database in integration tests.** (The cost of mock/prod divergence outweighs the cost of running tests against a real Neo4j.)
 
 ### TypeScript (frontend)
