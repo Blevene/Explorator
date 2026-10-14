@@ -86,7 +86,7 @@ Approved genres land in the same three directories as the seed genres and are sy
 
 ## Quick start
 
-**Prerequisites:** [uv](https://docs.astral.sh/uv/) (installs Python 3.13+ for you), Node.js 20.19+ or 22.12+, GNU make, Docker (for Neo4j and the backend test suite; or Docker alone for the [all-in-Docker setup](#quick-start)), and an LLM: a Gemini or OpenAI API key, or a local OpenAI-compatible server (Ollama, vLLM, ...) — or none, using `LLM_MOCK=true` for deterministic fake output.
+**Prerequisites:** [uv](https://docs.astral.sh/uv/) (installs Python 3.13+ for you), Node.js 20.19+ or 22.12+, GNU make, Docker (for Neo4j and the backend test suite; or Docker alone for the all-in-Docker setup below), and an LLM: a Gemini or OpenAI API key, or a local OpenAI-compatible server (Ollama, vLLM, ...) — or none, using `LLM_MOCK=true` for deterministic fake output.
 
 ```bash
 git clone https://github.com/Blevene/Explorator.git
@@ -181,8 +181,9 @@ and set `APP_UID`/`APP_GID` to `$(id -u)`/`$(id -g)` if your uid isn't 1000.
 
 ```bash
 make test                       # Backend full suite (auto-starts isolated test Neo4j on :7689)
+make test-unit                  # Backend unit tests only — no Docker or Neo4j needed
 make lint                       # ruff + mypy strict
-cd frontend && npm run test:unit && cd ..
+cd frontend && npm run lint && npm run test:unit && cd ..   # no Docker needed
 
 # End-to-end (Playwright spawns its own servers, all under LLM_MOCK=true — no
 # API key needed for e2e). One-time setup:
@@ -357,7 +358,7 @@ explorator/
 │   ├── manual-test/           # Per-milestone manual QA checklists
 │   └── design/                # Historical design specs + implementation plans
 ├── product_documents/archive/ # Pre-implementation product docs (time capsule)
-├── docker-compose.yml         # Neo4j dev (7688) + test (7689) containers
+├── docker-compose.yml         # Neo4j dev (7688) + test (7689); app stack under profile `app`
 └── Makefile
 ```
 

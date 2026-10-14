@@ -1,6 +1,6 @@
-# Superpowers — historical milestone records
+# Design records — historical milestone records
 
-The files under `specs/` and `plans/` are point-in-time records captured during implementation of each milestone (M0 through M5d). They are **preserved, not maintained** — design choices, file paths, test counts, and commands inside them describe the state of the project on the date in the filename.
+The files under `specs/` and `plans/` are point-in-time records captured during implementation of each milestone (M0 onward). They are **preserved, not maintained** — design choices, file paths, test counts, and commands inside them describe the state of the project on the date in the filename.
 
 Treat them as a project diary, not a reference. They're useful for:
 
@@ -15,3 +15,5 @@ For **current** documentation, use:
 - [`../decisions/`](../decisions/) — ADRs for the load-bearing decisions
 
 When something in `specs/` or `plans/` contradicts current code, current code wins.
+
+Some plans include steps for the original author's local workflow (scratch notes in `tasks/`, editor-assistant files such as `CLAUDE.md`). Those paths are gitignored and not part of the project; skip those steps.

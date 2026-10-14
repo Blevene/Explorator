@@ -81,6 +81,6 @@ completions protocol, and select between them with `LLM_PROVIDER`.**
 
 ## See also
 
-- [`docs/superpowers/specs/2026-10-08-openai-compatible-llm-provider-design.md`](../superpowers/specs/2026-10-08-openai-compatible-llm-provider-design.md) — design spec
+- [`docs/design/specs/2026-10-08-openai-compatible-llm-provider-design.md`](../design/specs/2026-10-08-openai-compatible-llm-provider-design.md) — design spec
 - ADR 011 (token usage instrumentation) — addendum covers tier, `is_priced` and fallbacks
 - `backend/src/explorator/config.py` — settings resolution

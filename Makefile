@@ -41,7 +41,7 @@ backend:
 test: neo4j-test-up
 	cd backend && uv run pytest tests/ -v
 
-test-unit: neo4j-test-up
+test-unit:
 	cd backend && uv run pytest tests/unit/ -v
 
 test-integration: neo4j-test-up

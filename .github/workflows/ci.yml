@@ -5,6 +5,10 @@ on:
   push:
     branches: [main]
 
+# Least privilege for every job; jobs that need more ask for it explicitly.
+permissions:
+  contents: read
+
 # Cancel in-flight runs on force-push to a PR branch.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -75,7 +79,7 @@ jobs:
           enable-cache: true
 
       - name: Sync deps
-        run: uv sync --all-extras
+        run: uv sync --locked --all-extras
 
       - name: Ruff
         run: uv run ruff check src tests
@@ -123,7 +127,7 @@ jobs:
           enable-cache: true
 
       - name: Sync deps
-        run: uv sync --all-extras
+        run: uv sync --locked --all-extras
 
       - name: Pytest
         run: uv run pytest -q
@@ -158,7 +162,7 @@ jobs:
       # Backend deps: the per-worker backends are launched from backend/.venv.
       - name: Sync backend deps
         working-directory: backend
-        run: uv sync --all-extras
+        run: uv sync --locked --all-extras
 
       # Frontend: install + build, since `vite preview` (spawned per worker)
       # serves the built dist/.
