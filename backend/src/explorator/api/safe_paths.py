@@ -16,9 +16,3 @@ def resolve_under(root: str, *parts: str) -> str:
         raise ValueError(msg)
     return target
 
-
-def is_under(root: str, path: str) -> bool:
-    """True when *path* (after resolving symlinks and ``..``) lies inside *root*."""
-    base = os.path.realpath(root)
-    target = os.path.realpath(path)
-    return target != base and os.path.commonpath([base, target]) == base
