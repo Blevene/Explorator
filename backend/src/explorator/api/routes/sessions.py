@@ -11,6 +11,8 @@ from pydantic import BaseModel
 from ulid import ULID
 
 from explorator.api.deps import get_neo4j_driver, get_session_repo
+from explorator.api.safe_paths import resolve_under
+from explorator.api.schemas.limits import PromptText
 from explorator.config import settings
 from explorator.graph.session_repo import SessionRepository
 from explorator.models.session import Session
@@ -30,7 +32,7 @@ class CreateSessionRequest(BaseModel):
 
     genre: str
     mode: str = "full_exploration"
-    prompt: str = ""
+    prompt: PromptText = ""
     key: str = DEFAULT_KEY
     musical_mode: str = DEFAULT_MODE
 
@@ -152,8 +154,11 @@ async def delete_session(
         raise HTTPException(status_code=404, detail="Session not found")
 
     # Remove exported files for this session from the filesystem
-    export_dir = os.path.join(settings.export_dir, session_id)
-    if os.path.isdir(export_dir):
+    try:
+        export_dir = resolve_under(settings.export_dir, session_id)
+    except ValueError:
+        export_dir = None  # an id like ".." never maps to an export folder
+    if export_dir and os.path.isdir(export_dir):
         shutil.rmtree(export_dir)
 
     # Memory mode: remove the Session from the store so a subsequent get_by_id

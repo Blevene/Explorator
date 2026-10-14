@@ -3,7 +3,8 @@ import { defineConfig } from '@playwright/test';
 // Serial Neo4j lane. Reuses the single shared backend/frontend that global-setup
 // spawns on :8100/:5199 (Neo4j-backed). For the specs that need durable
 // learning features (pattern library, genre research) or poke feedback/lineage.
-// Requires the dev Neo4j to be running; set NEO4J_CONTAINER for cypher cleanup.
+// Runs against the disposable test Neo4j (:7689, `make neo4j-test-up`), because
+// setup deletes every session and research job; never point it at the dev DB.
 const FRONTEND_PORT = 5199;
 
 export default defineConfig({

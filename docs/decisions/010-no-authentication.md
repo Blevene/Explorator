@@ -1,10 +1,10 @@
 # ADR 010 — No authentication; single-operator local tool
 
-**Status:** Accepted
+**Status:** Accepted (amended 2026-10-14: loopback default and browser-attack guards, see below)
 
 ## Context
 
-Explorator is, today, a creative tool that runs on the producer's local machine. The backend listens on `0.0.0.0:8000`, the frontend on `0.0.0.0:5173` (or whatever Vite reports). All sessions, candidates, exports, and pattern library entries belong to the operator.
+Explorator is, today, a creative tool that runs on the producer's local machine. The backend listens on `127.0.0.1:8000` and the frontend on `127.0.0.1:5173` by default (originally `0.0.0.0`; see the amendment). All sessions, candidates, exports, and pattern library entries belong to the operator.
 
 A typical default for any user-facing app is "add auth from day one" — JWT, OAuth, session cookies, the works. But the cost isn't zero:
 
@@ -23,7 +23,7 @@ For a single-operator tool, all of that is pure tax.
 - All API endpoints accept any caller without challenge.
 - All Neo4j queries are scoped only by `session_id`, `arrangement_id`, etc. — never by an owning user.
 - The frontend never asks for a login.
-- `0.0.0.0` binding is the deliberate default (per the user's standing preference) so the app is reachable from any device on the local network — useful when listening on a phone speaker or testing on a tablet, not a security stance.
+- LAN access (a phone speaker, a tablet) is an explicit opt-in: `BIND_ADDR=0.0.0.0`.
 
 The implicit security model: **the operator controls the network**. Don't expose the backend port to the public internet.
 
@@ -53,7 +53,22 @@ When that day comes, the path is roughly:
 3. Migrate existing data to a single "default" user.
 4. Update queries to filter by ownership at the boundary; domain code stays unchanged ([ADR-002](./002-langgraph-orchestration-pure-domain.md) makes this localized).
 
+## Amendment (2026-10-14)
+
+Once the repository went public, a security review showed "the operator
+controls the network" isn't enough. The user's own browser is a path in:
+any web page could call the API on localhost (wildcard CORS, no Host check),
+and the dev Neo4j used a password published in the repo. Still no auth, but:
+
+- Ports and dev servers bind to `127.0.0.1`; `BIND_ADDR=0.0.0.0` opts into LAN use.
+- No CORS policy, so other origins can't read responses. `LocalAccessGuard`
+  rejects unknown `Host` names (DNS rebinding; `ALLOWED_HOSTS` adds names, IP
+  literals always pass) and state-changing requests from a foreign `Origin`.
+- The Neo4j password is generated per install.
+- Request sizes are capped so one call can't fan out into unbounded LLM spend.
+
 ## See also
 
 - `backend/src/explorator/api/app.py` (no auth dependencies wired)
-- The `Bind Address` user feedback memory (`feedback_bind_address.md`) — the 0.0.0.0 default is intentional
+- `backend/src/explorator/api/middleware.py` (`LocalAccessGuard`)
+- README § Security model

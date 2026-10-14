@@ -39,6 +39,31 @@ tracks the state of the `main` branch.
   `CODE_OF_CONDUCT.md`, `ROADMAP.md`, issue/PR templates, `CODEOWNERS`,
   Dependabot, and a CodeQL workflow.
 
+### Security
+- Ports and dev servers bind to `127.0.0.1` by default; `BIND_ADDR=0.0.0.0`
+  opts into LAN access.
+- The dev Neo4j password is generated per install into `backend/.env`
+  (`scripts/neo4j-password.sh`); `make neo4j-up` / `make up` move an existing
+  volume off the old public default `explorator_dev`.
+- The API no longer sends a wildcard CORS policy. A new `LocalAccessGuard`
+  rejects unknown `Host` names (DNS rebinding; `ALLOWED_HOSTS` adds names)
+  and cross-site state-changing requests.
+- Export downloads and session deletion stay inside `EXPORT_DIR`. Export
+  paths are now stored relative to it, so Docker and native share exports.
+- Candidate-id lists are de-duplicated and capped (12 for LLM-backed
+  routes, 50 for export/comparison); prompts, guidance, feedback and
+  reference artists are bounded; Gemini calls share a concurrency limit
+  (`LLM_MAX_CONCURRENCY`, default 8).
+- A researched genre's identity always comes from its validated name, so a
+  draft can't shadow an existing genre.
+- Dependency upgrades for known advisories (starlette, urllib3, cryptography,
+  anyio, pydantic-settings, pillow, pyasn1, langsmith, pytest, pygments).
+- nginx sends CSP and related headers, hides its version and runs unprivileged
+  (container port 8080); base images are digest-pinned and GitHub Actions
+  SHA-pinned, with Dependabot tracking both.
+- `make e2e-neo4j` now runs against the disposable test Neo4j (:7689). It
+  previously deleted every session in the dev database during setup.
+
 ### Changed
 - Open-source readiness cleanup: security reports go through GitHub private
   vulnerability reporting instead of email; CI runs with a read-only

@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from ulid import ULID
 
 from explorator.api.deps import get_neo4j_driver
+from explorator.api.schemas.limits import RenderIds
 from explorator.models.export import ComparisonView
 from explorator.persistence.factory import make_comparison_view_repo
 
@@ -18,7 +19,7 @@ router = APIRouter(tags=["comparisons"])
 class ComparisonRequestBody(BaseModel):
     """Request body for recording a comparison event."""
 
-    candidate_ids: list[str]
+    candidate_ids: RenderIds
     comparison_axes: list[str] = []
     labels: dict[str, str] = {}
 

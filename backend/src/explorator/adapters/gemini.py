@@ -1,5 +1,6 @@
 """Gemini API client with Pro/Flash model routing."""
 
+import asyncio
 import logging
 from typing import TypeVar
 
@@ -27,6 +28,7 @@ class GeminiClient:
         pro_model: str = "gemini-pro-latest",
         flash_model: str = "gemini-flash-latest",
         timeout_seconds: int = 30,
+        max_concurrency: int = 8,
     ) -> None:
         self.api_key = api_key
         self.pro_model = pro_model
@@ -36,6 +38,8 @@ class GeminiClient:
             api_key=api_key,
             http_options=types.HttpOptions(timeout=timeout_seconds * 1000),
         )
+        # Caps parallel requests (fan-out nodes gather one call per candidate).
+        self._semaphore = asyncio.Semaphore(max_concurrency)
 
     def get_model_name(self, tier: ModelTier) -> str:
         """Get the model name for a given tier."""
@@ -66,11 +70,12 @@ class GeminiClient:
 
         parse_attempts = 2  # one retry on malformed output, as OpenAICompatClient does
         while True:
-            response = await self._client.aio.models.generate_content(
-                model=model_name,
-                contents=contents,
-                config=config,
-            )
+            async with self._semaphore:
+                response = await self._client.aio.models.generate_content(
+                    model=model_name,
+                    contents=contents,
+                    config=config,
+                )
             usage.record(model_name, response.usage_metadata, tier=tier.value)
 
             candidates = getattr(response, "candidates", None) or []
@@ -101,11 +106,12 @@ class GeminiClient:
             system_instruction=system_prompt,
         )
 
-        response = await self._client.aio.models.generate_content(
-            model=model_name,
-            contents=prompt,
-            config=config,
-        )
+        async with self._semaphore:
+            response = await self._client.aio.models.generate_content(
+                model=model_name,
+                contents=prompt,
+                config=config,
+            )
         usage.record(model_name, response.usage_metadata, tier=tier.value)
 
         if response.text is None:

@@ -1,11 +1,14 @@
 services:
   neo4j:
-    image: neo4j:5-community
+    image: neo4j:5.26-community@sha256:f1e52d4dc6da122468c4a3c1050a4f5e117f6d3268625237c34d49166f0d6082
+    # Loopback unless BIND_ADDR says otherwise (`make` targets pass it through).
     ports:
-      - "7475:7474"
-      - "7688:7687"
+      - "${BIND_ADDR:-127.0.0.1}:7475:7474"
+      - "${BIND_ADDR:-127.0.0.1}:7688:7687"
     environment:
-      NEO4J_AUTH: neo4j/explorator_dev
+      # `make neo4j-up` / `make up` supply a per-install password generated into
+      # backend/.env. The fallback is only for bare `docker compose` use.
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-explorator_dev}
       NEO4J_PLUGINS: '[]'
     volumes:
       - neo4j_data:/data
@@ -24,10 +27,11 @@ services:
   # restarts, which is correct for a disposable test DB and faster than a
   # disk-backed volume.
   neo4j-test:
-    image: neo4j:5-community
+    image: neo4j:5.26-community@sha256:f1e52d4dc6da122468c4a3c1050a4f5e117f6d3268625237c34d49166f0d6082
+    # Test DB: always loopback-only.
     ports:
-      - "7476:7474"
-      - "7689:7687"
+      - "127.0.0.1:7476:7474"
+      - "127.0.0.1:7689:7687"
     environment:
       NEO4J_AUTH: neo4j/explorator_test
       NEO4J_PLUGINS: '[]'
@@ -57,7 +61,7 @@ services:
       # backend/.env, so any localhost NEO4J_* there is overridden.
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_USER: neo4j
-      NEO4J_PASSWORD: explorator_dev
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-explorator_dev}
       # Process-env only, as natively: `LLM_MOCK=true make up`.
       LLM_MOCK: ${LLM_MOCK:-}
       EXPLORATOR_STYLE_DIR: /app/style
@@ -86,7 +90,7 @@ services:
     extra_hosts:
       - host.docker.internal:host-gateway
     ports:
-      - "${API_PORT:-8000}:8000"
+      - "${BIND_ADDR:-127.0.0.1}:${API_PORT:-8000}:8000"
     # Wait for Neo4j, or the backend falls back to limited (in-memory) mode.
     depends_on:
       neo4j:
@@ -96,7 +100,7 @@ services:
     profiles: [app]
     build: ./frontend
     ports:
-      - "${APP_PORT:-8080}:80"
+      - "${BIND_ADDR:-127.0.0.1}:${APP_PORT:-8080}:8080"
     depends_on:
       backend:
         condition: service_healthy

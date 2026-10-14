@@ -11,6 +11,8 @@ from neo4j import AsyncDriver
 from pydantic import BaseModel
 
 from explorator.api.deps import get_neo4j_driver
+from explorator.api.safe_paths import resolve_under
+from explorator.api.schemas.limits import RenderIds
 from explorator.config import settings
 from explorator.domain.export.json_renderer import JsonRenderContext
 from explorator.domain.export.orchestrator import ExportRequest, render_and_write_artifacts
@@ -39,7 +41,7 @@ router = APIRouter(tags=["exports"])
 
 
 class ExportRequestBody(BaseModel):
-    arrangement_candidate_ids: list[str]
+    arrangement_candidate_ids: RenderIds
     formats: list[str] = ["midi_combined", "json"]
 
 
@@ -108,7 +110,10 @@ async def create_export(
 
     # Generate a package ID up-front (needed for output directory)
     package_id = f"pkg_{uuid4().hex[:12]}"
-    output_dir = os.path.join(settings.export_dir, session_id, package_id)
+    try:
+        output_dir = resolve_under(settings.export_dir, session_id, package_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid session id") from None
 
     all_artifact_ids: list[str] = []
     all_artifact_meta: list[dict[str, Any]] = []
@@ -246,7 +251,9 @@ async def create_export(
                 session_id=session_id,
                 candidate_id=ac_id,
                 artifact_type=meta["artifact_type"],
-                path=meta["path"],
+                # Relative to EXPORT_DIR, so Docker (/app/exports) and native
+                # (backend/exports) resolve the same file.
+                path=os.path.relpath(meta["path"], os.path.realpath(settings.export_dir)),
                 render_metadata={"filename": meta["filename"]},
             )
             await artifact_repo.create(artifact)
@@ -380,8 +387,19 @@ async def download_artifact(
     if artifact is None:
         raise HTTPException(status_code=404, detail="Artifact not found")
 
-    file_path = artifact.get("path", "")
-    if not file_path or not os.path.isfile(file_path):
+    stored_path = artifact.get("path", "")
+    # The path comes from the database; only serve files inside the export dir,
+    # and serve the resolved path that was checked. Current exports store it
+    # relative to EXPORT_DIR; older ones relative to the working directory.
+    export_root = os.path.realpath(settings.export_dir)
+    file_path = ""
+    if stored_path:
+        for candidate in (os.path.join(export_root, stored_path), stored_path):
+            resolved = os.path.realpath(candidate)
+            if resolved.startswith(export_root + os.sep) and os.path.isfile(resolved):
+                file_path = resolved
+                break
+    if not file_path:
         raise HTTPException(status_code=404, detail="Artifact file not found on disk")
 
     render_meta = artifact.get("render_metadata") or {}

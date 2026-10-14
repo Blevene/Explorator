@@ -93,11 +93,11 @@ git clone https://github.com/Blevene/Explorator.git
 cd Explorator
 
 # Configure
-cp .env.example backend/.env
+cp -n .env.example backend/.env   # -n: never overwrite an existing backend/.env
 # Edit backend/.env and set LLM_API_KEY (or configure another provider — see "LLM providers").
 # Only Explorator's own settings are read from backend/.env (see "LLM providers").
-# The default Neo4j password ('explorator_dev') is for local dev only — change
-# it (and the docker-compose value) if you ever expose Neo4j beyond localhost.
+# No Neo4j password to set: `make neo4j-up` / `make up` generate a random one
+# into backend/.env on first run.
 
 # Install deps
 cd backend  && uv sync --all-extras && cd ..
@@ -134,6 +134,13 @@ make backend         # logs "In-memory mode — long-term memory features disabl
 make frontend        # the UI shows a "limited mode" banner
 ```
 
+Everything listens on `127.0.0.1` by default, because the API has no
+authentication. To reach the app from another machine, opt in per command
+with `BIND_ADDR=0.0.0.0` (for example `BIND_ADDR=0.0.0.0 make frontend`; the
+backend can stay on loopback behind Vite's proxy). Opening it by IP address
+works as is; if you use a hostname such as `mybox.lan`, add it to
+`ALLOWED_HOSTS` in `backend/.env` (`make frontend` passes it to Vite as well). See [Security model](#security-model).
+
 `make frontend` points Vite's `/v1` proxy at `make backend` (:8000). Running
 `npm run dev` directly instead proxies to `VITE_API_TARGET`, which defaults to
 `http://localhost:8100` (the E2E backend).
@@ -151,7 +158,7 @@ live mode any time with `curl localhost:8000/v1/capabilities`.
 Node or make on the host):
 
 ```bash
-cp .env.example backend/.env   # configure the LLM as above (or skip it and use LLM_MOCK)
+cp -n .env.example backend/.env   # configure the LLM as above (or skip it and use LLM_MOCK)
 make up                        # = docker compose --profile app up -d --build --wait backend frontend
                                # (without make, run that docker compose command directly)
 LLM_MOCK=true make up          # …or with the fake LLM, no key needed
@@ -163,7 +170,8 @@ Open http://localhost:8080. This builds production-style images from your
 working tree: Neo4j (full mode), the backend on :8000, and the built UI served by
 nginx on :8080, which proxies `/v1` to the backend. Re-run `make up` after code
 changes; for hot reload, use the native `make backend` / `make frontend` above.
-Ports are set by `APP_PORT` (UI) and `API_PORT` (API).
+Ports are set by `APP_PORT` (UI) and `API_PORT` (API), and bound to `127.0.0.1`
+unless you run `BIND_ADDR=0.0.0.0 make up`.
 
 The backend container runs as your user and uses the same files as `make backend`:
 - it reads `backend/.env` (with the same validation)
@@ -175,7 +183,9 @@ freely. Inside the container, `NEO4J_*` comes from compose, not `backend/.env`,
 and `localhost` is the container itself. Point `LLM_BASE_URL` at a LAN address,
 or at `http://host.docker.internal:<port>/v1` for an LLM server on the Docker
 host. Without make, first run `mkdir -p backend/exports && touch backend/.env`,
-and set `APP_UID`/`APP_GID` to `$(id -u)`/`$(id -g)` if your uid isn't 1000.
+set `APP_UID`/`APP_GID` to `$(id -u)`/`$(id -g)` if your uid isn't 1000, and pass
+`NEO4J_PASSWORD=$(scripts/neo4j-password.sh)`; otherwise compose falls back to
+the old public default password.
 
 **Test**
 
@@ -190,21 +200,23 @@ cd frontend && npm run lint && npm run test:unit && cd ..   # no Docker needed
 cd e2e && npm install && npx playwright install --with-deps chromium && cd ..
 make e2e-parallel               # UI/generation specs — fully parallel, each worker on its
                                 #   own in-memory backend; no Neo4j needed (~30s)
-make neo4j-up                   # REQUIRED before e2e-neo4j / e2e: dev Neo4j on :7688
 make e2e-neo4j                  # durable-feature specs (pattern library, genre research,
-                                #   feedback/lineage) — serial against the dev Neo4j
-make e2e                        # both lanes (also needs `make neo4j-up` first)
+                                #   feedback/lineage) — serial against the test Neo4j
+                                #   on :7689 (started automatically)
+make e2e                        # both lanes
 ```
 
-`make e2e-neo4j` — and the Neo4j half of `make e2e` — require the dev Neo4j to be
-running; bring it up with `make neo4j-up` first. Setup hard-fails with a clear
+`make e2e-neo4j` — and the Neo4j half of `make e2e` — run against the disposable
+test Neo4j (:7689), never the dev database: its setup deletes every session and
+research job it finds. Don't run it at the same time as `make test`, which wipes
+the same database. Setup hard-fails with a clear
 message if the backend can't reach Neo4j (it would otherwise boot in memory mode
 and the learning specs would fail with confusing UI errors). `make e2e-parallel`
 needs no Neo4j. None of the lanes need an `LLM_API_KEY`: e2e always runs with
 `LLM_MOCK=true`. `E2E_WORKERS` (default 4) sets parallelism for `make e2e-parallel`.
 
-The Neo4j lane cleans up via `docker exec` on the dev Neo4j container, by default
-`explorator-neo4j-1`. If your container has another name (e.g. the clone directory
+The Neo4j lane cleans up via `docker exec` on the test Neo4j container, by default
+`explorator-neo4j-test-1`. If your container has another name (e.g. the clone directory
 isn't `Explorator`), set `NEO4J_CONTAINER=<name>` (see `docker compose ps`).
 
 The pytest suite wipes the DB between tests, so it runs against a dedicated `neo4j-test` container on port 7689 — the dev DB on 7688 is never touched. `make test*` brings the test container up automatically; if you invoke pytest directly, run `make neo4j-test-up` first.
@@ -258,7 +270,7 @@ and set `LLM_CONTEXT_TOKENS` (unset by default) to the same value so Explorator 
 when a prompt nears it.
 
 **Concurrency and timeouts.** Rounds fan out several LLM calls at once.
-`LLM_MAX_CONCURRENCY` (default 4) applies to the `openai` provider only and caps in-flight requests; for Ollama,
+`LLM_MAX_CONCURRENCY` caps in-flight requests (default 8 for `gemini`, 4 for `openai`); for Ollama,
 keep it ≤ `OLLAMA_NUM_PARALLEL`. `LLM_TIMEOUT_SECONDS` defaults to 120 for `gemini`
 and 300 for `openai`. `LLM_MAX_RETRIES` (default 1, `openai` only) is the HTTP retry
 count for connection errors, 429s and 5xx; both adapters also retry once on
@@ -374,15 +386,36 @@ explorator/
 
 | Service | Port | Purpose |
 |---|---|---|
-| Neo4j Browser (dev) | 7475 | Graph visualization |
+| Neo4j Browser (dev) | 7475 | Graph visualization (user `neo4j`, password `NEO4J_PASSWORD` in `backend/.env`) |
 | Neo4j Bolt (dev) | 7688 | Driver connection for the running app |
 | Neo4j Browser (test) | 7476 | Isolated test DB browser |
-| Neo4j Bolt (test) | 7689 | Pytest-only — tests wipe between runs |
+| Neo4j Bolt (test) | 7689 | Pytest and the E2E Neo4j lane — wiped between runs |
 | Backend (dev) | 8000 | FastAPI via `make backend` |
 | Frontend (dev) | 5173 | Vite dev server (`make frontend`) |
 | Backend (E2E, Neo4j lane) | 8100 | Spawned by Playwright with `LLM_MOCK=true`; also the Vite proxy's default `VITE_API_TARGET` |
 | Frontend (E2E, Neo4j lane) | 5199 | `npm run preview` against the production build |
 | Backend / frontend (E2E, parallel lane) | 8200+n / 5300+n | One in-memory pair per Playwright worker |
+
+All published ports bind to `127.0.0.1` unless `BIND_ADDR` says otherwise.
+
+### Security model
+
+Explorator is a single-user, local tool with **no authentication**
+([ADR-010](./docs/decisions/010-no-authentication.md)). The defaults keep it that way:
+
+- **Loopback only.** Ports and dev servers bind to `127.0.0.1`; `BIND_ADDR=0.0.0.0`
+  is an explicit opt-in that exposes the API to your network.
+- **Other websites can't drive it.** There is no CORS policy, so pages on other
+  origins can't read API responses. The backend refuses requests whose `Host` isn't
+  `localhost`, an IP address or an `ALLOWED_HOSTS` entry (DNS rebinding), and refuses
+  state-changing requests from another site's `Origin` (cross-site requests).
+- **Per-install Neo4j password**, generated into `backend/.env`.
+- **Bounded requests:** candidate-id lists and free-text fields (prompts, guidance,
+  feedback, reference artists) are capped, so one request can't fan out into
+  thousands of paid LLM calls.
+- Exports are only ever read from or deleted inside `EXPORT_DIR`.
+
+Report vulnerabilities as described in [SECURITY.md](./SECURITY.md).
 
 ## Genre catalog reference
 

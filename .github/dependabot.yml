@@ -47,6 +47,19 @@ updates:
           - "minor"
           - "patch"
 
+  # Base images (digest-pinned in the Dockerfiles and docker-compose.yml).
+  - package-ecosystem: "docker"
+    directories: ["/backend", "/frontend"]
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
   # GitHub Actions used by the workflows.
   - package-ecosystem: "github-actions"
     directory: "/"

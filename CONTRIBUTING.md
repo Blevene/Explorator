@@ -16,7 +16,7 @@ Read these once:
 See [README § Quick start](./README.md#quick-start) for the bootstrap. The short form:
 
 ```bash
-cp .env.example backend/.env  # set LLM_API_KEY (see README "LLM providers")
+cp -n .env.example backend/.env  # set LLM_API_KEY (see README "LLM providers")
 make neo4j-up                  # dev Neo4j on :7688 — returns once healthy
 cd backend  && uv sync --all-extras && cd ..
 cd frontend && npm install && cd ..
@@ -30,7 +30,7 @@ make frontend                  # Vite on :5173, /v1 proxied to :8000 (terminal 2
 - The backend probes Neo4j once at startup; if it logs "In-memory mode", Neo4j wasn't ready — restart the backend.
 - `make up` / `make down` run the whole stack in Docker instead (UI on :8080; see the README quick start). These are production-style images with no hot reload, so use them to check a clean build, not for day-to-day work. The backend container runs as your user and bind-mounts `backend/.env`, `backend/exports/` and the genre catalog. Docker and native therefore share settings, exports and approved genres, as well as the Neo4j volume.
 
-Most backend tests need a separate Neo4j on :7689, and `make test` / `make test-integration` bring it up automatically. `make test-unit` and the frontend checks (`npm run lint`, `npm run test:unit`, `npm run build`) need no Docker. Before the first `make e2e*` run, install the E2E package and browser once: `cd e2e && npm install && npx playwright install --with-deps chromium`.
+Most backend tests need a separate Neo4j on :7689, and `make test` / `make test-integration` / `make e2e-neo4j` bring it up automatically; that database is wiped freely, so never point tests at the dev one (:7688). `make test-unit` and the frontend checks (`npm run lint`, `npm run test:unit`, `npm run build`) need no Docker. Before the first `make e2e*` run, install the E2E package and browser once: `cd e2e && npm install && npx playwright install --with-deps chromium`.
 
 Optional: `uvx pre-commit install` mirrors CI's ruff / whitespace gates as local git hooks (see `.pre-commit-config.yaml`).
 

@@ -13,6 +13,7 @@ from sse_starlette.sse import EventSourceResponse
 from explorator.adapters.llm import LLMClient
 from explorator.adapters.usage import track_usage
 from explorator.api.deps import get_llm_client, get_neo4j_driver
+from explorator.api.schemas.limits import PromptText
 from explorator.api.sse import SSEChannel, cancel_on_disconnect
 from explorator.engine.graph import build_exploration_graph
 from explorator.persistence.factory import make_session_repo
@@ -36,7 +37,7 @@ MAX_ROUNDS = 2
 
 
 class TriggerRoundRequest(BaseModel):
-    prompt: str | None = None
+    prompt: PromptText | None = None
     genre: str | None = None
     key: str | None = None
     musical_mode: str | None = None

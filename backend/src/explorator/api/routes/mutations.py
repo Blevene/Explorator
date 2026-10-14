@@ -12,6 +12,7 @@ from ulid import ULID
 
 from explorator.adapters.llm import LLMClient
 from explorator.api.deps import get_llm_client, get_neo4j_driver
+from explorator.api.schemas.limits import CandidateIds, PromptText
 from explorator.api.sse import SSEChannel, cancel_on_disconnect
 from explorator.domain.harmony.mutator import HarmonyMutator
 from explorator.engine.graph import build_realization_subgraph
@@ -34,8 +35,8 @@ _busy_sessions: set[str] = set()
 
 
 class TriggerMutationRequest(BaseModel):
-    candidate_ids: list[str]
-    guidance: str | None = None
+    candidate_ids: CandidateIds
+    guidance: PromptText | None = None
     operations: list[str] | None = None
     key: str | None = None
     musical_mode: str | None = None

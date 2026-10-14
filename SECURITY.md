@@ -14,6 +14,6 @@ You should expect a response within a few business days. We don't operate a bug 
 
 ## Scope
 
-This repository is a single-tenant local-first music tool. There is no authentication or authorization layer (see [ADR-010](./docs/decisions/010-no-authentication.md)) — the assumption is that the API is bound to localhost during normal use. Issues that exclusively rely on operating the backend on a public network without an upstream auth layer are out of scope; documenting that assumption more loudly is in scope.
+This repository is a single-tenant local-first music tool. There is no authentication or authorization layer (see [ADR-010](./docs/decisions/010-no-authentication.md)) — the assumption is that the API is bound to localhost during normal use. Issues that exclusively rely on operating the backend on a public network without an upstream auth layer are out of scope; documenting that assumption more loudly is in scope. Ways for a web page in the user's browser, or another device on their network when the default loopback binding is kept, to drive or read the API are in scope (see the README's "Security model").
 
-In-scope examples: prompt-injection paths that escape into stored data; Cypher injection via genre/session inputs; arbitrary file write via the genre approve flow; secrets leaking through logs or SSE streams; supply-chain advisories on first-party dependencies.
+In-scope examples: prompt-injection paths that escape into stored data; Cypher injection via genre/session inputs; arbitrary file write via the genre approve flow; file read or deletion outside the export directory; secrets leaking through logs or SSE streams; supply-chain advisories on first-party dependencies.
