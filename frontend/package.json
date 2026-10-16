@@ -16,7 +16,7 @@
     "test:unit:watch": "vitest"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.104.1",
+    "@tanstack/react-query": "^5.104.2",
     "jszip": "^3.10.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
@@ -41,7 +41,7 @@
     "jsdom": "^29.1.1",
     "tailwindcss": "^4.2.2",
     "typescript": "~5.9.3",
-    "typescript-eslint": "^8.71.1",
+    "typescript-eslint": "^8.71.2",
     "vite": "^8.3.4",
     "vitest": "^4.1.8"
   }
