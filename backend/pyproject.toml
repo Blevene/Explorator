@@ -19,7 +19,7 @@ dependencies = [
     "music21>=9.1.0",
     "pretty-midi>=0.2.10",
     "sse-starlette>=2.0.0",
-    "openai>=3.24.0",
+    "openai>=3.29.0",
 ]
 
 [project.optional-dependencies]
